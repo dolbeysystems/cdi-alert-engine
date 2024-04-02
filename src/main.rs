@@ -1,10 +1,33 @@
+use std::path::Path;
+use std::process::exit;
+use std::{fs, io};
 use tracing::*;
 
 mod cac_data;
 
+fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<String>> {
+    let mut scripts = Vec::new();
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_dir() {
+            scripts.push(fs::read_to_string(path)?);
+        }
+    }
+    Ok(scripts)
+}
+
 #[tokio::main(worker_threads = 256)]
 async fn main() {
     tracing_subscriber::fmt().init();
+
+    let scripts = match get_scripts("scripts/") {
+        Ok(scripts) => scripts,
+        Err(msg) => {
+            error!("failed to load scripts: {msg}");
+            exit(1);
+        }
+    };
 
     loop {
         info!("scanning collection");
@@ -20,9 +43,6 @@ async fn main() {
             .and_then(|x| x)
         {
             info!("processing account: {:?}", account.id);
-
-            // TODO: Run all lua scripts from script directory
-            let scripts = vec!["script1.lua", "script2.lua", "script3.lua"];
 
             let results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
