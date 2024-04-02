@@ -12,7 +12,12 @@ async fn main() {
         let connection_string = "mongodb://localhost:27017";
         while let Some(account) = cac_data::get_next_pending_account(connection_string)
             .await
-            .unwrap()
+            // print error message
+            .map_err(|e| error!("failed to get account: {e}"))
+            // discard error
+            .ok()
+            // coallesce Option<Option<T> into Option<T>.
+            .and_then(|x| x)
         {
             info!("processing account: {:?}", account.id);
 
