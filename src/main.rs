@@ -58,7 +58,7 @@ async fn main() {
                         outcome: None,
                         reason: None,
                         subtitle: None,
-                        links: None,
+                        links: Vec::new(),
                         weight: None,
                     };
 

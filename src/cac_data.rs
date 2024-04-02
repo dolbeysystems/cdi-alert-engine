@@ -2,8 +2,10 @@ use chrono::{DateTime, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::sync::Arc;
 
-// TODO: Since the account structure is read-only, fields should be Rc to avoid cloning by lua.
+// To avoid excessive cloning, wrap `UserData` in `Arc`s!
+
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Account {
@@ -16,7 +18,7 @@ pub struct Account {
     #[serde_as(as = "Option<bson::DateTime>")]
     pub discharge_date_time: Option<DateTime<Utc>>,
     #[serde(rename = "Patient")]
-    pub patient: Option<Patient>,
+    pub patient: Option<Arc<Patient>>,
     #[serde(rename = "PatientType")]
     pub patient_type: Option<String>,
     #[serde(rename = "AdmitSource")]
@@ -27,14 +29,14 @@ pub struct Account {
     pub hospital_service: Option<String>,
     #[serde(rename = "Building")]
     pub building: Option<String>,
-    #[serde(rename = "Documents")]
-    pub documents: Option<Vec<CACDocument>>,
-    #[serde(rename = "Medications")]
-    pub medications: Option<Vec<Medication>>,
-    #[serde(rename = "DiscreteValues")]
-    pub discrete_values: Option<Vec<DiscreteValue>>,
-    #[serde(rename = "CdiAlerts")]
-    pub cdi_alerts: Option<Vec<CdiAlert>>,
+    #[serde(rename = "Documents", default)]
+    pub documents: Vec<Arc<CACDocument>>,
+    #[serde(rename = "Medications", default)]
+    pub medications: Vec<Arc<Medication>>,
+    #[serde(rename = "DiscreteValues", default)]
+    pub discrete_values: Vec<Arc<DiscreteValue>>,
+    #[serde(rename = "CdiAlerts", default)]
+    pub cdi_alerts: Vec<Arc<CdiAlert>>,
 }
 
 impl mlua::UserData for Account {
@@ -103,10 +105,10 @@ pub struct CACDocument {
     pub document_type: Option<String>,
     #[serde(rename = "ContentType")]
     pub content_type: Option<String>,
-    #[serde(rename = "CodeReferences")]
-    pub code_references: Option<Vec<CodeReference>>,
-    #[serde(rename = "AbstractionReferences")]
-    pub abstraction_references: Option<Vec<CodeReference>>,
+    #[serde(rename = "CodeReferences", default)]
+    pub code_references: Vec<Arc<CodeReference>>,
+    #[serde(rename = "AbstractionReferences", default)]
+    pub abstraction_references: Vec<Arc<CodeReference>>,
 }
 impl mlua::UserData for CACDocument {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
@@ -219,8 +221,8 @@ pub struct CdiAlert {
     pub script_name: String,
     #[serde(rename = "Passed")]
     pub passed: bool,
-    #[serde(rename = "Links")]
-    pub links: Option<Vec<CdiAlertLink>>,
+    #[serde(rename = "Links", default)]
+    pub links: Vec<Arc<CdiAlertLink>>,
     #[serde(rename = "Validated")]
     pub validated: bool,
     #[serde(rename = "SubTitle")]
@@ -252,9 +254,9 @@ impl mlua::UserData for CdiAlert {
         fields.add_field_method_set("links", |_, this, value: Vec<mlua::AnyUserData>| {
             let mut links = Vec::new();
             for i in value {
-                links.push(i.borrow::<CdiAlertLink>()?.clone())
+                links.push(Arc::new(i.borrow::<CdiAlertLink>()?.clone()))
             }
-            this.links = Some(links);
+            this.links = links;
             Ok(())
         });
         fields.add_field_method_set("validated", |_, this, value| {
@@ -303,8 +305,8 @@ pub struct CdiAlertLink {
     pub is_validated: bool,
     #[serde(rename = "UserNotes")]
     pub user_notes: Option<String>,
-    #[serde(rename = "Links")]
-    pub links: Option<Vec<CdiAlertLink>>,
+    #[serde(rename = "Links", default)]
+    pub links: Vec<CdiAlertLink>,
     #[serde(rename = "Sequence")]
     pub sequence: i32,
     #[serde(rename = "Hidden")]
@@ -427,23 +429,18 @@ pub async fn get_account_by_id<'connection>(
         .find(Some(doc! { "AccountNumber" : id }), None)
         .await?;
 
-    let mut external_discrete_values = Vec::<DiscreteValue>::new();
+    let mut external_discrete_values = Vec::new();
     while discrete_values_cursor.advance().await? {
         let discrete_value = discrete_values_cursor.deserialize_current()?;
-        external_discrete_values.push(discrete_value);
+        external_discrete_values.push(Arc::new(discrete_value));
     }
 
     if external_discrete_values.is_empty() {
         Ok(Some(account))
     } else {
-        match account.discrete_values {
-            Some(ref mut discrete_values) => {
-                discrete_values.append(&mut external_discrete_values);
-            }
-            None => {
-                account.discrete_values = Some(external_discrete_values);
-            }
-        }
+        account
+            .discrete_values
+            .append(&mut external_discrete_values);
         Ok(Some(account))
     }
 }
