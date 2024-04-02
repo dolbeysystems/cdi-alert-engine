@@ -166,6 +166,19 @@ pub struct CdiAlert {
     pub weight: Option<f64>,
 }
 
+impl mlua::UserData for CdiAlert {
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+        fields.add_field_method_get("script_name", |_, this| Ok(this.script_name.clone()));
+        fields.add_field_method_get("passed", |_, this| Ok(this.passed));
+        // TODO: fields.add_field_method_get("links", |_, this| Ok(this.links));
+        fields.add_field_method_get("validated", |_, this| Ok(this.validated));
+        fields.add_field_method_get("subtitle", |_, this| Ok(this.subtitle.clone()));
+        fields.add_field_method_get("outcome", |_, this| Ok(this.outcome.clone()));
+        fields.add_field_method_get("reason", |_, this| Ok(this.reason.clone()));
+        fields.add_field_method_get("weight", |_, this| Ok(this.weight));
+    }
+}
+
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CdiAlertLink {

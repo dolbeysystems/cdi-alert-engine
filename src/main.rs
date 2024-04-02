@@ -51,8 +51,7 @@ async fn main() {
             let results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
                 .map(|script| {
-                    // TODO: pass into lua.
-                    let mut result = cac_data::CdiAlert {
+                    let result = cac_data::CdiAlert {
                         script_name: script.to_string(),
                         passed: false,
                         validated: false,
@@ -63,16 +62,23 @@ async fn main() {
                         weight: None,
                     };
 
-                    // TODO: lua_runtime.globals().set("result", result).unwrap();
+                    lua_runtime.globals().set("result", result).unwrap();
 
-                    match lua_runtime.load(script).exec() {
-                        Ok(()) => Some(result),
-                        Err(msg) => {
-                            // TODO: improve this message.
-                            error!("failed to run script: {msg}");
-                            None
-                        }
-                    }
+                    let get_result = |()| -> Result<cac_data::CdiAlert, mlua::Error> {
+                        lua_runtime
+                            .globals()
+                            .get::<&str, mlua::Value>("result")?
+                            .as_userdata()
+                            .ok_or(mlua::Error::UserDataTypeMismatch)?
+                            .take()
+                    };
+
+                    lua_runtime
+                        .load(script)
+                        .exec()
+                        .and_then(get_result)
+                        .map_err(|msg| error!("failed to run script: {msg}"))
+                        .ok()
                 })
                 .filter_map(|x| x)
                 .collect();
