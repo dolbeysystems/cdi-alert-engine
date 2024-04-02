@@ -23,6 +23,28 @@ async fn main() {
     tracing_subscriber::fmt().init();
     let lua_runtime = Lua::new();
 
+    macro_rules! register_logging {
+        ($type:ident) => {
+            lua_runtime
+                .globals()
+                .set(
+                    stringify!($type),
+                    lua_runtime
+                        .create_function(|_lua, s: String| {
+                            $type!("{s}");
+                            Ok(())
+                        })
+                        .unwrap(),
+                )
+                .unwrap();
+        };
+    }
+
+    register_logging!(error);
+    register_logging!(warn);
+    register_logging!(info);
+    register_logging!(debug);
+
     let scripts = match get_scripts("scripts/") {
         Ok(scripts) => scripts,
         Err(msg) => {
@@ -72,13 +94,16 @@ async fn main() {
                             .ok_or(mlua::Error::UserDataTypeMismatch)?
                             .take()
                     };
-
-                    lua_runtime
-                        .load(script)
-                        .exec()
-                        .and_then(get_result)
-                        .map_err(|msg| error!("failed to run script: {msg}"))
-                        .ok()
+                    {
+                        // Prefixes logging messages from lua with "lua".
+                        let _enter = error_span!("lua").entered();
+                        lua_runtime
+                            .load(script)
+                            .exec()
+                            .and_then(get_result)
+                            .map_err(|msg| error!("failed to run script: {msg}"))
+                            .ok()
+                    }
                 })
                 .filter_map(|x| x)
                 .collect();
