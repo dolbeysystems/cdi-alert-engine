@@ -36,6 +36,30 @@ pub struct Account {
     pub cdi_alerts: Option<Vec<CdiAlert>>,
 }
 
+impl mlua::UserData for Account {
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+        fields.add_field_method_get("id", |_, this| Ok(this.id.clone()));
+        fields.add_field_method_get("admit_date_time", |_, this| {
+            Ok(this.admit_date_time.map(|x| x.to_string()))
+        });
+        fields.add_field_method_get("discharge_date_time", |_, this| {
+            Ok(this.discharge_date_time.map(|x| x.to_string()))
+        });
+        // TODO: fields.add_field_method_get("patient", |_, this| Ok(this.patient));
+        fields.add_field_method_get("patient_type", |_, this| Ok(this.patient_type.clone()));
+        fields.add_field_method_get("admit_source", |_, this| Ok(this.admit_source.clone()));
+        fields.add_field_method_get("admit_type", |_, this| Ok(this.admit_type.clone()));
+        fields.add_field_method_get("hospital_service", |_, this| {
+            Ok(this.hospital_service.clone())
+        });
+        fields.add_field_method_get("building", |_, this| Ok(this.building.clone()));
+        // TODO: fields.add_field_method_get("documents", |_, this| Ok(this.documents));
+        // TODO: fields.add_field_method_get("medications", |_, this| Ok(this.medications));
+        // TODO: fields.add_field_method_get("discrete_values", |_, this| Ok(this.discrete_values));
+        // TODO: fields.add_field_method_get("cdi_alerts", |_, this| Ok(this.cdi_alerts));
+    }
+}
+
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Patient {

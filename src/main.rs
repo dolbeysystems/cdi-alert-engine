@@ -1,3 +1,4 @@
+use mlua::Lua;
 use std::path::Path;
 use std::process::exit;
 use std::{fs, io};
@@ -20,6 +21,7 @@ fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<String>> {
 #[tokio::main(worker_threads = 256)]
 async fn main() {
     tracing_subscriber::fmt().init();
+    let lua_runtime = Lua::new();
 
     let scripts = match get_scripts("scripts/") {
         Ok(scripts) => scripts,
@@ -32,7 +34,7 @@ async fn main() {
     loop {
         info!("scanning collection");
 
-        let connection_string = "mongodb://localhost:27017";
+        let connection_string = "mongodb://dolbeyadmin:fusion@dockermain:28017/admin";
         while let Some(account) = cac_data::get_next_pending_account(connection_string)
             .await
             // print error message
@@ -44,9 +46,12 @@ async fn main() {
         {
             info!("processing account: {:?}", account.id);
 
+            lua_runtime.globals().set("account", account).unwrap();
+
             let results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
                 .map(|script| {
+                    // TODO: pass into lua.
                     let mut result = cac_data::CdiAlert {
                         script_name: script.to_string(),
                         passed: false,
@@ -57,11 +62,19 @@ async fn main() {
                         links: None,
                         weight: None,
                     };
-                    // TODO: Run lua script, exposing the account (readonly) and result (read/write)
 
-                    // return the modified result
-                    result
+                    // TODO: lua_runtime.globals().set("result", result).unwrap();
+
+                    match lua_runtime.load(script).exec() {
+                        Ok(()) => Some(result),
+                        Err(msg) => {
+                            // TODO: improve this message.
+                            error!("failed to run script: {msg}");
+                            None
+                        }
+                    }
                 })
+                .filter_map(|x| x)
                 .collect();
 
             // TODO: Update account.CdiAlerts with only results with passed == true
