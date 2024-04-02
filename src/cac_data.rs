@@ -237,12 +237,46 @@ impl mlua::UserData for CdiAlert {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
         fields.add_field_method_get("script_name", |_, this| Ok(this.script_name.clone()));
         fields.add_field_method_get("passed", |_, this| Ok(this.passed));
-        // TODO: fields.add_field_method_get("links", |_, this| Ok(this.links));
+        fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
         fields.add_field_method_get("validated", |_, this| Ok(this.validated));
         fields.add_field_method_get("subtitle", |_, this| Ok(this.subtitle.clone()));
         fields.add_field_method_get("outcome", |_, this| Ok(this.outcome.clone()));
         fields.add_field_method_get("reason", |_, this| Ok(this.reason.clone()));
         fields.add_field_method_get("weight", |_, this| Ok(this.weight));
+
+        // Notice that script_name is not mutable!!
+        fields.add_field_method_set("passed", |_, this, value| {
+            this.passed = value;
+            Ok(())
+        });
+        fields.add_field_method_set("links", |_, this, value: Vec<mlua::AnyUserData>| {
+            let mut links = Vec::new();
+            for i in value {
+                links.push(i.borrow::<CdiAlertLink>()?.clone())
+            }
+            this.links = Some(links);
+            Ok(())
+        });
+        fields.add_field_method_set("validated", |_, this, value| {
+            this.validated = value;
+            Ok(())
+        });
+        fields.add_field_method_set("subtitle", |_, this, value| {
+            this.subtitle = value;
+            Ok(())
+        });
+        fields.add_field_method_set("outcome", |_, this, value| {
+            this.outcome = value;
+            Ok(())
+        });
+        fields.add_field_method_set("reason", |_, this, value| {
+            this.reason = value;
+            Ok(())
+        });
+        fields.add_field_method_set("weight", |_, this, value| {
+            this.weight = value;
+            Ok(())
+        });
     }
 }
 
@@ -275,6 +309,32 @@ pub struct CdiAlertLink {
     pub sequence: i32,
     #[serde(rename = "Hidden")]
     pub hidden: bool,
+}
+
+impl mlua::UserData for CdiAlertLink {
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+        fields.add_field_method_get("link_text", |_, this| Ok(this.link_text.clone()));
+        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.clone()));
+        fields.add_field_method_get("code", |_, this| Ok(this.code.clone()));
+        fields.add_field_method_get("discrete_value_id", |_, this| {
+            Ok(this.discrete_value_id.clone())
+        });
+        fields.add_field_method_get("discrete_value_name", |_, this| {
+            Ok(this.discrete_value_name.clone())
+        });
+        fields.add_field_method_get("medication_id", |_, this| Ok(this.medication_id.clone()));
+        fields.add_field_method_get("medication_name", |_, this| {
+            Ok(this.medication_name.clone())
+        });
+        fields.add_field_method_get("latest_discrete_value_id", |_, this| {
+            Ok(this.latest_discrete_value_id.clone())
+        });
+        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated.clone()));
+        fields.add_field_method_get("user_notes", |_, this| Ok(this.user_notes.clone()));
+        fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
+        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence.clone()));
+        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden.clone()));
+    }
 }
 
 #[serde_as]
