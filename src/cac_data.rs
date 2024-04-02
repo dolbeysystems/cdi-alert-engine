@@ -1,9 +1,5 @@
-use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use mongodb::{
-    bson::{doc, Document},
-    options::FindOneAndDeleteOptions,
-};
+use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -187,10 +183,27 @@ pub struct CdiAlertQueueEntry {
     pub time_queued: DateTime<Utc>,
 }
 
-pub async fn get_next_pending_account(connection_string: &str) -> Result<Option<Account>> {
+#[derive(thiserror::Error, Debug)]
+pub enum GetAccountError<'connection> {
+    #[error("failed to parse CAC database connection string ({string}): {error}")]
+    ConnectionString {
+        string: &'connection str,
+        error: mongodb::error::Error,
+    },
+    // For any other generic mongo errors.
+    #[error(transparent)]
+    Mongo(#[from] mongodb::error::Error),
+}
+
+pub async fn get_next_pending_account(
+    connection_string: &str,
+) -> Result<Option<Account>, GetAccountError> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
-        .map_err(|e| anyhow!("Error parsing CAC database connection string: {}", e))?;
+        .map_err(|e| GetAccountError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
 
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
@@ -215,10 +228,16 @@ pub async fn get_next_pending_account(connection_string: &str) -> Result<Option<
     }
 }
 
-pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Option<Account>> {
+pub async fn get_account_by_id<'connection>(
+    connection_string: &'connection str,
+    id: &str,
+) -> Result<Option<Account>, GetAccountError<'connection>> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
-        .map_err(|e| anyhow!("Error parsing CAC database connection string: {}", e))?;
+        .map_err(|e| GetAccountError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
 
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");

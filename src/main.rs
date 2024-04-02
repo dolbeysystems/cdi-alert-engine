@@ -1,15 +1,20 @@
-use anyhow::Result;
+use tracing::*;
 
 mod cac_data;
 
 #[tokio::main(worker_threads = 256)]
-async fn main() -> Result<()> {
+async fn main() {
+    tracing_subscriber::fmt().init();
+
     loop {
-        println!("Scanning collection");
+        info!("scanning collection");
 
         let connection_string = "mongodb://localhost:27017";
-        while let Some(account) = cac_data::get_next_pending_account(connection_string).await? {
-            println!("Processing account: {:?}", account.id);
+        while let Some(account) = cac_data::get_next_pending_account(connection_string)
+            .await
+            .unwrap()
+        {
+            info!("processing account: {:?}", account.id);
 
             // TODO: Run all lua scripts from script directory
             let scripts = vec!["script1.lua", "script2.lua", "script3.lua"];
@@ -34,8 +39,8 @@ async fn main() -> Result<()> {
                 })
                 .collect();
 
-            // TODO: Update account.CdiAlerts with only results with passed == true (there is some
-            // special merge logic here for updating an entry that already exits)
+            // TODO: Update account.CdiAlerts with only results with passed == true
+            // (there is some special merge logic here for updating an entry that already exists)
         }
 
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
