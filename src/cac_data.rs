@@ -210,7 +210,6 @@ pub async fn get_next_pending_account(
     let pending_accounts_collection =
         cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
 
-    // NOTE: This builds and is okay, but for some reason, clippy thinks it's invalid
     let pending_account = pending_accounts_collection
         .find_one_and_delete(
             doc! {},
