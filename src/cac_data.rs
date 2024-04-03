@@ -589,7 +589,7 @@ pub async fn save_cdi_alerts<'config>(
     account_collection
         .update_one(
             doc! { "_id": "account_id" },
-            doc! { "$set": { "CdiAlerts": cdi_alerts } },
+            doc! { "$set": { "CdiAlerts": bson::to_bson(cdi_alerts).unwrap() } },
             None,
         )
         .await?;
