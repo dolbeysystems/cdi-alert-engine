@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc, sync::Arc};
 
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
 
@@ -39,15 +39,14 @@ pub struct Account {
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
 
     // These are just caches, do not (de)serialize them.
-    // TODO: These keys (and their sources) could be `Rc<str>`
     #[serde(skip)]
-    pub hashed_code_references: HashMap<String, Arc<CodeReference>>,
+    pub hashed_code_references: HashMap<Rc<str>, Arc<CodeReference>>,
     #[serde(skip)]
-    pub hashed_discrete_values: HashMap<String, Arc<DiscreteValue>>,
+    pub hashed_discrete_values: HashMap<Rc<str>, Arc<DiscreteValue>>,
     #[serde(skip)]
-    pub hashed_medications: HashMap<String, Arc<Medication>>,
+    pub hashed_medications: HashMap<Rc<str>, Arc<Medication>>,
     #[serde(skip)]
-    pub hashed_documents: HashMap<String, Arc<CACDocument>>,
+    pub hashed_documents: HashMap<Rc<str>, Arc<CACDocument>>,
 }
 
 impl mlua::UserData for Account {
@@ -111,7 +110,7 @@ impl mlua::UserData for Patient {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
-    pub document_id: Option<String>,
+    pub document_id: Rc<str>,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
     #[serde(rename = "ContentType")]
@@ -123,7 +122,7 @@ pub struct CACDocument {
 }
 impl mlua::UserData for CACDocument {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.clone()));
+        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.to_string()));
         fields.add_field_method_get("document_type", |_, this| Ok(this.document_type.clone()));
         fields.add_field_method_get("content_type", |_, this| Ok(this.content_type.clone()));
         fields.add_field_method_get("code_references", |_, this| {
@@ -139,7 +138,7 @@ impl mlua::UserData for CACDocument {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
-    pub external_id: Option<String>,
+    pub external_id: Rc<str>,
     #[serde(rename = "Medication")]
     pub medication: Option<String>,
     #[serde(rename = "Dosage")]
@@ -160,7 +159,7 @@ pub struct Medication {
 
 impl mlua::UserData for Medication {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("external_id", |_, this| Ok(this.external_id.clone()));
+        fields.add_field_method_get("external_id", |_, this| Ok(this.external_id.to_string()));
         fields.add_field_method_get("medication", |_, this| Ok(this.medication.clone()));
         fields.add_field_method_get("dosage", |_, this| Ok(this.dosage.clone()));
         fields.add_field_method_get("route", |_, this| Ok(this.route.clone()));
@@ -179,7 +178,7 @@ impl mlua::UserData for Medication {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
-    pub unique_id: Option<String>,
+    pub unique_id: Rc<str>,
     #[serde(rename = "Name")]
     pub name: Option<String>,
     #[serde(rename = "Result")]
@@ -191,7 +190,7 @@ pub struct DiscreteValue {
 
 impl mlua::UserData for DiscreteValue {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.clone()));
+        fields.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.to_string()));
         fields.add_field_method_get("name", |_, this| Ok(this.name.clone()));
         fields.add_field_method_get("result", |_, this| Ok(this.result.clone()));
         fields.add_field_method_get("result_date", |_, this| {
@@ -204,7 +203,7 @@ impl mlua::UserData for DiscreteValue {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
-    pub code: Option<String>,
+    pub code: Rc<str>,
     #[serde(rename = "Description")]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]
@@ -217,7 +216,7 @@ pub struct CodeReference {
 
 impl mlua::UserData for CodeReference {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("code", |_, this| Ok(this.code.clone()));
+        fields.add_field_method_get("code", |_, this| Ok(this.code.to_string()));
         fields.add_field_method_get("description", |_, this| Ok(this.description.clone()));
         fields.add_field_method_get("phrase", |_, this| Ok(this.phrase.clone()));
         fields.add_field_method_get("start", |_, this| Ok(this.start.clone()));
@@ -458,31 +457,30 @@ pub async fn get_account_by_id<'connection>(
 
     // Populate HashMaps
     for discrete_value in account.discrete_values.iter() {
-        account.hashed_discrete_values.insert(
-            discrete_value.unique_id.clone().unwrap(),
-            discrete_value.clone(),
-        );
+        account
+            .hashed_discrete_values
+            .insert(discrete_value.unique_id.clone(), discrete_value.clone());
     }
 
     for medication in account.medications.iter() {
         account
             .hashed_medications
-            .insert(medication.external_id.clone().unwrap(), medication.clone());
+            .insert(medication.external_id.clone(), medication.clone());
     }
 
     for document in account.documents.iter() {
         account
             .hashed_documents
-            .insert(document.document_id.clone().unwrap(), document.clone());
+            .insert(document.document_id.clone(), document.clone());
         for code_reference in document.code_references.iter() {
             account
                 .hashed_code_references
-                .insert(code_reference.code.clone().unwrap(), code_reference.clone());
+                .insert(code_reference.code.clone(), code_reference.clone());
         }
         for code_reference in document.abstraction_references.iter() {
             account
                 .hashed_code_references
-                .insert(code_reference.code.clone().unwrap(), code_reference.clone());
+                .insert(code_reference.code.clone(), code_reference.clone());
         }
     }
 
