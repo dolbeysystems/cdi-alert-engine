@@ -5,6 +5,7 @@ use std::{fs, io};
 use tracing::*;
 
 mod cac_data;
+mod config;
 
 fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<String>> {
     let mut scripts = Vec::new();
@@ -21,6 +22,14 @@ fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<String>> {
 #[tokio::main(worker_threads = 256)]
 async fn main() {
     tracing_subscriber::fmt().init();
+    let config_path = "config.toml";
+    let config = match config::Config::open(config_path) {
+        Ok(config) => config,
+        Err(msg) => {
+            error!("failed to open {config_path}: {msg}");
+            exit(1);
+        }
+    };
     let lua_runtime = Lua::new();
 
     macro_rules! register_logging {
@@ -45,10 +54,13 @@ async fn main() {
     register_logging!(info);
     register_logging!(debug);
 
-    let scripts = match get_scripts("scripts/") {
+    let scripts = match get_scripts(&config.script_directory) {
         Ok(scripts) => scripts,
         Err(msg) => {
-            error!("failed to load scripts: {msg}");
+            error!(
+                "failed to load {}: {msg}",
+                config.script_directory.display()
+            );
             exit(1);
         }
     };
@@ -56,8 +68,7 @@ async fn main() {
     loop {
         info!("scanning collection");
 
-        let connection_string = "mongodb://dolbeyadmin:fusion@dockermain:28017/admin";
-        while let Some(account) = cac_data::get_next_pending_account(connection_string)
+        while let Some(account) = cac_data::get_next_pending_account(&config.mongo_url)
             .await
             // print error message
             .map_err(|e| error!("failed to get account: {e}"))
