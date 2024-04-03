@@ -553,7 +553,6 @@ pub async fn save_cdi_alerts<'config>(
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let cdi_alerts_collection = cac_database.collection::<CdiAlert>("CdiAlerts");
     let workgroups_collection = cac_database.collection::<WorkGroupCategory>("workgroups");
 
     let workgroup_category = workgroups_collection
@@ -568,24 +567,23 @@ pub async fn save_cdi_alerts<'config>(
         .find(|x| x.work_group == config.cdi_workgroup_name)
         .unwrap();
 
-    let first_matching_script_name = cdi_alerts
-        .iter()
-        .find(|x| x.script_name == "first_matching_script_name")
-        .map(|x| x.script_name.clone());
-
-    let first_match_criteria_group = workgroup_object
+    // Find the first criteria group with a script matching a passing alert
+    let first_matching_criteria_group = workgroup_object
         .criteria_groups
         .iter()
-        .find(|x| {
-            x.filters.iter().any(|y| {
-                y.property == "EvaluationScript"
-                    && y.value == first_matching_script_name.clone().unwrap()
-            })
-        })
-        .unwrap();
+        .flat_map(|x| x.filters.iter())
+        .find_map(|filter| {
+            if filter.property == "EvaluationScript" {
+                cdi_alerts
+                    .iter()
+                    .filter(|alert| alert.passed)
+                    .find(|x| x.script_name == filter.value)
+            } else {
+                None
+            }
+        });
 
-    // TODO: Update account.CdiAlerts with only results with passed == true
-    // (there is some special merge logic here for updating an entry that already exists)
+    // We are going to take care of merge logic entirely in the scripts
     account_collection
         .update_one(
             doc! { "_id": "account_id" },
