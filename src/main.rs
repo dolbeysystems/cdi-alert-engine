@@ -54,13 +54,10 @@ async fn main() {
     register_logging!(info);
     register_logging!(debug);
 
-    let scripts = match get_scripts(&config.script_directory) {
+    let scripts = match get_scripts(&config.lua.scripts) {
         Ok(scripts) => scripts,
         Err(msg) => {
-            error!(
-                "failed to load {}: {msg}",
-                config.script_directory.display()
-            );
+            error!("failed to load {}: {msg}", config.lua.scripts.display());
             exit(1);
         }
     };

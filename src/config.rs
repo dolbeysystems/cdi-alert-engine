@@ -6,10 +6,15 @@ use std::{
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     pub mongo_url: String,
-    pub script_directory: PathBuf,
+    pub lua: Lua,
     pub cdi_workgroup_category: String,
     pub cdi_workgroup_name: String,
     pub polling_seconds: u64,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct Lua {
+    pub scripts: PathBuf,
 }
 
 #[derive(Debug, thiserror::Error)]
