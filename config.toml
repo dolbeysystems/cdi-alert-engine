@@ -1,0 +1,2 @@
+mongo_url = "mongodb://dolbeyadmin:fusion@dockermain:28017/admin"
+script_directory = "scripts/"
