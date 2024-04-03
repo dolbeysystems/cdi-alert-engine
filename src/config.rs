@@ -7,6 +7,8 @@ use std::{
 pub struct Config {
     pub mongo_url: String,
     pub script_directory: PathBuf,
+    pub cdi_workgroup_category: String,
+    pub cdi_workgroup_name: String,
 }
 
 #[derive(Debug, thiserror::Error)]

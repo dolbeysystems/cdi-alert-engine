@@ -81,9 +81,9 @@ async fn main() {
 
             lua_runtime.globals().set("account", account).unwrap();
 
-            let results: Vec<cac_data::CdiAlert> = scripts
+            let alert_results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
-                .map(|script| {
+                .filter_map(|script| {
                     let result = cac_data::CdiAlert {
                         script_name: script.to_string(),
                         passed: false,
@@ -116,11 +116,14 @@ async fn main() {
                             .ok()
                     }
                 })
-                .filter_map(|x| x)
                 .collect();
 
-            // TODO: Update account.CdiAlerts with only results with passed == true
-            // (there is some special merge logic here for updating an entry that already exists)
+            let save_result = cac_data::save_cdi_alerts(&config, &alert_results).await;
+
+            if let Err(e) = save_result {
+                // The lack of requeue here is intentional. Best to just fail and log.
+                error!("failed to save results: {e}");
+            }
         }
 
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;

@@ -4,7 +4,47 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, rc::Rc, sync::Arc};
 
+use crate::config::Config;
+
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct WorkGroupCategory {
+    #[serde(rename = "_id")]
+    pub id: String,
+    #[serde(rename = "WorkGroups")]
+    pub workgroups: Vec<WorkGroup>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct WorkGroup {
+    #[serde(rename = "WorkGroup")]
+    pub work_group: String,
+    #[serde(rename = "CriteriaGroups")]
+    pub criteria_groups: Vec<CriteriaGroup>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct CriteriaGroup {
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "Filters")]
+    pub filters: Vec<CriteriaFilter>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct CriteriaFilter {
+    #[serde(rename = "Property")]
+    pub property: String,
+    #[serde(rename = "Operator")]
+    pub operator: String,
+    #[serde(rename = "Value")]
+    pub value: String,
+}
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -375,6 +415,18 @@ pub enum GetAccountError<'connection> {
     Mongo(#[from] mongodb::error::Error),
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum SaveCdiAlertsError<'connection> {
+    #[error("failed to parse CAC database connection string ({string}): {error}")]
+    ConnectionString {
+        string: &'connection str,
+        error: mongodb::error::Error,
+    },
+    // For any other generic mongo errors.
+    #[error(transparent)]
+    Mongo(#[from] mongodb::error::Error),
+}
+
 pub async fn get_next_pending_account(
     connection_string: &str,
 ) -> Result<Option<Account>, GetAccountError> {
@@ -485,4 +537,64 @@ pub async fn get_account_by_id<'connection>(
     }
 
     Ok(Some(account))
+}
+
+pub async fn save_cdi_alerts<'config>(
+    config: &'config Config,
+    cdi_alerts: &[CdiAlert],
+) -> Result<(), SaveCdiAlertsError<'config>> {
+    let connection_string = &config.mongo_url;
+    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+        .await
+        .map_err(|e| SaveCdiAlertsError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
+    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+    let cac_database = cac_database_client.database("FusionCAC2");
+    let account_collection = cac_database.collection::<Account>("accounts");
+    let cdi_alerts_collection = cac_database.collection::<CdiAlert>("CdiAlerts");
+    let workgroups_collection = cac_database.collection::<WorkGroupCategory>("workgroups");
+
+    let workgroup_category = workgroups_collection
+        .find_one(doc! { "_id": config.cdi_workgroup_category.clone() }, None)
+        .await?;
+
+    let workgroup_category_object = workgroup_category.unwrap();
+
+    let workgroup_object = workgroup_category_object
+        .workgroups
+        .iter()
+        .find(|x| x.work_group == config.cdi_workgroup_name)
+        .unwrap();
+
+    let first_matching_script_name = cdi_alerts
+        .iter()
+        .find(|x| x.script_name == "first_matching_script_name")
+        .map(|x| x.script_name.clone());
+
+    let first_match_criteria_group = workgroup_object
+        .criteria_groups
+        .iter()
+        .find(|x| {
+            x.filters.iter().any(|y| {
+                y.property == "EvaluationScript"
+                    && y.value == first_matching_script_name.clone().unwrap()
+            })
+        })
+        .unwrap();
+
+    // TODO: Update account.CdiAlerts with only results with passed == true
+    // (there is some special merge logic here for updating an entry that already exists)
+    account_collection
+        .update_one(
+            doc! { "_id": "account_id" },
+            doc! { "$set": { "CdiAlerts": cdi_alerts } },
+            None,
+        )
+        .await?;
+
+    // TODO: Update workgroup assignment for account
+
+    Ok(())
 }
