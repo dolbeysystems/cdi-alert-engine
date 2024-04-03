@@ -347,6 +347,10 @@ pub struct CdiAlertQueueEntry {
     #[serde(rename = "TimeQueued")]
     #[serde_as(as = "bson::DateTime")]
     pub time_queued: DateTime<Utc>,
+    #[serde(rename = "AccountNumber")]
+    pub account_number: String,
+    #[serde(rename = "ScriptName")]
+    pub script_name: String,
 }
 
 #[derive(thiserror::Error, Debug)]
