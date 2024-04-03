@@ -9,6 +9,7 @@ pub struct Config {
     pub script_directory: PathBuf,
     pub cdi_workgroup_category: String,
     pub cdi_workgroup_name: String,
+    pub polling_seconds: u64,
 }
 
 #[derive(Debug, thiserror::Error)]

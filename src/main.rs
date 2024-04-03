@@ -126,6 +126,6 @@ async fn main() {
             }
         }
 
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(config.polling_seconds)).await;
     }
 }
