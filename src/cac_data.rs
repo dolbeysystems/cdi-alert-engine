@@ -38,10 +38,16 @@ pub struct Account {
     #[serde(rename = "CdiAlerts", default)]
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
 
-    pub hashed_code_references: Option<HashMap<String, Arc<CodeReference>>>,
-    pub hashed_discrete_values: Option<HashMap<String, Arc<DiscreteValue>>>,
-    pub hashed_medications: Option<HashMap<String, Arc<Medication>>>,
-    pub hashed_documents: Option<HashMap<String, Arc<CACDocument>>>,
+    // These are just caches, do not (de)serialize them.
+    // TODO: These keys (and their sources) could be `Rc<str>`
+    #[serde(skip)]
+    pub hashed_code_references: HashMap<String, Arc<CodeReference>>,
+    #[serde(skip)]
+    pub hashed_discrete_values: HashMap<String, Arc<DiscreteValue>>,
+    #[serde(skip)]
+    pub hashed_medications: HashMap<String, Arc<Medication>>,
+    #[serde(skip)]
+    pub hashed_documents: HashMap<String, Arc<CACDocument>>,
 }
 
 impl mlua::UserData for Account {
@@ -450,33 +456,32 @@ pub async fn get_account_by_id<'connection>(
             .append(&mut external_discrete_values);
     }
 
-    // populate hashtables
-    let mut hashed_discrete_values = HashMap::new();
+    // Populate HashMaps
     for discrete_value in account.discrete_values.iter() {
-        hashed_discrete_values.insert(
+        account.hashed_discrete_values.insert(
             discrete_value.unique_id.clone().unwrap(),
             discrete_value.clone(),
         );
     }
-    account.hashed_discrete_values = Some(hashed_discrete_values);
 
-    let mut hashed_medications = HashMap::new();
     for medication in account.medications.iter() {
-        hashed_medications.insert(medication.external_id.clone().unwrap(), medication.clone());
+        account
+            .hashed_medications
+            .insert(medication.external_id.clone().unwrap(), medication.clone());
     }
-    account.hashed_medications = Some(hashed_medications);
-
-    let mut hashed_documents = HashMap::new();
-    let mut hashed_code_references = HashMap::new();
 
     for document in account.documents.iter() {
-        hashed_documents.insert(document.document_id.clone().unwrap(), document.clone());
+        account
+            .hashed_documents
+            .insert(document.document_id.clone().unwrap(), document.clone());
         for code_reference in document.code_references.iter() {
-            hashed_code_references
+            account
+                .hashed_code_references
                 .insert(code_reference.code.clone().unwrap(), code_reference.clone());
         }
         for code_reference in document.abstraction_references.iter() {
-            hashed_code_references
+            account
+                .hashed_code_references
                 .insert(code_reference.code.clone().unwrap(), code_reference.clone());
         }
     }
