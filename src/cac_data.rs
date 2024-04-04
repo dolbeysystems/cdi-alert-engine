@@ -102,13 +102,13 @@ pub struct Account {
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
-    pub hashed_code_references: HashMap<Rc<str>, Arc<CodeReference>>,
+    pub hashed_code_references: HashMap<String, Arc<CodeReference>>,
     #[serde(skip)]
-    pub hashed_discrete_values: HashMap<Rc<str>, Arc<DiscreteValue>>,
+    pub hashed_discrete_values: HashMap<String, Arc<DiscreteValue>>,
     #[serde(skip)]
-    pub hashed_medications: HashMap<Rc<str>, Arc<Medication>>,
+    pub hashed_medications: HashMap<String, Arc<Medication>>,
     #[serde(skip)]
-    pub hashed_documents: HashMap<Rc<str>, Arc<CACDocument>>,
+    pub hashed_documents: HashMap<String, Arc<CACDocument>>,
 }
 
 impl mlua::UserData for Account {
@@ -172,7 +172,7 @@ impl mlua::UserData for Patient {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
-    pub document_id: Rc<str>,
+    pub document_id: String,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
     #[serde(rename = "ContentType")]
@@ -200,7 +200,7 @@ impl mlua::UserData for CACDocument {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
-    pub external_id: Rc<str>,
+    pub external_id: String,
     #[serde(rename = "Medication")]
     pub medication: Option<String>,
     #[serde(rename = "Dosage")]
@@ -240,7 +240,7 @@ impl mlua::UserData for Medication {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
-    pub unique_id: Rc<str>,
+    pub unique_id: String,
     #[serde(rename = "Name")]
     pub name: Option<String>,
     #[serde(rename = "Result")]
@@ -265,7 +265,7 @@ impl mlua::UserData for DiscreteValue {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
-    pub code: Rc<str>,
+    pub code: String,
     #[serde(rename = "Description")]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]

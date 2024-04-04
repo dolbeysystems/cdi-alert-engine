@@ -1,3 +1,3 @@
 function hello()
-	print("Hello, world!")
+	info("Hello, world!")
 end

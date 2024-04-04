@@ -1,12 +1,15 @@
+use futures::future::join_all;
 use mlua::Lua;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::{fs, io};
+use tokio::task;
 use tracing::*;
 
 mod cac_data;
 mod config;
 
+#[derive(Clone)]
 struct Script {
     path: PathBuf,
     // TODO: try precompiling this into a binary at startup.
@@ -39,29 +42,6 @@ async fn main() {
             exit(1);
         }
     };
-    let lua_runtime = Lua::new();
-
-    macro_rules! register_logging {
-        ($type:ident) => {
-            lua_runtime
-                .globals()
-                .set(
-                    stringify!($type),
-                    lua_runtime
-                        .create_function(|_lua, s: String| {
-                            $type!("{s}");
-                            Ok(())
-                        })
-                        .unwrap(),
-                )
-                .unwrap();
-        };
-    }
-
-    register_logging!(error);
-    register_logging!(warn);
-    register_logging!(info);
-    register_logging!(debug);
 
     let scripts = match get_scripts(&config.lua.scripts) {
         Ok(scripts) => scripts,
@@ -85,51 +65,75 @@ async fn main() {
         {
             info!("processing account: {:?}", account.id);
 
-            lua_runtime
-                .globals()
-                .set("account", account.clone())
-                .unwrap();
+            let script_threads = scripts.iter().cloned().map(|script| {
+                let script_name = script.path.to_string_lossy();
 
-            let alert_results: Vec<cac_data::CdiAlert> = scripts
-                .iter()
-                .filter_map(|script| {
-                    let script_name = script.path.to_string_lossy();
-                    lua_runtime
-                        .globals()
-                        .set("script_filename", script_name.clone())
-                        .unwrap();
+                let result = cac_data::CdiAlert {
+                    script_name: script_name.to_string(),
+                    passed: false,
+                    validated: false,
+                    outcome: None,
+                    reason: None,
+                    subtitle: None,
+                    links: Vec::new(),
+                    weight: None,
+                };
 
-                    let result = cac_data::CdiAlert {
-                        script_name: script_name.into(),
-                        passed: false,
-                        validated: false,
-                        outcome: None,
-                        reason: None,
-                        subtitle: None,
-                        links: Vec::new(),
-                        weight: None,
-                    };
-                    lua_runtime.globals().set("result", result).unwrap();
+                let account = account.clone();
 
-                    let get_result = |()| -> Result<cac_data::CdiAlert, mlua::Error> {
-                        lua_runtime
-                            .globals()
-                            .get::<&str, mlua::Value>("result")?
-                            .as_userdata()
-                            .ok_or(mlua::Error::UserDataTypeMismatch)?
-                            .take()
-                    };
-                    {
-                        // Prefixes logging messages from lua with "lua".
-                        let _enter = error_span!("lua").entered();
-                        lua_runtime
-                            .load(&script.contents)
-                            .exec()
-                            .and_then(get_result)
-                            .map_err(|msg| error!("failed to run script: {msg}"))
-                            .ok()
+                task::spawn(async move {
+                    let lua = Lua::new();
+
+                    macro_rules! register_logging {
+                        ($type:ident) => {
+                            lua.globals()
+                                .set(
+                                    stringify!($type),
+                                    lua.create_function(|_lua, s: String| {
+                                        $type!("{s}");
+                                        Ok(())
+                                    })
+                                    .unwrap(),
+                                )
+                                .unwrap();
+                        };
                     }
+
+                    register_logging!(error);
+                    register_logging!(warn);
+                    register_logging!(info);
+                    register_logging!(debug);
+
+                    lua.globals().set("account", account.clone()).unwrap();
+                    lua.globals().set("result", result.clone()).unwrap();
+
+                    let script_name = script.path.to_string_lossy();
+                    let _enter = error_span!("lua", path = &*script_name).entered();
+                    lua.load(&script.contents)
+                        .exec()
+                        .map_err(|msg| error!("lua script failed: {msg}"))
+                        .ok()
+                        .and_then(|()| {
+                            let result = lua
+                                .globals()
+                                .get::<_, mlua::Value>("result")
+                                .unwrap()
+                                .as_userdata()
+                                .and_then(|x| x.take::<cac_data::CdiAlert>().ok());
+                            if result.is_none() {
+                                error!("failed to convert return value to result type");
+                            }
+                            result
+                        })
                 })
+            });
+
+            let alert_results: Vec<_> = join_all(script_threads)
+                .await
+                .into_iter()
+                .filter_map(|x| x.map_err(|msg| error!("failed to join thread: {msg}")).ok())
+                .filter_map(|x| x)
+                // TODO: can we just pass an iterator into this function instead of a vec?
                 .collect();
 
             let save_result = cac_data::save_cdi_alerts(&config, &account, &alert_results).await;
