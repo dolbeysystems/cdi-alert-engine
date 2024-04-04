@@ -1,5 +1,5 @@
 use mlua::Lua;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::{fs, io};
 use tracing::*;
@@ -7,13 +7,22 @@ use tracing::*;
 mod cac_data;
 mod config;
 
-fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<String>> {
+struct Script {
+    path: PathBuf,
+    // TODO: try precompiling this into a binary at startup.
+    contents: String,
+}
+
+fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<Script>> {
     let mut scripts = Vec::new();
     for entry in fs::read_dir(path)? {
         let entry = entry?;
         let path = entry.path();
         if !path.is_dir() {
-            scripts.push(fs::read_to_string(path)?);
+            scripts.push(Script {
+                path: path.to_path_buf(),
+                contents: fs::read_to_string(path)?,
+            });
         }
     }
     Ok(scripts)
@@ -81,8 +90,14 @@ async fn main() {
             let alert_results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
                 .filter_map(|script| {
+                    let script_name = script.path.to_string_lossy();
+                    lua_runtime
+                        .globals()
+                        .set("script_filename", script_name.clone())
+                        .unwrap();
+
                     let result = cac_data::CdiAlert {
-                        script_name: script.to_string(),
+                        script_name: script_name.into(),
                         passed: false,
                         validated: false,
                         outcome: None,
@@ -91,7 +106,6 @@ async fn main() {
                         links: Vec::new(),
                         weight: None,
                     };
-
                     lua_runtime.globals().set("result", result).unwrap();
 
                     let get_result = |()| -> Result<cac_data::CdiAlert, mlua::Error> {
@@ -106,7 +120,7 @@ async fn main() {
                         // Prefixes logging messages from lua with "lua".
                         let _enter = error_span!("lua").entered();
                         lua_runtime
-                            .load(script)
+                            .load(&script.contents)
                             .exec()
                             .and_then(get_result)
                             .map_err(|msg| error!("failed to run script: {msg}"))
