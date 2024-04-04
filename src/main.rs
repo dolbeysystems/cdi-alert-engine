@@ -85,7 +85,10 @@ async fn main() {
         {
             info!("processing account: {:?}", account.id);
 
-            lua_runtime.globals().set("account", account).unwrap();
+            lua_runtime
+                .globals()
+                .set("account", account.clone())
+                .unwrap();
 
             let alert_results: Vec<cac_data::CdiAlert> = scripts
                 .iter()
