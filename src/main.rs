@@ -115,7 +115,7 @@ async fn main() {
                 })
                 .collect();
 
-            let save_result = cac_data::save_cdi_alerts(&config, &alert_results).await;
+            let save_result = cac_data::save_cdi_alerts(&config, &account, &alert_results).await;
 
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.

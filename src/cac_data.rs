@@ -10,6 +10,26 @@ use crate::config::Config;
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AccountCustomWorkFlowEntry {
+    #[serde(rename = "WorkGroup")]
+    pub work_group: Option<String>,
+    #[serde(rename = "CriteriaGroup")]
+    pub criteria_group: Option<String>,
+    #[serde(rename = "CriteriaSequence")]
+    pub criteria_sequence: Option<i32>,
+    #[serde(rename = "WorkGroupCategory")]
+    pub work_group_category: Option<String>,
+    #[serde(rename = "WorkGroupType")]
+    pub work_group_type: Option<String>,
+    #[serde(rename = "WorkGroupAssignedBy")]
+    pub work_group_assigned_by: Option<String>,
+    #[serde(rename = "WorkGroupAssignedDateTime")]
+    #[serde_as(as = "Option<bson::DateTime>")]
+    pub work_group_date_time: Option<DateTime<Utc>>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkGroupCategory {
     #[serde(rename = "_id")]
     pub id: String,
@@ -77,6 +97,8 @@ pub struct Account {
     pub discrete_values: Vec<Arc<DiscreteValue>>,
     #[serde(rename = "CdiAlerts", default)]
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
+    #[serde(rename = "CustomWorkflow", default)]
+    pub custom_workflow: Option<Vec<AccountCustomWorkFlowEntry>>,
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
@@ -541,6 +563,7 @@ pub async fn get_account_by_id<'connection>(
 
 pub async fn save_cdi_alerts<'config>(
     config: &'config Config,
+    account: &Account,
     cdi_alerts: &[CdiAlert],
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let connection_string = &config.mongo_url;
@@ -586,13 +609,36 @@ pub async fn save_cdi_alerts<'config>(
     // We are going to take care of merge logic entirely in the scripts
     account_collection
         .update_one(
-            doc! { "_id": "account_id" },
+            doc! { "_id": account.id.clone() },
             doc! { "$set": { "CdiAlerts": bson::to_bson(cdi_alerts).unwrap() } },
             None,
         )
         .await?;
 
-    // TODO: Update workgroup assignment for account
+    // find existing workgroup assignment
+    let existing_workgroup_assignment = account.custom_workflow.clone().map(|x| {
+        x.iter().find_map(|x| match x.work_group.clone() {
+            Some(workgroup) => {
+                if workgroup == config.cdi_workgroup_name {
+                    Some(x.clone())
+                } else {
+                    None
+                }
+            }
+            None => None,
+        })
+    });
+
+    match existing_workgroup_assignment {
+        Some(existing_workgroup_assignment) => {
+            // TODO: Update existing workgroup assignment
+            ()
+        }
+        None => {
+            // TODO: Insert new workgroup assignment
+            ()
+        }
+    };
 
     Ok(())
 }
