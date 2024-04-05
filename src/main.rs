@@ -81,30 +81,10 @@ async fn main() {
                 let account = account.clone();
 
                 task::spawn(async move {
-                    let lua = Lua::new();
+                    let lua = make_runtime();
 
-                    macro_rules! register_logging {
-                        ($type:ident) => {
-                            lua.globals()
-                                .set(
-                                    stringify!($type),
-                                    lua.create_function(|_lua, s: String| {
-                                        $type!("{s}");
-                                        Ok(())
-                                    })
-                                    .unwrap(),
-                                )
-                                .unwrap();
-                        };
-                    }
-
-                    register_logging!(error);
-                    register_logging!(warn);
-                    register_logging!(info);
-                    register_logging!(debug);
-
-                    lua.globals().set("account", account.clone()).unwrap();
-                    lua.globals().set("result", result.clone()).unwrap();
+                    lua.globals().set("account", account).unwrap();
+                    lua.globals().set("result", result).unwrap();
 
                     let script_name = script.path.to_string_lossy();
                     let _enter = error_span!("lua", path = &*script_name).entered();
@@ -147,4 +127,55 @@ async fn main() {
 
         tokio::time::sleep(tokio::time::Duration::from_secs(config.polling_seconds)).await;
     }
+}
+
+fn make_runtime() -> Lua {
+    let lua = Lua::new();
+
+    macro_rules! register_logging {
+        ($type:ident) => {
+            lua.globals()
+                .set(
+                    stringify!($type),
+                    lua.create_function(|_lua, s: String| {
+                        $type!("{s}");
+                        Ok(())
+                    })
+                    .unwrap(),
+                )
+                .unwrap();
+        };
+    }
+
+    register_logging!(error);
+    register_logging!(warn);
+    register_logging!(info);
+    register_logging!(debug);
+
+    lua.globals()
+        .set(
+            "CdiAlertLink",
+            lua.create_table_from([(
+                "new",
+                lua.create_function(|_lua, ()| Ok(cac_data::CdiAlertLink::default()))
+                    .unwrap(),
+            )])
+            .unwrap(),
+        )
+        .unwrap();
+    lua.globals()
+        .set(
+            "DiscreteValue",
+            lua.create_table_from([(
+                "new",
+                lua.create_function(|_lua, (id, name): (String, _)| {
+                    Ok(cac_data::DiscreteValue::new(&id, name))
+                })
+                .unwrap(),
+            )])
+            .unwrap(),
+        )
+        .unwrap();
+
+    lua
 }

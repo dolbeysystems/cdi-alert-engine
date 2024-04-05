@@ -1,6 +1,9 @@
 require("libs.common")
 hello() -- from libs/common.lua
 
+link = CdiAlertLink:new()
+info("Created link: "..link.)
+
 -- info("this is "..script_filename)
 
 info(account.patient.first_name)

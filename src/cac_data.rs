@@ -6,6 +6,21 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::config::Config;
 
+macro_rules! getter {
+    ($fields:ident, $field:ident) => {
+        $fields.add_field_method_get(stringify!($field), |_, this| Ok(this.$field.clone()));
+    };
+}
+
+macro_rules! setter {
+    ($fields:ident, $field:ident) => {
+        $fields.add_field_method_set(stringify!($field), |_, this, value| {
+            this.$field = value;
+            Ok(())
+        });
+    };
+}
+
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
 
 #[serde_as]
@@ -32,7 +47,7 @@ pub struct AccountCustomWorkFlowEntry {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkGroupCategory {
     #[serde(rename = "_id")]
-    pub id: String,
+    pub id: Arc<str>,
     #[serde(rename = "WorkGroups")]
     pub workgroups: Vec<WorkGroup>,
 }
@@ -102,13 +117,13 @@ pub struct Account {
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
-    pub hashed_code_references: HashMap<String, Arc<CodeReference>>,
+    pub hashed_code_references: HashMap<Arc<str>, Arc<CodeReference>>,
     #[serde(skip)]
-    pub hashed_discrete_values: HashMap<String, Arc<DiscreteValue>>,
+    pub hashed_discrete_values: HashMap<Arc<str>, Arc<DiscreteValue>>,
     #[serde(skip)]
-    pub hashed_medications: HashMap<String, Arc<Medication>>,
+    pub hashed_medications: HashMap<Arc<str>, Arc<Medication>>,
     #[serde(skip)]
-    pub hashed_documents: HashMap<String, Arc<CACDocument>>,
+    pub hashed_documents: HashMap<Arc<str>, Arc<CACDocument>>,
 }
 
 impl mlua::UserData for Account {
@@ -172,7 +187,7 @@ impl mlua::UserData for Patient {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
-    pub document_id: String,
+    pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
     #[serde(rename = "ContentType")]
@@ -200,7 +215,7 @@ impl mlua::UserData for CACDocument {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
-    pub external_id: String,
+    pub external_id: Arc<str>,
     #[serde(rename = "Medication")]
     pub medication: Option<String>,
     #[serde(rename = "Dosage")]
@@ -240,7 +255,7 @@ impl mlua::UserData for Medication {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
-    pub unique_id: String,
+    pub unique_id: Arc<str>,
     #[serde(rename = "Name")]
     pub name: Option<String>,
     #[serde(rename = "Result")]
@@ -248,6 +263,17 @@ pub struct DiscreteValue {
     #[serde(rename = "ResultDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
     pub result_date: Option<DateTime<Utc>>,
+}
+
+impl DiscreteValue {
+    pub fn new(unique_id: &str, name: String) -> Self {
+        Self {
+            unique_id: unique_id.into(),
+            name: Some(name),
+            result: None,
+            result_date: None,
+        }
+    }
 }
 
 impl mlua::UserData for DiscreteValue {
@@ -258,6 +284,14 @@ impl mlua::UserData for DiscreteValue {
         fields.add_field_method_get("result_date", |_, this| {
             Ok(this.result_date.map(|x| x.to_string()))
         });
+
+        setter!(fields, name);
+        setter!(fields, result);
+
+        fields.add_field_method_set("unique_id", |_, this, value: String| {
+            this.unique_id = value.into();
+            Ok(())
+        });
     }
 }
 
@@ -265,7 +299,7 @@ impl mlua::UserData for DiscreteValue {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
-    pub code: String,
+    pub code: Arc<str>,
     #[serde(rename = "Description")]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]
@@ -355,7 +389,7 @@ impl mlua::UserData for CdiAlert {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CdiAlertLink {
     #[serde(rename = "LinkText")]
     pub link_text: String,
@@ -386,28 +420,44 @@ pub struct CdiAlertLink {
 }
 
 impl mlua::UserData for CdiAlertLink {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("link_text", |_, this| Ok(this.link_text.clone()));
-        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.clone()));
-        fields.add_field_method_get("code", |_, this| Ok(this.code.clone()));
-        fields.add_field_method_get("discrete_value_id", |_, this| {
-            Ok(this.discrete_value_id.clone())
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(f: &mut F) {
+        getter!(f, link_text);
+        getter!(f, document_id);
+        getter!(f, code);
+        getter!(f, discrete_value_id);
+        getter!(f, discrete_value_name);
+        getter!(f, medication_id);
+        getter!(f, medication_name);
+        getter!(f, latest_discrete_value_id);
+        getter!(f, is_validated);
+        getter!(f, user_notes);
+        getter!(f, links);
+        getter!(f, sequence);
+        getter!(f, hidden);
+
+        setter!(f, link_text);
+        setter!(f, document_id);
+        setter!(f, code);
+        setter!(f, discrete_value_id);
+        setter!(f, discrete_value_name);
+        setter!(f, medication_id);
+        setter!(f, medication_name);
+        setter!(f, is_validated);
+        setter!(f, user_notes);
+        setter!(f, sequence);
+        setter!(f, hidden);
+
+        f.add_field_method_set(
+            "latest_discrete_value_id",
+            |_, this, value: mlua::AnyUserData| {
+                this.latest_discrete_value_id = value.take()?;
+                Ok(())
+            },
+        );
+        f.add_field_method_set("links", |_, this, value: mlua::AnyUserData| {
+            this.links = value.take()?;
+            Ok(())
         });
-        fields.add_field_method_get("discrete_value_name", |_, this| {
-            Ok(this.discrete_value_name.clone())
-        });
-        fields.add_field_method_get("medication_id", |_, this| Ok(this.medication_id.clone()));
-        fields.add_field_method_get("medication_name", |_, this| {
-            Ok(this.medication_name.clone())
-        });
-        fields.add_field_method_get("latest_discrete_value_id", |_, this| {
-            Ok(this.latest_discrete_value_id.clone())
-        });
-        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated));
-        fields.add_field_method_get("user_notes", |_, this| Ok(this.user_notes.clone()));
-        fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
-        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence));
-        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden));
     }
 }
 
