@@ -1,8 +1,16 @@
-{
+[{
   "_id": "92420",
   "TimeQueued": {
     "$date": "2021-09-26T03:36:15.028Z"
   },
   "AccountNumber": "92420",
   "ScriptName": "script.lua"
-}
+},
+{
+  "_id": "80616",
+  "TimeQueued": {
+    "$date": "2021-09-26T03:36:15.028Z"
+  },
+  "AccountNumber": "92420",
+  "ScriptName": "script.lua"
+}]
