@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::{collections::HashMap, rc::Rc, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::config::Config;
 
@@ -281,8 +281,8 @@ impl mlua::UserData for CodeReference {
         fields.add_field_method_get("code", |_, this| Ok(this.code.to_string()));
         fields.add_field_method_get("description", |_, this| Ok(this.description.clone()));
         fields.add_field_method_get("phrase", |_, this| Ok(this.phrase.clone()));
-        fields.add_field_method_get("start", |_, this| Ok(this.start.clone()));
-        fields.add_field_method_get("length", |_, this| Ok(this.length.clone()));
+        fields.add_field_method_get("start", |_, this| Ok(this.start));
+        fields.add_field_method_get("length", |_, this| Ok(this.length));
     }
 }
 
@@ -403,11 +403,11 @@ impl mlua::UserData for CdiAlertLink {
         fields.add_field_method_get("latest_discrete_value_id", |_, this| {
             Ok(this.latest_discrete_value_id.clone())
         });
-        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated.clone()));
+        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated));
         fields.add_field_method_get("user_notes", |_, this| Ok(this.user_notes.clone()));
         fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
-        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence.clone()));
-        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden.clone()));
+        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence));
+        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden));
     }
 }
 
@@ -447,6 +447,8 @@ pub enum SaveCdiAlertsError<'connection> {
     // For any other generic mongo errors.
     #[error(transparent)]
     Mongo(#[from] mongodb::error::Error),
+    #[error(transparent)]
+    Bson(#[from] bson::ser::Error),
 }
 
 pub async fn get_next_pending_account(
@@ -564,7 +566,7 @@ pub async fn get_account_by_id<'connection>(
 pub async fn save_cdi_alerts<'config>(
     config: &'config Config,
     account: &Account,
-    cdi_alerts: &[CdiAlert],
+    cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let connection_string = &config.mongo_url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
@@ -598,7 +600,8 @@ pub async fn save_cdi_alerts<'config>(
         .find_map(|filter| {
             if filter.property == "EvaluationScript" {
                 cdi_alerts
-                    .iter()
+                    // This does not clone the elements, just the initial state of the iterator itself.
+                    .clone()
                     .filter(|alert| alert.passed)
                     .find(|x| x.script_name == filter.value)
             } else {
@@ -606,11 +609,20 @@ pub async fn save_cdi_alerts<'config>(
             }
         });
 
+    // Create a bson array from our result iterator.
+    // You *could* do this automatically with `bson::to_bson<Vec>`,
+    // but this is wasteful because it allocates a vector just to convert it into another vector
+    // (`bson::Array` is a typedef for `Vec<Bson>`)
+    let mut cdi_alerts_bson = bson::Array::new();
+    for i in cdi_alerts {
+        cdi_alerts_bson.push(bson::to_bson(&i)?);
+    }
+
     // We are going to take care of merge logic entirely in the scripts
     account_collection
         .update_one(
             doc! { "_id": account.id.clone() },
-            doc! { "$set": { "CdiAlerts": bson::to_bson(cdi_alerts).unwrap() } },
+            doc! { "$set": { "CdiAlerts": cdi_alerts_bson } },
             None,
         )
         .await?;
