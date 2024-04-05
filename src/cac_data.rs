@@ -629,14 +629,47 @@ pub async fn save_cdi_alerts<'config>(
         })
     });
 
+    // Update or insert workgroup assignment for the category/workgroup
     match existing_workgroup_assignment {
-        Some(existing_workgroup_assignment) => {
-            // TODO: Update existing workgroup assignment
-            ()
+        Some(_) => {
+            account_collection
+                .update_one(
+                    doc! { 
+                        "_id": account.id.clone(), 
+                        "CustomWorkflow.WorkGroupCategory": config.cdi_workgroup_name.clone(),
+                        "CustomWorkflow.WorkGroup": config.cdi_workgroup_name.clone(),
+                    },
+                    doc! { 
+                        "$set": {
+                            "CustomWorkflow.$.CriteriaGroup" : first_matching_criteria_group.unwrap().script_name.clone() 
+                        }
+                    },
+                    None,
+                )
+                .await?;
         }
         None => {
-            // TODO: Insert new workgroup assignment
-            ()
+            account_collection
+                .update_one(
+                    doc! { 
+                        "_id": account.id.clone(), 
+                    },
+                    doc! {
+                        "$push": {
+                            "CustomWorkflow": {
+                                "WorkGroup": config.cdi_workgroup_name.clone(),
+                                "CriteriaGroup": first_matching_criteria_group.unwrap().script_name.clone(),
+                                "CriteriaSequence": 0,
+                                "WorkGroupCategory": config.cdi_workgroup_category.clone(),
+                                "WorkGroupType": "CDI",
+                                "WorkGroupAssignedBy": "CDI",
+                                "WorkGroupAssignedDateTime": bson::DateTime::now(),
+                            }
+                        }
+                    },
+                    None,
+                )
+                .await?;
         }
     };
 
