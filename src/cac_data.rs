@@ -447,6 +447,8 @@ pub enum SaveCdiAlertsError<'connection> {
     // For any other generic mongo errors.
     #[error(transparent)]
     Mongo(#[from] mongodb::error::Error),
+    #[error(transparent)]
+    Bson(#[from] bson::ser::Error),
 }
 
 pub async fn get_next_pending_account(
@@ -564,7 +566,7 @@ pub async fn get_account_by_id<'connection>(
 pub async fn save_cdi_alerts<'config>(
     config: &'config Config,
     account: &Account,
-    cdi_alerts: &[CdiAlert],
+    cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let connection_string = &config.mongo_url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
@@ -598,7 +600,8 @@ pub async fn save_cdi_alerts<'config>(
         .find_map(|filter| {
             if filter.property == "EvaluationScript" {
                 cdi_alerts
-                    .iter()
+                    // This does not clone the elements, just the initial state of the iterator itself.
+                    .clone()
                     .filter(|alert| alert.passed)
                     .find(|x| x.script_name == filter.value)
             } else {
@@ -606,11 +609,20 @@ pub async fn save_cdi_alerts<'config>(
             }
         });
 
+    // Create a bson array from our result iterator.
+    // You *could* do this automatically with `bson::to_bson<Vec>`,
+    // but this is wasteful because it allocates a vector just to convert it into another vector
+    // (`bson::Array` is a typedef for `Vec<Bson>`)
+    let mut cdi_alerts_bson = bson::Array::new();
+    for i in cdi_alerts {
+        cdi_alerts_bson.push(bson::to_bson(&i)?);
+    }
+
     // We are going to take care of merge logic entirely in the scripts
     account_collection
         .update_one(
             doc! { "_id": account.id.clone() },
-            doc! { "$set": { "CdiAlerts": bson::to_bson(cdi_alerts).unwrap() } },
+            doc! { "$set": { "CdiAlerts": cdi_alerts_bson } },
             None,
         )
         .await?;

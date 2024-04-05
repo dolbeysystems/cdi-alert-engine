@@ -12,7 +12,6 @@ mod config;
 #[derive(Clone)]
 struct Script {
     path: PathBuf,
-    // TODO: try precompiling this into a binary at startup.
     contents: String,
 }
 
@@ -128,15 +127,17 @@ async fn main() {
                 })
             });
 
-            let alert_results: Vec<_> = join_all(script_threads)
-                .await
-                .into_iter()
-                .filter_map(|x| x.map_err(|msg| error!("failed to join thread: {msg}")).ok())
-                .filter_map(|x| x)
-                // TODO: can we just pass an iterator into this function instead of a vec?
-                .collect();
+            let alert_results = join_all(script_threads).await;
+            let alert_results = alert_results
+                .iter()
+                .filter_map(|x| {
+                    x.as_ref()
+                        .map_err(|msg| error!("failed to join thread: {msg}"))
+                        .ok()
+                })
+                .filter_map(|x| if let Some(x) = &x { Some(x) } else { None });
 
-            let save_result = cac_data::save_cdi_alerts(&config, &account, &alert_results).await;
+            let save_result = cac_data::save_cdi_alerts(&config, &account, alert_results).await;
 
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.
