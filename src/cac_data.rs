@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::{collections::HashMap, rc::Rc, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::config::Config;
 
@@ -281,8 +281,8 @@ impl mlua::UserData for CodeReference {
         fields.add_field_method_get("code", |_, this| Ok(this.code.to_string()));
         fields.add_field_method_get("description", |_, this| Ok(this.description.clone()));
         fields.add_field_method_get("phrase", |_, this| Ok(this.phrase.clone()));
-        fields.add_field_method_get("start", |_, this| Ok(this.start.clone()));
-        fields.add_field_method_get("length", |_, this| Ok(this.length.clone()));
+        fields.add_field_method_get("start", |_, this| Ok(this.start));
+        fields.add_field_method_get("length", |_, this| Ok(this.length));
     }
 }
 
@@ -403,11 +403,11 @@ impl mlua::UserData for CdiAlertLink {
         fields.add_field_method_get("latest_discrete_value_id", |_, this| {
             Ok(this.latest_discrete_value_id.clone())
         });
-        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated.clone()));
+        fields.add_field_method_get("is_validated", |_, this| Ok(this.is_validated));
         fields.add_field_method_get("user_notes", |_, this| Ok(this.user_notes.clone()));
         fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
-        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence.clone()));
-        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden.clone()));
+        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence));
+        fields.add_field_method_get("hidden", |_, this| Ok(this.hidden));
     }
 }
 
@@ -593,7 +593,7 @@ pub async fn save_cdi_alerts<'config>(
         .unwrap();
 
     // Find the first criteria group with a script matching a passing alert
-    let first_matching_criteria_group = workgroup_object
+    let _first_matching_criteria_group = workgroup_object
         .criteria_groups
         .iter()
         .flat_map(|x| x.filters.iter())
@@ -642,13 +642,13 @@ pub async fn save_cdi_alerts<'config>(
     });
 
     match existing_workgroup_assignment {
-        Some(existing_workgroup_assignment) => {
+        Some(_existing_workgroup_assignment) => {
             // TODO: Update existing workgroup assignment
-            ()
+            
         }
         None => {
             // TODO: Insert new workgroup assignment
-            ()
+            
         }
     };
 
