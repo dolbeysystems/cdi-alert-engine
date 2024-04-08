@@ -4,24 +4,22 @@ end
 
 
 function GetCodeLinks(account, code, linkTemplate, documentTypes)
-    local entry = account.hashed_code_references.entry(code)
+    account.find_code_references(code) .filter(function(ref_pair)
+        for i = 1, documentTypes do
+            if documentTypes[i] == ref_pair.document.document_type then
+                return true
+            end
+        end
+    end).map(function(ref_pair)
+        local codeReference = ref_pair.code_reference
+        local document = ref_pair.document
 
-    if entry == nil then
-        return nil
-    else
-        entry.filter(function(ref)
-            return documentTypes.contains(ref.document.document_type)
-        end).map(function(ref)
-            local codeReference = ref.code_reference
-            local document = ref.document
-
-            local link = CdiAlertLink:new()
-            link.code = codeReference.code
-            link.document_id = document.document_id
-            link.link_text = ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, nil, nil)
-            return link
-        end)
-    end
+        local link = CdiAlertLink:new()
+        link.code = codeReference.code
+        link.document_id = document.document_id
+        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, nil, nil)
+        return link
+    end)
 end
 
 
