@@ -84,6 +84,15 @@ pub struct CriteriaFilter {
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct CodeReferenceWithDocument {
+    #[serde(rename = "document")]
+    pub document: Arc<CACDocument>,
+    #[serde(rename = "code_reference")]
+    pub code_reference: Arc<CodeReference>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Account {
     #[serde(rename = "_id")]
     pub id: String,
@@ -118,13 +127,13 @@ pub struct Account {
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
-    pub hashed_code_references: HashMap<Arc<str>, Arc<CodeReference>>,
+    pub hashed_code_references: HashMap<Arc<str>, Vec<CodeReferenceWithDocument>>,
     #[serde(skip)]
-    pub hashed_discrete_values: HashMap<Arc<str>, Arc<DiscreteValue>>,
+    pub hashed_discrete_values: HashMap<Arc<str>, Vec<Arc<DiscreteValue>>>,
     #[serde(skip)]
-    pub hashed_medications: HashMap<Arc<str>, Arc<Medication>>,
+    pub hashed_medications: HashMap<Arc<str>, Vec<Arc<Medication>>>,
     #[serde(skip)]
-    pub hashed_documents: HashMap<Arc<str>, Arc<CACDocument>>,
+    pub hashed_documents: HashMap<Arc<str>, Vec<Arc<CACDocument>>>,
 }
 
 impl mlua::UserData for Account {
@@ -150,6 +159,37 @@ impl mlua::UserData for Account {
             Ok(this.discrete_values.clone())
         });
         fields.add_field_method_get("cdi_alerts", |_, this| Ok(this.cdi_alerts.clone()));
+    }
+
+    fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("find_code_references", |_, this, code: String| {
+            if let Some(code_references) = this.hashed_code_references.get(&code.into()) {
+                Ok(code_references.clone())
+            } else {
+                Ok(Vec::new())
+            }
+        });
+        methods.add_method("find_discrete_values", |_, this, unique_id: String| {
+            if let Some(discrete_values) = this.hashed_discrete_values.get(&unique_id.into()) {
+                Ok(discrete_values.clone())
+            } else {
+                Ok(Vec::new())
+            }
+        });
+        methods.add_method("find_medications", |_, this, external_id: String| {
+            if let Some(medications) = this.hashed_medications.get(&external_id.into()) {
+                Ok(medications.clone())
+            } else {
+                Ok(Vec::new())
+            }
+        });
+        methods.add_method("find_documents", |_, this, document_id: String| {
+            if let Some(documents) = this.hashed_documents.get(&document_id.into()) {
+                Ok(documents.clone())
+            } else {
+                Ok(Vec::new())
+            }
+        });
     }
 }
 
@@ -191,6 +231,9 @@ pub struct CACDocument {
     pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
+    #[serde(rename = "DocumentDate")]
+    #[serde_as(as = "Option<bson::DateTime>")]
+    pub document_date: Option<DateTime<Utc>>,
     #[serde(rename = "ContentType")]
     pub content_type: Option<String>,
     #[serde(rename = "CodeReferences", default)]
@@ -301,6 +344,8 @@ impl mlua::UserData for DiscreteValue {
 pub struct CodeReference {
     #[serde(rename = "Code")]
     pub code: Arc<str>,
+    #[serde(rename = "Value")]
+    pub value: Arc<str>,
     #[serde(rename = "Description")]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]
@@ -616,28 +661,46 @@ pub async fn get_account_by_id<'connection>(
     for discrete_value in account.discrete_values.iter() {
         account
             .hashed_discrete_values
-            .insert(discrete_value.unique_id.clone(), discrete_value.clone());
+            .entry(discrete_value.unique_id.clone())
+            .or_insert_with(Vec::new)
+            .push(discrete_value.clone());
     }
 
     for medication in account.medications.iter() {
         account
             .hashed_medications
-            .insert(medication.external_id.clone(), medication.clone());
+            .entry(medication.external_id.clone())
+            .or_insert_with(Vec::new)
+            .push(medication.clone());
     }
 
     for document in account.documents.iter() {
         account
             .hashed_documents
-            .insert(document.document_id.clone(), document.clone());
+            .entry(document.document_id.clone())
+            .or_insert_with(Vec::new)
+            .push(document.clone());
+
         for code_reference in document.code_references.iter() {
+            let code_reference = code_reference.clone();
             account
                 .hashed_code_references
-                .insert(code_reference.code.clone(), code_reference.clone());
+                .entry(code_reference.code.clone())
+                .or_insert_with(Vec::new)
+                .push(CodeReferenceWithDocument {
+                    document: document.clone(),
+                    code_reference: code_reference.clone(),
+                });
         }
         for code_reference in document.abstraction_references.iter() {
             account
                 .hashed_code_references
-                .insert(code_reference.code.clone(), code_reference.clone());
+                .entry(code_reference.code.clone())
+                .or_insert_with(Vec::new)
+                .push(CodeReferenceWithDocument {
+                    document: document.clone(),
+                    code_reference: code_reference.clone(),
+                });
         }
     }
 

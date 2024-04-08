@@ -3,6 +3,8 @@
         "vim",
         "info",
         "account",
-        "result"
+        "result",
+        "CdiAlertLink",
+        "link"
     ]
 }
