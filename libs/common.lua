@@ -4,7 +4,8 @@ end
 
 
 function GetCodeLinks(account, code, linkTemplate, documentTypes)
-    account.find_code_references(code) .filter(function(ref_pair)
+    info("GetCodeLinks: " .. code)
+    account.find_code_references(code).filter(function(ref_pair)
         for i = 1, documentTypes do
             if documentTypes[i] == ref_pair.document.document_type then
                 return true

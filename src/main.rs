@@ -112,7 +112,7 @@ async fn main() {
 
                     lua.load(&script.contents)
                         .exec()
-                        .map_err(|msg| error!("lua script failed: {msg}"))
+                        .map_err(|msg| error!("Lua script error: {msg}"))
                         .ok()
                         .and_then(|()| {
                             let result = lua

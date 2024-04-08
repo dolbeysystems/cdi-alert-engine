@@ -3,7 +3,7 @@ use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::config::Config;
 
@@ -169,6 +169,7 @@ impl mlua::UserData for Account {
 
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("find_code_references", |_, this, code: String| {
+            warn!("Finding code references for code: {:?}", code);
             if let Some(code_references) = this.hashed_code_references.get(&code) {
                 Ok(code_references.clone())
             } else {
