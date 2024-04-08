@@ -10,6 +10,7 @@ pub struct Config {
     pub cdi_workgroup_category: String,
     pub cdi_workgroup_name: String,
     pub polling_seconds: u64,
+    pub create_test_data: Option<bool>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]

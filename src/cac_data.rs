@@ -3,6 +3,7 @@ use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
+use tracing::{debug, info};
 
 use crate::config::Config;
 
@@ -501,9 +502,34 @@ pub enum SaveCdiAlertsError<'connection> {
     Bson(#[from] bson::ser::Error),
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum CreateTestDataError<'connection> {
+    #[error("failed to parse CAC database connection string ({string}): {error}")]
+    ConnectionString {
+        string: &'connection str,
+        error: mongodb::error::Error,
+    },
+    // For any other generic mongo errors.
+    #[error(transparent)]
+    Mongo(#[from] mongodb::error::Error),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum DeleteTestDataError<'connection> {
+    #[error("failed to parse CAC database connection string ({string}): {error}")]
+    ConnectionString {
+        string: &'connection str,
+        error: mongodb::error::Error,
+    },
+    // For any other generic mongo errors.
+    #[error(transparent)]
+    Mongo(#[from] mongodb::error::Error),
+}
+
 pub async fn get_next_pending_account(
     connection_string: &str,
 ) -> Result<Option<Account>, GetAccountError> {
+    debug!("Getting next pending account");
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| GetAccountError::ConnectionString {
@@ -526,9 +552,12 @@ pub async fn get_next_pending_account(
         .await?;
 
     if pending_account.is_some() {
-        let account = get_account_by_id(connection_string, &pending_account.unwrap().id).await?;
+        let id = pending_account.unwrap().id.clone();
+        let account = get_account_by_id(connection_string, &id).await?;
+        info!("Found pending account: {:?}", &id);
         Ok(account)
     } else {
+        info!("No pending accounts found");
         Ok(None)
     }
 }
@@ -537,6 +566,7 @@ pub async fn get_account_by_id<'connection>(
     connection_string: &'connection str,
     id: &str,
 ) -> Result<Option<Account>, GetAccountError<'connection>> {
+    debug!("Loading account #{:?} from database", id);
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| GetAccountError::ConnectionString {
@@ -564,6 +594,7 @@ pub async fn get_account_by_id<'connection>(
 
     let mut account = account.unwrap();
 
+    debug!("Checking account #{:?} for external discrete values", id);
     let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
     let mut discrete_values_cursor = discrete_values_collection
         .find(Some(doc! { "AccountNumber" : id }), None)
@@ -581,7 +612,7 @@ pub async fn get_account_by_id<'connection>(
             .append(&mut external_discrete_values);
     }
 
-    // Populate HashMaps
+    debug!("Building HashMaps for account #{:?}", id);
     for discrete_value in account.discrete_values.iter() {
         account
             .hashed_discrete_values
@@ -643,21 +674,27 @@ pub async fn save_cdi_alerts<'config>(
         .unwrap();
 
     // Find the first criteria group with a script matching a passing alert
-    let first_matching_criteria_group = workgroup_object
-        .criteria_groups
-        .iter()
-        .flat_map(|x| x.filters.iter())
-        .find_map(|filter| {
-            if filter.property == "EvaluationScript" {
-                cdi_alerts
-                    // This does not clone the elements, just the initial state of the iterator itself.
-                    .clone()
-                    .filter(|alert| alert.passed)
-                    .find(|x| x.script_name == filter.value)
-            } else {
-                None
-            }
-        });
+    let first_matching_criteria_group =
+        workgroup_object
+            .criteria_groups
+            .iter()
+            .find_map(|criteria_group| {
+                criteria_group
+                    .filters
+                    .iter()
+                    .find(|filter| {
+                        filter.property == "EvaluationScript"
+                            && cdi_alerts
+                                .clone()
+                                .any(|alert| alert.passed && alert.script_name == filter.value)
+                    })
+                    .map(|_| criteria_group)
+            });
+
+    debug!(
+        "First matching criteria group: {:?}",
+        first_matching_criteria_group
+    );
 
     // Create a bson array from our result iterator.
     // You *could* do this automatically with `bson::to_bson<Vec>`,
@@ -665,7 +702,9 @@ pub async fn save_cdi_alerts<'config>(
     // (`bson::Array` is a typedef for `Vec<Bson>`)
     let mut cdi_alerts_bson = bson::Array::new();
     for i in cdi_alerts {
-        cdi_alerts_bson.push(bson::to_bson(&i)?);
+        if i.passed {
+            cdi_alerts_bson.push(bson::to_bson(&i)?);
+        }
     }
 
     // We are going to take care of merge logic entirely in the scripts
@@ -677,8 +716,10 @@ pub async fn save_cdi_alerts<'config>(
         )
         .await?;
 
+    let new_criteria_group = first_matching_criteria_group.map(|x| x.name.clone());
+
     // find existing workgroup assignment
-    let existing_workgroup_assignment = account.custom_workflow.clone().map(|x| {
+    let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
         x.iter().find_map(|x| match x.work_group.clone() {
             Some(workgroup) => {
                 if workgroup == config.cdi_workgroup_name {
@@ -696,14 +737,14 @@ pub async fn save_cdi_alerts<'config>(
         Some(_) => {
             account_collection
                 .update_one(
-                    doc! { 
-                        "_id": account.id.clone(), 
+                    doc! {
+                        "_id": account.id.clone(),
                         "CustomWorkflow.WorkGroupCategory": config.cdi_workgroup_name.clone(),
                         "CustomWorkflow.WorkGroup": config.cdi_workgroup_name.clone(),
                     },
-                    doc! { 
+                    doc! {
                         "$set": {
-                            "CustomWorkflow.$.CriteriaGroup" : first_matching_criteria_group.unwrap().script_name.clone() 
+                            "CustomWorkflow.$.CriteriaGroup" : new_criteria_group,
                         }
                     },
                     None,
@@ -713,14 +754,14 @@ pub async fn save_cdi_alerts<'config>(
         None => {
             account_collection
                 .update_one(
-                    doc! { 
-                        "_id": account.id.clone(), 
+                    doc! {
+                        "_id": account.id.clone(),
                     },
                     doc! {
                         "$push": {
                             "CustomWorkflow": {
                                 "WorkGroup": config.cdi_workgroup_name.clone(),
-                                "CriteriaGroup": first_matching_criteria_group.unwrap().script_name.clone(),
+                                "CriteriaGroup": new_criteria_group,
                                 "CriteriaSequence": 0,
                                 "WorkGroupCategory": config.cdi_workgroup_category.clone(),
                                 "WorkGroupType": "CDI",
@@ -734,6 +775,144 @@ pub async fn save_cdi_alerts<'config>(
                 .await?;
         }
     };
+
+    Ok(())
+}
+
+pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError> {
+    let connection_string = &config.mongo_url;
+    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+        .await
+        .map_err(|e| CreateTestDataError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
+    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+    let cac_database = cac_database_client.database("FusionCAC2");
+    let account_collection = cac_database.collection::<Account>("accounts");
+    let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
+
+    // create test account #TEST_CDI_001
+    let test_account_001 = Account {
+        id: "TEST_CDI_001".to_string(),
+        admit_date_time: Some(Utc::now()),
+        discharge_date_time: None,
+        patient: Some(Arc::new(Patient {
+            mrn: Some("123456".to_string()),
+            first_name: Some("John".to_string()),
+            middle_name: Some("Q".to_string()),
+            last_name: Some("Public".to_string()),
+            gender: Some("M".to_string()),
+            birthdate: Some(Utc::now()),
+        })),
+        patient_type: Some("Inpatient".to_string()),
+        admit_source: Some("Emergency Room".to_string()),
+        admit_type: Some("Emergency".to_string()),
+        hospital_service: Some("Medicine".to_string()),
+        building: Some("Main".to_string()),
+        documents: vec![],
+        medications: vec![],
+        discrete_values: vec![],
+        cdi_alerts: vec![],
+        custom_workflow: Some(vec![]),
+        hashed_code_references: HashMap::new(),
+        hashed_discrete_values: HashMap::new(),
+        hashed_medications: HashMap::new(),
+        hashed_documents: HashMap::new(),
+    };
+
+    account_collection
+        .insert_one(test_account_001.clone(), None)
+        .await?;
+
+    // create test account #TEST_CDI_002
+    let test_account_002 = Account {
+        id: "TEST_CDI_002".to_string(),
+        admit_date_time: Some(Utc::now()),
+        discharge_date_time: None,
+        patient: Some(Arc::new(Patient {
+            mrn: Some("123456".to_string()),
+            first_name: Some("John".to_string()),
+            middle_name: Some("Q".to_string()),
+            last_name: Some("Public".to_string()),
+            gender: Some("M".to_string()),
+            birthdate: Some(Utc::now()),
+        })),
+        patient_type: Some("Inpatient".to_string()),
+        admit_source: Some("Emergency Room".to_string()),
+        admit_type: Some("Emergency".to_string()),
+        hospital_service: Some("Medicine".to_string()),
+        building: Some("Main".to_string()),
+        documents: vec![],
+        medications: vec![],
+        discrete_values: vec![],
+        cdi_alerts: vec![],
+        custom_workflow: Some(vec![]),
+        hashed_code_references: HashMap::new(),
+        hashed_discrete_values: HashMap::new(),
+        hashed_medications: HashMap::new(),
+        hashed_documents: HashMap::new(),
+    };
+
+    account_collection
+        .insert_one(test_account_002.clone(), None)
+        .await?;
+
+    // create cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002
+    let cdi_alert_queue_entry_001 = CdiAlertQueueEntry {
+        id: test_account_001.id.clone(),
+        time_queued: Utc::now(),
+        account_number: test_account_001.id.clone(),
+        script_name: "test_script_001".to_string(),
+    };
+
+    let cdi_alert_queue_entry_002 = CdiAlertQueueEntry {
+        id: test_account_002.id.clone(),
+        time_queued: Utc::now(),
+        account_number: test_account_002.id.clone(),
+        script_name: "test_script_002".to_string(),
+    };
+
+    cdi_alert_queue_collection
+        .insert_one(cdi_alert_queue_entry_001, None)
+        .await?;
+    cdi_alert_queue_collection
+        .insert_one(cdi_alert_queue_entry_002, None)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn delete_test_data(config: &Config) -> Result<(), DeleteTestDataError> {
+    let connection_string = &config.mongo_url;
+    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+        .await
+        .map_err(|e| DeleteTestDataError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
+    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+    let cac_database = cac_database_client.database("FusionCAC2");
+    let account_collection = cac_database.collection::<Account>("accounts");
+    let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
+
+    // delete test account #TEST_CDI_001
+    account_collection
+        .delete_one(doc! { "_id": "TEST_CDI_001" }, None)
+        .await?;
+
+    // delete test account #TEST_CDI_002
+    account_collection
+        .delete_one(doc! { "_id": "TEST_CDI_002" }, None)
+        .await?;
+
+    // delete cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
+    cdi_alert_queue_collection
+        .delete_one(doc! { "_id": "TEST_CDI_001" }, None)
+        .await?;
+    cdi_alert_queue_collection
+        .delete_one(doc! { "_id": "TEST_CDI_002" }, None)
+        .await?;
 
     Ok(())
 }

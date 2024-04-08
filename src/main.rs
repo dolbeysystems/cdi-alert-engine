@@ -44,6 +44,17 @@ async fn main() {
         }
     });
 
+    if config.create_test_data.unwrap_or(false) {
+        if let Err(e) = cac_data::delete_test_data(&config).await {
+            error!("failed to delete test data: {e}");
+            exit(1);
+        }
+        if let Err(e) = cac_data::create_test_data(&config).await {
+            error!("failed to create test data: {e}");
+            exit(1);
+        }
+    }
+
     let scripts: Arc<[Script]> = match get_scripts(&config.lua.scripts) {
         Ok(scripts) => scripts,
         Err(msg) => {
@@ -74,7 +85,8 @@ async fn main() {
 
             info!("processing account: {:?}", account.id);
             for script in scripts.iter().cloned() {
-                let script_name = script.path.to_string_lossy();
+                // script name without directory
+                let script_name = script.path.file_name().unwrap().to_string_lossy();
 
                 let result = cac_data::CdiAlert {
                     script_name: script_name.to_string(),
