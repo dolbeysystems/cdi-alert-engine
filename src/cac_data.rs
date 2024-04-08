@@ -90,6 +90,12 @@ pub struct CodeReferenceWithDocument {
     #[serde(rename = "code_reference")]
     pub code_reference: Arc<CodeReference>,
 }
+impl mlua::UserData for CodeReferenceWithDocument {
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+        fields.add_field_method_get("document", |_, this| Ok(this.document.clone()));
+        fields.add_field_method_get("code_reference", |_, this| Ok(this.code_reference.clone()));
+    }
+}
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -127,13 +133,13 @@ pub struct Account {
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
-    pub hashed_code_references: HashMap<Arc<str>, Vec<CodeReferenceWithDocument>>,
+    pub hashed_code_references: HashMap<String, Vec<CodeReferenceWithDocument>>,
     #[serde(skip)]
-    pub hashed_discrete_values: HashMap<Arc<str>, Vec<Arc<DiscreteValue>>>,
+    pub hashed_discrete_values: HashMap<String, Vec<Arc<DiscreteValue>>>,
     #[serde(skip)]
-    pub hashed_medications: HashMap<Arc<str>, Vec<Arc<Medication>>>,
+    pub hashed_medications: HashMap<String, Vec<Arc<Medication>>>,
     #[serde(skip)]
-    pub hashed_documents: HashMap<Arc<str>, Vec<Arc<CACDocument>>>,
+    pub hashed_documents: HashMap<String, Vec<Arc<CACDocument>>>,
 }
 
 impl mlua::UserData for Account {
@@ -163,28 +169,28 @@ impl mlua::UserData for Account {
 
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("find_code_references", |_, this, code: String| {
-            if let Some(code_references) = this.hashed_code_references.get(&code.into()) {
+            if let Some(code_references) = this.hashed_code_references.get(&code) {
                 Ok(code_references.clone())
             } else {
                 Ok(Vec::new())
             }
         });
         methods.add_method("find_discrete_values", |_, this, unique_id: String| {
-            if let Some(discrete_values) = this.hashed_discrete_values.get(&unique_id.into()) {
+            if let Some(discrete_values) = this.hashed_discrete_values.get(&unique_id) {
                 Ok(discrete_values.clone())
             } else {
                 Ok(Vec::new())
             }
         });
         methods.add_method("find_medications", |_, this, external_id: String| {
-            if let Some(medications) = this.hashed_medications.get(&external_id.into()) {
+            if let Some(medications) = this.hashed_medications.get(&external_id) {
                 Ok(medications.clone())
             } else {
                 Ok(Vec::new())
             }
         });
         methods.add_method("find_documents", |_, this, document_id: String| {
-            if let Some(documents) = this.hashed_documents.get(&document_id.into()) {
+            if let Some(documents) = this.hashed_documents.get(&document_id) {
                 Ok(documents.clone())
             } else {
                 Ok(Vec::new())
@@ -661,7 +667,7 @@ pub async fn get_account_by_id<'connection>(
     for discrete_value in account.discrete_values.iter() {
         account
             .hashed_discrete_values
-            .entry(discrete_value.unique_id.clone())
+            .entry(discrete_value.unique_id.to_string())
             .or_insert_with(Vec::new)
             .push(discrete_value.clone());
     }
@@ -669,7 +675,7 @@ pub async fn get_account_by_id<'connection>(
     for medication in account.medications.iter() {
         account
             .hashed_medications
-            .entry(medication.external_id.clone())
+            .entry(medication.external_id.to_string())
             .or_insert_with(Vec::new)
             .push(medication.clone());
     }
@@ -677,7 +683,7 @@ pub async fn get_account_by_id<'connection>(
     for document in account.documents.iter() {
         account
             .hashed_documents
-            .entry(document.document_id.clone())
+            .entry(document.document_id.to_string())
             .or_insert_with(Vec::new)
             .push(document.clone());
 
@@ -685,7 +691,7 @@ pub async fn get_account_by_id<'connection>(
             let code_reference = code_reference.clone();
             account
                 .hashed_code_references
-                .entry(code_reference.code.clone())
+                .entry(code_reference.code.to_string())
                 .or_insert_with(Vec::new)
                 .push(CodeReferenceWithDocument {
                     document: document.clone(),
@@ -695,7 +701,7 @@ pub async fn get_account_by_id<'connection>(
         for code_reference in document.abstraction_references.iter() {
             account
                 .hashed_code_references
-                .entry(code_reference.code.clone())
+                .entry(code_reference.code.to_string())
                 .or_insert_with(Vec::new)
                 .push(CodeReferenceWithDocument {
                     document: document.clone(),
