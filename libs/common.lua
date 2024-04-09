@@ -1,3 +1,15 @@
+---------------------------------------------------------------------------------------------
+--- common.lua - A library of common functions for use in cdi alert scripts
+---
+--- This includes functionality previously provided by AccountWorkflowContainer, and functions
+--- commonly used in previous cdi alert scripts.
+---
+--- You can requre this file in your cdi alert scripts by adding the following line:
+--- require("libs.common")
+---------------------------------------------------------------------------------------------
+
+
+
 -- This is here because of unpack having different availability based on lua version
 -- (Basically, to make LSP integration happy)
 if not table.unpack then
@@ -5,16 +17,34 @@ if not table.unpack then
     table.unpack = unpack
 end
 
-
-function GetCodeLinksForCode(args)
+-- Build links for all codes in the account that match some criteria
+--
+-- @param args - a table of arguments
+--  args.account - the account object (defaults to the global account)
+--  args.codes - a list of codes to search for (not required if args.code is provided)
+--  args.code - a single code to search for (not required if args.codes is provided)
+--  args.linkTemplate - the template for the link
+--  args.documentTypes - an optional list of document types that the code must be found in 
+--  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
+--  args.single - if true, only the first link will be returned instead of a list of links
+function GetCodeLinks(args)
     local account = args.account or account
-    local code = args.code
+    local codes = args.codes or { args.code }
     local linkTemplate = args.linkTemplate or ""
     local documentTypes = args.documentTypes or {}
     local predicate = args.predicate
+    local single = args.single or false
 
     local links = {}
-    local code_reference_pairs = account:find_code_references(code)
+
+    local code_reference_pairs = {}
+    for i = 1, #codes do
+        local code = codes[i]
+        local code_reference_pairs_for_code = account:find_code_references(code)
+        for j = 1, #code_reference_pairs_for_code do
+            table.insert(code_reference_pairs, code_reference_pairs_for_code[j])
+        end
+    end
 
     for i = 1, #code_reference_pairs do
         local ref = code_reference_pairs[i]
@@ -26,20 +56,21 @@ function GetCodeLinksForCode(args)
         end
 
         if documentTypes == nil or #documentTypes == 0 then
-            info("No document types specified, returning all code references")
             local link = CdiAlertLink:new()
             link.code = code_reference.code
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
             table.insert(links, link)
         else
-            info("Document types specified, filtering code references")
             for j = 1, #documentTypes do
                 if documentTypes[j] == document.document_type then
                     local link = CdiAlertLink:new()
                     link.code = code_reference.code
                     link.document_id = document.document_id
                     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, code_reference, document, nil, nil)
+                    if single then
+                        return link
+                    end
                     table.insert(links, link)
                 end
             end
@@ -49,14 +80,32 @@ function GetCodeLinksForCode(args)
     return links
 end
 
-function GetDocumentLinksForDocumentType(args)
+-- Build links for all documents in the account that match some criteria
+--
+-- @param args - a table of arguments
+--  args.account - the account object (defaults to the global account)
+--  args.documentTypes - a list of document types to search for (not required if args.documentType is provided)
+--  args.documentType - a single document type to search for (not required if args.documentTypes is provided)
+--  args.linkTemplate - the template for the link
+--  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
+--  args.single - if true, only the first link will be returned instead of a list of links
+function GetDocumentLinks(args)
     local account = args.account or account
-    local documentType = args.documentType
+    local documentTypes = args.documentTypes or { args.documentType }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
+    local single = args.single or false
 
     local links = {}
-    local documents = account:find_documents(documentType)
+    local documents = {}
+
+    for i = 1, #documentTypes do
+        local documentType = documentTypes[i]
+        local documentsForType = account:find_documents(documentType)
+        for j = 1, #documentsForType do
+            table.insert(documents, documentsForType[j])
+        end
+    end
 
     for i = 1, #documents do
         if predicate ~= nil and not predicate(documents[i]) then
@@ -66,20 +115,41 @@ function GetDocumentLinksForDocumentType(args)
         local link = CdiAlertLink:new()
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
+        if single then
+            return link
+        end
         table.insert(links, link)
         ::continue::
     end
     return links
 end
 
-function GetMedicationLinksForMedicationCategory(args)
+-- Build links for all medications in the account that match some criteria
+--
+-- @param args - a table of arguments
+--  args.account - the account object (defaults to the global account)
+--  args.medicationCategories - a list of medication categories to search for (not required if args.medicationCategory is provided)
+--  args.medicationCategory - a single medication category to search for (not required if args.medicationCategories is provided)
+--  args.linkTemplate - the template for the link
+--  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
+--  args.single - if true, only the first link will be returned instead of a list of links
+function GetMedicationLinks(args)
     local account = args.account or account
-    local medicationCategory = args.medicationCategory
+    local medicationCategories = args.medicationCategories or { args.medicationCategory }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
+    local single = args.single or false
 
     local links = {}
-    local medications = account:find_medication(medicationCategory)
+    local medications = {}
+
+    for i = 1, #medicationCategories do
+        local medicationCategory = medicationCategories[i]
+        local medicationsForCategory = account:find_medication(medicationCategory)
+        for j = 1, #medicationsForCategory do
+            table.insert(medications, medicationsForCategory[j])
+        end
+    end
 
     for i = 1, #medications do
         if predicate ~= nil and not predicate(medications[i]) then
@@ -89,20 +159,41 @@ function GetMedicationLinksForMedicationCategory(args)
         local link = CdiAlertLink:new()
         link.medication_id  = medication.external_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
+        if single then
+            return link
+        end
         table.insert(links, link)
         ::continue::
     end
     return links
 end
 
-function GetDiscreteValueLinksForDiscreteValueName(args)
+-- Build links for all discrete values in the account that match some criteria
+--
+-- @param args - a table of arguments
+--  args.account - the account object (defaults to the global account)
+--  args.discreteValueNames - a list of discrete value names to search for (not required if args.discreteValueName is provided)
+--  args.discreteValueName - a single discrete value name to search for (not required if args.discreteValueNames is provided)
+--  args.linkTemplate - the template for the link
+--  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
+--  args.single - if true, only the first link will be returned instead of a list of links
+function GetDiscreteValueLinks(args)
     local account = args.account or account
-    local discreteValueName = args.discreteValueName
+    local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
+    local single = args.single or false
 
     local links = {}
-    local discrete_values = account:find_discrete_values(discreteValueName)
+    local discrete_values = {}
+
+    for i = 1, #discreteValueNames do
+        local discreteValueName = discreteValueNames[i]
+        local discreteValuesForName = account:find_discrete_values(discreteValueName)
+        for j = 1, #discreteValuesForName do
+            table.insert(discrete_values, discreteValuesForName[j])
+        end
+    end
 
     for i = 1, #discrete_values do
         if predicate ~= nil and not predicate(discrete_values[i]) then
@@ -112,13 +203,22 @@ function GetDiscreteValueLinksForDiscreteValueName(args)
         local link = CdiAlertLink:new()
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
+        if single then
+            return link
+        end
         table.insert(links, link)
         ::continue::
     end
     return links
 end
 
-
+-- Replace placeholders in a link template with values from the code reference, document, discrete value, or medication
+--
+-- @param linkTemplate - the template for the link
+-- @param codeReference - the code reference to use for the link
+-- @param document - the document to use for the link
+-- @param discreteValue - the discrete value to use for the link
+-- @param medication - the medication to use for the link
 function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discreteValue, medication)
     local link = linkTemplate
 
