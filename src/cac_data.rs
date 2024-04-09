@@ -397,6 +397,8 @@ pub struct CdiAlert {
     pub reason: Option<String>,
     #[serde(rename = "Weight")]
     pub weight: Option<f64>,
+    #[serde(rename = "Sequence")]
+    pub sequence: Option<i32>,
 }
 
 impl mlua::UserData for CdiAlert {
@@ -409,6 +411,7 @@ impl mlua::UserData for CdiAlert {
         fields.add_field_method_get("outcome", |_, this| Ok(this.outcome.clone()));
         fields.add_field_method_get("reason", |_, this| Ok(this.reason.clone()));
         fields.add_field_method_get("weight", |_, this| Ok(this.weight));
+        fields.add_field_method_get("sequence", |_, this| Ok(this.sequence));
 
         // Notice that script_name is not mutable!!
         fields.add_field_method_set("passed", |_, this, value| {

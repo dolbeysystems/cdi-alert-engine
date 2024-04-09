@@ -27,6 +27,8 @@ end
 --  args.documentTypes - an optional list of document types that the code must be found in 
 --  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
 --  args.single - if true, only the first link will be returned instead of a list of links
+--  args.sequence - the starting sequence number to use for the links
+--  args.fixed_sequence - if true, the sequence number will not be incremented for each link
 function GetCodeLinks(args)
     local account = args.account or account
     local codes = args.codes or { args.code }
@@ -34,6 +36,8 @@ function GetCodeLinks(args)
     local documentTypes = args.documentTypes or {}
     local predicate = args.predicate
     local single = args.single or false
+    local sequence = args.sequence or 0
+    local fixed_sequence = args.fixed_sequence or false
 
     local links = {}
 
@@ -60,7 +64,11 @@ function GetCodeLinks(args)
             link.code = code_reference.code
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
+            link.sequence = sequence
             table.insert(links, link)
+            if not fixed_sequence then
+                sequence = sequence + 1
+            end
         else
             for j = 1, #documentTypes do
                 if documentTypes[j] == document.document_type then
@@ -68,10 +76,14 @@ function GetCodeLinks(args)
                     link.code = code_reference.code
                     link.document_id = document.document_id
                     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, code_reference, document, nil, nil)
+                    link.sequence = sequence
                     if single then
                         return link
                     end
                     table.insert(links, link)
+                    if not fixed_sequence then
+                        sequence = sequence + 1
+                    end
                 end
             end
         end
@@ -89,12 +101,16 @@ end
 --  args.linkTemplate - the template for the link
 --  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
 --  args.single - if true, only the first link will be returned instead of a list of links
+--  args.sequence - the starting sequence number to use for the links
+--  args.fixed_sequence - if true, the sequence number will not be incremented for each link
 function GetDocumentLinks(args)
     local account = args.account or account
     local documentTypes = args.documentTypes or { args.documentType }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
     local single = args.single or false
+    local sequence = args.sequence or 0
+    local fixed_sequence = args.fixed_sequence or false
 
     local links = {}
     local documents = {}
@@ -115,10 +131,14 @@ function GetDocumentLinks(args)
         local link = CdiAlertLink:new()
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
+        link.sequence = sequence
         if single then
             return link
         end
         table.insert(links, link)
+        if not fixed_sequence then
+            sequence = sequence + 1
+        end
         ::continue::
     end
     return links
@@ -133,12 +153,16 @@ end
 --  args.linkTemplate - the template for the link
 --  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
 --  args.single - if true, only the first link will be returned instead of a list of links
+--  args.sequence - the starting sequence number to use for the links
+--  args.fixed_sequence - if true, the sequence number will not be incremented for each link
 function GetMedicationLinks(args)
     local account = args.account or account
     local medicationCategories = args.medicationCategories or { args.medicationCategory }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
     local single = args.single or false
+    local sequence = args.sequence or 0
+    local fixed_sequence = args.fixed_sequence or false
 
     local links = {}
     local medications = {}
@@ -159,10 +183,14 @@ function GetMedicationLinks(args)
         local link = CdiAlertLink:new()
         link.medication_id  = medication.external_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
+        link.sequence = sequence
         if single then
             return link
         end
         table.insert(links, link)
+        if not fixed_sequence then
+            sequence = sequence + 1
+        end
         ::continue::
     end
     return links
@@ -177,12 +205,16 @@ end
 --  args.linkTemplate - the template for the link
 --  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
 --  args.single - if true, only the first link will be returned instead of a list of links
+--  args.sequence - the starting sequence number to use for the links
+--  args.fixed_sequence - if true, the sequence number will not be incremented for each link
 function GetDiscreteValueLinks(args)
     local account = args.account or account
     local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
     local linkTemplate = args.linkTemplate or ""
     local predicate = args.predicate
     local single = args.single or false
+    local sequence = args.sequence or 0
+    local fixed_sequence = args.fixed_sequence or false
 
     local links = {}
     local discrete_values = {}
@@ -203,10 +235,14 @@ function GetDiscreteValueLinks(args)
         local link = CdiAlertLink:new()
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
+        link.sequence = sequence
         if single then
             return link
         end
         table.insert(links, link)
+        if not fixed_sequence then
+            sequence = sequence + 1
+        end
         ::continue::
     end
     return links
@@ -262,5 +298,23 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
     end
 
     return link
+end
+
+-- Get the existing cdi alert for a script
+--
+-- @param args - a table of arguments
+--  args.account - the account object (defaults to the global account)
+--  args.scriptName - the name of the script to match
+function GetExistingCdiAlert(args)
+    local account = args.account or account
+    local scriptName = args.scriptName
+
+    for i = 1, #account.cdi_alerts do
+        local alert = account.cdi_alerts[i]
+        if alert.script_name == scriptName then
+            return alert
+        end
+    end
+    return nil
 end
 
