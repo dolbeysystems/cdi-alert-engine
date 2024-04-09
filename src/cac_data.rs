@@ -169,10 +169,11 @@ impl mlua::UserData for Account {
 
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("find_code_references", |_, this, code: String| {
-            warn!("Finding code references for code: {:?}", code);
             if let Some(code_references) = this.hashed_code_references.get(&code) {
+                info!("Found code references for code: {:?}", code);
                 Ok(code_references.clone())
             } else {
+                info!("No code references found for code: {:?}", code);
                 Ok(Vec::new())
             }
         });
@@ -252,6 +253,9 @@ impl mlua::UserData for CACDocument {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
         fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.to_string()));
         fields.add_field_method_get("document_type", |_, this| Ok(this.document_type.clone()));
+        fields.add_field_method_get("document_date", |_, this| {
+            Ok(this.document_date.map(|d| d.to_string()))
+        });
         fields.add_field_method_get("content_type", |_, this| Ok(this.content_type.clone()));
         fields.add_field_method_get("code_references", |_, this| {
             Ok(this.code_references.clone())
@@ -352,7 +356,7 @@ pub struct CodeReference {
     #[serde(rename = "Code")]
     pub code: Arc<str>,
     #[serde(rename = "Value")]
-    pub value: Arc<str>,
+    pub value: Option<String>,
     #[serde(rename = "Description")]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]
@@ -366,6 +370,7 @@ pub struct CodeReference {
 impl mlua::UserData for CodeReference {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
         fields.add_field_method_get("code", |_, this| Ok(this.code.to_string()));
+        fields.add_field_method_get("value", |_, this| Ok(this.value.clone()));
         fields.add_field_method_get("description", |_, this| Ok(this.description.clone()));
         fields.add_field_method_get("phrase", |_, this| Ok(this.phrase.clone()));
         fields.add_field_method_get("start", |_, this| Ok(this.start));
@@ -863,92 +868,149 @@ pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError
     let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
 
     // create test account #TEST_CDI_001
-    let test_account_001 = Account {
-        id: "TEST_CDI_001".to_string(),
-        admit_date_time: Some(Utc::now()),
-        discharge_date_time: None,
-        patient: Some(Arc::new(Patient {
-            mrn: Some("123456".to_string()),
-            first_name: Some("John".to_string()),
-            middle_name: Some("Q".to_string()),
-            last_name: Some("Public".to_string()),
-            gender: Some("M".to_string()),
-            birthdate: Some(Utc::now()),
-        })),
-        patient_type: Some("Inpatient".to_string()),
-        admit_source: Some("Emergency Room".to_string()),
-        admit_type: Some("Emergency".to_string()),
-        hospital_service: Some("Medicine".to_string()),
-        building: Some("Main".to_string()),
-        documents: vec![],
-        medications: vec![],
-        discrete_values: vec![],
-        cdi_alerts: vec![],
-        custom_workflow: Some(vec![]),
-        hashed_code_references: HashMap::new(),
-        hashed_discrete_values: HashMap::new(),
-        hashed_medications: HashMap::new(),
-        hashed_documents: HashMap::new(),
-    };
-
     account_collection
-        .insert_one(test_account_001.clone(), None)
+        .insert_one(
+            Account {
+                id: "TEST_CDI_001".to_string(),
+                admit_date_time: Some(Utc::now()),
+                discharge_date_time: None,
+                patient: Some(Arc::new(Patient {
+                    mrn: Some("123456".to_string()),
+                    first_name: Some("John".to_string()),
+                    middle_name: Some("Q".to_string()),
+                    last_name: Some("Public".to_string()),
+                    gender: Some("M".to_string()),
+                    birthdate: Some(Utc::now()),
+                })),
+                patient_type: Some("Inpatient".to_string()),
+                admit_source: Some("Emergency Room".to_string()),
+                admit_type: Some("Emergency".to_string()),
+                hospital_service: Some("Medicine".to_string()),
+                building: Some("Main".to_string()),
+                documents: vec![
+                    Arc::new(CACDocument {
+                        document_id: "DOC_001".into(),
+                        document_type: Some("Discharge Summary".to_string()),
+                        document_date: Some(Utc::now()),
+                        content_type: Some("text/plain".to_string()),
+                        code_references: vec![
+                            Arc::new(CodeReference {
+                                code: "I10".into(),
+                                value: None,
+                                description: Some("Essential (primary) hypertension".to_string()),
+                                phrase: Some("".to_string()),
+                                start: Some(0),
+                                length: Some(4),
+                            }),
+                            Arc::new(CodeReference {
+                                code: "E11".into(),
+                                value: None,
+                                description: Some("Type 2 Diabetes".to_string()),
+                                phrase: Some("".to_string()),
+                                start: Some(0),
+                                length: Some(4),
+                            }),
+                        ],
+                        abstraction_references: vec![],
+                    }),
+                    Arc::new(CACDocument {
+                        document_id: "DOC_002".into(),
+                        document_type: Some("Physician Note".to_string()),
+                        document_date: Some(Utc::now()),
+                        content_type: Some("text/plain".to_string()),
+                        code_references: vec![
+                            Arc::new(CodeReference {
+                                code: "R99".into(),
+                                value: None,
+                                description: Some("".to_string()),
+                                phrase: Some("".to_string()),
+                                start: Some(0),
+                                length: Some(4),
+                            }),
+                            Arc::new(CodeReference {
+                                code: "A10".into(),
+                                value: None,
+                                description: Some("".to_string()),
+                                phrase: Some("".to_string()),
+                                start: Some(0),
+                                length: Some(4),
+                            }),
+                        ],
+                        abstraction_references: vec![],
+                    }),
+                ],
+                medications: vec![],
+                discrete_values: vec![],
+                cdi_alerts: vec![],
+                custom_workflow: Some(vec![]),
+                hashed_code_references: HashMap::new(),
+                hashed_discrete_values: HashMap::new(),
+                hashed_medications: HashMap::new(),
+                hashed_documents: HashMap::new(),
+            },
+            None,
+        )
+        .await?;
+
+    cdi_alert_queue_collection
+        .insert_one(
+            CdiAlertQueueEntry {
+                id: "TEST_CDI_001".to_string(),
+                time_queued: Utc::now(),
+                account_number: "TEST_CDI_001".to_string(),
+                script_name: "test_script_001".to_string(),
+            },
+            None,
+        )
         .await?;
 
     // create test account #TEST_CDI_002
-    let test_account_002 = Account {
-        id: "TEST_CDI_002".to_string(),
-        admit_date_time: Some(Utc::now()),
-        discharge_date_time: None,
-        patient: Some(Arc::new(Patient {
-            mrn: Some("123456".to_string()),
-            first_name: Some("John".to_string()),
-            middle_name: Some("Q".to_string()),
-            last_name: Some("Public".to_string()),
-            gender: Some("M".to_string()),
-            birthdate: Some(Utc::now()),
-        })),
-        patient_type: Some("Inpatient".to_string()),
-        admit_source: Some("Emergency Room".to_string()),
-        admit_type: Some("Emergency".to_string()),
-        hospital_service: Some("Medicine".to_string()),
-        building: Some("Main".to_string()),
-        documents: vec![],
-        medications: vec![],
-        discrete_values: vec![],
-        cdi_alerts: vec![],
-        custom_workflow: Some(vec![]),
-        hashed_code_references: HashMap::new(),
-        hashed_discrete_values: HashMap::new(),
-        hashed_medications: HashMap::new(),
-        hashed_documents: HashMap::new(),
-    };
-
+    /*
     account_collection
-        .insert_one(test_account_002.clone(), None)
+        .insert_one(
+            Account {
+                id: "TEST_CDI_002".to_string(),
+                admit_date_time: Some(Utc::now()),
+                discharge_date_time: None,
+                patient: Some(Arc::new(Patient {
+                    mrn: Some("123456".to_string()),
+                    first_name: Some("John".to_string()),
+                    middle_name: Some("Q".to_string()),
+                    last_name: Some("Public".to_string()),
+                    gender: Some("M".to_string()),
+                    birthdate: Some(Utc::now()),
+                })),
+                patient_type: Some("Inpatient".to_string()),
+                admit_source: Some("Emergency Room".to_string()),
+                admit_type: Some("Emergency".to_string()),
+                hospital_service: Some("Medicine".to_string()),
+                building: Some("Main".to_string()),
+                documents: vec![],
+                medications: vec![],
+                discrete_values: vec![],
+                cdi_alerts: vec![],
+                custom_workflow: Some(vec![]),
+                hashed_code_references: HashMap::new(),
+                hashed_discrete_values: HashMap::new(),
+                hashed_medications: HashMap::new(),
+                hashed_documents: HashMap::new(),
+            },
+            None,
+        )
         .await?;
-
-    // create cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002
-    let cdi_alert_queue_entry_001 = CdiAlertQueueEntry {
-        id: test_account_001.id.clone(),
-        time_queued: Utc::now(),
-        account_number: test_account_001.id.clone(),
-        script_name: "test_script_001".to_string(),
-    };
-
-    let cdi_alert_queue_entry_002 = CdiAlertQueueEntry {
-        id: test_account_002.id.clone(),
-        time_queued: Utc::now(),
-        account_number: test_account_002.id.clone(),
-        script_name: "test_script_002".to_string(),
-    };
 
     cdi_alert_queue_collection
-        .insert_one(cdi_alert_queue_entry_001, None)
+        .insert_one(
+            CdiAlertQueueEntry {
+                id: "TEST_CDI_002".to_string(),
+                time_queued: Utc::now(),
+                account_number: "TEST_CDI_002".to_string(),
+                script_name: "test_script_002".to_string(),
+            },
+            None,
+        )
         .await?;
-    cdi_alert_queue_collection
-        .insert_one(cdi_alert_queue_entry_002, None)
-        .await?;
+    */
 
     Ok(())
 }

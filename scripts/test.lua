@@ -1,17 +1,10 @@
 require("libs.common")
-Hello() -- from libs/common.lua
 
-local codeLinks = GetCodeLinks(account, "123", "linkTemplate", { "note", "lab" })
+local codeLinks = GetCodeLinks(account, "I10", "This has htn code [CODE]", {})
+local moreCodeLinks = GetCodeLinks(account, "E11", "This has diabetes code [CODE]", {})
+local combined = {table.unpack(codeLinks), table.unpack(moreCodeLinks)}
 
-
--- info("this is "..script_filename)
-info(account.patient.first_name)
--- "1" means first... don't use 0 like I did.
-if account.documents[1] ~= nil and account.documents[1].code_references[1] ~= nil then
-  info(account.documents[1].code_references[1].code)
-else
-  info("Account has no documents or code references")
+for i = 1, #combined do
+    info("CODE LINK TEXT: " .. combined[i].link_text)
 end
 
-result.passed = true
-info("script passed: "..tostring(result.passed))
