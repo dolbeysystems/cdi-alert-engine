@@ -727,7 +727,7 @@ pub async fn save_cdi_alerts<'config>(
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
-    let connection_string = &config.mongo_url;
+    let connection_string = &config.mongo.url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| SaveCdiAlertsError::ConnectionString {
@@ -740,7 +740,7 @@ pub async fn save_cdi_alerts<'config>(
     let workgroups_collection = cac_database.collection::<WorkGroupCategory>("workgroups");
 
     let workgroup_category = workgroups_collection
-        .find_one(doc! { "_id": config.cdi_workgroup_category.clone() }, None)
+        .find_one(doc! { "_id": config.cdi_workgroup.category.clone() }, None)
         .await?;
 
     let workgroup_category_object = workgroup_category.unwrap();
@@ -748,7 +748,7 @@ pub async fn save_cdi_alerts<'config>(
     let workgroup_object = workgroup_category_object
         .workgroups
         .iter()
-        .find(|x| x.work_group == config.cdi_workgroup_name)
+        .find(|x| x.work_group == config.cdi_workgroup.name)
         .unwrap();
 
     // Find the first criteria group with a script matching a passing alert
@@ -800,7 +800,7 @@ pub async fn save_cdi_alerts<'config>(
     let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
         x.iter().find_map(|x| match x.work_group.clone() {
             Some(workgroup) => {
-                if workgroup == config.cdi_workgroup_name {
+                if workgroup == config.cdi_workgroup.name {
                     Some(x.clone())
                 } else {
                     None
@@ -817,8 +817,8 @@ pub async fn save_cdi_alerts<'config>(
                 .update_one(
                     doc! {
                         "_id": account.id.clone(),
-                        "CustomWorkflow.WorkGroupCategory": config.cdi_workgroup_name.clone(),
-                        "CustomWorkflow.WorkGroup": config.cdi_workgroup_name.clone(),
+                        "CustomWorkflow.WorkGroupCategory": config.cdi_workgroup.name.clone(),
+                        "CustomWorkflow.WorkGroup": config.cdi_workgroup.name.clone(),
                     },
                     doc! {
                         "$set": {
@@ -838,10 +838,10 @@ pub async fn save_cdi_alerts<'config>(
                     doc! {
                         "$push": {
                             "CustomWorkflow": {
-                                "WorkGroup": config.cdi_workgroup_name.clone(),
+                                "WorkGroup": config.cdi_workgroup.name.clone(),
                                 "CriteriaGroup": new_criteria_group,
                                 "CriteriaSequence": 0,
-                                "WorkGroupCategory": config.cdi_workgroup_category.clone(),
+                                "WorkGroupCategory": config.cdi_workgroup.category.clone(),
                                 "WorkGroupType": "CDI",
                                 "WorkGroupAssignedBy": "CDI",
                                 "WorkGroupAssignedDateTime": bson::DateTime::now(),
@@ -858,7 +858,7 @@ pub async fn save_cdi_alerts<'config>(
 }
 
 pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError> {
-    let connection_string = &config.mongo_url;
+    let connection_string = &config.mongo.url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| CreateTestDataError::ConnectionString {
@@ -1019,7 +1019,7 @@ pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError
 }
 
 pub async fn delete_test_data(config: &Config) -> Result<(), DeleteTestDataError> {
-    let connection_string = &config.mongo_url;
+    let connection_string = &config.mongo.url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| DeleteTestDataError::ConnectionString {

@@ -1,10 +1,9 @@
 use futures::future::join_all;
 use mlua::Lua;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::fs;
 use std::process::exit;
 use std::sync::Arc;
-use std::{fs, io};
 use tokio::task;
 use tracing::*;
 
@@ -13,56 +12,54 @@ mod config;
 
 #[derive(Clone)]
 struct Script {
-    path: PathBuf,
+    config: config::Script,
     contents: String,
-}
-
-fn get_scripts(path: impl AsRef<Path>) -> io::Result<Vec<Script>> {
-    let mut scripts = Vec::new();
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let path = entry.path();
-        if !path.is_dir() {
-            scripts.push(Script {
-                path: path.to_path_buf(),
-                contents: fs::read_to_string(path)?,
-            });
-        }
-    }
-    Ok(scripts)
 }
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().init();
+    // TODO: configure this from the command line.
     let config_path = "config.toml";
-    let config = Arc::new(match config::Config::open(config_path) {
+    let config::InitialConfig {
+        scripts,
+        polling_seconds,
+        create_test_data,
+        config,
+    } = match config::InitialConfig::open(config_path) {
         Ok(config) => config,
         Err(msg) => {
             error!("failed to open {config_path}: {msg}");
             exit(1);
         }
-    });
+    };
 
-    if config.create_test_data.unwrap_or(false) {
+    if create_test_data {
         if let Err(e) = cac_data::delete_test_data(&config).await {
             error!("failed to delete test data: {e}");
-            exit(1);
         }
         if let Err(e) = cac_data::create_test_data(&config).await {
             error!("failed to create test data: {e}");
-            exit(1);
         }
     }
 
-    let scripts: Arc<[Script]> = match get_scripts(&config.lua.scripts) {
+    let scripts: Arc<[Script]> = match scripts
+        .into_iter()
+        .map(|x| {
+            let contents = fs::read_to_string(x.path).map_err(|e| (x.path, e))?;
+            Ok(Script {
+                contents,
+                config: x,
+            })
+        })
+        .collect()
+    {
         Ok(scripts) => scripts,
-        Err(msg) => {
-            error!("failed to load {}: {msg}", config.lua.scripts.display());
+        Err((path, msg)) => {
+            error!("failed to load {}: {msg}", path.display());
             exit(1);
         }
-    }
-    .into();
+    };
 
     loop {
         info!("scanning collection");
@@ -72,7 +69,7 @@ async fn main() {
         // so that results can be written to the database in bulk.
         let mut script_threads = Vec::new();
 
-        while let Some(account) = cac_data::get_next_pending_account(&config.mongo_url)
+        while let Some(account) = cac_data::get_next_pending_account(&config.mongo.url)
             .await
             // print error message
             .map_err(|e| error!("failed to get account: {e}"))
@@ -86,7 +83,7 @@ async fn main() {
             info!("processing account: {:?}", account.id);
             for script in scripts.iter().cloned() {
                 // script name without directory
-                let script_name = script.path.file_name().unwrap().to_string_lossy();
+                let script_name = script.config.path.file_name().unwrap().to_string_lossy();
 
                 let result = cac_data::CdiAlert {
                     script_name: script_name.to_string(),
@@ -103,7 +100,7 @@ async fn main() {
 
                 script_threads.push(task::spawn_blocking(move || {
                     let lua = make_runtime();
-                    let script_name = script.path.to_string_lossy();
+                    let script_name = script.config.path.to_string_lossy();
                     let _enter =
                         error_span!("lua", path = &*script_name, account = &account.id).entered();
 
@@ -157,7 +154,7 @@ async fn main() {
             }
         }
 
-        tokio::time::sleep(tokio::time::Duration::from_secs(config.polling_seconds)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(polling_seconds)).await;
     }
 }
 

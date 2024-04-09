@@ -1,21 +1,39 @@
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct Config {
-    pub mongo_url: String,
-    pub lua: Lua,
-    pub cdi_workgroup_category: String,
-    pub cdi_workgroup_name: String,
+pub struct InitialConfig {
+    pub scripts: Vec<Script>,
     pub polling_seconds: u64,
-    pub create_test_data: Option<bool>,
+    #[serde(default)]
+    pub create_test_data: bool,
+
+    #[serde(flatten)]
+    pub config: Config,
+}
+
+/// This is persistent config that needs to be shared among threads.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct Config {
+    pub mongo: Mongo,
+    pub cdi_workgroup: CdiWorkgroup,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct Lua {
-    pub scripts: PathBuf,
+pub struct Mongo {
+    pub url: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct Script {
+    pub path: PathBuf,
+    pub criteria_group: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct CdiWorkgroup {
+    pub category: String,
+    pub name: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -26,7 +44,7 @@ pub enum OpenConfigError {
     Toml(#[from] toml::de::Error),
 }
 
-impl Config {
+impl InitialConfig {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, OpenConfigError> {
         Ok(toml::from_str(&fs::read_to_string(path.as_ref())?)?)
     }
