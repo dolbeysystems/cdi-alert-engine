@@ -10,4 +10,4 @@ name = "CDI Alerts"
 
 [[scripts]]
 path = "scripts/test.lua"
-criteria_group = ""
+criteria_group = "test"
