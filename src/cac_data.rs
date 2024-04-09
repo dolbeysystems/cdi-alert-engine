@@ -191,8 +191,8 @@ impl mlua::UserData for Account {
                 Ok(Vec::new())
             }
         });
-        methods.add_method("find_documents", |_, this, document_id: String| {
-            if let Some(documents) = this.hashed_documents.get(&document_id) {
+        methods.add_method("find_documents", |_, this, document_type: String| {
+            if let Some(documents) = this.hashed_documents.get(&document_type) {
                 Ok(documents.clone())
             } else {
                 Ok(Vec::new())
@@ -671,25 +671,28 @@ pub async fn get_account_by_id<'connection>(
 
     debug!("Building HashMaps for account #{:?}", id);
     for discrete_value in account.discrete_values.iter() {
+        let name = discrete_value.name.clone().unwrap_or("".to_string());
         account
             .hashed_discrete_values
-            .entry(discrete_value.unique_id.to_string())
+            .entry(name)
             .or_insert_with(Vec::new)
             .push(discrete_value.clone());
     }
 
     for medication in account.medications.iter() {
+        let category = medication.category.clone().unwrap_or("".to_string());
         account
             .hashed_medications
-            .entry(medication.external_id.to_string())
+            .entry(category)
             .or_insert_with(Vec::new)
             .push(medication.clone());
     }
 
     for document in account.documents.iter() {
+        let document_type = document.document_type.clone().unwrap_or("".to_string());
         account
             .hashed_documents
-            .entry(document.document_id.to_string())
+            .entry(document_type)
             .or_insert_with(Vec::new)
             .push(document.clone());
 

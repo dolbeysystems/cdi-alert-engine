@@ -1,11 +1,18 @@
--- This is necessary because of unpack having different availability based on lua version
+-- This is here because of unpack having different availability based on lua version
+-- (Basically, to make LSP integration happy)
 if not table.unpack then
     ---@diagnostic disable-next-line: deprecated
     table.unpack = unpack
 end
 
 
-function GetCodeLinks(account, code, linkTemplate, documentTypes)
+function GetCodeLinksForCode(args)
+    local account = args.account or account
+    local code = args.code
+    local linkTemplate = args.linkTemplate or ""
+    local documentTypes = args.documentTypes or {}
+    local predicate = args.predicate
+
     local links = {}
     local code_reference_pairs = account:find_code_references(code)
 
@@ -13,6 +20,10 @@ function GetCodeLinks(account, code, linkTemplate, documentTypes)
         local ref = code_reference_pairs[i]
         local code_reference = ref.code_reference
         local document = ref.document
+
+        if predicate ~= nil and not predicate(code_reference, document) then
+            goto continue
+        end
 
         if documentTypes == nil or #documentTypes == 0 then
             info("No document types specified, returning all code references")
@@ -33,6 +44,76 @@ function GetCodeLinks(account, code, linkTemplate, documentTypes)
                 end
             end
         end
+        ::continue::
+    end
+    return links
+end
+
+function GetDocumentLinksForDocumentType(args)
+    local account = args.account or account
+    local documentType = args.documentType
+    local linkTemplate = args.linkTemplate or ""
+    local predicate = args.predicate
+
+    local links = {}
+    local documents = account:find_documents(documentType)
+
+    for i = 1, #documents do
+        if predicate ~= nil and not predicate(documents[i]) then
+            goto continue
+        end
+        local document = documents[i]
+        local link = CdiAlertLink:new()
+        link.document_id = document.document_id
+        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
+        table.insert(links, link)
+        ::continue::
+    end
+    return links
+end
+
+function GetMedicationLinksForMedicationCategory(args)
+    local account = args.account or account
+    local medicationCategory = args.medicationCategory
+    local linkTemplate = args.linkTemplate or ""
+    local predicate = args.predicate
+
+    local links = {}
+    local medications = account:find_medication(medicationCategory)
+
+    for i = 1, #medications do
+        if predicate ~= nil and not predicate(medications[i]) then
+            goto continue
+        end
+        local medication = medications[i]
+        local link = CdiAlertLink:new()
+        link.medication_id  = medication.external_id
+        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
+        table.insert(links, link)
+        ::continue::
+    end
+    return links
+end
+
+function GetDiscreteValueLinksForDiscreteValueName(args)
+    local account = args.account or account
+    local discreteValueName = args.discreteValueName
+    local linkTemplate = args.linkTemplate or ""
+    local predicate = args.predicate
+
+    local links = {}
+    local discrete_values = account:find_discrete_values(discreteValueName)
+
+    for i = 1, #discrete_values do
+        if predicate ~= nil and not predicate(discrete_values[i]) then
+            goto continue
+        end
+        local discrete_value = discrete_values[i]
+        local link = CdiAlertLink:new()
+        link.discrete_value_name = discrete_value.name
+        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
+        table.insert(links, link)
+        ::continue::
     end
     return links
 end
