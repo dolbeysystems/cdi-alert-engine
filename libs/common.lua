@@ -65,6 +65,9 @@ function GetCodeLinks(args)
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
             link.sequence = sequence
+            if single then
+                return link
+            end
             table.insert(links, link)
             if not fixed_sequence then
                 sequence = sequence + 1
@@ -89,7 +92,12 @@ function GetCodeLinks(args)
         end
         ::continue::
     end
-    return links
+
+    if single then
+        return nil
+    else
+        return links
+    end
 end
 
 -- Build links for all documents in the account that match some criteria
@@ -141,7 +149,11 @@ function GetDocumentLinks(args)
         end
         ::continue::
     end
-    return links
+    if single then
+        return nil
+    else
+        return links
+    end
 end
 
 -- Build links for all medications in the account that match some criteria
@@ -193,7 +205,11 @@ function GetMedicationLinks(args)
         end
         ::continue::
     end
-    return links
+    if single then
+        return nil
+    else
+        return links
+    end
 end
 
 -- Build links for all discrete values in the account that match some criteria
@@ -245,7 +261,11 @@ function GetDiscreteValueLinks(args)
         end
         ::continue::
     end
-    return links
+    if single then
+        return nil
+    else
+        return links
+    end
 end
 
 -- Replace placeholders in a link template with values from the code reference, document, discrete value, or medication

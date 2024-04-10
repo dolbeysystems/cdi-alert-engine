@@ -309,7 +309,7 @@ if alertMatched then
     end
 
     clinicalEvidenceLink.links = clinicalEvidenceLinks
-    treatmentLink.links = treatmentLinks
+    --treatmentLink.links = treatmentLinks
 end
 
 

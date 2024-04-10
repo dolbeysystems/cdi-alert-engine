@@ -418,11 +418,16 @@ impl mlua::UserData for CdiAlert {
             this.passed = value;
             Ok(())
         });
-        fields.add_field_method_set("links", |_, this, value: Vec<mlua::AnyUserData>| {
+        fields.add_field_method_set("links", |_, this, value: mlua::Table| {
             let mut links = Vec::new();
-            for i in value {
-                links.push(Arc::new(i.borrow::<CdiAlertLink>()?.clone()))
-            }
+
+            value.pairs::<String, mlua::AnyUserData>().for_each(|x| {
+                let (_, value) = x.unwrap();
+
+                if let Ok(value) = value.borrow::<CdiAlertLink>() {
+                    links.push(Arc::new(value.clone()));
+                };
+            });
             this.links = links;
             Ok(())
         });
@@ -515,12 +520,16 @@ impl mlua::UserData for CdiAlertLink {
                 Ok(())
             },
         );
-        f.add_field_method_set("links", |_, this, value: Vec<mlua::AnyUserData>| {
-            warn!("Setting links");
+        f.add_field_method_set("links", |_, this, value: mlua::Table| {
             let mut links = Vec::new();
-            for i in value {
-                links.push(Arc::new(i.borrow::<CdiAlertLink>()?.clone()))
-            }
+
+            value.pairs::<String, mlua::AnyUserData>().for_each(|x| {
+                let (_, value) = x.unwrap();
+
+                if let Ok(value) = value.borrow::<CdiAlertLink>() {
+                    links.push(Arc::new(value.clone()));
+                };
+            });
             this.links = links;
             Ok(())
         });
