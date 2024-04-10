@@ -11,3 +11,8 @@ name = "CDI Alerts"
 [[scripts]]
 path = "scripts/test.lua"
 criteria_group = "test"
+
+[[scripts]]
+path = "scripts/substance_abuse.lua"
+criteria_group = "substance_abuse"
+

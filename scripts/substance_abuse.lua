@@ -8,8 +8,18 @@
 --- Site: (Default)
 ---------------------------------------------------------------------------------------------------------------------
 
+
+
 --------------------------------------------------------------------------------
---- Creates a link for a code reference, optionally adding it to a target table.
+--- Requires 
+--------------------------------------------------------------------------------
+require("libs.common")
+
+
+
+--------------------------------------------------------------------------------
+--- Creates a single link for a code reference, optionally adding it to a target
+--- table.
 ---
 --- @param targetTable table? The table to add the link to.
 --- @param code string The code to create a link for.
@@ -29,8 +39,8 @@ local function makeCodeLink(targetTable, code, linkPrefix, sequence)
 end
 
 --------------------------------------------------------------------------------
---- Creates a link for an abstraction value, optionally adding it to a target 
---- table.
+--- Creates a single link for an abstraction value, optionally adding it to a
+--- target table.
 ---
 --- @param targetTable table? The table to add the link to.
 --- @param code string The code to create a link for.
@@ -50,8 +60,8 @@ local function makeAbstractionLink(targetTable, code, linkPrefix, sequence)
 end
 
 --------------------------------------------------------------------------------
---- Creates a link for an abstraction value, optionally adding it to a target
---- table.
+--- Creates a single link for an abstraction value, optionally adding it to a
+--- target table.
 ---
 --- @param targetTable table? The table to add the link to.
 --- @param code string The code to create a link for.
@@ -71,7 +81,8 @@ local function makeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
 end
 
 --------------------------------------------------------------------------------
---- Creates a link for a medication, optionally adding it to a target table.
+--- Creates a single link for a medication, optionally adding it to a target 
+--- table.
 ---
 --- @param targetTable table? The table to add the link to.
 --- @param medication string The medication to create a link for.
