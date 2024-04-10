@@ -107,7 +107,7 @@ end
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
--- Dependency codes with descriptions
+--- Dependency codes with descriptions
 local dependenceCodesDictionary = {
     ["F10.230"] = "Alcohol Dependence with Withdrawal, Uncomplicated",
     ["F10.231"] = "Alcohol Dependence with Withdrawal Delirium",
@@ -116,12 +116,15 @@ local dependenceCodesDictionary = {
     ["F11.20"] = "Opioid Depndence, Uncomplicated",
 }
 
--- List of codes in dependecy map that are present on the account (codes only)
-local accountDependenceCodes = {} --- @type string[]
+--- List of codes in dependecy map that are present on the account (codes only)
+---
+--- @type string[]
+local accountDependenceCodes = {}
 
 -- Populate accountDependenceCodes list
 for i = 1, #account.documents do
-    local document = account.documents[i] --- @type Document
+    --- @type Document
+    local document = account.documents[i]
     for j = 1, #document.code_references do
         local codeReference = document.code_references[j]
 
@@ -132,41 +135,77 @@ for i = 1, #account.documents do
     end
 end
 
--- Existing substance abuse alert (or nil if this alert doesn't exist currently on the account)
+--- Existing substance abuse alert (or nil if this alert doesn't exist currently on the account)
 local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
 
--- Subtitle of the existing alert (or nil if the alert doesn't exist)
-local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil --- @type string?
+--- Subtitle of the existing alert (or nil if the alert doesn't exist)
+local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil
 
--- Boolean indicating that this alert matched conditions and we should proceed with creating links
--- and marking the result as passed
+--- Boolean indicating that this alert matched conditions and we should proceed with creating links
+--- and marking the result as passed
 local alertMatched = false
 
--- Boolean indicating that this alert was autoresolved and we should skip additional link creation,
--- but still mark the result as passed
+--- Boolean indicating that this alert was autoresolved and we should skip additional link creation,
+--- but still mark the result as passed
 local alertAutoResolved = false
 
--- Top-level link for holding documentation links
-local documentationIncludesLink = CdiAlertLink:new() --- @type CdiAlertLink
+--- Top-level link for holding documentation links
+---
+--- @type CdiAlertLink
+local documentationIncludesLink = CdiAlertLink:new()
 documentationIncludesLink.link_text = "Documentation Includes"
 
--- Top-level links for holding clinical evidence
-local clinicalEvidenceLink = CdiAlertLink:new() --- @type CdiAlertLink
+--- Top-level links for holding clinical evidence
+---
+--- @type CdiAlertLink
+local clinicalEvidenceLink = CdiAlertLink:new()
 clinicalEvidenceLink.link_text = "Clinical Evidence"
 
--- Top-level link for holding treatment links
-local treatmentLink = CdiAlertLink:new() --- @type CdiAlertLink
+--- Top-level link for holding treatment links
+---
+--- @type CdiAlertLink
+local treatmentLink = CdiAlertLink:new()
 treatmentLink.link_text = "Treatment"
 
--- Links that are calculated during qualification phase
-local f1120CodeLink --- @type CdiAlertLink?
-local ciwaScoreAbsLink --- @type CdiAlertLink?
-local ciwaProtocolAbsLink --- @type CdiAlertLink?
-local methadoneClinicAbsLink --- @type CdiAlertLink?
-local methadoneMedLink --- @type CdiAlertLink?
-local methadoneAbsLink --- @type CdiAlertLink?
-local suboxoneMedLink --- @type CdiAlertLink?
-local suboxoneAbsLink --- @type CdiAlertLink?
+--- Link for F11.20 code
+---
+--- @type CdiAlertLink?
+local f1120CodeLink
+
+--- Link for CIWA Score
+---
+--- @type CdiAlertLink?
+local ciwaScoreAbsLink
+
+--- Link for CIWA Protocol
+---
+--- @type CdiAlertLink?
+local ciwaProtocolAbsLink
+
+--- Link for Methadone Clinic
+---
+--- @type CdiAlertLink?
+local methadoneClinicAbsLink
+
+--- Link for Methadone Medication
+---
+--- @type CdiAlertLink?
+local methadoneMedLink
+
+--- Link for Methadone Abstraction
+---
+--- @type CdiAlertLink?
+local methadoneAbsLink
+
+--- Link for Suboxone Medication
+---
+--- @type CdiAlertLink?
+local suboxoneMedLink
+
+--- Link for Suboxone Abstraction
+---
+--- @type CdiAlertLink?
+local suboxoneAbsLink
 
 
 
@@ -197,7 +236,8 @@ if existingAlert == nil or not existingAlert.validated then
         debug("One specific code was on the chart, alert failed" .. account.id)
         if existingAlert ~= nil then
             if subtitle == alcoholSubtitle then
-                local documentationIncludesLinks = {} --- @type CdiAlertLink[]
+                --- @type CdiAlertLink[]
+                local documentationIncludesLinks = {}
                 for codeIndex = 1, #accountDependenceCodes do
                     local code = accountDependenceCodes[codeIndex]
                     local desc = dependenceCodesDictionary[code]
@@ -242,8 +282,15 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if alertMatched then
-    local clinicalEvidenceLinks = {} --- @type CdiAlertLink[]
-    local treatmentLinks = {} --- @type CdiAlertLink[]
+    --- Clinical Evidence Links temp table
+    ---
+    --- @type CdiAlertLink[]
+    local clinicalEvidenceLinks = {}
+
+    --- Treatment Links temp table
+    ---
+    --- @type CdiAlertLink[]
+    local treatmentLinks = {}
 
     -- Abstractions
     local fcodeLinks = GetCodeLinks {
@@ -327,7 +374,10 @@ end
 --- Result Finalization 
 --------------------------------------------------------------------------------
 if alertMatched or alertAutoResolved then
-    local resultLinks = {} --- @type CdiAlertLink[]
+    --- Result Links temp table
+    ---
+    --- @type CdiAlertLink[]
+    local resultLinks = {}
 
     if documentationIncludesLink.links ~= nil then
         table.insert(resultLinks, documentationIncludesLink)

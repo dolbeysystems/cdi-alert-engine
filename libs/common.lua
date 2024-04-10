@@ -83,9 +83,11 @@ function GetCodeLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {} --- @type CdiAlertLink[]
+     --- @type CdiAlertLink[]
+    local links = {}
 
-    local code_reference_pairs = {} --- @type CodeReferenceWithDocument[]
+    --- @type CodeReferenceWithDocument[]
+    local code_reference_pairs = {}
     for i = 1, #codes do
         local code = codes[i]
         local code_reference_pairs_for_code = account:find_code_references(code)
@@ -104,7 +106,8 @@ function GetCodeLinks(args)
         end
 
         if documentTypes == nil or #documentTypes == 0 then
-            local link = CdiAlertLink:new() --- @type CdiAlertLink
+            --- @type CdiAlertLink
+            local link = CdiAlertLink:new()
             link.code = code_reference.code
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
@@ -160,8 +163,10 @@ function GetDocumentLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {} --- @type CdiAlertLink[]
-    local documents = {} --- @type Document[]
+    --- @type CdiAlertLink[]
+    local links = {}
+    --- @type Document[]
+    local documents = {}
 
     for i = 1, #documentTypes do
         local documentType = documentTypes[i]
@@ -176,7 +181,8 @@ function GetDocumentLinks(args)
             goto continue
         end
         local document = documents[i]
-        local link = CdiAlertLink:new() --- @type CdiAlertLink
+        --- @type CdiAlertLink
+        local link = CdiAlertLink:new()
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
         link.sequence = sequence
@@ -212,8 +218,10 @@ function GetMedicationLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {} --- @type CdiAlertLink[]
-    local medications = {} --- @type Medication[]
+    --- @type CdiAlertLink[]
+    local links = {}
+    --- @type Medication[]
+    local medications = {}
 
     for i = 1, #medicationCategories do
         local medicationCategory = medicationCategories[i]
@@ -228,7 +236,8 @@ function GetMedicationLinks(args)
             goto continue
         end
         local medication = medications[i]
-        local link = CdiAlertLink:new() --- @type CdiAlertLink
+        --- @type CdiAlertLink
+        local link = CdiAlertLink:new()
         link.medication_id  = medication.external_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
         link.sequence = sequence
@@ -264,8 +273,10 @@ function GetDiscreteValueLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {} --- @type CdiAlertLink[]
-    local discrete_values = {} --- @type DiscreteValue[]
+     --- @type CdiAlertLink[]
+    local links = {}
+    --- @type DiscreteValue[]
+    local discrete_values = {}
 
     for i = 1, #discreteValueNames do
         local discreteValueName = discreteValueNames[i]
@@ -280,7 +291,8 @@ function GetDiscreteValueLinks(args)
             goto continue
         end
         local discrete_value = discrete_values[i]
-        local link = CdiAlertLink:new() --- @type CdiAlertLink
+        --- @type CdiAlertLink
+        local link = CdiAlertLink:new()
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
         link.sequence = sequence
