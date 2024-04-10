@@ -1,3 +1,4 @@
+use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::Lua;
 use std::collections::HashMap;
@@ -10,6 +11,8 @@ use tracing::*;
 mod cac_data;
 mod config;
 
+const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
+
 #[derive(Clone)]
 struct Script {
     config: config::Script,
@@ -21,18 +24,27 @@ async fn main() {
     tracing_subscriber::fmt().init();
     // TODO: configure this from the command line.
     let config_path = "config.toml";
-    let config::InitialConfig {
-        scripts,
-        polling_seconds,
-        create_test_data,
-        config,
-    } = match config::InitialConfig::open(config_path) {
+    let mut config = match config::InitialConfig::open(config_path) {
         Ok(config) => config,
         Err(msg) => {
             error!("failed to open {config_path}: {msg}");
             exit(1);
         }
     };
+    // Replace fields with environment variables.
+    if let Err(msg) = config.with_env(ENV_PREFIX) {
+        error!("{msg}");
+    }
+    let config::InitialConfig {
+        scripts,
+        polling_seconds,
+        create_test_data,
+        mut config,
+    } = config;
+    // This is the sub-config struct, which also needs to respect environment variables.
+    if let Err(msg) = config.with_env(ENV_PREFIX) {
+        error!("{msg}");
+    }
 
     if create_test_data {
         if let Err(e) = cac_data::delete_test_data(&config).await {
@@ -45,12 +57,12 @@ async fn main() {
 
     let scripts: Arc<[Script]> = match scripts
         .into_iter()
-        .map(|x| {
-            let contents = fs::read_to_string(x.path).map_err(|e| (x.path, e))?;
-            Ok(Script {
+        .map(|x| match fs::read_to_string(&x.path) {
+            Ok(contents) => Ok(Script {
                 contents,
                 config: x,
-            })
+            }),
+            Err(e) => Err((x.path, e)),
         })
         .collect()
     {
@@ -94,6 +106,7 @@ async fn main() {
                     subtitle: None,
                     links: Vec::new(),
                     weight: None,
+                    sequence: None,
                 };
 
                 let account = account.clone();

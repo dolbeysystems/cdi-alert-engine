@@ -189,6 +189,7 @@ dependencies = [
  "ansi_term",
  "bson",
  "chrono",
+ "derive_environment",
  "erased-serde",
  "futures",
  "itertools",
@@ -231,6 +232,15 @@ name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "core-foundation-sys"
@@ -355,12 +365,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_environment"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f1deefee5a700796a36bfa4582aa10ac9bd59e39468f277744b99aecb8c4579"
+dependencies = [
+ "derive_environment_macros",
+ "thiserror",
+]
+
+[[package]]
+name = "derive_environment_macros"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b5e679f2b859aaea95e63c549062953606e2b52b0229397a848bbc7638b428f"
+dependencies = [
+ "convert_case 0.6.0",
+ "darling 0.20.8",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.57",
+]
+
+[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
 dependencies = [
- "convert_case",
+ "convert_case 0.4.0",
  "proc-macro2",
  "quote",
  "rustc_version 0.4.0",
@@ -1837,6 +1870,12 @@ checksum = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
 
 [[package]]
 name = "untrusted"
