@@ -18,6 +18,10 @@ require("libs.common")
 
 
 --------------------------------------------------------------------------------
+--- Script Local Functions
+--------------------------------------------------------------------------------
+---
+--------------------------------------------------------------------------------
 --- Creates a single link for a code reference, optionally adding it to a target
 --- table.
 ---
@@ -101,7 +105,6 @@ local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
     end
     return link
 end
-
 
 
 
