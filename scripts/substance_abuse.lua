@@ -93,7 +93,8 @@ end
 --------------------------------------------------------------------------------
 local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
-    local link = GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
+    local link =
+        GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
 
     if link ~= nil and targetTable ~= nil then
         table.insert(targetTable, link)
@@ -232,7 +233,8 @@ if existingAlert == nil or not existingAlert.validated then
     suboxoneAbsLink = makeAbstractionValueLink(nil, "SUBOXONE", "Suboxone", 12)
 
     -- Algorithm
-    if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or (f1120CodeLink ~= nil and subtitle == opiodSubtitle) then
+    if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or
+       (f1120CodeLink ~= nil and subtitle == opiodSubtitle) then
         debug("One specific code was on the chart, alert failed" .. account.id)
         if existingAlert ~= nil then
             if subtitle == alcoholSubtitle then
@@ -243,7 +245,10 @@ if existingAlert == nil or not existingAlert.validated then
                     local desc = dependenceCodesDictionary[code]
                     local tempCode = GetCodeLinks {
                         code = code,
-                        linkTemplate = "Autoresolved Specified Code - " .. desc .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+                        linkTemplate =
+                            "Autoresolved Specified Code - " ..
+                            desc ..
+                            ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
                         single = true,
                     }
                     if tempCode ~= nil then
@@ -264,7 +269,13 @@ if existingAlert == nil or not existingAlert.validated then
             result.passed = false
         end
 
-    elseif f1120CodeLink == nil and (methadoneMedLink ~= nil or methadoneAbsLink ~= nil or suboxoneMedLink ~= nil or suboxoneAbsLink ~= nil or methadoneClinicAbsLink ~= nil) then
+    elseif f1120CodeLink == nil and (
+            methadoneMedLink ~= nil or
+            methadoneAbsLink ~= nil or
+            suboxoneMedLink ~= nil or
+            suboxoneAbsLink ~= nil or
+            methadoneClinicAbsLink ~= nil
+        ) then
         result.subtitle = opiodSubtitle
         alertMatched = true
     elseif #accountDependenceCodes == 0 and (ciwaScoreAbsLink ~= nil or ciwaProtocolAbsLink ~= nil) then
