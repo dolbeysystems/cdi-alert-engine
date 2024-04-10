@@ -1,3 +1,102 @@
+---------------------------------------------------------------------------------------------------------------------
+--- CDI Alert Script - Substance Abuse
+---
+--- This script checks an account to see if it matches the criteria for a Substance Abuse alert.
+---
+--- Date: 10/15/2021
+--- Version: 1.0
+--- Site: (Default)
+---------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+--- Creates a link for a code reference, optionally adding it to a target table.
+---
+--- @param targetTable table? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return table The link object.
+--------------------------------------------------------------------------------
+local function makeCodeLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a link for an abstraction value, optionally adding it to a target 
+--- table.
+---
+--- @param targetTable table? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return table The link object.
+--------------------------------------------------------------------------------
+local function makeAbstractionLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a link for an abstraction value, optionally adding it to a target
+--- table.
+---
+--- @param targetTable table? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return table The link object.
+--------------------------------------------------------------------------------
+local function makeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a link for a medication, optionally adding it to a target table.
+---
+--- @param targetTable table? The table to add the link to.
+--- @param medication string The medication to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return table The link object.
+--------------------------------------------------------------------------------
+local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+    local link = GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+
+
+
+--------------------------------------------------------------------------------
+--- Setup
+--------------------------------------------------------------------------------
+-- Dependency codes with descriptions
 local dependenceCodesDictionary = {
     ["F10.230"] = "Alcohol Dependence with Withdrawal, Uncomplicated",
     ["F10.231"] = "Alcohol Dependence with Withdrawal Delirium",
@@ -5,10 +104,11 @@ local dependenceCodesDictionary = {
     ["F10.239"] = "Alcohol Dependence with Withdrawal, Unspecified",
     ["F11.20"] = "Opioid Depndence, Uncomplicated",
 }
-local autoEvidenceText = "Autoresolved Evidence - "
-local autoCodeText = "Autoresolved Code - "
+
+-- List of codes in dependecy map that are present on the account (codes only)
 local accountDependenceCodes = {}
 
+-- Populate accountDependenceCodes list
 for i = 1, #account.documents do
     local document = account.documents[i]
     for j = 1, #document.code_references do
@@ -21,88 +121,63 @@ for i = 1, #account.documents do
     end
 end
 
+-- Existing substance abuse alert (or nil if this alert doesn't exist currently on the account)
 local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
-local alertTriggered = existingAlert ~= nil
-local alertValidated = existingAlert ~= nil and existingAlert.validated
-local outcome =  existingAlert ~= nil and existingAlert.outcome or ""
-local subtitle = existingAlert ~= nil and existingAlert.subtitle or ""
-local alertPassed = false
-local alertConditions = false
 
+-- Subtitle of the existing alert (or nil if the alert doesn't exist)
+local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil
+
+-- Boolean indicating that this alert matched conditions and we should proceed with creating links
+-- and marking the result as passed
+local alertMatched = false
+
+-- Boolean indicating that this alert was autoresolved and we should skip additional link creation,
+-- but still mark the result as passed
+local alertAutoResolved = false
+
+-- Top-level link for holding documentation links
 local documentationIncludesLink = CdiAlertLink:new()
 documentationIncludesLink.link_text = "Documentation Includes"
 
+-- Top-level links for holding clinical evidence
 local clinicalEvidenceLink = CdiAlertLink:new()
 clinicalEvidenceLink.link_text = "Clinical Evidence"
 
+-- Top-level link for holding treatment links
 local treatmentLink = CdiAlertLink:new()
 treatmentLink.link_text = "Treatment"
 
+-- Links that are calculated during qualification phase
 local f1120CodeLink, ciwaScoreAbsLink, ciwaProtocolAbsLink, methadoneClinicAbsLink, methadoneMedLink, methadoneAbsLink, suboxoneMedLink, suboxoneAbsLink
 
-if not alertValidated then
+
+
+--------------------------------------------------------------------------------
+--- Alert Qualification 
+--------------------------------------------------------------------------------
+if existingAlert == nil or not existingAlert.validated then
     -- General Subtitle Declaration
     local opiodSubtitle = "Possible Opioid Dependence"
     local alcoholSubtitle = "Possible Alcohol Dependence"
 
     -- Negation
-    f1120CodeLink = GetCodeLinks {
-        code = "F1120",
-        linkTemplate = "Opioid Dependence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 0
-    }
+    f1120CodeLink = makeCodeLink(nil, "F11.20", "Opioid Dependence", 0)
 
     -- Abstractions
-    ciwaScoreAbsLink = GetCodeLinks {
-        code = "CIWA_SCORE",
-        linkTemplate = "CIWA Score: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 4
-    }
-    ciwaProtocolAbsLink = GetCodeLinks {
-        code = "CIWA_PROTOCOL",
-        linkTemplate = "CIWA Protocol: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 5
-    }
-    methadoneClinicAbsLink = GetCodeLinks {
-        code = "METHADONE_CLINIC",
-        linkTemplate = "Methadone Clinic: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 11
-    }
+    ciwaScoreAbsLink = makeAbstractionValueLink(nil, "CIWA_SCORE", "CIWA Score", 4)
+    ciwaProtocolAbsLink = makeAbstractionValueLink(nil, "CIWA_PROTOCOL", "CIWA Protocol", 5)
+    methadoneClinicAbsLink = makeAbstractionValueLink(nil, "METHADONE_CLINIC", "Methadone Clinic", 11)
 
     -- Medications
-    methadoneMedLink = GetMedicationLinks {
-        medication = "Methadone",
-        linkTemplate = "Methadone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])",
-        single = true,
-        sequence = 7
-    }
-    methadoneAbsLink = GetCodeLinks {
-        code = "METHADONE",
-        linkTemplate = "Methadone: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 8
-    }
-    suboxoneMedLink = GetMedicationLinks {
-        medication = "Suboxone",
-        linkTemplate = "Suboxone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])",
-        single = true,
-        sequence = 11
-    }
-    suboxoneAbsLink = GetCodeLinks {
-        code = "SUBOXONE",
-        linkTemplate = "Suboxone: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        single = true,
-        sequence = 12
-    }
+    methadoneMedLink = makeMedicationLink(nil, "Methadone", "Methadone", 7)
+    methadoneAbsLink = makeAbstractionValueLink(nil, "METHADONE", "Methadone", 8)
+    suboxoneMedLink = makeMedicationLink(nil, "Suboxone", "Suboxone", 11)
+    suboxoneAbsLink = makeAbstractionValueLink(nil, "SUBOXONE", "Suboxone", 12)
 
     -- Algorithm
     if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or (f1120CodeLink ~= nil and subtitle == opiodSubtitle) then
         debug("One specific code was on the chart, alert failed" .. account.id)
-        if alertTriggered then
+        if existingAlert ~= nil then
             if subtitle == alcoholSubtitle then
                 local documentationIncludesLinks = {}
                 for codeIndex = 1, #accountDependenceCodes do
@@ -120,43 +195,37 @@ if not alertValidated then
                 documentationIncludesLink.links = documentationIncludesLinks
 
             elseif subtitle == opiodSubtitle then
-                f1120CodeLink.link_text = autoCodeText .. f1120CodeLink.link_text
+                f1120CodeLink.link_text = "Autoresolved Evidence - " .. f1120CodeLink.link_text
                 documentationIncludesLink.links = {f1120CodeLink}
             end
             result.outcome = "AUTORESOLVED"
             result.reason = "Autoresolved due to one Specified Code on Account"
             result.validated = true
-            alertConditions = true
+            alertAutoResolved = true
         else
             result.passed = false
         end
 
     elseif f1120CodeLink == nil and (methadoneMedLink ~= nil or methadoneAbsLink ~= nil or suboxoneMedLink ~= nil or suboxoneAbsLink ~= nil or methadoneClinicAbsLink ~= nil) then
         result.subtitle = opiodSubtitle
-        alertPassed = true
+        alertMatched = true
     elseif #accountDependenceCodes == 0 and (ciwaScoreAbsLink ~= nil or ciwaProtocolAbsLink ~= nil) then
         result.subtitle = alcoholSubtitle
-        alertPassed = true
+        alertMatched = true
     else
         debug("Not enough data to warrant alert, Alert Failed. " .. account.id)
         result.passed = false
     end
 end
 
-if alertPassed then
+
+
+--------------------------------------------------------------------------------
+--- Additional Link Creation
+--------------------------------------------------------------------------------
+if alertMatched then
     local clinicalEvidenceLinks = {}
     local treatmentLinks = {}
-
-    local function addClinicalEvidenceLink(link)
-        if link ~= nil then
-            table.insert(clinicalEvidenceLinks, link)
-        end
-    end
-    local function addTreatmentLink(link)
-        if link ~= nil then
-            table.insert(treatmentLinks, link)
-        end
-    end
 
     -- Abstractions
     local fcodeLinks = GetCodeLinks {
@@ -173,42 +242,71 @@ if alertPassed then
         table.insert(clinicalEvidenceLinks, fcodeLinks[i])
     end
 
-    addClinicalEvidenceLink(
-        GetCodeLinks {
-            code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-            linkTemplate = "Altered Mental Status: '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-            single = true,
-            sequence = 2
-        }
-    )
-
-    addClinicalEvidenceLink(
-        GetCodeLinks {
-            code = "R44.0",
-            linkTemplate = "Auditory Hallucinations: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-            single = true,
-            sequence = 3
-        }
-    )
+    makeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
+    makeAbstractionLink(clinicalEvidenceLinks, "AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
 
     if ciwaScoreAbsLink ~= nil then
-        addClinicalEvidenceLink(ciwaScoreAbsLink)
+        table.insert(clinicalEvidenceLinks, ciwaScoreAbsLink) -- #4
     end
     if ciwaProtocolAbsLink ~= nil then
-        addClinicalEvidenceLink(ciwaProtocolAbsLink)
+        table.insert(clinicalEvidenceLinks, ciwaProtocolAbsLink) -- #5
     end
 
+    makeAbstractionLink(clinicalEvidenceLinks, "COMBATIVE", "Combative", 6)
+    makeAbstractionLink(clinicalEvidenceLinks, "DELIRIUM", "Delirium", 7)
+    makeCodeLink(clinicalEvidenceLinks, "R44.3", "Hallucinations", 8)
+    makeCodeLink(clinicalEvidenceLinks, "R51.9", "Headache", 9)
+    makeCodeLink(clinicalEvidenceLinks, "R45.4", "Irritability and Anger", 10)
 
-
+    if methadoneClinicAbsLink ~= nil then
+        table.insert(clinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
+    end
     -- TODO:  Still converting...left off here
+    makeCodeLink(clinicalEvidenceLinks, "R11.0", "Nausea", 12)
+    makeCodeLink(clinicalEvidenceLinks, "R45.0", "Nervousness", 13)
+    makeCodeLink(clinicalEvidenceLinks, "R11.12", "Projectile Vomiting", 14)
+    makeCodeLink(clinicalEvidenceLinks, "R45.1", "Restless and Agitation", 15)
+    makeCodeLink(clinicalEvidenceLinks, "R61", "Sweating", 16)
+    makeCodeLink(clinicalEvidenceLinks, "R25.1", "Tremor", 17)
+    makeCodeLink(clinicalEvidenceLinks, "R44.1", "Visual Hallucinations", 18)
+    makeCodeLink(clinicalEvidenceLinks, "R11.10", "Vomiting", 19)
 
+    makeMedicationLink(treatmentLinks, "Benzodiazepine", "Benzodiazepine", 1)
+    makeAbstractionValueLink(treatmentLinks, "BENZODIAZEPINE", "Benzodiazepine", 2)
 
+    makeMedicationLink(treatmentLinks, "Dexmedetomidine", "Dexmedetomidine", 3)
+    makeAbstractionValueLink(treatmentLinks, "DEXMEDETOMIDINE", "Dexmedetomidine", 4)
+
+    makeMedicationLink(treatmentLinks, "Lithium", "Lithium", 5)
+    makeAbstractionValueLink(treatmentLinks, "LITHIUM", "Lithium", 6)
+
+    if methadoneMedLink ~= nil then
+        table.insert(treatmentLinks, methadoneMedLink) -- #7
+    end
+    if methadoneAbsLink ~= nil then
+        table.insert(treatmentLinks, methadoneAbsLink) -- #8
+    end
+
+    makeMedicationLink(treatmentLinks, "Propofol", "Propofol", 9)
+    makeAbstractionValueLink(treatmentLinks, "PROPOFOL", "Propofol", 10)
+
+    if suboxoneMedLink ~= nil then
+        table.insert(treatmentLinks, suboxoneMedLink) -- #11
+    end
+    if suboxoneAbsLink ~= nil then
+        table.insert(treatmentLinks, suboxoneAbsLink) -- #12
+    end
 
     clinicalEvidenceLink.links = clinicalEvidenceLinks
     treatmentLink.links = treatmentLinks
 end
 
-if alertPassed or alertConditions then
+
+
+--------------------------------------------------------------------------------
+--- Result Finalization 
+--------------------------------------------------------------------------------
+if alertMatched or alertAutoResolved then
     local resultLinks = {}
 
     if documentationIncludesLink.links ~= nil then
@@ -230,3 +328,4 @@ if alertPassed or alertConditions then
     result.links = resultLinks
     result.passed = true
 end
+
