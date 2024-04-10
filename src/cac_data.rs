@@ -473,7 +473,7 @@ pub struct CdiAlertLink {
     #[serde(rename = "UserNotes")]
     pub user_notes: Option<String>,
     #[serde(rename = "Links", default)]
-    pub links: Vec<CdiAlertLink>,
+    pub links: Vec<Arc<CdiAlertLink>>,
     #[serde(rename = "Sequence")]
     pub sequence: i32,
     #[serde(rename = "Hidden")]
@@ -515,8 +515,13 @@ impl mlua::UserData for CdiAlertLink {
                 Ok(())
             },
         );
-        f.add_field_method_set("links", |_, this, value: mlua::AnyUserData| {
-            this.links = value.take()?;
+        f.add_field_method_set("links", |_, this, value: Vec<mlua::AnyUserData>| {
+            warn!("Setting links");
+            let mut links = Vec::new();
+            for i in value {
+                links.push(Arc::new(i.borrow::<CdiAlertLink>()?.clone()))
+            }
+            this.links = links;
             Ok(())
         });
     }
