@@ -13,8 +13,46 @@
 ---------------------------------------------------------------------------------------------
 --- Lua LS Type Definitions
 ---------------------------------------------------------------------------------------------
+--- TODO: Complete types...
+--- 
+--- @class Account
+---
+--- @class Document
+---
+--- @class CodeReference
+---
+--- @class Medication
+---
+--- @class DiscreteValue
+---
+--- @class CdiAlert
+--- @field script_name string The name of the script that generated the alert
+--- @field passed boolean Whether the alert passed or failed
+--- @field links CdiAlertLink[] A list of links to display in the alert
+--- @field validated boolean Whether the alert has been validated by a user or autoclosed
+--- @field subtitle string? A subtitle to display in the alert
+--- @field outcome string? The outcome of the alert
+--- @field reason string? The reason for the alert
+--- @field weight number? The weight of the alert
+--- @field sequence number? The sequence number of the alert
+---
+--- @class CdiAlertLink
+--- @field link_text string The text to display for the link
+--- @field document_id string? The document id to link to
+--- @field code string? The code to link to
+--- @field discrete_value_id string? The discrete value id to link to
+--- @field discrete_value_name string? The discrete value name to link to
+--- @field medication_id string? The medication id to link to
+--- @field medication_name string? The medication name to link to
+--- @field latest_discrete_value_id string? The latest discrete value to link to
+--- @field is_validated boolean Whether the link has been validated by a user
+--- @field user_notes string? User notes for the link
+--- @field links CdiAlertLink[] A list of sublinks
+--- @field sequence number The sequence number of the link
+--- @field hidden boolean Whether the link is hidden
+---
 --- @class LinkArgs
---- @field account any? Account object (uses global account if not provided)
+--- @field account Account? Account object (uses global account if not provided)
 --- @field linkTemplate string Link template
 --- @field single boolean? If true, only the first link will be returned instead of a list of links
 --- @field sequence number? Starting sequence number to use for the links
@@ -24,25 +62,25 @@
 --- @field codes string[]? List of codes to search for 
 --- @field code string? Single code to search for
 --- @field documentTypes string[]? List of document types that the code must be found in
---- @field predicate fun(code_reference: any, document: any)? Predicate function to filter code references
+--- @field predicate fun(code_reference: CodeReference, document: Document)? Predicate function to filter code references
 
 --- @class GetDocumentLinksArgs : LinkArgs
 --- @field documentTypes string[]? List of document types to search for
 --- @field documentType string? Single document type to search for
---- @field predicate fun(document: any)? Predicate function to filter documents
+--- @field predicate fun(document: Document)? Predicate function to filter documents
 
 --- @class GetMedicationLinksArgs : LinkArgs
 --- @field medicationCategories string[]? List of medication categories to search for
 --- @field medicationCategory string? Single medication category to search for
---- @field predicate fun(medication: any)? Predicate function to filter medications
+--- @field predicate fun(medication: Medication)? Predicate function to filter medications
 
 --- @class GetDiscreteValueLinksArgs : LinkArgs
 --- @field discreteValueNames string[]? List of discrete value names to search for
 --- @field discreteValueName string? Single discrete value name to search for
---- @field predicate fun(discrete_value: any)? Predicate function to filter discrete values
+--- @field predicate fun(discrete_value: DiscreteValue)? Predicate function to filter discrete values
 
 --- @class GetExistingCdiAlertArgs
---- @field account any? Account object (uses global account if not provided)
+--- @field account Account? Account object (uses global account if not provided)
 --- @field scriptName string The name of the script to match
 
 
@@ -63,7 +101,7 @@ end
 --- Build links for all codes in the account that match some criteria
 ---
 --- @param args GetCodeLinksArgs a table of arguments
---- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetCodeLinks(args)
     local account = args.account or account
@@ -140,7 +178,7 @@ end
 --- Build links for all documents in the account that match some criteria
 ---
 --- @param args GetDocumentLinksArgs a table of arguments
---- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDocumentLinks(args)
     local account = args.account or account
@@ -191,7 +229,7 @@ end
 --- Build links for all medications in the account that match some criteria
 ---
 --- @param args GetMedicationLinksArgs table of arguments
---- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetMedicationLinks(args)
     local account = args.account or account
@@ -242,7 +280,7 @@ end
 --- Build links for all discrete values in the account that match some criteria
 ---
 --- @param args GetDiscreteValueLinksArgs table of arguments
---- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDiscreteValueLinks(args)
     local account = args.account or account
@@ -294,10 +332,11 @@ end
 --- document, discrete value, or medication
 ---
 --- @param linkTemplate string - the template for the link
---- @param codeReference any - the code reference to use for the link
---- @param document any - the document to use for the link
---- @param discreteValue any - the discrete value to use for the link
---- @param medication any - the medication to use for the link
+--- @param codeReference CodeReference - the code reference to use for the link
+--- @param document Document - the document to use for the link
+--- @param discreteValue DiscreteValue - the discrete value to use for the link
+--- @param medication Medication - the medication to use for the link
+--- @return string - the link with placeholders replaced
 --------------------------------------------------------------------------------
 function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discreteValue, medication)
     local link = linkTemplate
@@ -348,6 +387,7 @@ end
 --- Get the existing cdi alert for a script
 ---
 --- @param args GetExistingCdiAlertArgs a table of arguments
+--- @return CdiAlert? - the existing cdi alert or nil if not found
 --------------------------------------------------------------------------------
 function GetExistingCdiAlert(args)
     local account = args.account or account

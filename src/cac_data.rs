@@ -472,7 +472,7 @@ pub struct CdiAlertLink {
     #[serde(rename = "MedicationName")]
     pub medication_name: Option<String>,
     #[serde(rename = "LatestDiscreteValueId")]
-    pub latest_discrete_value_id: Option<DiscreteValue>,
+    pub latest_discrete_value_id: Option<String>,
     #[serde(rename = "IsValidated")]
     pub is_validated: bool,
     #[serde(rename = "UserNotes")]
