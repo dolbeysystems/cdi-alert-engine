@@ -1,0 +1,101 @@
+---------------------------------------------------------------------------------------------
+--- Lua LS Type Definitions for UserData (internal rust types)
+---------------------------------------------------------------------------------------------
+--- @class Account
+--- @field find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account
+--- @field find_documents fun(self: Account, document_type: string?): Document[] - Find documents in the account
+--- @field find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
+--- @field find_medications fun(self: Account, medication_category: string?): Medication[] - Find medications in the account
+--- @field id string - Account number 
+--- @field admit_date_time string? - Account admit date time
+--- @field discharge_date_time string? - Account discharge date time
+--- @field patient Patient? - Patient
+--- @field patient_type string? - Patient type
+--- @field admit_source string? - Admit source
+--- @field admit_type string? - Admit type
+--- @field hospital_service string? - Hospital service
+--- @field building string? - Building
+--- @field documents Document[] - List of documents
+--- @field medications Medication[] - List of medications
+--- @field discrete_values DiscreteValue[] - List of discrete values
+--- @field cdi_alerts CdiAlert[] - List of cdi alerts
+--- @field custom_workflow CustomWorkFlowEntry[]? - Custom workflow
+---
+--- @class Patient
+--- @field mrn string? - Medical record number
+--- @field first_name string? - First name
+--- @field middle_name string? - Middle name
+--- @field last_name string? - Last name
+--- @field gender string? - Gender
+--- @field birthdate string? - Birthdate
+---
+--- @class Document
+--- @field document_id string - Document id
+--- @field document_type string? - Document type
+--- @field document_date string? - Document date
+--- @field content_type string? - Content type (e.g. html, text, etc.)
+--- @field code_references CodeReference[] - List of code references on this document
+--- @field abstraction_references CodeReference[] - List of abstraction references on this document
+---
+--- @class CodeReference
+--- @field code string - Code
+--- @field value string? - Value
+--- @field description string? - Description
+--- @field phrase string? - Phrase
+--- @field start number? - Start
+--- @field length number? - Length
+---
+--- @class CodeReferenceWithDocument
+--- @field document Document - Document
+--- @field code_reference CodeReference - Code
+---
+--- @class Medication
+--- @field external_id string - External id
+--- @field medication string? - Medication
+--- @field dosage string? - Dosage
+--- @field route string? - Route
+--- @field start_date string? - Start date
+--- @field end_date string? - End date
+--- @field status string? - Status
+--- @field category string? - Category
+---
+--- @class DiscreteValue
+--- @field unique_id string - Unique id
+--- @field name string - Name
+--- @field result string? - Result
+--- @field result_date string? - Result date
+---
+--- @class CustomWorkFlowEntry
+--- @field work_group string? - Work group
+--- @field criteria_group string? - Criteria group
+--- @field criteria_sequence number? - Criteria sequence
+--- @field work_group_category string? - Work group category
+--- @field work_group_type string? - Work group type
+--- @field work_group_assigned_by string? - Name of the user who assigned the work group 
+--- @field work_group_date_time string? - Date time the work group was assigned
+---
+--- @class CdiAlert
+--- @field script_name string The name of the script that generated the alert
+--- @field passed boolean Whether the alert passed or failed
+--- @field links CdiAlertLink[] A list of links to display in the alert
+--- @field validated boolean Whether the alert has been validated by a user or autoclosed
+--- @field subtitle string? A subtitle to display in the alert
+--- @field outcome string? The outcome of the alert
+--- @field reason string? The reason for the alert
+--- @field weight number? The weight of the alert
+--- @field sequence number? The sequence number of the alert
+---
+--- @class CdiAlertLink
+--- @field link_text string The text to display for the link
+--- @field document_id string? The document id to link to
+--- @field code string? The code to link to
+--- @field discrete_value_id string? The discrete value id to link to
+--- @field discrete_value_name string? The discrete value name to link to
+--- @field medication_id string? The medication id to link to
+--- @field medication_name string? The medication name to link to
+--- @field latest_discrete_value_id string? The latest discrete value to link to
+--- @field is_validated boolean Whether the link has been validated by a user
+--- @field user_notes string? User notes for the link
+--- @field links CdiAlertLink[] A list of sublinks
+--- @field sequence number The sequence number of the link
+--- @field hidden boolean Whether the link is hidden

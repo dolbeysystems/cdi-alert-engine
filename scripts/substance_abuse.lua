@@ -21,12 +21,12 @@ require("libs.common")
 --- Creates a single link for a code reference, optionally adding it to a target
 --- table.
 ---
---- @param targetTable table? The table to add the link to.
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
 --- @param code string The code to create a link for.
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return any The link object.
+--- @return CdiAlertLink? # The link object.
 --------------------------------------------------------------------------------
 local function makeCodeLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -42,12 +42,12 @@ end
 --- Creates a single link for an abstraction value, optionally adding it to a
 --- target table.
 ---
---- @param targetTable table? The table to add the link to.
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
 --- @param code string The code to create a link for.
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return any The link object.
+--- @return CdiAlertLink? # The link object.
 --------------------------------------------------------------------------------
 local function makeAbstractionLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -63,12 +63,12 @@ end
 --- Creates a single link for an abstraction value, optionally adding it to a
 --- target table.
 ---
---- @param targetTable table? The table to add the link to.
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
 --- @param code string The code to create a link for.
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return any The link object.
+--- @return CdiAlertLink? # The link object.
 --------------------------------------------------------------------------------
 local function makeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -84,12 +84,12 @@ end
 --- Creates a single link for a medication, optionally adding it to a target 
 --- table.
 ---
---- @param targetTable table? The table to add the link to.
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
 --- @param medication string The medication to create a link for.
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return any The link object.
+--- @return CdiAlertLink? # The link object.
 --------------------------------------------------------------------------------
 local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
@@ -117,11 +117,11 @@ local dependenceCodesDictionary = {
 }
 
 -- List of codes in dependecy map that are present on the account (codes only)
-local accountDependenceCodes = {}
+local accountDependenceCodes = {} --- @type string[]
 
 -- Populate accountDependenceCodes list
 for i = 1, #account.documents do
-    local document = account.documents[i]
+    local document = account.documents[i] --- @type Document
     for j = 1, #document.code_references do
         local codeReference = document.code_references[j]
 
@@ -136,7 +136,7 @@ end
 local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
 
 -- Subtitle of the existing alert (or nil if the alert doesn't exist)
-local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil
+local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil --- @type string?
 
 -- Boolean indicating that this alert matched conditions and we should proceed with creating links
 -- and marking the result as passed
@@ -147,19 +147,26 @@ local alertMatched = false
 local alertAutoResolved = false
 
 -- Top-level link for holding documentation links
-local documentationIncludesLink = CdiAlertLink:new()
+local documentationIncludesLink = CdiAlertLink:new() --- @type CdiAlertLink
 documentationIncludesLink.link_text = "Documentation Includes"
 
 -- Top-level links for holding clinical evidence
-local clinicalEvidenceLink = CdiAlertLink:new()
+local clinicalEvidenceLink = CdiAlertLink:new() --- @type CdiAlertLink
 clinicalEvidenceLink.link_text = "Clinical Evidence"
 
 -- Top-level link for holding treatment links
-local treatmentLink = CdiAlertLink:new()
+local treatmentLink = CdiAlertLink:new() --- @type CdiAlertLink
 treatmentLink.link_text = "Treatment"
 
 -- Links that are calculated during qualification phase
-local f1120CodeLink, ciwaScoreAbsLink, ciwaProtocolAbsLink, methadoneClinicAbsLink, methadoneMedLink, methadoneAbsLink, suboxoneMedLink, suboxoneAbsLink
+local f1120CodeLink --- @type CdiAlertLink?
+local ciwaScoreAbsLink --- @type CdiAlertLink?
+local ciwaProtocolAbsLink --- @type CdiAlertLink?
+local methadoneClinicAbsLink --- @type CdiAlertLink?
+local methadoneMedLink --- @type CdiAlertLink?
+local methadoneAbsLink --- @type CdiAlertLink?
+local suboxoneMedLink --- @type CdiAlertLink?
+local suboxoneAbsLink --- @type CdiAlertLink?
 
 
 
@@ -190,7 +197,7 @@ if existingAlert == nil or not existingAlert.validated then
         debug("One specific code was on the chart, alert failed" .. account.id)
         if existingAlert ~= nil then
             if subtitle == alcoholSubtitle then
-                local documentationIncludesLinks = {}
+                local documentationIncludesLinks = {} --- @type CdiAlertLink[]
                 for codeIndex = 1, #accountDependenceCodes do
                     local code = accountDependenceCodes[codeIndex]
                     local desc = dependenceCodesDictionary[code]
@@ -205,7 +212,7 @@ if existingAlert == nil or not existingAlert.validated then
                 end
                 documentationIncludesLink.links = documentationIncludesLinks
 
-            elseif subtitle == opiodSubtitle then
+            elseif subtitle == opiodSubtitle and f1120CodeLink ~= nil then
                 f1120CodeLink.link_text = "Autoresolved Evidence - " .. f1120CodeLink.link_text
                 documentationIncludesLink.links = {f1120CodeLink}
             end
@@ -235,8 +242,8 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if alertMatched then
-    local clinicalEvidenceLinks = {}
-    local treatmentLinks = {}
+    local clinicalEvidenceLinks = {} --- @type CdiAlertLink[]
+    local treatmentLinks = {} --- @type CdiAlertLink[]
 
     -- Abstractions
     local fcodeLinks = GetCodeLinks {
@@ -249,8 +256,10 @@ if alertMatched then
         fixed_sequence = true
     }
 
-    for i = 1, #fcodeLinks do
-        table.insert(clinicalEvidenceLinks, fcodeLinks[i])
+    if fcodeLinks ~= nil then
+        for i = 1, #fcodeLinks do
+            table.insert(clinicalEvidenceLinks, fcodeLinks[i])
+        end
     end
 
     makeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
@@ -318,7 +327,7 @@ end
 --- Result Finalization 
 --------------------------------------------------------------------------------
 if alertMatched or alertAutoResolved then
-    local resultLinks = {}
+    local resultLinks = {} --- @type CdiAlertLink[]
 
     if documentationIncludesLink.links ~= nil then
         table.insert(resultLinks, documentationIncludesLink)

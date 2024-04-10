@@ -11,46 +11,15 @@
 
 
 ---------------------------------------------------------------------------------------------
+--- Requires
+---------------------------------------------------------------------------------------------
+require("userdata_types")
+
+
+
+---------------------------------------------------------------------------------------------
 --- Lua LS Type Definitions
 ---------------------------------------------------------------------------------------------
---- TODO: Complete types...
---- 
---- @class Account
----
---- @class Document
----
---- @class CodeReference
----
---- @class Medication
----
---- @class DiscreteValue
----
---- @class CdiAlert
---- @field script_name string The name of the script that generated the alert
---- @field passed boolean Whether the alert passed or failed
---- @field links CdiAlertLink[] A list of links to display in the alert
---- @field validated boolean Whether the alert has been validated by a user or autoclosed
---- @field subtitle string? A subtitle to display in the alert
---- @field outcome string? The outcome of the alert
---- @field reason string? The reason for the alert
---- @field weight number? The weight of the alert
---- @field sequence number? The sequence number of the alert
----
---- @class CdiAlertLink
---- @field link_text string The text to display for the link
---- @field document_id string? The document id to link to
---- @field code string? The code to link to
---- @field discrete_value_id string? The discrete value id to link to
---- @field discrete_value_name string? The discrete value name to link to
---- @field medication_id string? The medication id to link to
---- @field medication_name string? The medication name to link to
---- @field latest_discrete_value_id string? The latest discrete value to link to
---- @field is_validated boolean Whether the link has been validated by a user
---- @field user_notes string? User notes for the link
---- @field links CdiAlertLink[] A list of sublinks
---- @field sequence number The sequence number of the link
---- @field hidden boolean Whether the link is hidden
----
 --- @class LinkArgs
 --- @field account Account? Account object (uses global account if not provided)
 --- @field linkTemplate string Link template
@@ -62,22 +31,22 @@
 --- @field codes string[]? List of codes to search for 
 --- @field code string? Single code to search for
 --- @field documentTypes string[]? List of document types that the code must be found in
---- @field predicate fun(code_reference: CodeReference, document: Document)? Predicate function to filter code references
+--- @field predicate (fun(code_reference: CodeReference, document: Document): boolean)? Predicate function to filter code references
 
 --- @class GetDocumentLinksArgs : LinkArgs
 --- @field documentTypes string[]? List of document types to search for
 --- @field documentType string? Single document type to search for
---- @field predicate fun(document: Document)? Predicate function to filter documents
+--- @field predicate (fun(document: Document): boolean)? Predicate function to filter documents
 
 --- @class GetMedicationLinksArgs : LinkArgs
 --- @field medicationCategories string[]? List of medication categories to search for
 --- @field medicationCategory string? Single medication category to search for
---- @field predicate fun(medication: Medication)? Predicate function to filter medications
+--- @field predicate (fun(medication: Medication): boolean)? Predicate function to filter medications
 
 --- @class GetDiscreteValueLinksArgs : LinkArgs
 --- @field discreteValueNames string[]? List of discrete value names to search for
 --- @field discreteValueName string? Single discrete value name to search for
---- @field predicate fun(discrete_value: DiscreteValue)? Predicate function to filter discrete values
+--- @field predicate (fun(discrete_value: DiscreteValue): boolean)? Predicate function to filter discrete values
 
 --- @class GetExistingCdiAlertArgs
 --- @field account Account? Account object (uses global account if not provided)
@@ -101,7 +70,8 @@ end
 --- Build links for all codes in the account that match some criteria
 ---
 --- @param args GetCodeLinksArgs a table of arguments
---- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetCodeLinks(args)
     local account = args.account or account
@@ -113,9 +83,9 @@ function GetCodeLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {}
+    local links = {} --- @type CdiAlertLink[]
 
-    local code_reference_pairs = {}
+    local code_reference_pairs = {} --- @type CodeReferenceWithDocument[]
     for i = 1, #codes do
         local code = codes[i]
         local code_reference_pairs_for_code = account:find_code_references(code)
@@ -134,7 +104,7 @@ function GetCodeLinks(args)
         end
 
         if documentTypes == nil or #documentTypes == 0 then
-            local link = CdiAlertLink:new()
+            local link = CdiAlertLink:new() --- @type CdiAlertLink
             link.code = code_reference.code
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
@@ -178,7 +148,8 @@ end
 --- Build links for all documents in the account that match some criteria
 ---
 --- @param args GetDocumentLinksArgs a table of arguments
---- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDocumentLinks(args)
     local account = args.account or account
@@ -189,8 +160,8 @@ function GetDocumentLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {}
-    local documents = {}
+    local links = {} --- @type CdiAlertLink[]
+    local documents = {} --- @type Document[]
 
     for i = 1, #documentTypes do
         local documentType = documentTypes[i]
@@ -205,7 +176,7 @@ function GetDocumentLinks(args)
             goto continue
         end
         local document = documents[i]
-        local link = CdiAlertLink:new()
+        local link = CdiAlertLink:new() --- @type CdiAlertLink
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
         link.sequence = sequence
@@ -229,7 +200,8 @@ end
 --- Build links for all medications in the account that match some criteria
 ---
 --- @param args GetMedicationLinksArgs table of arguments
---- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetMedicationLinks(args)
     local account = args.account or account
@@ -240,12 +212,12 @@ function GetMedicationLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {}
-    local medications = {}
+    local links = {} --- @type CdiAlertLink[]
+    local medications = {} --- @type Medication[]
 
     for i = 1, #medicationCategories do
         local medicationCategory = medicationCategories[i]
-        local medicationsForCategory = account:find_medication(medicationCategory)
+        local medicationsForCategory = account:find_medications(medicationCategory)
         for j = 1, #medicationsForCategory do
             table.insert(medications, medicationsForCategory[j])
         end
@@ -256,7 +228,7 @@ function GetMedicationLinks(args)
             goto continue
         end
         local medication = medications[i]
-        local link = CdiAlertLink:new()
+        local link = CdiAlertLink:new() --- @type CdiAlertLink
         link.medication_id  = medication.external_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
         link.sequence = sequence
@@ -280,7 +252,8 @@ end
 --- Build links for all discrete values in the account that match some criteria
 ---
 --- @param args GetDiscreteValueLinksArgs table of arguments
---- @return (CdiAlertLink | CdiAlertLink[] | nil) - a list of CdiAlertLink objects or a single CdiAlertLink object
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDiscreteValueLinks(args)
     local account = args.account or account
@@ -291,8 +264,8 @@ function GetDiscreteValueLinks(args)
     local sequence = args.sequence or 0
     local fixed_sequence = args.fixed_sequence or false
 
-    local links = {}
-    local discrete_values = {}
+    local links = {} --- @type CdiAlertLink[]
+    local discrete_values = {} --- @type DiscreteValue[]
 
     for i = 1, #discreteValueNames do
         local discreteValueName = discreteValueNames[i]
@@ -307,7 +280,7 @@ function GetDiscreteValueLinks(args)
             goto continue
         end
         local discrete_value = discrete_values[i]
-        local link = CdiAlertLink:new()
+        local link = CdiAlertLink:new() --- @type CdiAlertLink
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
         link.sequence = sequence
@@ -331,12 +304,13 @@ end
 --- Replace placeholders in a link template with values from the code reference,
 --- document, discrete value, or medication
 ---
---- @param linkTemplate string - the template for the link
---- @param codeReference CodeReference - the code reference to use for the link
---- @param document Document - the document to use for the link
---- @param discreteValue DiscreteValue - the discrete value to use for the link
---- @param medication Medication - the medication to use for the link
---- @return string - the link with placeholders replaced
+--- @param linkTemplate string the template for the link
+--- @param codeReference CodeReference? the code reference to use for the link
+--- @param document Document? the document to use for the link
+--- @param discreteValue DiscreteValue? the discrete value to use for the link
+--- @param medication Medication? the medication to use for the link
+---
+--- @return string # the link with placeholders replaced
 --------------------------------------------------------------------------------
 function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discreteValue, medication)
     local link = linkTemplate
@@ -356,9 +330,9 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
 
     if discreteValue ~= nil then
         link = string.gsub(link, "%[DISCRETEVALUENAME%]", discreteValue.name or "")
-        link = string.gsub(link, "%[DISCRETEVALUE%]", discreteValue.value or "")
-        if discreteValue.result_datetime ~= nil then
-            link = string.gsub(link, "%[RESULTDATE%]", discreteValue.result_datetime or "")
+        link = string.gsub(link, "%[DISCRETEVALUE%]", discreteValue.result or "")
+        if discreteValue.result_date ~= nil then
+            link = string.gsub(link, "%[RESULTDATE%]", discreteValue.result_date or "")
         end
     end
 
@@ -366,7 +340,7 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
         link = string.gsub(link, "%[MEDICATIONID%]", medication.external_id or "")
         link = string.gsub(link, "%[MEDICATION%]", medication.medication or "")
         link = string.gsub(link, "%[DOSAGE%]", medication.dosage or "")
-        link = string.gsub(link, "%[ROUTE%]", medication.routed or "")
+        link = string.gsub(link, "%[ROUTE%]", medication.route or "")
         if medication.start_date ~= nil then
             link = string.gsub(link, "%[STARTDATE%]", medication.start_date or "")
         end
@@ -387,7 +361,8 @@ end
 --- Get the existing cdi alert for a script
 ---
 --- @param args GetExistingCdiAlertArgs a table of arguments
---- @return CdiAlert? - the existing cdi alert or nil if not found
+---
+--- @return CdiAlert? # the existing cdi alert or nil if not found
 --------------------------------------------------------------------------------
 function GetExistingCdiAlert(args)
     local account = args.account or account
