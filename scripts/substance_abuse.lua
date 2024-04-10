@@ -26,7 +26,7 @@ require("libs.common")
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return table The link object.
+--- @return any The link object.
 --------------------------------------------------------------------------------
 local function makeCodeLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -47,7 +47,7 @@ end
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return table The link object.
+--- @return any The link object.
 --------------------------------------------------------------------------------
 local function makeAbstractionLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -68,7 +68,7 @@ end
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return table The link object.
+--- @return any The link object.
 --------------------------------------------------------------------------------
 local function makeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
@@ -89,7 +89,7 @@ end
 --- @param linkPrefix string The first part of the link template.
 --- @param sequence number The sequence number to use for the link.
 ---
---- @return table The link object.
+--- @return any The link object.
 --------------------------------------------------------------------------------
 local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"

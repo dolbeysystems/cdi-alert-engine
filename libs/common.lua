@@ -10,25 +10,61 @@
 
 
 
+---------------------------------------------------------------------------------------------
+--- Lua LS Type Definitions
+---------------------------------------------------------------------------------------------
+--- @class LinkArgs
+--- @field account any? Account object (uses global account if not provided)
+--- @field linkTemplate string Link template
+--- @field single boolean? If true, only the first link will be returned instead of a list of links
+--- @field sequence number? Starting sequence number to use for the links
+--- @field fixed_sequence boolean? If true, the sequence number will not be incremented for each link
+
+--- @class GetCodeLinksArgs : LinkArgs
+--- @field codes string[]? List of codes to search for 
+--- @field code string? Single code to search for
+--- @field documentTypes string[]? List of document types that the code must be found in
+--- @field predicate fun(code_reference: any, document: any)? Predicate function to filter code references
+
+--- @class GetDocumentLinksArgs : LinkArgs
+--- @field documentTypes string[]? List of document types to search for
+--- @field documentType string? Single document type to search for
+--- @field predicate fun(document: any)? Predicate function to filter documents
+
+--- @class GetMedicationLinksArgs : LinkArgs
+--- @field medicationCategories string[]? List of medication categories to search for
+--- @field medicationCategory string? Single medication category to search for
+--- @field predicate fun(medication: any)? Predicate function to filter medications
+
+--- @class GetDiscreteValueLinksArgs : LinkArgs
+--- @field discreteValueNames string[]? List of discrete value names to search for
+--- @field discreteValueName string? Single discrete value name to search for
+--- @field predicate fun(discrete_value: any)? Predicate function to filter discrete values
+
+--- @class GetExistingCdiAlertArgs
+--- @field account any? Account object (uses global account if not provided)
+--- @field scriptName string The name of the script to match
+
+
+
+--------------------------------------------------------------------------------
+--- Global setup/configuration
+--------------------------------------------------------------------------------
 -- This is here because of unpack having different availability based on lua version
 -- (Basically, to make LSP integration happy)
 if not table.unpack then
-    ---@diagnostic disable-next-line: deprecated
+    --- @diagnostic disable-next-line: deprecated
     table.unpack = unpack
 end
 
--- Build links for all codes in the account that match some criteria
---
--- @param args - a table of arguments
---  args.account - the account object (defaults to the global account)
---  args.codes - a list of codes to search for (not required if args.code is provided)
---  args.code - a single code to search for (not required if args.codes is provided)
---  args.linkTemplate - the template for the link
---  args.documentTypes - an optional list of document types that the code must be found in 
---  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
---  args.single - if true, only the first link will be returned instead of a list of links
---  args.sequence - the starting sequence number to use for the links
---  args.fixed_sequence - if true, the sequence number will not be incremented for each link
+
+
+--------------------------------------------------------------------------------
+--- Build links for all codes in the account that match some criteria
+---
+--- @param args GetCodeLinksArgs a table of arguments
+--- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
 function GetCodeLinks(args)
     local account = args.account or account
     local codes = args.codes or { args.code }
@@ -100,17 +136,12 @@ function GetCodeLinks(args)
     end
 end
 
--- Build links for all documents in the account that match some criteria
---
--- @param args - a table of arguments
---  args.account - the account object (defaults to the global account)
---  args.documentTypes - a list of document types to search for (not required if args.documentType is provided)
---  args.documentType - a single document type to search for (not required if args.documentTypes is provided)
---  args.linkTemplate - the template for the link
---  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
---  args.single - if true, only the first link will be returned instead of a list of links
---  args.sequence - the starting sequence number to use for the links
---  args.fixed_sequence - if true, the sequence number will not be incremented for each link
+--------------------------------------------------------------------------------
+--- Build links for all documents in the account that match some criteria
+---
+--- @param args GetDocumentLinksArgs a table of arguments
+--- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
 function GetDocumentLinks(args)
     local account = args.account or account
     local documentTypes = args.documentTypes or { args.documentType }
@@ -156,17 +187,12 @@ function GetDocumentLinks(args)
     end
 end
 
--- Build links for all medications in the account that match some criteria
---
--- @param args - a table of arguments
---  args.account - the account object (defaults to the global account)
---  args.medicationCategories - a list of medication categories to search for (not required if args.medicationCategory is provided)
---  args.medicationCategory - a single medication category to search for (not required if args.medicationCategories is provided)
---  args.linkTemplate - the template for the link
---  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
---  args.single - if true, only the first link will be returned instead of a list of links
---  args.sequence - the starting sequence number to use for the links
---  args.fixed_sequence - if true, the sequence number will not be incremented for each link
+--------------------------------------------------------------------------------
+--- Build links for all medications in the account that match some criteria
+---
+--- @param args GetMedicationLinksArgs table of arguments
+--- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
 function GetMedicationLinks(args)
     local account = args.account or account
     local medicationCategories = args.medicationCategories or { args.medicationCategory }
@@ -212,17 +238,12 @@ function GetMedicationLinks(args)
     end
 end
 
--- Build links for all discrete values in the account that match some criteria
---
--- @param args - a table of arguments
---  args.account - the account object (defaults to the global account)
---  args.discreteValueNames - a list of discrete value names to search for (not required if args.discreteValueName is provided)
---  args.discreteValueName - a single discrete value name to search for (not required if args.discreteValueNames is provided)
---  args.linkTemplate - the template for the link
---  args.predicate - an optional function that takes a code reference and a document and returns true if the link should be included
---  args.single - if true, only the first link will be returned instead of a list of links
---  args.sequence - the starting sequence number to use for the links
---  args.fixed_sequence - if true, the sequence number will not be incremented for each link
+--------------------------------------------------------------------------------
+--- Build links for all discrete values in the account that match some criteria
+---
+--- @param args GetDiscreteValueLinksArgs table of arguments
+--- @return (table | any) - a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
 function GetDiscreteValueLinks(args)
     local account = args.account or account
     local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
@@ -268,13 +289,16 @@ function GetDiscreteValueLinks(args)
     end
 end
 
--- Replace placeholders in a link template with values from the code reference, document, discrete value, or medication
---
--- @param linkTemplate - the template for the link
--- @param codeReference - the code reference to use for the link
--- @param document - the document to use for the link
--- @param discreteValue - the discrete value to use for the link
--- @param medication - the medication to use for the link
+--------------------------------------------------------------------------------
+--- Replace placeholders in a link template with values from the code reference,
+--- document, discrete value, or medication
+---
+--- @param linkTemplate string - the template for the link
+--- @param codeReference any - the code reference to use for the link
+--- @param document any - the document to use for the link
+--- @param discreteValue any - the discrete value to use for the link
+--- @param medication any - the medication to use for the link
+--------------------------------------------------------------------------------
 function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discreteValue, medication)
     local link = linkTemplate
 
@@ -320,11 +344,11 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
     return link
 end
 
--- Get the existing cdi alert for a script
---
--- @param args - a table of arguments
---  args.account - the account object (defaults to the global account)
---  args.scriptName - the name of the script to match
+--------------------------------------------------------------------------------
+--- Get the existing cdi alert for a script
+---
+--- @param args GetExistingCdiAlertArgs a table of arguments
+--------------------------------------------------------------------------------
 function GetExistingCdiAlert(args)
     local account = args.account or account
     local scriptName = args.scriptName
