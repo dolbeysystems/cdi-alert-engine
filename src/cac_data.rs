@@ -421,13 +421,13 @@ impl mlua::UserData for CdiAlert {
         fields.add_field_method_set("links", |_, this, value: mlua::Table| {
             let mut links = Vec::new();
 
-            value.pairs::<String, mlua::AnyUserData>().for_each(|x| {
-                let (_, value) = x.unwrap();
+            for x in value.pairs::<String, mlua::AnyUserData>() {
+                let (_, value) = x?;
 
                 if let Ok(value) = value.borrow::<CdiAlertLink>() {
                     links.push(Arc::new(value.clone()));
                 };
-            });
+            }
             this.links = links;
             Ok(())
         });
@@ -523,13 +523,13 @@ impl mlua::UserData for CdiAlertLink {
         f.add_field_method_set("links", |_, this, value: mlua::Table| {
             let mut links = Vec::new();
 
-            value.pairs::<String, mlua::AnyUserData>().for_each(|x| {
-                let (_, value) = x.unwrap();
+            for x in value.pairs::<String, mlua::AnyUserData>() {
+                let (_, value) = x?;
 
                 if let Ok(value) = value.borrow::<CdiAlertLink>() {
                     links.push(Arc::new(value.clone()));
                 };
-            });
+            }
             this.links = links;
             Ok(())
         });
@@ -563,12 +563,16 @@ pub enum GetAccountError<'connection> {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum SaveCdiAlertsError<'connection> {
+pub enum SaveCdiAlertsError<'config> {
     #[error("failed to parse CAC database connection string ({string}): {error}")]
     ConnectionString {
-        string: &'connection str,
+        string: &'config str,
         error: mongodb::error::Error,
     },
+    #[error("workgroup category \"{0}\" not found")]
+    MissingWorkgroupCategory(&'config str),
+    #[error("workgroup named \"{0}\" not found")]
+    MissingWorkgroupName(&'config str),
     // For any other generic mongo errors.
     #[error(transparent)]
     Mongo(#[from] mongodb::error::Error),
@@ -625,8 +629,8 @@ pub async fn get_next_pending_account(
         )
         .await?;
 
-    if pending_account.is_some() {
-        let id = pending_account.unwrap().id.clone();
+    if let Some(pending_account) = pending_account {
+        let id = pending_account.id.clone();
         let account = get_account_by_id(connection_string, &id).await?;
         info!("Found pending account: {:?}", &id);
         Ok(account)
@@ -658,15 +662,13 @@ pub async fn get_account_by_id<'connection>(
     let account = if !(account_cursor.advance().await?) {
         None
     } else {
-        let account = account_cursor.deserialize_current();
-        Some(account.unwrap())
+        let account = account_cursor.deserialize_current()?;
+        Some(account)
     };
 
-    if account.is_none() {
+    let Some(mut account) = account else {
         return Ok(None);
-    }
-
-    let mut account = account.unwrap();
+    };
 
     debug!("Checking account #{:?} for external discrete values", id);
     let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
@@ -758,15 +760,18 @@ pub async fn save_cdi_alerts<'config>(
 
     let workgroup_category = workgroups_collection
         .find_one(doc! { "_id": config.cdi_workgroup.category.clone() }, None)
-        .await?;
+        .await?
+        .ok_or(SaveCdiAlertsError::MissingWorkgroupCategory(
+            &config.cdi_workgroup.category,
+        ))?;
 
-    let workgroup_category_object = workgroup_category.unwrap();
-
-    let workgroup_object = workgroup_category_object
+    let workgroup_object = workgroup_category
         .workgroups
         .iter()
         .find(|x| x.work_group == config.cdi_workgroup.name)
-        .unwrap();
+        .ok_or(SaveCdiAlertsError::MissingWorkgroupName(
+            &config.cdi_workgroup.name,
+        ))?;
 
     // Find the first criteria group with a script matching a passing alert
     let first_matching_criteria_group =
