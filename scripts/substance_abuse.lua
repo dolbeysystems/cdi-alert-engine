@@ -3,7 +3,7 @@
 ---
 --- This script checks an account to see if it matches the criteria for a Substance Abuse alert.
 ---
---- Date: 10/15/2021
+--- Date: 4/10/2024
 --- Version: 1.0
 --- Site: (Default)
 ---------------------------------------------------------------------------------------------------------------------
@@ -14,97 +14,6 @@
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
-
-
-
---------------------------------------------------------------------------------
---- Script Local Functions
---------------------------------------------------------------------------------
----
---------------------------------------------------------------------------------
---- Creates a single link for a code reference, optionally adding it to a target
---- table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-local function makeCodeLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link ~= nil and targetTable ~= nil then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for an abstraction value, optionally adding it to a
---- target table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-local function makeAbstractionLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link ~= nil and targetTable ~= nil then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for an abstraction value, optionally adding it to a
---- target table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-local function makeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link ~= nil and targetTable ~= nil then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for a medication, optionally adding it to a target 
---- table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param medication string The medication to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-local function makeMedicationLink(targetTable, medication, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
-    local link =
-        GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link ~= nil and targetTable ~= nil then
-        table.insert(targetTable, link)
-    end
-    return link
-end
 
 
 
@@ -222,18 +131,18 @@ if existingAlert == nil or not existingAlert.validated then
     local alcoholSubtitle = "Possible Alcohol Dependence"
 
     -- Negation
-    f1120CodeLink = makeCodeLink(nil, "F11.20", "Opioid Dependence", 0)
+    f1120CodeLink = MakeCodeLink(nil, "F11.20", "Opioid Dependence", 0)
 
     -- Abstractions
-    ciwaScoreAbsLink = makeAbstractionValueLink(nil, "CIWA_SCORE", "CIWA Score", 4)
-    ciwaProtocolAbsLink = makeAbstractionValueLink(nil, "CIWA_PROTOCOL", "CIWA Protocol", 5)
-    methadoneClinicAbsLink = makeAbstractionValueLink(nil, "METHADONE_CLINIC", "Methadone Clinic", 11)
+    ciwaScoreAbsLink = MakeAbstractionValueLink(nil, "CIWA_SCORE", "CIWA Score", 4)
+    ciwaProtocolAbsLink = MakeAbstractionValueLink(nil, "CIWA_PROTOCOL", "CIWA Protocol", 5)
+    methadoneClinicAbsLink = MakeAbstractionValueLink(nil, "METHADONE_CLINIC", "Methadone Clinic", 11)
 
     -- Medications
-    methadoneMedLink = makeMedicationLink(nil, "Methadone", "Methadone", 7)
-    methadoneAbsLink = makeAbstractionValueLink(nil, "METHADONE", "Methadone", 8)
-    suboxoneMedLink = makeMedicationLink(nil, "Suboxone", "Suboxone", 11)
-    suboxoneAbsLink = makeAbstractionValueLink(nil, "SUBOXONE", "Suboxone", 12)
+    methadoneMedLink = MakeMedicationLink(nil, "Methadone", "Methadone", 7)
+    methadoneAbsLink = MakeAbstractionValueLink(nil, "METHADONE", "Methadone", 8)
+    suboxoneMedLink = MakeMedicationLink(nil, "Suboxone", "Suboxone", 11)
+    suboxoneAbsLink = MakeAbstractionValueLink(nil, "SUBOXONE", "Suboxone", 12)
 
     -- Algorithm
     if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or
@@ -323,8 +232,8 @@ if alertMatched then
         end
     end
 
-    makeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
-    makeAbstractionLink(clinicalEvidenceLinks, "AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
+    MakeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
+    MakeAbstractionLink(clinicalEvidenceLinks, "AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
 
     if ciwaScoreAbsLink ~= nil then
         table.insert(clinicalEvidenceLinks, ciwaScoreAbsLink) -- #4
@@ -333,33 +242,33 @@ if alertMatched then
         table.insert(clinicalEvidenceLinks, ciwaProtocolAbsLink) -- #5
     end
 
-    makeAbstractionLink(clinicalEvidenceLinks, "COMBATIVE", "Combative", 6)
-    makeAbstractionLink(clinicalEvidenceLinks, "DELIRIUM", "Delirium", 7)
-    makeCodeLink(clinicalEvidenceLinks, "R44.3", "Hallucinations", 8)
-    makeCodeLink(clinicalEvidenceLinks, "R51.9", "Headache", 9)
-    makeCodeLink(clinicalEvidenceLinks, "R45.4", "Irritability and Anger", 10)
+    MakeAbstractionLink(clinicalEvidenceLinks, "COMBATIVE", "Combative", 6)
+    MakeAbstractionLink(clinicalEvidenceLinks, "DELIRIUM", "Delirium", 7)
+    MakeCodeLink(clinicalEvidenceLinks, "R44.3", "Hallucinations", 8)
+    MakeCodeLink(clinicalEvidenceLinks, "R51.9", "Headache", 9)
+    MakeCodeLink(clinicalEvidenceLinks, "R45.4", "Irritability and Anger", 10)
 
     if methadoneClinicAbsLink ~= nil then
         table.insert(clinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
     end
     -- TODO:  Still converting...left off here
-    makeCodeLink(clinicalEvidenceLinks, "R11.0", "Nausea", 12)
-    makeCodeLink(clinicalEvidenceLinks, "R45.0", "Nervousness", 13)
-    makeCodeLink(clinicalEvidenceLinks, "R11.12", "Projectile Vomiting", 14)
-    makeCodeLink(clinicalEvidenceLinks, "R45.1", "Restless and Agitation", 15)
-    makeCodeLink(clinicalEvidenceLinks, "R61", "Sweating", 16)
-    makeCodeLink(clinicalEvidenceLinks, "R25.1", "Tremor", 17)
-    makeCodeLink(clinicalEvidenceLinks, "R44.1", "Visual Hallucinations", 18)
-    makeCodeLink(clinicalEvidenceLinks, "R11.10", "Vomiting", 19)
+    MakeCodeLink(clinicalEvidenceLinks, "R11.0", "Nausea", 12)
+    MakeCodeLink(clinicalEvidenceLinks, "R45.0", "Nervousness", 13)
+    MakeCodeLink(clinicalEvidenceLinks, "R11.12", "Projectile Vomiting", 14)
+    MakeCodeLink(clinicalEvidenceLinks, "R45.1", "Restless and Agitation", 15)
+    MakeCodeLink(clinicalEvidenceLinks, "R61", "Sweating", 16)
+    MakeCodeLink(clinicalEvidenceLinks, "R25.1", "Tremor", 17)
+    MakeCodeLink(clinicalEvidenceLinks, "R44.1", "Visual Hallucinations", 18)
+    MakeCodeLink(clinicalEvidenceLinks, "R11.10", "Vomiting", 19)
 
-    makeMedicationLink(treatmentLinks, "Benzodiazepine", "Benzodiazepine", 1)
-    makeAbstractionValueLink(treatmentLinks, "BENZODIAZEPINE", "Benzodiazepine", 2)
+    MakeMedicationLink(treatmentLinks, "Benzodiazepine", "Benzodiazepine", 1)
+    MakeAbstractionValueLink(treatmentLinks, "BENZODIAZEPINE", "Benzodiazepine", 2)
 
-    makeMedicationLink(treatmentLinks, "Dexmedetomidine", "Dexmedetomidine", 3)
-    makeAbstractionValueLink(treatmentLinks, "DEXMEDETOMIDINE", "Dexmedetomidine", 4)
+    MakeMedicationLink(treatmentLinks, "Dexmedetomidine", "Dexmedetomidine", 3)
+    MakeAbstractionValueLink(treatmentLinks, "DEXMEDETOMIDINE", "Dexmedetomidine", 4)
 
-    makeMedicationLink(treatmentLinks, "Lithium", "Lithium", 5)
-    makeAbstractionValueLink(treatmentLinks, "LITHIUM", "Lithium", 6)
+    MakeMedicationLink(treatmentLinks, "Lithium", "Lithium", 5)
+    MakeAbstractionValueLink(treatmentLinks, "LITHIUM", "Lithium", 6)
 
     if methadoneMedLink ~= nil then
         table.insert(treatmentLinks, methadoneMedLink) -- #7
@@ -368,8 +277,8 @@ if alertMatched then
         table.insert(treatmentLinks, methadoneAbsLink) -- #8
     end
 
-    makeMedicationLink(treatmentLinks, "Propofol", "Propofol", 9)
-    makeAbstractionValueLink(treatmentLinks, "PROPOFOL", "Propofol", 10)
+    MakeMedicationLink(treatmentLinks, "Propofol", "Propofol", 9)
+    MakeAbstractionValueLink(treatmentLinks, "PROPOFOL", "Propofol", 10)
 
     if suboxoneMedLink ~= nil then
         table.insert(treatmentLinks, suboxoneMedLink) -- #11

@@ -389,3 +389,87 @@ function GetExistingCdiAlert(args)
     return nil
 end
 
+--------------------------------------------------------------------------------
+--- Creates a single link for a code reference, optionally adding it to a target
+--- table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeCodeLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a single link for an abstraction value, optionally adding it to a
+--- target table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeAbstractionLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a single link for an abstraction value, optionally adding it to a
+--- target table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param code string The code to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Creates a single link for a medication, optionally adding it to a target 
+--- table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param medication string The medication to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeMedicationLink(targetTable, medication, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+    local link =
+        GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
+
+    if link ~= nil and targetTable ~= nil then
+        table.insert(targetTable, link)
+    end
+    return link
+end
