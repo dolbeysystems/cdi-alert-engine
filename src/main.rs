@@ -94,8 +94,12 @@ async fn main() {
 
             info!("processing account: {:?}", account.id);
             for script in scripts.iter().cloned() {
-                // script name without directory
-                let script_name = script.config.path.file_name().unwrap().to_string_lossy();
+                // Script name without directory
+                let script_name = script.config.path.file_name().map(|x| x.to_string_lossy());
+                let script_name = script_name
+                    .as_ref()
+                    .map(|x| x.as_ref())
+                    .unwrap_or("unnamed script");
 
                 let result = cac_data::CdiAlert {
                     script_name: script_name.to_string(),
@@ -117,24 +121,31 @@ async fn main() {
                     let _enter =
                         error_span!("lua", path = &*script_name, account = &account.id).entered();
 
-                    lua.globals().set("account", account.clone()).unwrap();
-                    lua.globals().set("result", result).unwrap();
+                    #[allow(clippy::unwrap_used)]
+                    {
+                        lua.globals().set("account", account.clone()).unwrap();
+                        lua.globals().set("result", result).unwrap();
+                    }
 
                     lua.load(&script.contents)
                         .exec()
                         .map_err(|msg| error!("Lua script error: {msg}"))
                         .ok()
                         .and_then(|()| {
-                            let result = lua
-                                .globals()
-                                .get::<_, mlua::Value>("result")
-                                .unwrap()
-                                .as_userdata()
-                                .and_then(|x| x.take::<cac_data::CdiAlert>().ok());
-                            if result.is_none() {
-                                error!("failed to convert return value to result type");
-                            }
-                            result.zip(Some(account))
+                            match lua.globals().get::<_, mlua::Value>("result") {
+                                Ok(result) => match result.as_userdata() {
+                                    Some(result) => {
+                                        let result = result.take();
+                                        if let Err(msg) = &result {
+                                            error!("failed to retrieve result value: {msg}");
+                                        }
+                                        return result.ok().zip(Some(account));
+                                    }
+                                    None => error!("result value is an unrecognized type"),
+                                },
+                                Err(msg) => error!("result value is missing: {msg}"),
+                            };
+                            None
                         })
                 }));
                 info!("{} threads", script_threads.len());
@@ -153,11 +164,11 @@ async fn main() {
             .filter_map(|x| if let Some(x) = &x { Some(x) } else { None });
         let mut results = HashMap::new();
         for (result, account) in alert_results {
-            if !results.contains_key(&account.id) {
-                results.insert(&account.id, (account, Vec::new()));
-            }
-            let (_, ref mut results) = results.get_mut(&account.id).unwrap();
-            results.push(result);
+            results
+                .entry(account.id.as_str())
+                .or_insert_with(|| (account, Vec::new()))
+                .1
+                .push(result)
         }
         for (_, (account, result)) in results.into_iter() {
             let save_result = cac_data::save_cdi_alerts(&config, account, result.into_iter()).await;
@@ -171,6 +182,7 @@ async fn main() {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 fn make_runtime() -> Lua {
     let lua = Lua::new();
 
