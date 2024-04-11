@@ -30,29 +30,13 @@ local dependenceCodesDictionary = {
 }
 
 --- List of codes in dependecy map that are present on the account (codes only)
----
---- @type string[]
-local accountDependenceCodes = {}
-
--- Populate accountDependenceCodes list
-for i = 1, #account.documents do
-    --- @type Document
-    local document = account.documents[i]
-    for j = 1, #document.code_references do
-        local codeReference = document.code_references[j]
-
-        if dependenceCodesDictionary[codeReference.code] then
-            local code = codeReference.code
-            table.insert(accountDependenceCodes, code)
-        end
-    end
-end
+local accountDependenceCodes = GetAccountCodesInDictionary(account, dependenceCodesDictionary)
 
 --- Existing substance abuse alert (or nil if this alert doesn't exist currently on the account)
 local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
 
 --- Subtitle of the existing alert (or nil if the alert doesn't exist)
-local subtitle = existingAlert ~= nil and existingAlert.subtitle or nil
+local subtitle = existingAlert and existingAlert.subtitle or nil
 
 --- Boolean indicating that this alert matched conditions and we should proceed with creating links
 --- and marking the result as passed
@@ -125,7 +109,7 @@ local suboxoneAbsLink
 --------------------------------------------------------------------------------
 --- Alert Qualification 
 --------------------------------------------------------------------------------
-if existingAlert == nil or not existingAlert.validated then
+if not existingAlert or not existingAlert.validated then
     -- General Subtitle Declaration
     local opiodSubtitle = "Possible Opioid Dependence"
     local alcoholSubtitle = "Possible Alcohol Dependence"
@@ -137,7 +121,6 @@ if existingAlert == nil or not existingAlert.validated then
     ciwaScoreAbsLink = MakeAbstractionValueLink(nil, "CIWA_SCORE", "CIWA Score", 4)
     ciwaProtocolAbsLink = MakeAbstractionValueLink(nil, "CIWA_PROTOCOL", "CIWA Protocol", 5)
     methadoneClinicAbsLink = MakeAbstractionValueLink(nil, "METHADONE_CLINIC", "Methadone Clinic", 11)
-
     -- Medications
     methadoneMedLink = MakeMedicationLink(nil, "Methadone", "Methadone", 7)
     methadoneAbsLink = MakeAbstractionValueLink(nil, "METHADONE", "Methadone", 8)
@@ -146,9 +129,9 @@ if existingAlert == nil or not existingAlert.validated then
 
     -- Algorithm
     if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or
-       (f1120CodeLink ~= nil and subtitle == opiodSubtitle) then
+       (f1120CodeLink and subtitle == opiodSubtitle) then
         debug("One specific code was on the chart, alert failed" .. account.id)
-        if existingAlert ~= nil then
+        if existingAlert then
             if subtitle == alcoholSubtitle then
                 --- @type CdiAlertLink[]
                 local documentationIncludesLinks = {}
@@ -163,13 +146,13 @@ if existingAlert == nil or not existingAlert.validated then
                             ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
                         single = true,
                     }
-                    if tempCode ~= nil then
+                    if tempCode then
                         table.insert(documentationIncludesLinks, tempCode)
                     end
                 end
                 documentationIncludesLink.links = documentationIncludesLinks
 
-            elseif subtitle == opiodSubtitle and f1120CodeLink ~= nil then
+            elseif subtitle == opiodSubtitle and f1120CodeLink then
                 f1120CodeLink.link_text = "Autoresolved Evidence - " .. f1120CodeLink.link_text
                 documentationIncludesLink.links = {f1120CodeLink}
             end
@@ -181,16 +164,10 @@ if existingAlert == nil or not existingAlert.validated then
             result.passed = false
         end
 
-    elseif f1120CodeLink == nil and (
-            methadoneMedLink ~= nil or
-            methadoneAbsLink ~= nil or
-            suboxoneMedLink ~= nil or
-            suboxoneAbsLink ~= nil or
-            methadoneClinicAbsLink ~= nil
-        ) then
+    elseif not f1120CodeLink and (methadoneMedLink or methadoneAbsLink or suboxoneMedLink or suboxoneAbsLink or methadoneClinicAbsLink) then
         result.subtitle = opiodSubtitle
         alertMatched = true
-    elseif #accountDependenceCodes == 0 and (ciwaScoreAbsLink ~= nil or ciwaProtocolAbsLink ~= nil) then
+    elseif #accountDependenceCodes == 0 and (ciwaScoreAbsLink or ciwaProtocolAbsLink) then
         result.subtitle = alcoholSubtitle
         alertMatched = true
     else
@@ -226,7 +203,7 @@ if alertMatched then
         fixed_sequence = true
     }
 
-    if fcodeLinks ~= nil then
+    if fcodeLinks then
         for i = 1, #fcodeLinks do
             table.insert(clinicalEvidenceLinks, fcodeLinks[i])
         end
@@ -235,10 +212,10 @@ if alertMatched then
     MakeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
     MakeAbstractionLink(clinicalEvidenceLinks, "AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
 
-    if ciwaScoreAbsLink ~= nil then
+    if ciwaScoreAbsLink then
         table.insert(clinicalEvidenceLinks, ciwaScoreAbsLink) -- #4
     end
-    if ciwaProtocolAbsLink ~= nil then
+    if ciwaProtocolAbsLink then
         table.insert(clinicalEvidenceLinks, ciwaProtocolAbsLink) -- #5
     end
 
@@ -248,7 +225,7 @@ if alertMatched then
     MakeCodeLink(clinicalEvidenceLinks, "R51.9", "Headache", 9)
     MakeCodeLink(clinicalEvidenceLinks, "R45.4", "Irritability and Anger", 10)
 
-    if methadoneClinicAbsLink ~= nil then
+    if methadoneClinicAbsLink then
         table.insert(clinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
     end
     -- TODO:  Still converting...left off here
@@ -270,20 +247,20 @@ if alertMatched then
     MakeMedicationLink(treatmentLinks, "Lithium", "Lithium", 5)
     MakeAbstractionValueLink(treatmentLinks, "LITHIUM", "Lithium", 6)
 
-    if methadoneMedLink ~= nil then
+    if methadoneMedLink then
         table.insert(treatmentLinks, methadoneMedLink) -- #7
     end
-    if methadoneAbsLink ~= nil then
+    if methadoneAbsLink then
         table.insert(treatmentLinks, methadoneAbsLink) -- #8
     end
 
     MakeMedicationLink(treatmentLinks, "Propofol", "Propofol", 9)
     MakeAbstractionValueLink(treatmentLinks, "PROPOFOL", "Propofol", 10)
 
-    if suboxoneMedLink ~= nil then
+    if suboxoneMedLink then
         table.insert(treatmentLinks, suboxoneMedLink) -- #11
     end
-    if suboxoneAbsLink ~= nil then
+    if suboxoneAbsLink then
         table.insert(treatmentLinks, suboxoneAbsLink) -- #12
     end
 
@@ -302,10 +279,10 @@ if alertMatched or alertAutoResolved then
     --- @type CdiAlertLink[]
     local resultLinks = {}
 
-    if documentationIncludesLink.links ~= nil then
+    if documentationIncludesLink.links then
         table.insert(resultLinks, documentationIncludesLink)
     end
-    if clinicalEvidenceLink.links ~= nil then
+    if clinicalEvidenceLink.links then
         table.insert(resultLinks, clinicalEvidenceLink)
     end
     table.insert(resultLinks, treatmentLink)
@@ -318,6 +295,7 @@ if alertMatched or alertAutoResolved then
         "treatment- " .. tostring(#treatmentLink.links > 0) .. "; " ..
         "Acct: " .. account.id
     )
+    resultLinks = MergeLinksWithExisting(existingAlert, resultLinks)
     result.links = resultLinks
     result.passed = true
 end

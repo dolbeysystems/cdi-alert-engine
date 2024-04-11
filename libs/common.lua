@@ -390,6 +390,25 @@ function GetExistingCdiAlert(args)
 end
 
 --------------------------------------------------------------------------------
+--- Creates a single link for a document, optionally adding it to a target table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param documentType string The document to create a link for.
+--- @param linkText string The link text to use.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeDocumentLink(targetTable, documentType, linkText, sequence)
+    local link = GetDocumentLinks { documentType = documentType, linkTemplate = linkText, single = true, sequence = sequence }
+
+    if link and targetTable then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
 --- Creates a single link for a code reference, optionally adding it to a target
 --- table.
 ---
@@ -404,7 +423,7 @@ function MakeCodeLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
 
-    if link ~= nil and targetTable ~= nil then
+    if link and targetTable then
         table.insert(targetTable, link)
     end
     return link
@@ -425,7 +444,7 @@ function MakeAbstractionLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
 
-    if link ~= nil and targetTable ~= nil then
+    if link and targetTable then
         table.insert(targetTable, link)
     end
     return link
@@ -446,7 +465,7 @@ function MakeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
     local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
 
-    if link ~= nil and targetTable ~= nil then
+    if link and targetTable then
         table.insert(targetTable, link)
     end
     return link
@@ -468,8 +487,86 @@ function MakeMedicationLink(targetTable, medication, linkPrefix, sequence)
     local link =
         GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
 
-    if link ~= nil and targetTable ~= nil then
+    if link and targetTable then
         table.insert(targetTable, link)
     end
     return link
 end
+
+--------------------------------------------------------------------------------
+--- Creates a single link for a discrete value, optionally adding it to a target
+--- table.
+---
+--- @param targetTable CdiAlertLink[]? The table to add the link to.
+--- @param discreteValueNames string[] The discrete value to create a link for.
+--- @param linkPrefix string The first part of the link template.
+--- @param sequence number The sequence number to use for the link.
+---
+--- @return CdiAlertLink? # The link object.
+--------------------------------------------------------------------------------
+function MakeDiscreteValueLink(targetTable, discreteValueNames, linkPrefix, sequence)
+    local linkTemplate = linkPrefix .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+    --- @type CdiAlertLink
+    local link
+    for i = 1, #discreteValueNames do
+        local discreteValueName = discreteValueNames[i]
+        local l = GetDiscreteValueLinks { discreteValueName = discreteValueName, linkTemplate = linkTemplate, single = true, sequence = sequence }
+        --- @cast l CdiAlertLink
+        link = l
+        if link then
+            break
+        end
+    end
+
+    if link and targetTable then
+        table.insert(targetTable, link)
+    end
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Get the account codes that are present as keys in the provided dictionary
+---
+--- @param account Account The account to get the codes from
+--- @param dictionary table<string, string> The dictionary of codes to check against
+---
+--- @return string[] # List of codes in dependecy map that are present on the account (codes only)
+--------------------------------------------------------------------------------
+function GetAccountCodesInDictionary(account, dictionary)
+    --- List of codes in dependecy map that are present on the account (codes only)
+    ---
+    --- @type string[]
+    local codes = {}
+
+    -- Populate accountDependenceCodes list
+    for i = 1, #account.documents do
+        --- @type Document
+        local document = account.documents[i]
+        for j = 1, #document.code_references do
+            local codeReference = document.code_references[j]
+
+            if dictionary[codeReference.code] then
+                local code = codeReference.code
+                table.insert(codes, code)
+            end
+        end
+    end
+    return codes
+end
+
+--------------------------------------------------------------------------------
+--- Merge links with links from an existing alert
+---
+--- @param alert CdiAlert? The existing alert
+--- @param links CdiAlertLink[] The links to merge
+---
+--- @return CdiAlertLink[] # The merged links
+--------------------------------------------------------------------------------
+function MergeLinksWithExisting(alert, links)
+    if not alert then
+        return links
+    end
+    -- TODO: Implement standard merge logic
+    return links
+end
+
