@@ -228,7 +228,7 @@ if alertMatched then
     if methadoneClinicAbsLink then
         table.insert(clinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
     end
-    -- TODO:  Still converting...left off here
+
     MakeCodeLink(clinicalEvidenceLinks, "R11.0", "Nausea", 12)
     MakeCodeLink(clinicalEvidenceLinks, "R45.0", "Nervousness", 13)
     MakeCodeLink(clinicalEvidenceLinks, "R11.12", "Projectile Vomiting", 14)
@@ -265,7 +265,7 @@ if alertMatched then
     end
 
     clinicalEvidenceLink.links = clinicalEvidenceLinks
-    --treatmentLink.links = treatmentLinks
+    treatmentLink.links = treatmentLinks
 end
 
 

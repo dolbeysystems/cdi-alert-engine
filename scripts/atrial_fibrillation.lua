@@ -3,7 +3,7 @@
 ---
 --- This script checks an account to see if it matches the criteria for an atrial fibrillation alert.
 ---
---- Date: 4/10/2024
+--- Date: 4/11/2024
 --- Version: 1.0
 --- Site: (Default)
 ---------------------------------------------------------------------------------------------------------------------
