@@ -20,35 +20,37 @@ require("libs.userdata_types")
 ---------------------------------------------------------------------------------------------
 --- Lua LS Type Definitions
 ---------------------------------------------------------------------------------------------
---- @class LinkArgs
+--- @class (exact) LinkArgs
 --- @field account Account? Account object (uses global account if not provided)
---- @field linkTemplate string Link template
---- @field single boolean? If true, only the first link will be returned instead of a list of links
---- @field sequence number? Starting sequence number to use for the links
---- @field fixed_sequence boolean? If true, the sequence number will not be incremented for each link
+--- @field text string Link template
+--- @field maxPerValue number? The maximum number of links to create for each matched value (default 1)
+--- @field seq number? Starting sequence number to use for the links
+--- @field fixed_seq boolean? If true, the sequence number will not be incremented for each link
+--- @field target CdiAlertLink[]? The table to add the link to
+--- @field includeStandardSuffix boolean? If true, the standard suffix will be appended to the link text
 
---- @class GetCodeLinksArgs : LinkArgs
+--- @class (exact) GetCodeLinksArgs : LinkArgs
 --- @field codes string[]? List of codes to search for 
 --- @field code string? Single code to search for
 --- @field documentTypes string[]? List of document types that the code must be found in
 --- @field predicate (fun(code_reference: CodeReference, document: Document): boolean)? Predicate function to filter code references
 
---- @class GetDocumentLinksArgs : LinkArgs
+--- @class (exact) GetDocumentLinksArgs : LinkArgs
 --- @field documentTypes string[]? List of document types to search for
 --- @field documentType string? Single document type to search for
 --- @field predicate (fun(document: Document): boolean)? Predicate function to filter documents
 
---- @class GetMedicationLinksArgs : LinkArgs
---- @field medicationCategories string[]? List of medication categories to search for
---- @field medicationCategory string? Single medication category to search for
+--- @class (exact) GetMedicationLinksArgs : LinkArgs
+--- @field cats string[]? List of medication categories to search for
+--- @field cat string? Single medication category to search for
 --- @field predicate (fun(medication: Medication): boolean)? Predicate function to filter medications
 
---- @class GetDiscreteValueLinksArgs : LinkArgs
+--- @class (exact) GetDiscreteValueLinksArgs : LinkArgs
 --- @field discreteValueNames string[]? List of discrete value names to search for
 --- @field discreteValueName string? Single discrete value name to search for
 --- @field predicate (fun(discrete_value: DiscreteValue): boolean)? Predicate function to filter discrete values
 
---- @class GetExistingCdiAlertArgs
+--- @class (exact) GetExistingCdiAlertArgs
 --- @field account Account? Account object (uses global account if not provided)
 --- @field scriptName string The name of the script to match
 
@@ -65,6 +67,37 @@ if not table.unpack then
 end
 
 
+--------------------------------------------------------------------------------
+--- Build links for all abstractions in the account that match some criteria
+--- without including the value of the abstraction
+---
+--- @param args GetCodeLinksArgs a table of arguments
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
+function GetAbstractionLinks(args)
+    if args.includeStandardSuffix == nil or args.includeStandardSuffix then
+        args.includeStandardSuffix = false
+        args.text = args.text .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    end
+    return GetCodeLinks(args)
+end
+
+--------------------------------------------------------------------------------
+--- Build links for all codes in the account that match some criteria with the
+--- value of the abstraction included
+---
+--- @param args GetCodeLinksArgs a table of arguments
+---
+--- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
+--------------------------------------------------------------------------------
+function GetAbstractionValueLinks(args)
+    if args.includeStandardSuffix == nil or args.includeStandardSuffix then
+        args.includeStandardSuffix = false
+        args.text = args.text ..  ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    end
+    return GetCodeLinks(args)
+end
 
 --------------------------------------------------------------------------------
 --- Build links for all codes in the account that match some criteria
@@ -76,12 +109,19 @@ end
 function GetCodeLinks(args)
     local account = args.account or account
     local codes = args.codes or { args.code }
-    local linkTemplate = args.linkTemplate or ""
+    local linkTemplate = args.text or ""
     local documentTypes = args.documentTypes or {}
     local predicate = args.predicate
-    local single = args.single or false
-    local sequence = args.sequence or 0
-    local fixed_sequence = args.fixed_sequence or false
+    local sequence = args.seq or 0
+    local fixed_sequence = args.fixed_seq or false
+    local maxPerValue = args.maxPerValue or 1
+    local targetTable = args.target
+    local includeStandardSuffix = args.includeStandardSuffix
+    local onlyOne = args.code and not args.codes and maxPerValue == 1
+
+    if includeStandardSuffix == nil or includeStandardSuffix then
+        linkTemplate = linkTemplate .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    end
 
      --- @type CdiAlertLink[]
     local links = {}
@@ -93,6 +133,9 @@ function GetCodeLinks(args)
         local code_reference_pairs_for_code = account:find_code_references(code)
         for j = 1, #code_reference_pairs_for_code do
             table.insert(code_reference_pairs, code_reference_pairs_for_code[j])
+            if maxPerValue and #code_reference_pairs >= maxPerValue then
+                break
+            end
         end
     end
 
@@ -112,7 +155,10 @@ function GetCodeLinks(args)
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
             link.sequence = sequence
-            if single then
+            if onlyOne then
+                if targetTable then
+                    table.insert(targetTable, link)
+                end
                 return link
             end
             table.insert(links, link)
@@ -127,10 +173,16 @@ function GetCodeLinks(args)
                     link.document_id = document.document_id
                     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, code_reference, document, nil, nil)
                     link.sequence = sequence
-                    if single then
+                    if onlyOne then
+                        if targetTable then
+                            table.insert(targetTable, link)
+                        end
                         return link
                     end
                     table.insert(links, link)
+                    if maxPerValue and #links >= maxPerValue then
+                        break
+                    end
                     if not fixed_sequence then
                         sequence = sequence + 1
                     end
@@ -140,7 +192,13 @@ function GetCodeLinks(args)
         ::continue::
     end
 
-    if single then
+    if targetTable then
+        for i = 1, #links do
+            table.insert(targetTable, links[i])
+        end
+    end
+
+    if onlyOne then
         return nil
     else
         return links
@@ -157,11 +215,18 @@ end
 function GetDocumentLinks(args)
     local account = args.account or account
     local documentTypes = args.documentTypes or { args.documentType }
-    local linkTemplate = args.linkTemplate or ""
+    local linkTemplate = args.text or ""
     local predicate = args.predicate
-    local single = args.single or false
-    local sequence = args.sequence or 0
-    local fixed_sequence = args.fixed_sequence or false
+    local sequence = args.seq or 0
+    local fixed_sequence = args.fixed_seq or false
+    local maxPerValue = args.maxPerValue or 1
+    local targetTable = args.target
+    local includeStandardSuffix = args.includeStandardSuffix
+    local onlyOne = args.documentType and not args.documentTypes and maxPerValue == 1
+
+    if includeStandardSuffix == nil or includeStandardSuffix then
+        linkTemplate = linkTemplate .. " ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    end
 
     --- @type CdiAlertLink[]
     local links = {}
@@ -173,6 +238,9 @@ function GetDocumentLinks(args)
         local documentsForType = account:find_documents(documentType)
         for j = 1, #documentsForType do
             table.insert(documents, documentsForType[j])
+            if maxPerValue and #documents >= maxPerValue then
+                break
+            end
         end
     end
 
@@ -186,7 +254,10 @@ function GetDocumentLinks(args)
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
         link.sequence = sequence
-        if single then
+        if onlyOne then
+            if targetTable then
+                table.insert(targetTable, link)
+            end
             return link
         end
         table.insert(links, link)
@@ -195,7 +266,12 @@ function GetDocumentLinks(args)
         end
         ::continue::
     end
-    if single then
+    if targetTable then
+        for i = 1, #links do
+            table.insert(targetTable, links[i])
+        end
+    end
+    if onlyOne then
         return nil
     else
         return links
@@ -211,12 +287,19 @@ end
 --------------------------------------------------------------------------------
 function GetMedicationLinks(args)
     local account = args.account or account
-    local medicationCategories = args.medicationCategories or { args.medicationCategory }
-    local linkTemplate = args.linkTemplate or ""
+    local medicationCategories = args.cats or { args.cat }
+    local linkTemplate = args.text or ""
     local predicate = args.predicate
-    local single = args.single or false
-    local sequence = args.sequence or 0
-    local fixed_sequence = args.fixed_sequence or false
+    local sequence = args.seq or 0
+    local fixed_sequence = args.fixed_seq or false
+    local maxPerValue = args.maxPerValue or 1
+    local targetTable = args.target
+    local includeStandardSuffix = args.includeStandardSuffix
+    local onlyOne = args.cat and not args.cats and maxPerValue == 1
+
+    if includeStandardSuffix == nil or includeStandardSuffix then
+        linkTemplate = linkTemplate ..  ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+    end
 
     --- @type CdiAlertLink[]
     local links = {}
@@ -228,6 +311,9 @@ function GetMedicationLinks(args)
         local medicationsForCategory = account:find_medications(medicationCategory)
         for j = 1, #medicationsForCategory do
             table.insert(medications, medicationsForCategory[j])
+            if maxPerValue and #medications >= maxPerValue then
+                break
+            end
         end
     end
 
@@ -241,7 +327,10 @@ function GetMedicationLinks(args)
         link.medication_id  = medication.external_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
         link.sequence = sequence
-        if single then
+        if onlyOne then
+            if targetTable then
+                table.insert(targetTable, link)
+            end
             return link
         end
         table.insert(links, link)
@@ -250,7 +339,12 @@ function GetMedicationLinks(args)
         end
         ::continue::
     end
-    if single then
+    if targetTable then
+        for i = 1, #links do
+            table.insert(targetTable, links[i])
+        end
+    end
+    if onlyOne then
         return nil
     else
         return links
@@ -267,11 +361,18 @@ end
 function GetDiscreteValueLinks(args)
     local account = args.account or account
     local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
-    local linkTemplate = args.linkTemplate or ""
+    local linkTemplate = args.text or ""
     local predicate = args.predicate
-    local single = args.single or false
-    local sequence = args.sequence or 0
-    local fixed_sequence = args.fixed_sequence or false
+    local sequence = args.seq or 0
+    local fixed_sequence = args.fixed_seq or false
+    local maxPerValue = args.maxPerValue
+    local targetTable = args.target
+    local includeStandardSuffix = args.includeStandardSuffix
+    local onlyOne = args.discreteValueName and not args.discreteValueNames and maxPerValue == 1
+
+    if includeStandardSuffix == nil or includeStandardSuffix then
+        linkTemplate = linkTemplate ..  ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+    end
 
      --- @type CdiAlertLink[]
     local links = {}
@@ -283,6 +384,9 @@ function GetDiscreteValueLinks(args)
         local discreteValuesForName = account:find_discrete_values(discreteValueName)
         for j = 1, #discreteValuesForName do
             table.insert(discrete_values, discreteValuesForName[j])
+            if maxPerValue and #discrete_values >= maxPerValue then
+                break
+            end
         end
     end
 
@@ -296,7 +400,10 @@ function GetDiscreteValueLinks(args)
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
         link.sequence = sequence
-        if single then
+        if onlyOne then
+            if targetTable then
+                table.insert(targetTable, link)
+            end
             return link
         end
         table.insert(links, link)
@@ -305,7 +412,12 @@ function GetDiscreteValueLinks(args)
         end
         ::continue::
     end
-    if single then
+    if targetTable then
+        for i = 1, #links do
+            table.insert(targetTable, links[i])
+        end
+    end
+    if onlyOne then
         return nil
     else
         return links
@@ -369,12 +481,44 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
     return link
 end
 
+
+--------------------------------------------------------------------------------
+--- Create a link to a header
+---
+--- @param headerText string The text of the header
+---
+--- @return CdiAlertLink - the link to the header
+--------------------------------------------------------------------------------
+function MakeHeaderLink(headerText)
+    local link = CdiAlertLink:new()
+    link.link_text = headerText
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Create a nil link (here for quick type hinting)
+---
+--- @return CdiAlertLink? - Always nil, but typed
+--------------------------------------------------------------------------------
+function MakeNilLink()
+    return nil
+end
+
+--------------------------------------------------------------------------------
+--- Create an empty array of links (here for quick type hinting)
+---
+--- @return CdiAlertLink[] - An empty array of links
+--------------------------------------------------------------------------------
+function MakeLinkArray()
+    return {}
+end
+
 --------------------------------------------------------------------------------
 --- Get the existing cdi alert for a script
 ---
 --- @param args GetExistingCdiAlertArgs a table of arguments
 ---
---- @return CdiAlert? # the existing cdi alert or nil if not found
+--- @return CdiAlert? - the existing cdi alert or nil if not found
 --------------------------------------------------------------------------------
 function GetExistingCdiAlert(args)
     local account = args.account or account
@@ -390,147 +534,12 @@ function GetExistingCdiAlert(args)
 end
 
 --------------------------------------------------------------------------------
---- Creates a single link for a document, optionally adding it to a target table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param documentType string The document to create a link for.
---- @param linkText string The link text to use.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeDocumentLink(targetTable, documentType, linkText, sequence)
-    local link = GetDocumentLinks { documentType = documentType, linkTemplate = linkText, single = true, sequence = sequence }
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for a code reference, optionally adding it to a target
---- table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeCodeLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for an abstraction value, optionally adding it to a
---- target table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeAbstractionLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for an abstraction value, optionally adding it to a
---- target table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param code string The code to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeAbstractionValueLink(targetTable, code, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    local link = GetCodeLinks { code = code, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for a medication, optionally adding it to a target 
---- table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param medication string The medication to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeMedicationLink(targetTable, medication, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
-    local link =
-        GetMedicationLinks { medication = medication, linkTemplate = linkTemplate, single = true, sequence = sequence }
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
---- Creates a single link for a discrete value, optionally adding it to a target
---- table.
----
---- @param targetTable CdiAlertLink[]? The table to add the link to.
---- @param discreteValueNames string[] The discrete value to create a link for.
---- @param linkPrefix string The first part of the link template.
---- @param sequence number The sequence number to use for the link.
----
---- @return CdiAlertLink? # The link object.
---------------------------------------------------------------------------------
-function MakeDiscreteValueLink(targetTable, discreteValueNames, linkPrefix, sequence)
-    local linkTemplate = linkPrefix .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
-    --- @type CdiAlertLink
-    local link
-    for i = 1, #discreteValueNames do
-        local discreteValueName = discreteValueNames[i]
-        local l = GetDiscreteValueLinks { discreteValueName = discreteValueName, linkTemplate = linkTemplate, single = true, sequence = sequence }
-        --- @cast l CdiAlertLink
-        link = l
-        if link then
-            break
-        end
-    end
-
-    if link and targetTable then
-        table.insert(targetTable, link)
-    end
-    return link
-end
-
---------------------------------------------------------------------------------
 --- Get the account codes that are present as keys in the provided dictionary
 ---
 --- @param account Account The account to get the codes from
 --- @param dictionary table<string, string> The dictionary of codes to check against
 ---
---- @return string[] # List of codes in dependecy map that are present on the account (codes only)
+--- @return string[] - List of codes in dependecy map that are present on the account (codes only)
 --------------------------------------------------------------------------------
 function GetAccountCodesInDictionary(account, dictionary)
     --- List of codes in dependecy map that are present on the account (codes only)
@@ -560,7 +569,7 @@ end
 --- @param alert CdiAlert? The existing alert
 --- @param links CdiAlertLink[] The links to merge
 ---
---- @return CdiAlertLink[] # The merged links
+--- @return CdiAlertLink[] - The merged links
 --------------------------------------------------------------------------------
 function MergeLinksWithExisting(alert, links)
     if not alert then

@@ -20,7 +20,6 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
---- Dependency codes with descriptions
 local dependenceCodesDictionary = {
     ["F10.230"] = "Alcohol Dependence with Withdrawal, Uncomplicated",
     ["F10.231"] = "Alcohol Dependence with Withdrawal Delirium",
@@ -28,81 +27,25 @@ local dependenceCodesDictionary = {
     ["F10.239"] = "Alcohol Dependence with Withdrawal, Unspecified",
     ["F11.20"] = "Opioid Depndence, Uncomplicated",
 }
-
---- List of codes in dependecy map that are present on the account (codes only)
 local accountDependenceCodes = GetAccountCodesInDictionary(account, dependenceCodesDictionary)
 
---- Existing substance abuse alert (or nil if this alert doesn't exist currently on the account)
 local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
-
---- Subtitle of the existing alert (or nil if the alert doesn't exist)
 local subtitle = existingAlert and existingAlert.subtitle or nil
-
---- Boolean indicating that this alert matched conditions and we should proceed with creating links
---- and marking the result as passed
 local alertMatched = false
-
---- Boolean indicating that this alert was autoresolved and we should skip additional link creation,
---- but still mark the result as passed
 local alertAutoResolved = false
 
---- Top-level link for holding documentation links
----
---- @type CdiAlertLink
-local documentationIncludesLink = CdiAlertLink:new()
-documentationIncludesLink.link_text = "Documentation Includes"
+local documentationIncludesHeader = MakeHeaderLink("Documentation Includes")
+local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
+local treatmentHeader = MakeHeaderLink("Treatment")
 
---- Top-level links for holding clinical evidence
----
---- @type CdiAlertLink
-local clinicalEvidenceLink = CdiAlertLink:new()
-clinicalEvidenceLink.link_text = "Clinical Evidence"
-
---- Top-level link for holding treatment links
----
---- @type CdiAlertLink
-local treatmentLink = CdiAlertLink:new()
-treatmentLink.link_text = "Treatment"
-
---- Link for F11.20 code
----
---- @type CdiAlertLink?
-local f1120CodeLink
-
---- Link for CIWA Score
----
---- @type CdiAlertLink?
-local ciwaScoreAbsLink
-
---- Link for CIWA Protocol
----
---- @type CdiAlertLink?
-local ciwaProtocolAbsLink
-
---- Link for Methadone Clinic
----
---- @type CdiAlertLink?
-local methadoneClinicAbsLink
-
---- Link for Methadone Medication
----
---- @type CdiAlertLink?
-local methadoneMedLink
-
---- Link for Methadone Abstraction
----
---- @type CdiAlertLink?
-local methadoneAbsLink
-
---- Link for Suboxone Medication
----
---- @type CdiAlertLink?
-local suboxoneMedLink
-
---- Link for Suboxone Abstraction
----
---- @type CdiAlertLink?
-local suboxoneAbsLink
+local f1120CodeLink = MakeNilLink()
+local ciwaScoreAbsLink = MakeNilLink()
+local ciwaProtocolAbsLink = MakeNilLink()
+local methadoneClinicAbsLink = MakeNilLink()
+local methadoneMedLink = MakeNilLink()
+local methadoneAbsLink = MakeNilLink()
+local suboxoneMedLink = MakeNilLink()
+local suboxoneAbsLink = MakeNilLink()
 
 
 
@@ -115,17 +58,17 @@ if not existingAlert or not existingAlert.validated then
     local alcoholSubtitle = "Possible Alcohol Dependence"
 
     -- Negation
-    f1120CodeLink = MakeCodeLink(nil, "F11.20", "Opioid Dependence", 0)
+    f1120CodeLink = GetCodeLinks { code="F11.20", text="Opiod Dependence" }
 
     -- Abstractions
-    ciwaScoreAbsLink = MakeAbstractionValueLink(nil, "CIWA_SCORE", "CIWA Score", 4)
-    ciwaProtocolAbsLink = MakeAbstractionValueLink(nil, "CIWA_PROTOCOL", "CIWA Protocol", 5)
-    methadoneClinicAbsLink = MakeAbstractionValueLink(nil, "METHADONE_CLINIC", "Methadone Clinic", 11)
+    ciwaScoreAbsLink = GetAbstractionLinks { code="CIWA_SCORE", text="CIWA Score", seq=4 }
+    ciwaProtocolAbsLink = GetAbstractionValueLinks { code="CIWA_PROTOCOL", text="CIWA Protocol", seq=5 }
+    methadoneClinicAbsLink = GetAbstractionValueLinks { code ="METHADONE_CLINIC", text="Methadone Clinic", seq=11 }
     -- Medications
-    methadoneMedLink = MakeMedicationLink(nil, "Methadone", "Methadone", 7)
-    methadoneAbsLink = MakeAbstractionValueLink(nil, "METHADONE", "Methadone", 8)
-    suboxoneMedLink = MakeMedicationLink(nil, "Suboxone", "Suboxone", 11)
-    suboxoneAbsLink = MakeAbstractionValueLink(nil, "SUBOXONE", "Suboxone", 12)
+    methadoneMedLink = GetMedicationLinks { cat="Methadone", text="Methadone", seq=7 }
+    methadoneAbsLink = GetAbstractionValueLinks { code ="METHADONE", text="Methadone", seq=8 }
+    suboxoneMedLink = GetMedicationLinks { cat="Suboxone", text="Suboxone", seq=11 }
+    suboxoneAbsLink = GetAbstractionValueLinks { code ="SUBOXONE", text="Suboxone", seq=12 }
 
     -- Algorithm
     if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or
@@ -133,28 +76,24 @@ if not existingAlert or not existingAlert.validated then
         debug("One specific code was on the chart, alert failed" .. account.id)
         if existingAlert then
             if subtitle == alcoholSubtitle then
-                --- @type CdiAlertLink[]
-                local documentationIncludesLinks = {}
+                local docLinks = MakeLinkArray()
                 for codeIndex = 1, #accountDependenceCodes do
-                    local code = accountDependenceCodes[codeIndex]
+                    local code=accountDependenceCodes[codeIndex]
                     local desc = dependenceCodesDictionary[code]
                     local tempCode = GetCodeLinks {
-                        code = code,
+                        code=code,
                         linkTemplate =
-                            "Autoresolved Specified Code - " ..
-                            desc ..
-                            ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-                        single = true,
+                            "Autoresolved Specified Code - " .. desc,
                     }
                     if tempCode then
-                        table.insert(documentationIncludesLinks, tempCode)
+                        table.insert(docLinks, tempCode)
                     end
                 end
-                documentationIncludesLink.links = documentationIncludesLinks
+                documentationIncludesHeader.links = docLinks
 
             elseif subtitle == opiodSubtitle and f1120CodeLink then
                 f1120CodeLink.link_text = "Autoresolved Evidence - " .. f1120CodeLink.link_text
-                documentationIncludesLink.links = {f1120CodeLink}
+                documentationIncludesHeader.links = {f1120CodeLink}
             end
             result.outcome = "AUTORESOLVED"
             result.reason = "Autoresolved due to one Specified Code on Account"
@@ -182,15 +121,37 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if alertMatched then
-    --- Clinical Evidence Links temp table
-    ---
-    --- @type CdiAlertLink[]
-    local clinicalEvidenceLinks = {}
+    local evidenceLinks = MakeLinkArray()
+    local treatmentLinks = MakeLinkArray()
 
-    --- Treatment Links temp table
-    ---
-    --- @type CdiAlertLink[]
-    local treatmentLinks = {}
+    -- Convenience functions for adding links
+    --- @param code string
+    --- @param text string
+    --- @param seq number
+    local function AddEvidenceAbs(code, text, seq)
+        GetAbstractionLinks { target=evidenceLinks, code=code, text=text, seq=seq }
+    end
+
+    --- @param code string
+    --- @param text string
+    --- @param seq number
+    local function AddEvidenceCode(code, text, seq)
+        GetCodeLinks { target=evidenceLinks, code=code, text=text, seq=seq }
+    end
+
+    --- @param cat string
+    --- @param text string
+    --- @param seq number
+    local function AddTreatmentMed(cat, text, seq)
+        GetMedicationLinks { target=treatmentLinks, cat=cat, text=text, seq=seq }
+    end
+
+    --- @param code string
+    --- @param text string
+    --- @param seq number
+    local function AddTreatmentAbs(code, text, seq)
+        GetAbstractionValueLinks { target=treatmentLinks, code=code, text=text, seq=seq }
+    end
 
     -- Abstractions
     local fcodeLinks = GetCodeLinks {
@@ -198,54 +159,53 @@ if alertMatched then
             "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
             "F10.259", "F10.26", "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29",
         },
-        linkTemplate = "Alcohol Dependence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
-        sequence = 1,
-        fixed_sequence = true
+        text="Alcohol Dependence",
+        seq=1,
+        fixed_seq=true,
+        max = 999,
     }
 
     if fcodeLinks then
         for i = 1, #fcodeLinks do
-            table.insert(clinicalEvidenceLinks, fcodeLinks[i])
+            table.insert(evidenceLinks, fcodeLinks[i])
         end
     end
 
-    MakeAbstractionLink(clinicalEvidenceLinks, "ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
-    MakeAbstractionLink(clinicalEvidenceLinks, "AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
+    AddEvidenceAbs("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Mental Status", 2)
+    AddEvidenceAbs("AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
 
     if ciwaScoreAbsLink then
-        table.insert(clinicalEvidenceLinks, ciwaScoreAbsLink) -- #4
+        table.insert(evidenceLinks, ciwaScoreAbsLink) -- #4
     end
     if ciwaProtocolAbsLink then
-        table.insert(clinicalEvidenceLinks, ciwaProtocolAbsLink) -- #5
+        table.insert(evidenceLinks, ciwaProtocolAbsLink) -- #5
     end
 
-    MakeAbstractionLink(clinicalEvidenceLinks, "COMBATIVE", "Combative", 6)
-    MakeAbstractionLink(clinicalEvidenceLinks, "DELIRIUM", "Delirium", 7)
-    MakeCodeLink(clinicalEvidenceLinks, "R44.3", "Hallucinations", 8)
-    MakeCodeLink(clinicalEvidenceLinks, "R51.9", "Headache", 9)
-    MakeCodeLink(clinicalEvidenceLinks, "R45.4", "Irritability and Anger", 10)
+    AddEvidenceAbs("COMBATIVE", "Combative", 6)
+    AddEvidenceAbs("DELIRIUM", "Delirium", 7)
+    AddEvidenceCode("R44.3", "Hallucinations", 8)
+    AddEvidenceCode("R51.9", "Headache", 9)
+    AddEvidenceCode("R45.4", "Irritability and Anger", 10)
 
     if methadoneClinicAbsLink then
-        table.insert(clinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
+        table.insert(evidenceLinks, methadoneClinicAbsLink) -- #11
     end
 
-    MakeCodeLink(clinicalEvidenceLinks, "R11.0", "Nausea", 12)
-    MakeCodeLink(clinicalEvidenceLinks, "R45.0", "Nervousness", 13)
-    MakeCodeLink(clinicalEvidenceLinks, "R11.12", "Projectile Vomiting", 14)
-    MakeCodeLink(clinicalEvidenceLinks, "R45.1", "Restless and Agitation", 15)
-    MakeCodeLink(clinicalEvidenceLinks, "R61", "Sweating", 16)
-    MakeCodeLink(clinicalEvidenceLinks, "R25.1", "Tremor", 17)
-    MakeCodeLink(clinicalEvidenceLinks, "R44.1", "Visual Hallucinations", 18)
-    MakeCodeLink(clinicalEvidenceLinks, "R11.10", "Vomiting", 19)
+    AddEvidenceCode("R11.0", "Nausea", 12)
+    AddEvidenceCode("R45.0", "Nervousness", 13)
+    AddEvidenceCode("R11.12", "Projectile Vomiting", 14)
+    AddEvidenceCode("R45.1", "Restless and Agitation", 15)
+    AddEvidenceCode("R61", "Sweating", 16)
+    AddEvidenceCode("R25.1", "Tremor", 17)
+    AddEvidenceCode("R44.1", "Visual Hallucinations", 18)
+    AddEvidenceCode("R11.10", "Vomiting", 19)
 
-    MakeMedicationLink(treatmentLinks, "Benzodiazepine", "Benzodiazepine", 1)
-    MakeAbstractionValueLink(treatmentLinks, "BENZODIAZEPINE", "Benzodiazepine", 2)
-
-    MakeMedicationLink(treatmentLinks, "Dexmedetomidine", "Dexmedetomidine", 3)
-    MakeAbstractionValueLink(treatmentLinks, "DEXMEDETOMIDINE", "Dexmedetomidine", 4)
-
-    MakeMedicationLink(treatmentLinks, "Lithium", "Lithium", 5)
-    MakeAbstractionValueLink(treatmentLinks, "LITHIUM", "Lithium", 6)
+    AddTreatmentMed("Benzodiazipine", "Benzodiazepine", 1)
+    AddTreatmentAbs("BENZODIAZEPINE", "Benzodiazepine", 2)
+    AddTreatmentMed("Dexmedetomidine", "Dexmedetomidine", 3)
+    AddTreatmentAbs("DEXMEDETOMIDINE", "Dexmedetomidine", 4)
+    AddTreatmentMed("Lithium", "Lithium", 5)
+    AddTreatmentAbs("LITHIUM", "Lithium", 6)
 
     if methadoneMedLink then
         table.insert(treatmentLinks, methadoneMedLink) -- #7
@@ -254,8 +214,8 @@ if alertMatched then
         table.insert(treatmentLinks, methadoneAbsLink) -- #8
     end
 
-    MakeMedicationLink(treatmentLinks, "Propofol", "Propofol", 9)
-    MakeAbstractionValueLink(treatmentLinks, "PROPOFOL", "Propofol", 10)
+    AddTreatmentMed("Propofol", "Propofol", 9)
+    AddTreatmentAbs("PROPOFOL", "Propofol", 10)
 
     if suboxoneMedLink then
         table.insert(treatmentLinks, suboxoneMedLink) -- #11
@@ -264,8 +224,8 @@ if alertMatched then
         table.insert(treatmentLinks, suboxoneAbsLink) -- #12
     end
 
-    clinicalEvidenceLink.links = clinicalEvidenceLinks
-    treatmentLink.links = treatmentLinks
+    clinicalEvidenceHeader.links = evidenceLinks
+    treatmentHeader.links = treatmentLinks
 end
 
 
@@ -274,25 +234,22 @@ end
 --- Result Finalization 
 --------------------------------------------------------------------------------
 if alertMatched or alertAutoResolved then
-    --- Result Links temp table
-    ---
-    --- @type CdiAlertLink[]
-    local resultLinks = {}
+    local resultLinks = MakeLinkArray()
 
-    if documentationIncludesLink.links then
-        table.insert(resultLinks, documentationIncludesLink)
+    if documentationIncludesHeader.links then
+        table.insert(resultLinks, documentationIncludesHeader)
     end
-    if clinicalEvidenceLink.links then
-        table.insert(resultLinks, clinicalEvidenceLink)
+    if clinicalEvidenceHeader.links then
+        table.insert(resultLinks, clinicalEvidenceHeader)
     end
-    table.insert(resultLinks, treatmentLink)
+    table.insert(resultLinks, treatmentHeader)
 
     debug(
         "Alert Passed Adding Links. Alert Triggered: " .. result.subtitle .. " " ..
         "Autoresolved: " .. result.outcome .. "; " .. tostring(result.validated) .. "; " ..
-        "Links: Documentation Includes- " .. tostring(#documentationIncludesLink.links > 0) .. ", " ..
-        "Abs- " .. tostring(#clinicalEvidenceLink.links > 0) .. ", " ..
-        "treatment- " .. tostring(#treatmentLink.links > 0) .. "; " ..
+        "Links: Documentation Includes- " .. tostring(#documentationIncludesHeader.links > 0) .. ", " ..
+        "Abs- " .. tostring(#clinicalEvidenceHeader.links > 0) .. ", " ..
+        "treatment- " .. tostring(#treatmentHeader.links > 0) .. "; " ..
         "Acct: " .. account.id
     )
     resultLinks = MergeLinksWithExisting(existingAlert, resultLinks)

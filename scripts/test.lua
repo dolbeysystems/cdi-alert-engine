@@ -20,43 +20,28 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Link Creation
 --------------------------------------------------------------------------------
---- Top-level link for holding documentation links
----
---- @type CdiAlertLink
-local codeHeading = CdiAlertLink:new()
-codeHeading.link_text = "Code Links"
+local codeHeading = MakeHeaderLink("Code Links")
+local documentHeading = MakeHeaderLink("Document Links")
 
---- Top-level links for holding clinical evidence
----
---- @type CdiAlertLink
-local documentHeading = CdiAlertLink:new()
-documentHeading.link_text = "Document Links"
+local codeLinks = MakeLinkArray()
+local htLink =       GetCodeLinks { target=codeLinks, code="I10", text="Hypertension", seq=1 }
+local diabetesLink = GetCodeLinks { target=codeLinks, code="E11", text="Diabetes", seq=2 }
 
--- @type CdiAlertLink[]
-local codeLinks = {}
-
-local htLink = MakeCodeLink(codeLinks, "I10", "Hypertension", 1)
-local diabetesLink = MakeCodeLink(codeLinks, "E11", "Diabetes", 2)
-
--- @type CdiAlertLink[]
-local documentLinks = {}
-
-local dischargeSummaryLink = MakeDocumentLink(documentLinks, "Discharge Summary", "Discharge Summary Document", 1)
-local physicianNoteLink = MakeDocumentLink(documentLinks, "Physician Note", "Physician Note Document", 2)
+local documentLinks = MakeLinkArray()
+local dischargeSummaryLink = GetDocumentLinks { target=documentLinks, documentType="Discharge Summary", text="Discharge Summary Document", seq=1 }
+local physicianNoteLink =    GetDocumentLinks { target=documentLinks, documentType="Physician Note", text="Physician Note Document", seq=2 }
 
 codeHeading.links = codeLinks
 documentHeading.links = documentLinks
 
---- @type CdiAlertLink[]
-local resultLinks = {}
+local resultLinks = MakeLinkArray()
 
 if codeHeading.links then
     table.insert(resultLinks, codeHeading)
 else
     warn("No links under code heading")
 end
-if documentHeading.links then
-    table.insert(resultLinks, documentHeading)
+if documentHeading.links then table.insert(resultLinks, documentHeading)
 else
     warn("No links under document heading")
 end
