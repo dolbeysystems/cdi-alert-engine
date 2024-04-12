@@ -123,8 +123,9 @@ async fn main() {
 
                     #[allow(clippy::unwrap_used)]
                     {
-                        lua.globals().set("account", account.clone()).unwrap();
-                        lua.globals().set("result", result).unwrap();
+                        lua.globals().set("Account", account.clone()).unwrap();
+                        lua.globals().set("Result", result).unwrap();
+                        lua.globals().set("ScriptName", script_name).unwrap();
                     }
 
                     lua.load(&script.contents)

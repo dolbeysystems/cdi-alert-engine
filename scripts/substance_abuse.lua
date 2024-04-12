@@ -14,29 +14,21 @@
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
+require("libs.standard_cdi")
 
 
 
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local dependenceCodesDictionary = {
+local alertCodeDictionary = {
     ["F10.230"] = "Alcohol Dependence with Withdrawal, Uncomplicated",
     ["F10.231"] = "Alcohol Dependence with Withdrawal Delirium",
     ["F10.232"] = "Alcohol Dependence with Withdrawal with Perceptual Disturbance",
     ["F10.239"] = "Alcohol Dependence with Withdrawal, Unspecified",
     ["F11.20"] = "Opioid Depndence, Uncomplicated",
 }
-local accountDependenceCodes = GetAccountCodesInDictionary(account, dependenceCodesDictionary)
-
-local existingAlert = GetExistingCdiAlert{ scriptName = "substance_abuse.lua" }
-local subtitle = existingAlert and existingAlert.subtitle or nil
-local alertMatched = false
-local alertAutoResolved = false
-
-local documentationIncludesHeader = MakeHeaderLink("Documentation Includes")
-local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-local treatmentHeader = MakeHeaderLink("Treatment")
+local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 
 local f1120CodeLink = MakeNilLink()
 local ciwaScoreAbsLink = MakeNilLink()
@@ -52,7 +44,7 @@ local suboxoneAbsLink = MakeNilLink()
 --------------------------------------------------------------------------------
 --- Alert Qualification 
 --------------------------------------------------------------------------------
-if not existingAlert or not existingAlert.validated then
+if not ExistingAlert or not ExistingAlert.validated then
     -- General Subtitle Declaration
     local opiodSubtitle = "Possible Opioid Dependence"
     local alcoholSubtitle = "Possible Alcohol Dependence"
@@ -64,6 +56,7 @@ if not existingAlert or not existingAlert.validated then
     ciwaScoreAbsLink = GetAbstractionLinks { code="CIWA_SCORE", text="CIWA Score", seq=4 }
     ciwaProtocolAbsLink = GetAbstractionValueLinks { code="CIWA_PROTOCOL", text="CIWA Protocol", seq=5 }
     methadoneClinicAbsLink = GetAbstractionValueLinks { code ="METHADONE_CLINIC", text="Methadone Clinic", seq=11 }
+
     -- Medications
     methadoneMedLink = GetMedicationLinks { cat="Methadone", text="Methadone", seq=7 }
     methadoneAbsLink = GetAbstractionValueLinks { code ="METHADONE", text="Methadone", seq=8 }
@@ -71,47 +64,45 @@ if not existingAlert or not existingAlert.validated then
     suboxoneAbsLink = GetAbstractionValueLinks { code ="SUBOXONE", text="Suboxone", seq=12 }
 
     -- Algorithm
-    if (#accountDependenceCodes >= 1 and subtitle == alcoholSubtitle) or
-       (f1120CodeLink and subtitle == opiodSubtitle) then
-        debug("One specific code was on the chart, alert failed" .. account.id)
-        if existingAlert then
-            if subtitle == alcoholSubtitle then
-                local docLinks = MakeLinkArray()
-                for codeIndex = 1, #accountDependenceCodes do
-                    local code=accountDependenceCodes[codeIndex]
-                    local desc = dependenceCodesDictionary[code]
+    if (#accountAlertCodes >= 1 and ExistingAlert and ExistingAlert.subtitle == alcoholSubtitle) or
+       (f1120CodeLink and ExistingAlert and ExistingAlert.subtitle == opiodSubtitle) then
+        debug("One specific code was on the chart, alert failed" .. Account.id)
+        if ExistingAlert then
+            if ExistingAlert and ExistingAlert.subtitle == alcoholSubtitle then
+                for codeIndex = 1, #accountAlertCodes do
+                    local code=accountAlertCodes[codeIndex]
+                    local desc = alertCodeDictionary[code]
                     local tempCode = GetCodeLinks {
                         code=code,
                         linkTemplate =
                             "Autoresolved Specified Code - " .. desc,
                     }
                     if tempCode then
-                        table.insert(docLinks, tempCode)
+                        table.insert(DocumentationIncludesLinks, tempCode)
                     end
                 end
-                documentationIncludesHeader.links = docLinks
 
-            elseif subtitle == opiodSubtitle and f1120CodeLink then
+            elseif ExistingAlert and ExistingAlert.subtitle == opiodSubtitle and f1120CodeLink then
                 f1120CodeLink.link_text = "Autoresolved Evidence - " .. f1120CodeLink.link_text
-                documentationIncludesHeader.links = {f1120CodeLink}
+                table.insert(DocumentationIncludesLinks, f1120CodeLink)
             end
-            result.outcome = "AUTORESOLVED"
-            result.reason = "Autoresolved due to one Specified Code on Account"
-            result.validated = true
-            alertAutoResolved = true
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one Specified Code on Account"
+            Result.validated = true
+            AlertAutoResolved = true
         else
-            result.passed = false
+            Result.passed = false
         end
 
     elseif not f1120CodeLink and (methadoneMedLink or methadoneAbsLink or suboxoneMedLink or suboxoneAbsLink or methadoneClinicAbsLink) then
-        result.subtitle = opiodSubtitle
-        alertMatched = true
-    elseif #accountDependenceCodes == 0 and (ciwaScoreAbsLink or ciwaProtocolAbsLink) then
-        result.subtitle = alcoholSubtitle
-        alertMatched = true
+        Result.subtitle = opiodSubtitle
+        AlertMatched = true
+    elseif #accountAlertCodes == 0 and (ciwaScoreAbsLink or ciwaProtocolAbsLink) then
+        Result.subtitle = alcoholSubtitle
+        AlertMatched = true
     else
-        debug("Not enough data to warrant alert, Alert Failed. " .. account.id)
-        result.passed = false
+        debug("Not enough data to warrant alert, Alert Failed. " .. Account.id)
+        Result.passed = false
     end
 end
 
@@ -120,39 +111,7 @@ end
 --------------------------------------------------------------------------------
 --- Additional Link Creation
 --------------------------------------------------------------------------------
-if alertMatched then
-    local evidenceLinks = MakeLinkArray()
-    local treatmentLinks = MakeLinkArray()
-
-    -- Convenience functions for adding links
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddEvidenceAbs(code, text, seq)
-        GetAbstractionLinks { target=evidenceLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddEvidenceCode(code, text, seq)
-        GetCodeLinks { target=evidenceLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param cat string
-    --- @param text string
-    --- @param seq number
-    local function AddTreatmentMed(cat, text, seq)
-        GetMedicationLinks { target=treatmentLinks, cat=cat, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddTreatmentAbs(code, text, seq)
-        GetAbstractionValueLinks { target=treatmentLinks, code=code, text=text, seq=seq }
-    end
-
+if AlertMatched then
     -- Abstractions
     local fcodeLinks = GetCodeLinks {
         codes = {
@@ -167,7 +126,7 @@ if alertMatched then
 
     if fcodeLinks then
         for i = 1, #fcodeLinks do
-            table.insert(evidenceLinks, fcodeLinks[i])
+            table.insert(ClinicalEvidenceLinks, fcodeLinks[i])
         end
     end
 
@@ -175,10 +134,10 @@ if alertMatched then
     AddEvidenceAbs("AUDITORY_HALLUCINATIONS", "Auditory Hallucinations", 3)
 
     if ciwaScoreAbsLink then
-        table.insert(evidenceLinks, ciwaScoreAbsLink) -- #4
+        table.insert(ClinicalEvidenceLinks, ciwaScoreAbsLink) -- #4
     end
     if ciwaProtocolAbsLink then
-        table.insert(evidenceLinks, ciwaProtocolAbsLink) -- #5
+        table.insert(ClinicalEvidenceLinks, ciwaProtocolAbsLink) -- #5
     end
 
     AddEvidenceAbs("COMBATIVE", "Combative", 6)
@@ -188,7 +147,7 @@ if alertMatched then
     AddEvidenceCode("R45.4", "Irritability and Anger", 10)
 
     if methadoneClinicAbsLink then
-        table.insert(evidenceLinks, methadoneClinicAbsLink) -- #11
+        table.insert(ClinicalEvidenceLinks, methadoneClinicAbsLink) -- #11
     end
 
     AddEvidenceCode("R11.0", "Nausea", 12)
@@ -208,24 +167,21 @@ if alertMatched then
     AddTreatmentAbs("LITHIUM", "Lithium", 6)
 
     if methadoneMedLink then
-        table.insert(treatmentLinks, methadoneMedLink) -- #7
+        table.insert(TreatmentLinks, methadoneMedLink) -- #7
     end
     if methadoneAbsLink then
-        table.insert(treatmentLinks, methadoneAbsLink) -- #8
+        table.insert(TreatmentLinks, methadoneAbsLink) -- #8
     end
 
     AddTreatmentMed("Propofol", "Propofol", 9)
     AddTreatmentAbs("PROPOFOL", "Propofol", 10)
 
     if suboxoneMedLink then
-        table.insert(treatmentLinks, suboxoneMedLink) -- #11
+        table.insert(TreatmentLinks, suboxoneMedLink) -- #11
     end
     if suboxoneAbsLink then
-        table.insert(treatmentLinks, suboxoneAbsLink) -- #12
+        table.insert(TreatmentLinks, suboxoneAbsLink) -- #12
     end
-
-    clinicalEvidenceHeader.links = evidenceLinks
-    treatmentHeader.links = treatmentLinks
 end
 
 
@@ -233,27 +189,19 @@ end
 --------------------------------------------------------------------------------
 --- Result Finalization 
 --------------------------------------------------------------------------------
-if alertMatched or alertAutoResolved then
-    local resultLinks = MakeLinkArray()
-
-    if documentationIncludesHeader.links then
-        table.insert(resultLinks, documentationIncludesHeader)
-    end
-    if clinicalEvidenceHeader.links then
-        table.insert(resultLinks, clinicalEvidenceHeader)
-    end
-    table.insert(resultLinks, treatmentHeader)
+if AlertMatched or AlertAutoResolved then
+    local resultLinks = GetFinalTopLinks({})
 
     debug(
-        "Alert Passed Adding Links. Alert Triggered: " .. result.subtitle .. " " ..
-        "Autoresolved: " .. result.outcome .. "; " .. tostring(result.validated) .. "; " ..
-        "Links: Documentation Includes- " .. tostring(#documentationIncludesHeader.links > 0) .. ", " ..
-        "Abs- " .. tostring(#clinicalEvidenceHeader.links > 0) .. ", " ..
-        "treatment- " .. tostring(#treatmentHeader.links > 0) .. "; " ..
-        "Acct: " .. account.id
+        "Alert Passed Adding Links. Alert Triggered: " .. Result.subtitle .. " " ..
+        "Autoresolved: " .. Result.outcome .. "; " .. tostring(Result.validated) .. "; " ..
+        "Links: Documentation Includes- " .. tostring(#DocumentationIncludesHeader.links > 0) .. ", " ..
+        "Abs- " .. tostring(#ClinicalEvidenceHeader.links > 0) .. ", " ..
+        "treatment- " .. tostring(#TreatmentHeader.links > 0) .. "; " ..
+        "Acct: " .. Account.id
     )
-    resultLinks = MergeLinksWithExisting(existingAlert, resultLinks)
-    result.links = resultLinks
-    result.passed = true
+    resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
+    Result.links = resultLinks
+    Result.passed = true
 end
 

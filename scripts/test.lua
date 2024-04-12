@@ -64,7 +64,9 @@ end
 --------------------------------------------------------------------------------
 --- Result Finalization
 --------------------------------------------------------------------------------
-result.links = resultLinks
-result.passed = true
-result.outcome = "Test outcome"
+Result.links = resultLinks
+Result.passed = true
+Result.outcome = "Test outcome"
+
+info(ScriptName .. " - Test alert script completed successfully")
 

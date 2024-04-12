@@ -1,10 +1,12 @@
 {
     "diagnostics.globals": [
-        "vim",
         "info",
-        "account",
-        "result",
-        "CdiAlertLink",
-        "link"
+        "error",
+        "warn",
+        "debug",
+        "Account",
+        "Result",
+        "ScriptName",
+        "CdiAlertLink"
     ]
 }

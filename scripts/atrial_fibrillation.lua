@@ -20,6 +20,15 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
+local alertCodeDictionary = {
+    ["I48.0"] = "Paroxysmal Atrial Fibrillation",
+    ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
+    ["I48.19"] = "Other Persistent Atrial Fibrillation",
+    ["I48.21"] = "Permanent Atrial Fibrillation",
+    ["I48.20"] = "Chronic Atrial Fibrillation",
+}
+local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+
 local heartRateDiscreteValueNames = {
     "Peripheral Pulse Rate",
     "Heart Rate Monitored (bpn)",
@@ -32,67 +41,58 @@ local sbpDiscreteValueNames = {
     "Systolic Blood Pressure",
     "Systolic Blood Pressure (mmHg)",
 }
-local atrialFibrillationCodeDictionary = {
-    ["I48.0"] = "Paroxysmal Atrial Fibrillation",
-    ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
-    ["I48.19"] = "Other Persistent Atrial Fibrillation",
-    ["I48.21"] = "Permanent Atrial Fibrillation",
-    ["I48.20"] = "Chronic Atrial Fibrillation",
-}
-local accountAtrialFibrillationCodes = GetAccountCodesInDictionary(account, atrialFibrillationCodeDictionary)
 
-local existingAlert = GetExistingCdiAlert{ scriptName = "atrial_fibrillation.lua" }
-local alertMatched = false
-local alertAutoResolved = false
-
-local documentationIncludesHeading = MakeHeaderLink("Documentation Includes")
-local clinicalEvidenceHeading = MakeHeaderLink("Clinical Evidence")
-local treatmentHeading = MakeHeaderLink("Treatment")
-local vitalsHeading = MakeHeaderLink("Vital Signs/Intake and Output Data")
 local ekgHeading = MakeHeaderLink("EKG")
+local ekgLinks = MakeLinkArray()
+--- @param docType string
+--- @param text string
+local function AddEKGDoc(docType, text)
+    GetDocumentLinks { target=ekgLinks, documentType=docType, text=text }
+end
+
 
 
 --------------------------------------------------------------------------------
 --- Alert Qualification 
 --------------------------------------------------------------------------------
-if not existingAlert or not existingAlert.validated then
+if not ExistingAlert or not ExistingAlert.validated then
     -- Alert triggered
     local unspecAtrialFibrillationCodeLink = GetCodeLinks { code="I48.91", text="Unspecified Atrial Fibrillation Dx Present: " }
     local atrialFibrillationAbstractionLink = GetAbstractionLinks { code="ATRIAL_FIBRILLATION", text="Atrial Fibrillation" }
 
-    if #accountAtrialFibrillationCodes >= 1 then
-        if existingAlert then
-            result.validated = true
-            result.outcome = "AUTORESOLVED"
-            result.reason = "Autoresolved due to one specified code on the account"
+    if #accountAlertCodes >= 1 then
+        if ExistingAlert then
+            Result.validated = true
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one specified code on the account"
 
             --- @type CdiAlertLink[]
             local docLinks = {}
 
-            for codeIndex = 1, #accountAtrialFibrillationCodes do
-                local code = accountAtrialFibrillationCodes[codeIndex]
-                local description = atrialFibrillationCodeDictionary[code]
+            for codeIndex = 1, #accountAlertCodes do
+                local code = accountAlertCodes[codeIndex]
+                local description = alertCodeDictionary[code]
                 local tempCode = GetCodeLinks { code=code, text="Autoresolved Specified Code - " .. description }
 
                 if tempCode then
                     table.insert(docLinks, tempCode)
                 end
             end
-            documentationIncludesHeading.links = docLinks
-            alertAutoResolved = true
+            DocumentationIncludesHeader.links = docLinks
+            AlertAutoResolved = true
         else
-            alertMatched = false
+            AlertMatched = false
         end
     elseif unspecAtrialFibrillationCodeLink then
-        documentationIncludesHeading.links = { unspecAtrialFibrillationCodeLink }
-        result.subtitle = "Unspecified Atrial Fibrillation Dx"
-        alertMatched = true
+        DocumentationIncludesHeader.links = { unspecAtrialFibrillationCodeLink }
+        Result.subtitle = "Unspecified Atrial Fibrillation Dx"
+        AlertMatched = true
     elseif atrialFibrillationAbstractionLink then
-        documentationIncludesHeading.links = { atrialFibrillationAbstractionLink }
-        result.subtitle = "Atrial Fibrillation only present on EKG"
-        alertMatched = true
+        DocumentationIncludesHeader.links = { atrialFibrillationAbstractionLink }
+        Result.subtitle = "Atrial Fibrillation only present on EKG"
+        AlertMatched = true
     else
-        result.passed = false
+        Result.passed = false
     end
 end
 
@@ -101,68 +101,7 @@ end
 --------------------------------------------------------------------------------
 --- Additional Link Creation
 --------------------------------------------------------------------------------
-if alertMatched then
-    local evidenceLinks = MakeLinkArray()
-    local treatmentLinks = MakeLinkArray()
-    local vitalsLinks = MakeLinkArray()
-    local ekgLinks = MakeLinkArray()
-
-    -- Convenience functions for adding links
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddEvidenceAbs(code, text, seq)
-        GetAbstractionLinks { target=evidenceLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddEvidenceCode(code, text, seq)
-        GetCodeLinks { target=evidenceLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param cat string
-    --- @param text string
-    --- @param seq number
-    local function AddTreatmentMed(cat, text, seq)
-        GetMedicationLinks { target=treatmentLinks, cat=cat, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddTreatmentAbs(code, text, seq)
-        GetAbstractionValueLinks { target=treatmentLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddTreatmentCode(code, text, seq)
-        GetCodeLinks { target=treatmentLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param dv string[]
-    --- @param text string
-    --- @param seq number
-    local function AddVitalsDv(dv, text, seq)
-        GetDiscreteValueLinks { target=vitalsLinks, discreteValueNames=dv, text=text, seq=seq }
-    end
-
-    --- @param code string
-    --- @param text string
-    --- @param seq number
-    local function AddVitalsAbs(code, text, seq)
-        GetAbstractionValueLinks { target=vitalsLinks, code=code, text=text, seq=seq }
-    end
-
-    --- @param docType string
-    --- @param text string
-    local function AddEKGDoc(docType, text)
-        GetDocumentLinks { target=ekgLinks, documentType=docType, text=text }
-    end
-
+if AlertMatched then
     -- Clinical Evidence Links
     AddEvidenceAbs("ABLATION", "Ablation", 1)
     AddEvidenceCode("I35.1", "Aortic Regurgitation", 2)
@@ -215,12 +154,6 @@ if alertMatched then
     AddVitalsAbs("LOW_MEAN_ARTERIAL_BLOOD_PRESSURE", "Blood Pressure", 2)
     AddVitalsDv(sbpDiscreteValueNames, "Systolic Blood Pressure", 3)
     AddVitalsAbs("LOW_SYSTOLIC_BLOOD_PRESSURE", "Systolic Blood Pressure", 3)
-
-    -- Attach temp link lists to headings
-    clinicalEvidenceHeading.links = evidenceLinks
-    ekgHeading.links = ekgLinks
-    treatmentHeading.links = treatmentLinks
-    vitalsHeading.links = vitalsLinks
 end
 
 
@@ -228,34 +161,22 @@ end
 --------------------------------------------------------------------------------
 --- Result Finalization 
 --------------------------------------------------------------------------------
-if alertMatched or alertAutoResolved then
-    local resultLinks = MakeLinkArray()
-
-    if #documentationIncludesHeading.links > 0 then
-        table.insert(resultLinks, documentationIncludesHeading)
-    end
-    if #clinicalEvidenceHeading.links > 0 then
-        table.insert(resultLinks, clinicalEvidenceHeading)
-    end
-    if #vitalsHeading.links > 0 then
-        table.insert(resultLinks, vitalsHeading)
-    end
-    table.insert(resultLinks, treatmentHeading)
-    if #ekgHeading.links > 0 then
-        table.insert(resultLinks, ekgHeading)
-    end
+if AlertMatched or AlertAutoResolved then
+    -- Attach temp link lists to headings
+    ekgHeading.links = ekgLinks
+    local resultLinks = GetFinalTopLinks({ ekgHeading })
 
     debug(
-        "Alert Passed Adding Links. Alert Triggered: " .. result.subtitle .. " " ..
-        "Autoresolved: " .. result.outcome .. "; " .. tostring(result.validated) .. "; " ..
-        "Links: Documentation Includes- " .. tostring(#documentationIncludesHeading.links > 0) .. ", " ..
-        "Abs- " .. tostring(#clinicalEvidenceHeading.links > 0) .. ", " ..
-        "vitals- " .. tostring(#vitalsHeading.links > 0) .. ", " ..
-        "treatment- " .. tostring(#treatmentHeading.links > 0) .. "; " ..
-        "Acct: " .. account.id
+        "Alert Passed Adding Links. Alert Triggered: " .. Result.subtitle .. " " ..
+        "Autoresolved: " .. Result.outcome .. "; " .. tostring(Result.validated) .. "; " ..
+        "Links: Documentation Includes- " .. tostring(#DocumentationIncludesHeader.links > 0) .. ", " ..
+        "Abs- " .. tostring(#ClinicalEvidenceHeader.links > 0) .. ", " ..
+        "vitals- " .. tostring(#VitalsHeading.links > 0) .. ", " ..
+        "treatment- " .. tostring(#TreatmentHeader.links > 0) .. "; " ..
+        "Acct: " .. Account.id
     )
-    resultLinks = MergeLinksWithExisting(existingAlert, resultLinks)
-    result.links = resultLinks
-    result.passed = true
+    resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
+    Result.links = resultLinks
+    Result.passed = true
 end
 

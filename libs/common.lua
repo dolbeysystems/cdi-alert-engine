@@ -1,11 +1,5 @@
 ---------------------------------------------------------------------------------------------
---- common.lua - A library of common functions for use in cdi alert scripts
----
---- This includes functionality previously provided by AccountWorkflowContainer, and functions
---- commonly used in previous cdi alert scripts.
----
---- You can requre this file in your cdi alert scripts by adding the following line:
---- require("libs.common")
+--- common.lua - A library of common functions for use in all alert scripts
 ---------------------------------------------------------------------------------------------
 
 
@@ -107,7 +101,7 @@ end
 --- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetCodeLinks(args)
-    local account = args.account or account
+    local account = args.account or Account
     local codes = args.codes or { args.code }
     local linkTemplate = args.text or ""
     local documentTypes = args.documentTypes or {}
@@ -213,7 +207,7 @@ end
 --- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDocumentLinks(args)
-    local account = args.account or account
+    local account = args.account or Account
     local documentTypes = args.documentTypes or { args.documentType }
     local linkTemplate = args.text or ""
     local predicate = args.predicate
@@ -286,7 +280,7 @@ end
 --- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetMedicationLinks(args)
-    local account = args.account or account
+    local account = args.account or Account
     local medicationCategories = args.cats or { args.cat }
     local linkTemplate = args.text or ""
     local predicate = args.predicate
@@ -359,7 +353,7 @@ end
 --- @return (CdiAlertLink | CdiAlertLink[] | nil) # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
 function GetDiscreteValueLinks(args)
-    local account = args.account or account
+    local account = args.account or Account
     local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
     local linkTemplate = args.text or ""
     local predicate = args.predicate
@@ -521,7 +515,7 @@ end
 --- @return CdiAlert? - the existing cdi alert or nil if not found
 --------------------------------------------------------------------------------
 function GetExistingCdiAlert(args)
-    local account = args.account or account
+    local account = args.account or Account
     local scriptName = args.scriptName
 
     for i = 1, #account.cdi_alerts do
