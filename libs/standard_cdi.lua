@@ -14,7 +14,7 @@ require("libs.common")
 ---------------------------------------------------------------------------------------------
 --- Globals
 ---------------------------------------------------------------------------------------------
-ExistingAlert = GetExistingCdiAlert{ scriptName = ScriptName }
+ExistingAlert = GetExistingCdiAlert { scriptName = ScriptName }
 AlertMatched = false
 AlertAutoResolved = false
 
@@ -22,6 +22,7 @@ DocumentationIncludesHeader = MakeHeaderLink("Documentation Includes")
 ClinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
 TreatmentHeader = MakeHeaderLink("Treatment")
 VitalsHeading = MakeHeaderLink("Vital Signs/Intake and Output Data")
+LabsHeading = MakeHeaderLink("Laboratory Studies")
 
 --- @type CdiAlertLink[]
 DocumentationIncludesLinks = {}
@@ -35,6 +36,9 @@ TreatmentLinks = {}
 --- @type CdiAlertLink[]
 VitalsLinks = {}
 
+--- @type CdiAlertLink[]
+LabsLinks = {}
+
 
 
 ---------------------------------------------------------------------------------------------
@@ -42,13 +46,48 @@ VitalsLinks = {}
 ---------------------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
+--- Adds an abstraction value link to the Documentation Includes Header Temp Links
+--- @param code string
+--- @param text string
+--- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
+--------------------------------------------------------------------------------
+function AddDocumentationAbs(code, text, seq)
+    local link = GetAbstractionLinks { target=DocumentationIncludesLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Adds a code link to the Documentation Includes Header Temp Links
+--- @param code string
+--- @param text string
+--- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
+--------------------------------------------------------------------------------
+function AddDocumentationCode(code, text, seq)
+    local link = GetCodeLinks { target=DocumentationIncludesLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
+end
+
+--------------------------------------------------------------------------------
 --- Adds an abstraction value link to the Clinical Evidence Header Temp Links
 --- @param code string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddEvidenceAbs(code, text, seq)
-    GetAbstractionLinks { target=ClinicalEvidenceLinks, code=code, text=text, seq=seq }
+    local link = GetAbstractionLinks { target=ClinicalEvidenceLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -56,9 +95,14 @@ end
 --- @param code string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddEvidenceCode(code, text, seq)
-    GetCodeLinks { target=ClinicalEvidenceLinks, code=code, text=text, seq=seq }
+    local link = GetCodeLinks { target=ClinicalEvidenceLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -67,9 +111,14 @@ end
 --- @param cat string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddTreatmentMed(cat, text, seq)
-    GetMedicationLinks { target=TreatmentLinks, cat=cat, text=text, seq=seq }
+    local link = GetMedicationLinks { target=TreatmentLinks, cat=cat, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -78,9 +127,14 @@ end
 --- @param code string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddTreatmentAbs(code, text, seq)
-    GetAbstractionValueLinks { target=TreatmentLinks, code=code, text=text, seq=seq }
+    local link = GetAbstractionValueLinks { target=TreatmentLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -89,9 +143,14 @@ end
 --- @param code string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddTreatmentCode(code, text, seq)
-    GetCodeLinks { target=TreatmentLinks, code=code, text=text, seq=seq }
+    local link = GetCodeLinks { target=TreatmentLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -100,9 +159,14 @@ end
 --- @param dv string[]
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddVitalsDv(dv, text, seq)
-    GetDiscreteValueLinks { target=VitalsLinks, discreteValueNames=dv, text=text, seq=seq }
+    local link = GetDiscreteValueLinks { target=VitalsLinks, discreteValueNames=dv, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -111,9 +175,44 @@ end
 --- @param code string
 --- @param text string
 --- @param seq number
+---
+--- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
 function AddVitalsAbs(code, text, seq)
-    GetAbstractionValueLinks { target=VitalsLinks, code=code, text=text, seq=seq }
+    local link = GetAbstractionValueLinks { target=VitalsLinks, code=code, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
+end
+
+
+--------------------------------------------------------------------------------
+--- Adds a header (text) link to the Labs Header Temp Links
+---
+--- @param text string The text to display in the subheader link
+---
+--- @return CdiAlertLink - The subheader link
+--------------------------------------------------------------------------------
+function AddLabsSubHeader(text)
+    local subHeading = MakeHeaderLink(text)
+    table.insert(LabsLinks, subHeading)
+    return subHeading
+end
+
+--------------------------------------------------------------------------------
+--- Adds a discrete value link to the Labs Header Temp Links
+---
+--- @param dv string[] The discrete value names to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
+---
+--- @return CdiAlertLink - The discrete value link
+--------------------------------------------------------------------------------
+function AddLabsDv(dv, text, seq)
+    local link = GetDiscreteValueLinks { target=LabsLinks, discreteValueNames=dv, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
 end
 
 --------------------------------------------------------------------------------
@@ -133,6 +232,10 @@ function GetFinalTopLinks(additionalHeaders)
     if #ClinicalEvidenceLinks > 0 then
         ClinicalEvidenceHeader.links = ClinicalEvidenceLinks
         table.insert(finalLinks, ClinicalEvidenceHeader)
+    end
+    if #LabsLinks > 0 then
+        LabsHeading.links = LabsLinks
+        table.insert(finalLinks, LabsHeading)
     end
     if #VitalsLinks > 0 then
         VitalsHeading.links = VitalsLinks

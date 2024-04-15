@@ -14,28 +14,42 @@
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
+require("libs.standard_cdi")
 
 
 
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
+local alertCodeDictionary = {}
+local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 
 
 
 --------------------------------------------------------------------------------
 --- Alert Qualification 
 --------------------------------------------------------------------------------
+if not ExistingAlert or not ExistingAlert.validated then
+end
 
 
 
 --------------------------------------------------------------------------------
 --- Additional Link Creation
 --------------------------------------------------------------------------------
+if AlertMatched then
+end
 
 
 
 --------------------------------------------------------------------------------
 --- Result Finalization 
 --------------------------------------------------------------------------------
+if AlertMatched or AlertAutoResolved then
+    local resultLinks = GetFinalTopLinks({})
+
+    resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
+    Result.links = resultLinks
+    Result.passed = true
+end
 

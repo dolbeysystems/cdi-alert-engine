@@ -14,6 +14,7 @@
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
+require("libs.standard_cdi")
 
 
 
@@ -166,15 +167,6 @@ if AlertMatched or AlertAutoResolved then
     ekgHeading.links = ekgLinks
     local resultLinks = GetFinalTopLinks({ ekgHeading })
 
-    debug(
-        "Alert Passed Adding Links. Alert Triggered: " .. Result.subtitle .. " " ..
-        "Autoresolved: " .. Result.outcome .. "; " .. tostring(Result.validated) .. "; " ..
-        "Links: Documentation Includes- " .. tostring(#DocumentationIncludesHeader.links > 0) .. ", " ..
-        "Abs- " .. tostring(#ClinicalEvidenceHeader.links > 0) .. ", " ..
-        "vitals- " .. tostring(#VitalsHeading.links > 0) .. ", " ..
-        "treatment- " .. tostring(#TreatmentHeader.links > 0) .. "; " ..
-        "Acct: " .. Account.id
-    )
     resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
     Result.links = resultLinks
     Result.passed = true
