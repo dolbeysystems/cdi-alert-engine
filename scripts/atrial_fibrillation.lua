@@ -45,6 +45,7 @@ local sbpDiscreteValueNames = {
 
 local ekgHeading = MakeHeaderLink("EKG")
 local ekgLinks = MakeLinkArray()
+
 --- @param docType string
 --- @param text string
 local function AddEKGDoc(docType, text)

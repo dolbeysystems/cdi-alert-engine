@@ -28,6 +28,20 @@ local alertCodeDictionary = {
 local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 local ionCalciumHeader = MakeHeaderLink("Ionized Calcium")
 local serumCalciumHeader = MakeHeaderLink("Serum Calcium")
+local ionCalciumLinks = {}
+local serumCalciumLinks = {}
+local bisphosphonateMedLink = MakeNilLink()
+local bisphosphonateAbsLink = MakeNilLink()
+local calReplacementMedLink = MakeNilLink()
+local calCarbonateAbsLink = MakeNilLink()
+local calChlorideAbsLink = MakeNilLink()
+local calCitrateAbsLink = MakeNilLink()
+local calGluconateAbsLink = MakeNilLink()
+local calLactateAbsLink = MakeNilLink()
+local fluidBolusMedLink = MakeNilLink()
+local fluidBolusAbsLink = MakeNilLink()
+local vdReplacementMedLink = MakeNilLink()
+local vdReplacementAbsLink = MakeNilLink()
 
 
 
@@ -73,18 +87,18 @@ if not ExistingAlert or not ExistingAlert.validated then
     }
 
     -- Meds
-    local bisphosphonateMedLink = GetMedicationLinks { cat="Bisphosphonate", text="Bisphosphonate" }
-    local bisphosphonateAbsLink = GetAbstractionLinks { code="BISPHOSPHONATE", text="Bisphosphonate" }
-    local calReplacementMedLink = GetMedicationLinks { cat="Calcium Replacement", text="Calcium Replacement" }
-    local calCarbonateAbsLink = GetAbstractionLinks { code="CALCIUM_CARBONATE", text="Calcium Carbonate" }
-    local calChlorideAbsLink = GetAbstractionLinks { code="CALCIUM_CHLORIDE", text="Calcium Chloride" }
-    local calCitrateAbsLink = GetAbstractionLinks { code="CALCIUM_CITRATE", text="Calcium Citrate" }
-    local calGluconateAbsLink = GetAbstractionLinks { code="CALCIUM_GLUCONATE", text="Calcium Gluconate" }
-    local calLactateAbsLink = GetAbstractionLinks { code="CALCIUM_LACTATE", text="Calcium Lactate" }
-    local fluidBolusMedLink = GetMedicationLinks { cat="Fluid Bolus", text="Fluid Bolus" }
-    local fluidBolusAbsLink = GetAbstractionLinks { code="FLUID_BOLUS", text="Fluid Bolus" }
-    local vdReplacementMedLink = GetMedicationLinks { cat="Vitamin D Replacement", text="Vitamin D Replacement" }
-    local vdReplacementAbsLink = GetAbstractionLinks { code="VITAMIN_D_REPLACEMENT", text="Vitamin D Replacement" }
+    bisphosphonateMedLink = GetMedicationLinks { cat="Bisphosphonate", text="Bisphosphonate" }
+    bisphosphonateAbsLink = GetAbstractionLinks { code="BISPHOSPHONATE", text="Bisphosphonate" }
+    calReplacementMedLink = GetMedicationLinks { cat="Calcium Replacement", text="Calcium Replacement" }
+    calCarbonateAbsLink = GetAbstractionLinks { code="CALCIUM_CARBONATE", text="Calcium Carbonate" }
+    calChlorideAbsLink = GetAbstractionLinks { code="CALCIUM_CHLORIDE", text="Calcium Chloride" }
+    calCitrateAbsLink = GetAbstractionLinks { code="CALCIUM_CITRATE", text="Calcium Citrate" }
+    calGluconateAbsLink = GetAbstractionLinks { code="CALCIUM_GLUCONATE", text="Calcium Gluconate" }
+    calLactateAbsLink = GetAbstractionLinks { code="CALCIUM_LACTATE", text="Calcium Lactate" }
+    fluidBolusMedLink = GetMedicationLinks { cat="Fluid Bolus", text="Fluid Bolus" }
+    fluidBolusAbsLink = GetAbstractionLinks { code="FLUID_BOLUS", text="Fluid Bolus" }
+    vdReplacementMedLink = GetMedicationLinks { cat="Vitamin D Replacement", text="Vitamin D Replacement" }
+    vdReplacementAbsLink = GetAbstractionLinks { code="VITAMIN_D_REPLACEMENT", text="Vitamin D Replacement" }
 
     if (e8352Link and (not ExistingAlert or ExistingAlert.subtitle ~= "Possible Hypercalcemia Dx")) or
        (e8351Link and (not ExistingAlert or ExistingAlert.subtitle ~= "Possible Hypocalcemia Dx"))
@@ -103,11 +117,10 @@ if not ExistingAlert or not ExistingAlert.validated then
     elseif not e8352Link and #serumCalciumHighLinks > 0 and
         (bisphosphonateMedLink or bisphosphonateAbsLink or fluidBolusMedLink or fluidBolusAbsLink) then
 
-
         if type(serumCalciumHighLinks) == "table" then
-            serumCalciumHeader.links = serumCalciumHighLinks
+            serumCalciumLinks = serumCalciumHighLinks
         else
-            serumCalciumHeader.links = { serumCalciumHighLinks }
+            serumCalciumLinks = { serumCalciumHighLinks }
         end
         Result.subtitle = "Possible Hypercalcemia Dx"
         AlertMatched = true
@@ -116,14 +129,14 @@ if not ExistingAlert or not ExistingAlert.validated then
          calLactateAbsLink or calReplacementMedLink or vdReplacementAbsLink or vdReplacementMedLink) then
 
         if type(serumCalciumLowLinks) == "table" then
-            serumCalciumHeader.links = serumCalciumLowLinks
+            serumCalciumLinks = serumCalciumLowLinks
         else
-            serumCalciumHeader.links = { serumCalciumLowLinks }
+            serumCalciumLinks = { serumCalciumLowLinks }
         end
         if type(ionizedCalciumLinks) == "table" then
-            ionCalciumHeader.links = ionizedCalciumLinks
+            ionCalciumLinks = ionizedCalciumLinks
         else
-            ionCalciumHeader.links = { ionizedCalciumLinks }
+            ionCalciumLinks = { ionizedCalciumLinks }
         end
         Result.subtitle = "Possible Hypocalcemia Dx"
         AlertMatched = true
@@ -132,20 +145,61 @@ if not ExistingAlert or not ExistingAlert.validated then
     end
 end
 
-if #ionCalciumHeader.links > 0 then
-    table.insert(LabsLinks, ionCalciumHeader)
-end
-if #serumCalciumHeader.links > 0 then
-    table.insert(LabsLinks, serumCalciumHeader)
-end
-
 
 
 --------------------------------------------------------------------------------
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if AlertMatched then
+    -- Abstractions
+    AddEvidenceAbs("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level of Consciousness", 1)
+    AddEvidenceCode("R11.14", "Bilous Vomiting", 2)
+    GetCodeLinks {
+        codes = { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6" },
+        text = "Chronic Kidney Disease",
+        seq = 3,
+        targetTable = ClinicalEvidenceLinks
+    }
+    AddEvidenceCode("R11.15", "Cyclic Vomiting", 4)
+    AddEvidenceCode("E58", "Dietary Calcium Deficiency", 5)
+    AddEvidenceAbs("EXTREME_THIRST", "Excessive Thirst", 6)
+    AddEvidenceCode("R53.83", "Fatigue", 7)
+    AddEvidenceAbs("HEART_PALPITATIONS", "Heart Palpitations", 8)
+    AddEvidenceCode("E21.3", "Hyperparathyroidism", 9)
+    AddEvidenceCode("E83.42", "Hypomagnesemia", 10)
+    AddEvidenceCode("E20.9", "Hypoparathyroidism", 11)
+    AddEvidenceAbs("INCREASED_URINARY_FREQUENCY", "Frequent Urination", 12)
+    AddEvidenceAbs("MUSCLE_CRAMPS", "Muscle Cramps", 13)
+    AddEvidenceCode("K85.90", "Pancreatitis", 14)
+    AddEvidenceCode("R11.12", "Projectile Vomiting", 15)
+    AddEvidenceAbs("SEIZURE", "Seizure", 16)
+    AddEvidenceCode("E55.9", "Vitamin D Deficiency", 17)
+    AddEvidenceCode("R11.10", "Vomiting", 18)
+    AddEvidenceCode("R11.13", "Vomiting Fecal Matter", 19)
+    AddEvidenceCode("R11.11", "Vomiting Without Nausea", 20)
+    AddEvidenceAbs("WEAKNESS", "Weakness", 21)
 
+    -- Labs
+    GetAbstractionValueLinks { code = "HIGH_SERUM_CALCIUM", text = "Serum Calcium", targetTable = LabsLinks, seq = 4 }
+    GetAbstractionValueLinks { code = "LOW_SERUM_CALCIUM", text = "Serum Calcium", targetTable = LabsLinks, seq = 5 }
+
+    -- Meds
+    if bisphosphonateMedLink then table.insert(TreatmentLinks, bisphosphonateMedLink) end
+    if bisphosphonateAbsLink then table.insert(TreatmentLinks, bisphosphonateAbsLink) end
+    if calReplacementMedLink then table.insert(TreatmentLinks, calReplacementMedLink) end
+    if calCarbonateAbsLink then table.insert(TreatmentLinks, calCarbonateAbsLink) end
+    if calChlorideAbsLink then table.insert(TreatmentLinks, calChlorideAbsLink) end
+    if calCitrateAbsLink then table.insert(TreatmentLinks, calCitrateAbsLink) end
+    if calGluconateAbsLink then table.insert(TreatmentLinks, calGluconateAbsLink) end
+    if calLactateAbsLink then table.insert(TreatmentLinks, calLactateAbsLink) end
+    if fluidBolusMedLink then table.insert(TreatmentLinks, fluidBolusMedLink) end
+    if fluidBolusAbsLink then table.insert(TreatmentLinks, fluidBolusAbsLink) end
+    if vdReplacementMedLink then table.insert(TreatmentLinks, vdReplacementMedLink) end
+    if vdReplacementAbsLink then table.insert(TreatmentLinks, vdReplacementAbsLink) end
+
+    -- Vitals
+    AddVitalsDv({ "Glasgow Coma Scale" }, "Glasgow Coma Score", 1)
+    AddVitalsAbs("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score", 2)
 end
 
 
@@ -154,6 +208,17 @@ end
 --- Result Finalization 
 --------------------------------------------------------------------------------
 if AlertMatched or AlertAutoResolved then
+    -- Compose the labs subheaders/links
+    if ionCalciumLinks then
+        ionCalciumHeader.links = ionCalciumLinks
+        table.insert(LabsLinks, ionCalciumHeader)
+    end
+
+    if serumCalciumLinks then
+        serumCalciumHeader.links = serumCalciumLinks
+        table.insert(LabsLinks, serumCalciumHeader)
+    end
+
     local resultLinks = GetFinalTopLinks({})
 
     resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
