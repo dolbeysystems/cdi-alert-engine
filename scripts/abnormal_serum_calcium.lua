@@ -28,8 +28,8 @@ local alertCodeDictionary = {
 local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 local ionCalciumHeader = MakeHeaderLink("Ionized Calcium")
 local serumCalciumHeader = MakeHeaderLink("Serum Calcium")
-local ionCalciumLinks = {}
-local serumCalciumLinks = {}
+local ionCalciumLinks = MakeNilLinkArray()
+local serumCalciumLinks = MakeNilLinkArray()
 local bisphosphonateMedLink = MakeNilLink()
 local bisphosphonateAbsLink = MakeNilLink()
 local calReplacementMedLink = MakeNilLink()
@@ -211,12 +211,12 @@ if AlertMatched or AlertAutoResolved then
     -- Compose the labs subheaders/links
     if ionCalciumLinks then
         ionCalciumHeader.links = ionCalciumLinks
-        table.insert(LabsLinks, ionCalciumHeader)
+        table.insert(DocumentationIncludesLinks, ionCalciumHeader)
     end
 
     if serumCalciumLinks then
         serumCalciumHeader.links = serumCalciumLinks
-        table.insert(LabsLinks, serumCalciumHeader)
+        table.insert(DocumentationIncludesLinks, serumCalciumHeader)
     end
 
     local resultLinks = GetFinalTopLinks({})

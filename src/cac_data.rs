@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -897,7 +897,8 @@ pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError
         .insert_one(
             Account {
                 id: "TEST_CDI_001".to_string(),
-                admit_date_time: Some(Utc::now()),
+                // April 17, 2024 12:00:00 PM
+                admit_date_time: Some(Utc.with_ymd_and_hms(2024, 4, 17, 12, 0, 0).unwrap()),
                 discharge_date_time: None,
                 patient: Some(Arc::new(Patient {
                     mrn: Some("123456".to_string()),

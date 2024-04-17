@@ -499,6 +499,15 @@ function MakeNilLink()
 end
 
 --------------------------------------------------------------------------------
+--- Create a nil link (here for quick type hinting)
+---
+--- @return CdiAlertLink[]? - Always nil, but typed
+--------------------------------------------------------------------------------
+function MakeNilLinkArray()
+    return nil
+end
+
+--------------------------------------------------------------------------------
 --- Create an empty array of links (here for quick type hinting)
 ---
 --- @return CdiAlertLink[] - An empty array of links
@@ -527,3 +536,42 @@ function GetExistingCdiAlert(args)
     return nil
 end
 
+--------------------------------------------------------------------------------
+--- Check if a date is less than a certain number of days ago
+---
+--- @param dateString string The date string to check
+--- @param days number The number of days to check against
+---
+--- @return boolean - true if the date is less than the number of days ago, false otherwise
+--------------------------------------------------------------------------------
+function DateIsLessThanXDaysAgo(dateString, days)
+    local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
+    local year, month, day, hour, min, sec, msec = dateString:match(pattern)
+    local date = os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec})
+
+    --- @diagnostic disable-next-line: param-type-mismatch
+    local nowUtc = os.time(os.date("!*t"))
+    local daysInSeconds = days * 24 * 60 * 60
+    return nowUtc - date < daysInSeconds
+end
+
+--------------------------------------------------------------------------------
+--- Check if a date is less than a certain number of minutes ago
+---
+--- @param dateString string The date string to check
+--- @param minutes number The number of minutes to check against
+---
+--- @return boolean - true if the date is less than the number of minutes ago, false otherwise
+--------------------------------------------------------------------------------
+function DateIsLessThanXMinutesAgo(dateString, minutes)
+    local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
+    local year, month, day, hour, min, sec, msec = dateString:match(pattern)
+    local date = os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec})
+
+    local nowUtcStr = os.date("!*t")
+    --- @diagnostic disable-next-line: param-type-mismatch
+    local nowUtc = os.time(nowUtcStr)
+
+    local minutesInSeconds = minutes * 60
+    return nowUtc - date < minutesInSeconds
+end

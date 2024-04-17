@@ -32,6 +32,12 @@ local documentLinks = MakeLinkArray()
 local dischargeSummaryLink = GetDocumentLinks { target=documentLinks, documentType="Discharge Summary", text="Discharge Summary Document", seq=1 }
 local physicianNoteLink =    GetDocumentLinks { target=documentLinks, documentType="Physician Note", text="Physician Note Document", seq=2 }
 
+if DateIsLessThanXMinutesAgo(Account.admit_date_time, 280) then
+    warn("Less")
+else
+    warn("More or equal")
+end
+
 codeHeading.links = codeLinks
 documentHeading.links = documentLinks
 

@@ -185,20 +185,6 @@ function AddVitalsAbs(code, text, seq)
     return link
 end
 
-
---------------------------------------------------------------------------------
---- Adds a header (text) link to the Labs Header Temp Links
----
---- @param text string The text to display in the subheader link
----
---- @return CdiAlertLink - The subheader link
---------------------------------------------------------------------------------
-function AddLabsSubHeader(text)
-    local subHeading = MakeHeaderLink(text)
-    table.insert(LabsLinks, subHeading)
-    return subHeading
-end
-
 --------------------------------------------------------------------------------
 --- Adds a discrete value link to the Labs Header Temp Links
 ---
@@ -210,6 +196,22 @@ end
 --------------------------------------------------------------------------------
 function AddLabsDv(dv, text, seq)
     local link = GetDiscreteValueLinks { target=LabsLinks, discreteValueNames=dv, text=text, seq=seq }
+
+    --- @cast link CdiAlertLink 
+    return link
+end
+
+--------------------------------------------------------------------------------
+--- Adds an abstraction value link to the Labs Header Temp Links
+---
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
+---
+--- @return CdiAlertLink - The abstraction value link
+--------------------------------------------------------------------------------
+function AddLabsAbs(code, text, seq)
+    local link = GetAbstractionValueLinks { target=LabsLinks, code=code, text=text, seq=seq }
 
     --- @cast link CdiAlertLink 
     return link
