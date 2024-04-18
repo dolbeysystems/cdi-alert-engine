@@ -33,6 +33,7 @@ dependencies = [
 [[package]]
 name = "alua"
 version = "0.1.0"
+source = "git+https://github.com/eievui5/alua#1aa8ac5186ff962fc943d7ac854df356debe2591"
 dependencies = [
  "alua-macros",
 ]
@@ -40,6 +41,7 @@ dependencies = [
 [[package]]
 name = "alua-macros"
 version = "0.1.0"
+source = "git+https://github.com/eievui5/alua#1aa8ac5186ff962fc943d7ac854df356debe2591"
 dependencies = [
  "darling 0.20.8",
  "proc-macro2",
