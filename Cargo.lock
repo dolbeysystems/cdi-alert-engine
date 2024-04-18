@@ -31,6 +31,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "alua"
+version = "0.1.0"
+source = "git+https://github.com/eievui5/alua#1aa8ac5186ff962fc943d7ac854df356debe2591"
+dependencies = [
+ "alua-macros",
+]
+
+[[package]]
+name = "alua-macros"
+version = "0.1.0"
+source = "git+https://github.com/eievui5/alua#1aa8ac5186ff962fc943d7ac854df356debe2591"
+dependencies = [
+ "darling 0.20.8",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.57",
+]
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -186,6 +205,7 @@ checksum = "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5"
 name = "cdi-alert-engine"
 version = "0.1.0"
 dependencies = [
+ "alua",
  "ansi_term",
  "bson",
  "chrono",

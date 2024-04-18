@@ -1,3 +1,4 @@
+use cdi_alert_engine::*;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::Lua;
@@ -7,9 +8,6 @@ use std::process::exit;
 use std::sync::Arc;
 use tokio::task;
 use tracing::*;
-
-mod cac_data;
-mod config;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 
