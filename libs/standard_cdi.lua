@@ -47,9 +47,10 @@ LabsLinks = {}
 
 --------------------------------------------------------------------------------
 --- Adds an abstraction value link to the Documentation Includes Header Temp Links
---- @param code string
---- @param text string
---- @param seq number
+---
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -62,9 +63,9 @@ end
 
 --------------------------------------------------------------------------------
 --- Adds a code link to the Documentation Includes Header Temp Links
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -77,9 +78,9 @@ end
 
 --------------------------------------------------------------------------------
 --- Adds an abstraction value link to the Clinical Evidence Header Temp Links
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -92,9 +93,9 @@ end
 
 --------------------------------------------------------------------------------
 --- Adds a code link to the Clinical Evidence Header Temp Links
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -108,9 +109,9 @@ end
 --------------------------------------------------------------------------------
 --- Adds a medication link to the Treatment Header Temp Links
 ---
---- @param cat string
---- @param text string
---- @param seq number
+--- @param cat string The category of the medication
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -124,9 +125,9 @@ end
 --------------------------------------------------------------------------------
 --- Adds an abstraction value link to the Treatment Header Temp Links
 ---
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -140,9 +141,9 @@ end
 --------------------------------------------------------------------------------
 --- Adds a code link to the Treatment Header Temp Links
 ---
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -156,25 +157,43 @@ end
 --------------------------------------------------------------------------------
 --- Adds a discrete value link to the Vitals Header Temp Links
 ---
---- @param dv string[]
---- @param text string
---- @param seq number
+--- @param dv string The discrete value names to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
+--- @param predicate (fun(discrete_value: DiscreteValue): boolean) Predicate function to filter discrete values
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
-function AddVitalsDv(dv, text, seq)
-    local link = GetDiscreteValueLinks { target=VitalsLinks, discreteValueNames=dv, text=text, seq=seq }
+function AddVitalsDv(dv, text, seq, predicate)
+    local link = GetDiscreteValueLinks { target=VitalsLinks, discreteValueName=dv, text=text, seq=seq, predicate=predicate }
 
     --- @cast link CdiAlertLink 
     return link
 end
 
 --------------------------------------------------------------------------------
+--- Adds a discrete value link to the Vitals Header Temp Links
+---
+--- @param dv string[] The discrete value names to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
+--- @param predicate (fun(discrete_value: DiscreteValue): boolean) Predicate function to filter discrete values
+---
+--- @return CdiAlertLink[] - The discrete value link
+--------------------------------------------------------------------------------
+function AddVitalsDvs(dv, text, seq, predicate)
+    local links = GetDiscreteValueLinks { target=VitalsLinks, discreteValueNames=dv, text=text, seq=seq, predicate=predicate }
+
+    --- @cast links CdiAlertLink[]
+    return links
+end
+
+--------------------------------------------------------------------------------
 --- Adds an abstraction value link to the Vitals Header Temp Links
 ---
---- @param code string
---- @param text string
---- @param seq number
+--- @param code string The code to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
@@ -188,17 +207,35 @@ end
 --------------------------------------------------------------------------------
 --- Adds a discrete value link to the Labs Header Temp Links
 ---
---- @param dv string[] The discrete value names to link
+--- @param dv string The discrete value names to link
 --- @param text string The text to display in the link
 --- @param seq number The sequence number for the link
+--- @param predicate (fun(discrete_value: DiscreteValue): boolean) Predicate function to filter discrete values
 ---
 --- @return CdiAlertLink - The discrete value link
 --------------------------------------------------------------------------------
-function AddLabsDv(dv, text, seq)
-    local link = GetDiscreteValueLinks { target=LabsLinks, discreteValueNames=dv, text=text, seq=seq }
+function AddLabsDv(dv, text, seq, predicate)
+    local link = GetDiscreteValueLinks { target=LabsLinks, discreteValueName=dv, text=text, seq=seq, predicate=predicate }
 
     --- @cast link CdiAlertLink 
     return link
+end
+
+--------------------------------------------------------------------------------
+--- Adds a discrete value link to the Labs Header Temp Links
+---
+--- @param dv string[] The discrete value names to link
+--- @param text string The text to display in the link
+--- @param seq number The sequence number for the link
+--- @param predicate (fun(discrete_value: DiscreteValue): boolean) Predicate function to filter discrete values
+---
+--- @return CdiAlertLink[] - The discrete value link
+--------------------------------------------------------------------------------
+function AddLabsDvs(dv, text, seq, predicate)
+    local links = GetDiscreteValueLinks { target=LabsLinks, discreteValueNames=dv, text=text, seq=seq, predicate=predicate }
+
+    --- @cast links CdiAlertLink[]
+    return links
 end
 
 --------------------------------------------------------------------------------

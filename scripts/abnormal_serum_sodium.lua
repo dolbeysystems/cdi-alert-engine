@@ -54,7 +54,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         discreteValueNames = { "Sodium Lvl (mmol/L)" },
         text = "Serum Sodium",
         predicate = function(dv)
-           return dv.result <= 135 and DateIsLessThanXDaysAgo(dv.result_date, 365)
+           return CheckDvResultNumber(dv, function(v) return v <= 135 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -62,7 +62,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         discreteValueNames = { "Sodium Lvl (mmol/L)" },
         text = "Serum Sodium",
         predicate = function(dv)
-           return dv.result >= 146 and DateIsLessThanXDaysAgo(dv.result_date, 365)
+           return CheckDvResultNumber(dv, function(v) return v >= 146 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -198,7 +198,7 @@ if AlertMatched then
         text = "Blood Glucose",
         seq = 5,
         predicate = function(dv)
-            return dv.result > 600
+            return CheckDvResultNumber(dv, function(v) return v > 600 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end
     }
     if not glucoseLink then
@@ -208,7 +208,7 @@ if AlertMatched then
             text = "Blood Glucose POC",
             seq = 5,
             predicate = function(dv)
-                return dv.result > 600
+                return CheckDvResultNumber(dv, function(v) return v > 600 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
             end
         }
     end
@@ -224,7 +224,7 @@ if AlertMatched then
         discreteValueName = "Glasgow Coma Score",
         text = "Glasgow Coma Score",
         predicate = function(dv)
-            return dv.result <= 14
+            return CheckDvResultNumber(dv, function(v) return v <= 14 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end
     }
     AddVitalsAbs("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score", 6)

@@ -575,3 +575,28 @@ function DateIsLessThanXMinutesAgo(dateString, minutes)
     local minutesInSeconds = minutes * 60
     return nowUtc - date < minutesInSeconds
 end
+
+
+--------------------------------------------------------------------------------
+--- Check if a date is less than a certain number of hours ago
+---
+--- @param discreteValue DiscreteValue The discrete value to check
+--- @param predicate fun(number):boolean The predicate to check the result against
+---
+--- @return boolean - true if the date is less than the number of hours ago, false otherwise
+--------------------------------------------------------------------------------
+function CheckDvResultNumber(discreteValue, predicate)
+    local number = discreteValue.result
+    if number == nil then
+        return false
+    end
+    number = string.gsub(number, "[<>]", "")
+
+    local result = tonumber(discreteValue.result)
+    if result == nil then
+        return false
+    else
+        return predicate(result)
+    end
+end
+

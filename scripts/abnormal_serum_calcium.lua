@@ -21,11 +21,6 @@ require("libs.standard_cdi")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local alertCodeDictionary = {
-    ["E83.51"] = "Hypocalcemia",
-    ["E83.52"] = "Hypercalcemia"
-}
-local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 local ionCalciumHeader = MakeHeaderLink("Ionized Calcium")
 local serumCalciumHeader = MakeHeaderLink("Serum Calcium")
 local ionCalciumLinks = MakeNilLinkArray()
@@ -59,7 +54,8 @@ if not ExistingAlert or not ExistingAlert.validated then
         predicate = function (dv)
             local resultValue = string.gsub(dv.result, "[\\<\\>]", "")
             local _, count = string.gsub(resultValue, "%.", "")
-            return count <= 1 and tonumber(resultValue) ~= nil and tonumber(resultValue) >= 10.5
+            -- CheckDvResultNumber(dv, function(v) return v.result < 90 end)
+            return count <= 1 and CheckDvResultNumber(dv, function(v) return v >= 10.5 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -71,7 +67,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         predicate = function (dv)
             local resultValue = string.gsub(dv.result, "[\\<\\>]", "")
             local _, count = string.gsub(resultValue, "%.", "")
-            return count <= 1 and tonumber(resultValue) ~= nil and tonumber(resultValue) <= 8.4
+            return count <= 1 and CheckDvResultNumber(dv, function(v) return v <= 8.4 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -81,7 +77,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         predicate = function (dv)
             local resultValue = string.gsub(dv.result, "[\\<\\>]", "")
             local _, count = string.gsub(resultValue, "%.", "")
-            return count <= 1 and tonumber(resultValue) ~= nil and tonumber(resultValue) <= 4.65
+            return count <= 1 and CheckDvResultNumber(dv, function(v) return v <= 4.65 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -198,7 +194,9 @@ if AlertMatched then
     if vdReplacementAbsLink then table.insert(TreatmentLinks, vdReplacementAbsLink) end
 
     -- Vitals
-    AddVitalsDv({ "Glasgow Coma Scale" }, "Glasgow Coma Score", 1)
+    AddVitalsDv("Glasgow Coma Scale", "Glasgow Coma Score", 1, function (dv)
+        return CheckDvResultNumber(dv, function(v) return v < 15 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
     AddVitalsAbs("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score", 2)
 end
 

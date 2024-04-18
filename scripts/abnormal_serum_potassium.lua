@@ -61,7 +61,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         discreteValueNames = { "Potassium Lvl (mmol/L)" },
         text = "Serum Potassium Low",
         predicate = function(dv)
-           return dv.result <= 3.1 and DateIsLessThanXDaysAgo(dv.result_date, 365)
+           return CheckDvResultNumber(dv, function(v) return v <= 3.1 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         seq = 5,
         maxPerValue = 10
@@ -71,7 +71,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         discreteValueNames = { "Potassium Lvl (mmol/L)" },
         text = "Serum Potassium High",
         predicate = function(dv)
-           return dv.result >= 5.4 and DateIsLessThanXDaysAgo(dv.result_date, 365)
+           return CheckDvResultNumber(dv, function(v) return v >= 5.4 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         seq = 6,
         maxPerValue = 10
@@ -82,7 +82,7 @@ if not ExistingAlert or not ExistingAlert.validated then
             discreteValueNames = { "Potassium Lvl (mmol/L)" },
             text = "Serum Potassium Very High",
             predicate = function(dv)
-               return dv.result >= 6.0 and DateIsLessThanXDaysAgo(dv.result_date, 365)
+               return CheckDvResultNumber(dv, function(v) return v >= 6.0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
             end,
             seq = 7,
             maxPerValue = 10

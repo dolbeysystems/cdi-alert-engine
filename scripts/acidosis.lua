@@ -40,21 +40,21 @@ local alertCodeDictionary = {
     ["E87.29"] ="Other Acidosis"
 }
 local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+local dvTrigger = false
 
-local oxygenHeader = MakeHeader("Oxygenation/Ventilation")
-local abgHeader = MakeHeader("ABG")
-local vbgHeader = MakeHeader("VBG")
-local bloodHeader = MakeHeader("Blood CO2")
-local phHeader = MakeHeader("PH")
-local lactateHeader = MakeHeader("Lactate")
+local oxygenHeader = MakeHeaderLink("Oxygenation/Ventilation")
+local abgHeader = MakeHeaderLink("ABG")
+local vbgHeader = MakeHeaderLink("VBG")
+local bloodHeader = MakeHeaderLink("Blood CO2")
+local phHeader = MakeHeaderLink("PH")
+local lactateHeader = MakeHeaderLink("Lactate")
 
-local oxygenLinks = MakeNiLinkArray()
-local abgLinks = MakeNiLinkArray()
-local vbgLinks = MakeNiLinkArray()
-local bloodLinks = MakeNiLinkArray()
-local phLinks = MakeNiLinkArray()
-local lactateLinks = MakeNiLinkArray()
-
+local oxygenLinks = MakeNilLinkArray()
+local abgLinks = MakeNilLinkArray()
+local vbgLinks = MakeNilLinkArray()
+local bloodLinks = MakeNilLinkArray()
+local phLinks = MakeNilLinkArray()
+local lactateLinks = MakeNilLinkArray()
 
 local e8720CodeLink = MakeNilLink()
 local acuteRespAcidosisAbsLink = MakeNilLink()
@@ -77,96 +77,6 @@ local phMultiDVLinks = MakeNilLinkArray()
 --- Alert Qualification 
 --------------------------------------------------------------------------------
 if not ExistingAlert or not ExistingAlert.validated then
---[[
-#========================================
-#  Discrete Value Fields and Calculations
-#========================================
-dvAnionGap = ["Anion Gap (mmol/L)"]
-calcAnionGap1 = lambda x: x > 12
-dvArterialBloodC02 = ["pCO2 Art (mmHg)"]
-calcArterialBlood021 = lambda x: x > 50
-calcArterialBlood022 = lambda x: x < 30
-calcArterialBlood023 = lambda x: x <= 45
-dvArterialBloodPH = ["pH Art (pH Units)"]
-calcArterialBloodPH1 = lambda x: x < 7.32
-calcArterialBloodPH2 = 7.35
-calcArterialBloodPH3 = lambda x: x >= 7.35
-calcArterialBloodPH4 = 7.35
-dvBaseExcess = ["Base Excess Art (mmol/L)"]
-calcBaseExcess1 = lambda x: x < -2
-dvBloodCO2 = ["CO2 (mmol/L)"]
-calcBloodCO21 = lambda x: x < 21
-calcBloodCO22 = 21
-dvBloodGlucose = ["Glucose Lvl (mg/dL)"]
-calcBloodGlucose1 = lambda x: x > 250
-dvBloodGlucosePOC = ["Glucose POC (mg/dL)"]
-calcBloodGlucosePOC1 = lambda x: x > 250
-dvFIO2 = ["FiO2 Art (%)"]
-calcFIO21 = lambda x: x <= 100
-dvGlasgowComaScale = ["Glasgow Coma Score"]
-calcGlasgowComaScale1 = lambda x: x <= 14
-dvHCO3 = ["HCO3 Ven (mmol/L)"]
-calcHCO31 = lambda x: x >= 26
-dvHeartRate = ["Peripheral Pulse Rate", "Heart Rate Monitored (bpm)", "Peripheral Pulse Rate (bpm)"]
-calcHeartRate1 = lambda x: x > 90
-dvMAP = ["Mean Arterial Pressure"]
-calcMAP1 = lambda x: x < 70
-dvOxygenFlowRate = ["Oxygen Flow Rate (L/min)"]
-calcOxygenFlowRate1 = lambda x: x > 2
-dvOxygenTherapy = ["Oxygen Therapy"]
-dvPaO2 = ["pO2 Art (mmHg)"]
-calcPAO21 = lambda x: x < 80
-calcPAO22 = lambda x: x >= 80
-dvPCO2 = ["pCO2 Ven (mmHg)"]
-calcPCO21 = lambda x: x > 55
-dvPH = ["pH Ven (pH Units)"]
-calcPH1 = lambda x: x < 7.30
-calcPH2 = 7.30
-dvRespiratoryRate = ["Respiratory Rate", "Respiratory Rate (br/min)"]
-calcRespiratoryRate1 = lambda x: x > 20
-calcRespiratoryRate2 = lambda x: x < 12
-dvSBP = ["Systolic Blood Pressure", "Systolic Blood Pressure (mmHg)"]
-calcSBP1 = lambda x: x < 90
-dvSerumBloodUreaNitrogen = ["BUN (mg/dL)"]
-calcSerumBloodUreaNitrogen1 = lambda x: x > 30
-dvSerumBicarbonate = ["HCO3 Art (mmol/L)"]
-calcSerumBicarbonate1 = lambda x: x >= 26
-calcSerumBicarbonate2 = lambda x: 22 < x < 26
-calcSerumBicarbonate3 = lambda x: x < 22
-dvSerumChloride = ["Chloride Lvl (mmol/L)"]
-calcSerumChloride1 = lambda x: x > 107
-dvSerumCreatinine = ["Creatinine Lvl (mg/dL)"]
-calcSerumCreatinine1 = lambda x: x > 1.2
-dvSerumLactate = ["Lactic Acid Lvl (mmol/L)"]
-calcSerumLactate1 = 2
-dvSPO2 = ["SpO2 (%)"]
-calcSPO21 = lambda x: x < 92
-calcAny = 0
-dvWBC = ["WBC (10x3/uL)"]
-calcWBC1 = lambda x: x > 12
-dvPlateletCount = ["Platelets (10x3/uL)"]
-calcPlateletCount1 = lambda x: x < 100
-dvInr = ["INR"]
-calcInr1 = lambda x: x > 1.5
-dvSerumBilirubin = ["Bilirubin Total (mg/dL)"]
-calcSerumBilirubin1 = lambda x: x > 2.0
-dvCreactiveProtein = ["CRP (mg/dL)"]
-calcCreactiveProtein1 = lambda x: x > 0.5
-
-dvProcalcitonin = ["Procalcitonin (ng/mL)"]
-calcProcalcitonin1 = lambda x: x > 0.49
-dvTroponinT = ["hs Troponin (ng/L)"]
-calcTroponinTMale1 = lambda x: x > 22
-calcTroponinTFemale1 = lambda x: x > 14
-dvSerumKetone = ["KETONES:SCNC:PT:BLD:QN:"]
-calcSerumKetone1 = lambda x: x > 0
-dvUrineKetone = ["UA Ketones"]
-calcUrineKetone1 = lambda x: x > 0
-
-dvCBlood = ["C Blood"]
-dvCSepsisBlood = ["C Sepsis Blood"]
-]]--
-
     -- Documentation Includes
     e8720CodeLink = GetCodeLinks { code = "E87.20", text = "Acidosis Unspecified" }
     acuteRespAcidosisAbsLink = GetAbstractionLinks { code = "ACUTE_RESPIRATORY_ACIDOSIS", text = "Acute Respiratory Acidosis" }
@@ -177,7 +87,7 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         discreteValueNames = { "CO2 (mmol/L)" },
         text = "PH",
         predicate = function(dv)
-            return dv < 21
+            return CheckDvResultNumber(dv, function(v) return v < 21 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -185,7 +95,7 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         discreteValueNames = { "Lactic Acid Lvl (mmol/L)" },
         text = "Serum Lactate",
         predicate = function(dv)
-            return dv > 2
+            return CheckDvResultNumber(dv, function(v) return v > 2 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -202,15 +112,16 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         discreteValueNames = { "pH Art (pH Units)" },
         text = "PH",
         predicate = function(dv)
-            return dv < 7.35
+            return CheckDvResultNumber(dv, function(v) return v < 7.35 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
+        seq = 1,
         maxPerValue = 10
     }
     highArterialBloodC02DVLink = GetDiscreteValueLinks {
         discreteValueName = "pCO2 Art (mmHg)",
         text = "pC02",
         predicate = function(dv)
-            return dv > 50
+            return CheckDvResultNumber(dv, function(v) return v > 50 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         seq = 2
     }
@@ -218,7 +129,7 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         discreteValueName = "HCO3 Art (mmol/L)",
         text = "HC03",
         predicate = function(dv)
-            return dv >= 26
+            return CheckDvResultNumber(dv, function(v) return v >= 26 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         seq = 5
     }
@@ -228,7 +139,7 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         discreteValueNames = { "pH Ven (pH Units)" },
         text = "PH",
         predicate = function(dv)
-            return dv < 7.30
+            return CheckDvResultNumber(dv, function(v) return v < 7.30 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
     }
@@ -239,23 +150,78 @@ dvCSepsisBlood = ["C Sepsis Blood"]
         (ExistingAlert and ExistingAlert.subtitle ~= "Acidosis Unspecified Dx Present")
     ) then
         if ExistingAlert then
-
+            if #accountAlertCodes == 1 then
+                for _, code in ipairs(accountAlertCodes) do
+                    local desc = alertCodeDictionary[code]
+                    GetCodeLinks { target = DocumentationIncludesLinks, code = code, text = "Autoresolved Specified Code - " + desc }
+                end
+            end
+            if acuteRespAcidosisAbsLink then
+               table.insert(DocumentationIncludesLinks, acuteRespAcidosisAbsLink)
+            end
+            if chronicRespAcidosisAbsLink then
+               table.insert(DocumentationIncludesLinks, chronicRespAcidosisAbsLink)
+            end
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one Specified Code on the Account"
+            Result.validated = true
+            AlertAutoResolved = true
         else
             Result.passed = false
         end
-
-    elseif highSerumLactateDVLinks then
-
+    elseif #highSerumLactateDVLinks > 0 then
+        --- @cast highSerumLactateDVLinks CdiAlertLink[]
+        for _, link in ipairs(highSerumLactateDVLinks) do
+            table.insert(DocumentationIncludesLinks, link)
+        end
+        Result.subtitle = "Possible Lactic Acidosis"
+        AlertMatched = true
     elseif (
         e8720CodeLink and
         (#lowArterialBloodPHMultiDVLinks > 0 or  #phMultiDVLinks > 0 or #bloodCO2MultiDVLinks > 0) and
         (albuminMedLink or fluidBolusMedLink or fluidBolusAbsLink or fluidResucAbsLink or sodiumBicarMedLink)
     ) then
+        if #lowArterialBloodPHMultiDVLinks > 0 then
+            --- @cast lowArterialBloodPHMultiDVLinks CdiAlertLink[]
+            for _, link in ipairs(lowArterialBloodPHMultiDVLinks) do
+                --- @cast phLinks CdiAlertLink[]
+                table.insert(phLinks, link)
+            end
+        end
+        if #phMultiDVLinks > 0 then
+            --- @cast phMultiDVLinks CdiAlertLink[]
+            for _, link in ipairs(phMultiDVLinks) do
+                --- @cast phLinks CdiAlertLink[]
+                table.insert(phLinks, link)
+            end
+        end
+        if bloodCO2MultiDVLinks and #bloodCO2MultiDVLinks > 0 then
+            --- @cast bloodCO2MultiDVLinks CdiAlertLink[]
+            for _, link in ipairs(bloodCO2MultiDVLinks) do
+                --- @cast bloodLinks CdiAlertLink[]
+                table.insert(bloodLinks, link)
+            end
+        end
+        if bloodLinks and #bloodLinks > 0 then
+            bloodHeader.links = bloodLinks
+            table.insert(DocumentationIncludesLinks, bloodHeader)
+        end
+        if phLinks and #phLinks > 0 then
+            phHeader.links = phLinks
+            table.insert(DocumentationIncludesLinks, phHeader)
+        end
+        if albuminMedLink then table.insert(DocumentationIncludesLinks, albuminMedLink) end
+        if fluidBolusMedLink then table.insert(DocumentationIncludesLinks, fluidBolusMedLink) end
+        if fluidBolusAbsLink then table.insert(DocumentationIncludesLinks, fluidBolusAbsLink) end
+        if fluidResucAbsLink then table.insert(DocumentationIncludesLinks, fluidResucAbsLink) end
+        if sodiumBicarMedLink then table.insert(DocumentationIncludesLinks, sodiumBicarMedLink) end
+        table.insert(DocumentationIncludesLinks, e8720CodeLink)
+        dvTrigger = true
+        Result.subtitle = "Acidosis Unspecified Dx Present"
+        AlertMatched = true
     else
         Result.passed = false
     end
-
-
 end
 
 
@@ -264,6 +230,285 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if AlertMatched then
+    -- Clinical Evidence
+    AddEvidenceCode("R41.82", "Altered Level of Consciousness", 1)
+    AddEvidenceAbs("AZOTEMIA", "Azotemia", 2)
+    AddEvidenceCode("R11.14", "Bilious Vomiting", 3)
+    AddEvidenceCode("R11.15", "Cyclical Vomiting", 4)
+    AddEvidenceAbs("DIARRHEA", "Diarrhea", 5)
+    AddEvidenceCode("R53.83", "Fatigue", 6)
+    AddEvidenceCode("E16.2", "Hypoglycemia", 7)
+    AddEvidenceCode("R09.02", "Hypoxemia", 8)
+    AddEvidenceAbs("OPIOID_OVERDOSE", "Opioid Overdose", 9)
+    AddEvidenceCode("R11.12", "Projectile Vomiting", 10)
+    AddEvidenceAbs("SHORTNESS_OF_BREATH", "Shortness of Breath", 11)
+    AddEvidenceCode("R11.10", "Vomiting", 12)
+    AddEvidenceCode("R11.13", "Vomiting Fecal Matter", 13)
+    AddEvidenceCode("R11.11", "Vomiting Without Nausea", 14)
+    AddEvidenceAbs("WEAKNESS", "Weakness", 15)
+
+    -- Labs
+    AddLabsDv("Anion Gap (mmol/L)", "Anion Gap", 1, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 12 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("HIGH_ANION_GAP", "Anion Gap", 2)
+    AddLabsAbs("LOW_BLOOD_PH", "Blood PH", 3)
+    AddLabsAbs("HIGH_BLOOD_C02", "Aterial Blood Carbon Dioxide", 4)
+    AddLabsDv("Base Excess Art (mmol/L)", "Base Excess", 5, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < -2 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("LOW_BASE_EXCESS", "Base Excess", 6)
+    AddLabsDv("Bilirubin Total (mg/dL)", "Bilirubin", 7, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 2.0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+
+    AddLabsDv("C Blood", "Blood Culture Result", 8, function(dv)
+        return dv.result ~= nil and string.find(dv.result, "%bPositive%b") ~= nil and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("C Sepsis Blood", "Sepsis Blood Culture Result", 9, function(dv)
+        return dv.result ~= nil and string.find(dv.result, "%bPositive%b") ~= nil and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+
+    local glucoseLink = AddLabsDv("Blood Glucose Lvl (mg/dL)", "Blood Glucose", 10, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 250 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    if not glucoseLink then
+        AddLabsDv("Blood Glucose POC (mg/dL)", "Blood Glucose POC", 11, function(dv)
+            return CheckDvResultNumber(dv, function(v) return v > 250 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end)
+    end
+    AddLabsDv("CRP (mg/dL)", "C Reactive Protein", 12, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0.5 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("INR", "INR", 13, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 1.5 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("Platelets (10x3/uL)", "Platelet Count", 14, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 100 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("Procalcitonin (ng/mL)", "Procalcitonin", 15, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0.49 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("SpO2 (%)", "Pulse Oxygen", 16, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 92 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("BUN (mg/dL)", "Serum Blood Urea Nitrogen", 17, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 30 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("HIGH_SERUM_BLOOD_UREA_NITROGEN", "Serum Blood Urea Nitrogen", 18)
+    AddLabsAbs("NORMAL_SERUM_BICARBONATE", "Serum Bicarbonate", 19)
+    AddLabsAbs("HIGH_SERUM_BICARBONATE", "Serum Bicarbonate", 20)
+    AddLabsAbs("LOW_SERUM_BICARBONATE", "Serum Bicarbonate", 21)
+    AddLabsDv("Chloride Lvl (mmol/L)", "Serum Chloride", 22, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 107 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("HIGH_SERUM_CHLORIDE", "Serum Chloride", 23)
+    AddLabsDv("Creatinine Lvl (mg/dL)", "Serum Creatinine", 24, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 1.2 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("HIGH_SERUM_CREATININE", "Serum Creatinine", 25)
+    AddLabsAbs("HIGH_SERUM_LACTATE", "Serum Lactate", 26)
+    AddLabsDv("KETONES:SCNC:PT:BLD:QN:", "Serum Ketones", 27, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    if Account.patient.gender == "F" then
+        AddLabsDv("hs Troponin (ng/L)", "Troponin T High Sensitivity Female", 28, function(dv)
+            return CheckDvResultNumber(dv, function(v) return v > 14 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end)
+        AddLabsAbs("ELEVATED_TROPONIN_T_HIGH_SENSITIVITY_FEMALE", "Troponin T High Sensitivity Female", 29)
+    elseif Account.patient.gender == "M" then
+        AddLabsDv("hs Troponin (ng/L)", "Troponin T High Sensitivity Male", 28, function(dv)
+            return CheckDvResultNumber(dv, function(v) return v > 22 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end)
+        AddLabsAbs("ELEVATED_TROPONIN_T_HIGH_SENSITIVITY_MALE", "Troponin T High Sensitivity Male", 29)
+    end
+    AddLabsDv("UA Ketones", "Urine Ketones", 30, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("WBC (10x3/uL)", "WBC", 31, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 12 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+
+    -- Labs Subheadings
+    if not dvTrigger then
+        if lowArterialBloodPHMultiDVLinks and #lowArterialBloodPHMultiDVLinks > 0 then
+            for _, link in ipairs(lowArterialBloodPHMultiDVLinks) do
+                --- @cast phLinks CdiAlertLink[]
+                table.insert(phLinks, link)
+            end
+        end
+        if phMultiDVLinks and #phMultiDVLinks > 0 then
+            for _, link in ipairs(phMultiDVLinks) do
+                --- @cast phLinks CdiAlertLink[]
+                table.insert(phLinks, link)
+            end
+        end
+        if bloodCO2MultiDVLinks and #bloodCO2MultiDVLinks > 0 then
+            for _, link in ipairs(bloodCO2MultiDVLinks) do
+                --- @cast bloodLinks CdiAlertLink[]
+                table.insert(bloodLinks, link)
+            end
+        end
+
+        -- Merge in the ABG and VBG links subheadings
+        if bloodLinks and #bloodLinks > 0 then
+            bloodHeader.links = bloodLinks
+            table.insert(LabsLinks, bloodHeader)
+        end
+        if phLinks and #phLinks > 0 then
+            phHeader.links = phLinks
+            table.insert(LabsLinks, phHeader)
+        end
+    end
+
+    -- Oxygen
+    GetCodeLinks { target = oxygenLinks, codes = { "5A1522F", "5A1522G", "5A1522H", "5A15A2F", "5A15A2G", "5A15A2H" }, text = "ECMO Code", seq = 5 }
+    GetCodeLinks { target = oxygenLinks, codes = { "5A0935A", "5A0945A", "5A0955A" }, text = "High Flow Nasal Oxygen", seq = 2 }
+    GetCodeLinks { target = oxygenLinks, code = "0BH17EZ", text = "Intubation", seq = 7 }
+    GetCodeLinks { target = oxygenLinks, codes = { "5A1935Z", "5A1945Z", "5A1955Z" }, text = "Invasive Mechanical Ventilation", seq = 3 }
+    GetAbstractionLinks { target = oxygenLinks, code = "NON_INVASIVE_VENTILATION", text = "Non-Invasive Ventilation", seq = 4 }
+    GetDiscreteValueLinks { target = oxygenLinks, discreteValueNames = { "Oxygen Flow Rate (L/min)" }, text = "Oxygen Flow Rate", predicate = function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 2 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end, seq = 6 }
+    GetDiscreteValueLinks { target = oxygenLinks, discreteValueNames = { "Oxygen Therapy" }, text = "Oxygen Therapy", predicate = function(dv)
+        return (
+            dv.result ~= nil and
+            string.find(dv.result, "%bRoom Air%b") == nil and
+            string.find(dv.result, "%bRA%b") == nil and
+            DateIsLessThanXDaysAgo(dv.result_date, 365)
+        )
+    end, seq = 3 }
+
+    -- Vitals
+    AddVitalsDv("Glasgow Coma Score", "Glasgow Coma Score", 1, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v <= 14 end)
+    end)
+    AddVitalsAbs("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score", 2)
+    AddVitalsDvs({ "Peripheral Pulse Rate", "Heart Rate Monitored (bpm)", "Peripheral Pulse Rate (bpm)" }, "Heart Rate", 3, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 90 end)
+    end)
+    AddVitalsAbs("HIGH_HEART_RATE", "Heart Rate", 4)
+    AddVitalsDv("Mean Arterial Pressure", "Mean Arterial Pressure", 5, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 70 end)
+    end)
+    AddVitalsAbs("LOW_MEAN_ARTERIAL_BLOOD_PRESSURE", "Mean Arterial Pressure", 6)
+    AddVitalsDvs({ "Respiratory Rate", "Respiratory Rate (br/min)" }, "Respiratory Rate", 7, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 12 end)
+    end)
+    AddVitalsAbs("LOW_RESPIRATORY_RATE", "Respiratory Rate", 8)
+    AddVitalsDvs({ "Respiratory Rate", "Respiratory Rate (br/min)" }, "Respiratory Rate", 9, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 20 end)
+    end)
+    AddVitalsAbs("HIGH_RESPIRATORY_RATE", "Respiratory Rate", 10)
+    AddVitalsDvs({ "Systolic Blood Pressure", "Systolic Blood Pressure (mmHg)" }, "Systolic Blood Pressure", 11, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 90 end)
+    end)
+    AddVitalsAbs("LOW_SYSTOLIC_BLOOD_PRESSURE", "Systolic Blood Pressure", 12)
+
+    -- ABG
+    if highArterialBloodC02DVLink then
+        --- @cast abgLinks CdiAlertLink[]
+        table.insert(abgLinks, highArterialBloodC02DVLink)
+    else
+        local dvArterialBloodC02Link = GetDiscreteValueLinks {
+            target = abgLinks,
+            discreteValueName = "pCO2 Art (mmHg)",
+            text = "pC02",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v < 30 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end,
+            seq = 2
+        }
+        if not dvArterialBloodC02Link then
+            dvArterialBloodC02Link = GetDiscreteValueLinks {
+                target = abgLinks,
+                discreteValueName = "pCO2 Art (mmHg)",
+                text = "pC02",
+                predicate = function(dv)
+                    return CheckDvResultNumber(dv, function(v) return v <= 45 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+                end,
+                seq = 2
+            }
+        end
+    end
+    local dvPaO2Link = GetDiscreteValueLinks {
+        target = abgLinks,
+        discreteValueName = "pO2 Art (mmHg)",
+        text = "p02",
+        predicate = function(dv)
+            return CheckDvResultNumber(dv, function(v) return v < 80 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end,
+        seq = 3
+    }
+    if not dvPaO2Link then
+        GetDiscreteValueLinks {
+            target = abgLinks,
+            discreteValueName = "pO2 Art (mmHg)",
+            text = "p02",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v >= 80 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end,
+            seq = 3
+        }
+    end
+
+    GetDiscreteValueLinks {
+        target = abgLinks,
+        discreteValueName = "FiO2 Art (%)",
+        text = "Fi02",
+        predicate = function(dv)
+            return CheckDvResultNumber(dv, function(v) return v <= 100 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end,
+        seq = 4
+    }
+
+    if highSerumBicarbonateDVLink then
+        --- @cast abgLinks CdiAlertLink[]
+        table.insert(abgLinks, highSerumBicarbonateDVLink)
+    else
+        local dvSerumBicarbonateLink = GetDiscreteValueLinks {
+            target = abgLinks,
+            discreteValueName = "HCO3 Art (mmol/L)",
+            text = "HC03",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v < 26 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end,
+            seq = 5
+        }
+        if not dvSerumBicarbonateLink then
+            dvSerumBicarbonateLink = GetDiscreteValueLinks {
+                target = abgLinks,
+                discreteValueName = "HCO3 Art (mmol/L)",
+                text = "HC03",
+                predicate = function(dv)
+                    return CheckDvResultNumber(dv, function(v) return v < 22 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+                end,
+                seq = 5
+            }
+        end
+    end
+
+    -- VBG
+    if #abgLinks <= 0 then
+        GetDiscreteValueLinks {
+            target = vbgLinks,
+            discreteValueName = "HCO3 Ven (mmol/L)",
+            text = "HC03",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v >= 26 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end,
+            seq = 1
+        }
+        GetDiscreteValueLinks {
+            target = vbgLinks,
+            discreteValueName = "pCO2 Ven (mmHg)",
+            text = "pC02",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v > 55 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end,
+            seq = 2
+        }
+    end
 end
 
 

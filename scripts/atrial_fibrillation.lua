@@ -150,11 +150,17 @@ if AlertMatched then
     AddTreatmentCode("Z79.02", "Long Term use of Antithrombotics/Antiplatelet", 16)
 
     -- Vital Links (Discete Value Links)
-    AddVitalsDv(heartRateDiscreteValueNames, "Heart Rate", 1)
+    AddVitalsDvs(heartRateDiscreteValueNames, "Heart Rate", 1, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v.result > 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
     AddVitalsAbs("HIGH_HEART_RATE", "Heart Rate", 1)
-    AddVitalsDv(mapDiscreteValueNames, "Mean Arterial Pressure", 2)
+    AddVitalsDvs(mapDiscreteValueNames, "Mean Arterial Pressure", 2, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v.result < 70 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
     AddVitalsAbs("LOW_MEAN_ARTERIAL_BLOOD_PRESSURE", "Blood Pressure", 2)
-    AddVitalsDv(sbpDiscreteValueNames, "Systolic Blood Pressure", 3)
+    AddVitalsDvs(sbpDiscreteValueNames, "Systolic Blood Pressure", 3, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v.result < 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
     AddVitalsAbs("LOW_SYSTOLIC_BLOOD_PRESSURE", "Systolic Blood Pressure", 3)
 end
 
