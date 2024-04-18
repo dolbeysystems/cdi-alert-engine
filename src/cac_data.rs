@@ -25,7 +25,7 @@ macro_rules! setter {
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct AccountCustomWorkFlowEntry {
     #[serde(rename = "WorkGroup")]
     pub work_group: Option<String>,
@@ -37,10 +37,13 @@ pub struct AccountCustomWorkFlowEntry {
     pub work_group_category: Option<String>,
     #[serde(rename = "WorkGroupType")]
     pub work_group_type: Option<String>,
+    /// Name of the user who assigned the work group
     #[serde(rename = "WorkGroupAssignedBy")]
     pub work_group_assigned_by: Option<String>,
+    /// Date time the work group was assigned
     #[serde(rename = "WorkGroupAssignedDateTime")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub work_group_date_time: Option<DateTime<Utc>>,
 }
 
@@ -83,10 +86,11 @@ pub struct CriteriaFilter {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct CodeReferenceWithDocument {
     #[serde(rename = "document")]
     pub document: Arc<CACDocument>,
+    /// Code
     #[serde(rename = "code_reference")]
     pub code_reference: Arc<CodeReference>,
 }
@@ -98,15 +102,24 @@ impl mlua::UserData for CodeReferenceWithDocument {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[alua(functions = [
+    "find_code_references(code: string?): CodeReferenceWithDocument[] - Find code references in the account",
+    "find_documents(document_type: string?): Document[] - Find documents in the account",
+    "find_discrete_values(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
+    "find_medications(medication_category: string?): Medication[] - Find medications in the account",
+])]
 pub struct Account {
+    /// Account number
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(rename = "AdmitDateTime")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub admit_date_time: Option<DateTime<Utc>>,
     #[serde(rename = "DischargeDateTime")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub discharge_date_time: Option<DateTime<Utc>>,
     #[serde(rename = "Patient")]
     pub patient: Option<Arc<Patient>>,
@@ -120,12 +133,16 @@ pub struct Account {
     pub hospital_service: Option<String>,
     #[serde(rename = "Building")]
     pub building: Option<String>,
+    /// List of documents
     #[serde(rename = "Documents", default)]
     pub documents: Vec<Arc<CACDocument>>,
+    /// List of medications
     #[serde(rename = "Medications", default)]
     pub medications: Vec<Arc<Medication>>,
+    /// List of discrete values
     #[serde(rename = "DiscreteValues", default)]
     pub discrete_values: Vec<Arc<DiscreteValue>>,
+    /// List of cdi alerts
     #[serde(rename = "CdiAlerts", default)]
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
     #[serde(rename = "CustomWorkflow", default)]
@@ -133,12 +150,16 @@ pub struct Account {
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
+    #[alua(skip)]
     pub hashed_code_references: HashMap<Arc<str>, Vec<CodeReferenceWithDocument>>,
     #[serde(skip)]
+    #[alua(skip)]
     pub hashed_discrete_values: HashMap<Arc<str>, Vec<Arc<DiscreteValue>>>,
     #[serde(skip)]
+    #[alua(skip)]
     pub hashed_medications: HashMap<Arc<str>, Vec<Arc<Medication>>>,
     #[serde(skip)]
+    #[alua(skip)]
     pub hashed_documents: HashMap<Arc<str>, Vec<Arc<CACDocument>>>,
 }
 
@@ -202,8 +223,9 @@ impl mlua::UserData for Account {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct Patient {
+    /// Medical record number
     #[serde(rename = "MRN")]
     pub mrn: Option<String>,
     #[serde(rename = "FirstName")]
@@ -216,6 +238,7 @@ pub struct Patient {
     pub gender: Option<String>,
     #[serde(rename = "BirthDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub birthdate: Option<DateTime<Utc>>,
 }
 
@@ -233,19 +256,24 @@ impl mlua::UserData for Patient {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
+    #[alua(as_lua = "string")]
     pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
     #[serde(rename = "DocumentDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub document_date: Option<DateTime<Utc>>,
+    /// Content type (e.g. html, text, etc.)
     #[serde(rename = "ContentType")]
     pub content_type: Option<String>,
+    /// List of code references on this document
     #[serde(rename = "CodeReferences", default)]
     pub code_references: Vec<Arc<CodeReference>>,
+    /// List of abstraction references on this document
     #[serde(rename = "AbstractionReferences", default)]
     pub abstraction_references: Vec<Arc<CodeReference>>,
 }
@@ -267,9 +295,10 @@ impl mlua::UserData for CACDocument {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
+    #[alua(as_lua = "string")]
     pub external_id: Arc<str>,
     #[serde(rename = "Medication")]
     pub medication: Option<String>,
@@ -279,9 +308,11 @@ pub struct Medication {
     pub route: Option<String>,
     #[serde(rename = "StartDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub start_date: Option<DateTime<Utc>>,
     #[serde(rename = "EndDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub end_date: Option<DateTime<Utc>>,
     #[serde(rename = "Status")]
     pub status: Option<String>,
@@ -307,9 +338,10 @@ impl mlua::UserData for Medication {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
+    #[alua(as_lua = "string")]
     pub unique_id: Arc<str>,
     #[serde(rename = "Name")]
     pub name: Option<String>,
@@ -317,6 +349,7 @@ pub struct DiscreteValue {
     pub result: Option<String>,
     #[serde(rename = "ResultDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
+    #[alua(as_lua = "string?")]
     pub result_date: Option<DateTime<Utc>>,
 }
 
@@ -351,9 +384,10 @@ impl mlua::UserData for DiscreteValue {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
+    #[alua(as_lua = "string")]
     pub code: Arc<str>,
     #[serde(rename = "Value")]
     pub value: Option<String>,
@@ -379,24 +413,33 @@ impl mlua::UserData for CodeReference {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct CdiAlert {
+    /// The name of the script that generated the alert    
     #[serde(rename = "ScriptName")]
     pub script_name: String,
+    /// Whether the alert passed or failed    
     #[serde(rename = "Passed")]
     pub passed: bool,
+    /// A list of links to display in the alert    
     #[serde(rename = "Links", default)]
     pub links: Vec<Arc<CdiAlertLink>>,
+    /// Whether the alert has been validated by a user or autoclosed    
     #[serde(rename = "Validated")]
     pub validated: bool,
+    /// A subtitle to display in the alert    
     #[serde(rename = "SubTitle")]
     pub subtitle: Option<String>,
+    /// The outcome of the alert    
     #[serde(rename = "Outcome")]
     pub outcome: Option<String>,
+    /// The reason for the alert    
     #[serde(rename = "Reason")]
     pub reason: Option<String>,
+    /// The weight of the alert    
     #[serde(rename = "Weight")]
     pub weight: Option<f64>,
+    /// The sequence number of the alert    
     #[serde(rename = "Sequence")]
     pub sequence: Option<i32>,
 }
@@ -455,32 +498,45 @@ impl mlua::UserData for CdiAlert {
 }
 
 #[serde_as]
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
 pub struct CdiAlertLink {
+    /// The text to display for the link
     #[serde(rename = "LinkText")]
     pub link_text: String,
+    /// The document id to link to
     #[serde(rename = "DocumentId")]
     pub document_id: Option<String>,
+    /// The code to link to
     #[serde(rename = "Code")]
     pub code: Option<String>,
+    /// The discrete value id to link to
     #[serde(rename = "DiscreteValueId")]
     pub discrete_value_id: Option<String>,
+    /// The discrete value name to link to
     #[serde(rename = "DiscreteValueName")]
     pub discrete_value_name: Option<String>,
+    /// The medication id to link to
     #[serde(rename = "MedicationId")]
     pub medication_id: Option<String>,
+    /// The medication name to link to
     #[serde(rename = "MedicationName")]
     pub medication_name: Option<String>,
+    /// The latest discrete value to link to
     #[serde(rename = "LatestDiscreteValueId")]
     pub latest_discrete_value_id: Option<String>,
+    /// Whether the link has been validated by a user
     #[serde(rename = "IsValidated")]
     pub is_validated: bool,
+    /// User notes for the link
     #[serde(rename = "UserNotes")]
     pub user_notes: Option<String>,
+    /// A list of sublinks
     #[serde(rename = "Links", default)]
     pub links: Vec<Arc<CdiAlertLink>>,
+    /// The sequence number of the link
     #[serde(rename = "Sequence")]
     pub sequence: i32,
+    /// Whether the link is hidden
     #[serde(rename = "Hidden")]
     pub hidden: bool,
 }
