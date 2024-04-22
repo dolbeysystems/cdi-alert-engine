@@ -2,6 +2,7 @@
 name = "cdi-alert-engine"
 version = "0.1.0"
 edition = "2021"
+default-run = "cdi-alert-engine"
 
 [dependencies]
 ansi_term = "0.12.1"
@@ -23,4 +24,5 @@ mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serializ
 toml = "0.8.12"
 derive_environment = "1.1.0"
 alua = { version = "0.1.0", git = "https://github.com/eievui5/alua" }
+clap = { version = "4.5.4", features = ["derive"] }
 
