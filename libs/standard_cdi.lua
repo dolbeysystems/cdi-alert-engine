@@ -286,7 +286,9 @@ function GetFinalTopLinks(additionalHeaders)
     end
 
     for _, header in ipairs(additionalHeaders) do
-        table.insert(finalLinks, header)
+        if header.links ~= nil and  #header.links > 0 then
+            table.insert(finalLinks, header)
+        end
     end
     return finalLinks
 end
