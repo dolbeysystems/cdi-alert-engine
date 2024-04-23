@@ -23,6 +23,6 @@ tracing-subscriber = "0.3.18"
 mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serialize"] }
 toml = "0.8.12"
 derive_environment = "1.1.0"
-alua = { version = "0.1.0", git = "https://github.com/eievui5/alua" }
+alua = "0.1.0"
 clap = { version = "4.5.4", features = ["derive"] }
 

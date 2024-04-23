@@ -102,11 +102,11 @@ impl mlua::UserData for CodeReferenceWithDocument {
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
-#[alua(functions = [
-    "find_code_references(code: string?): CodeReferenceWithDocument[] - Find code references in the account",
-    "find_documents(document_type: string?): Document[] - Find documents in the account",
-    "find_discrete_values(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
-    "find_medications(medication_category: string?): Medication[] - Find medications in the account",
+#[alua(fields = [
+    "find_code_references fun(code: string?): CodeReferenceWithDocument[] - Find code references in the account",
+    "find_documents fun(document_type: string?): Document[] - Find documents in the account",
+    "find_discrete_values fun(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
+    "find_medications fun(medication_category: string?): Medication[] - Find medications in the account",
 ])]
 pub struct Account {
     /// Account number
