@@ -1,11 +1,10 @@
+use crate::config::CdiWorkgroup;
 use chrono::{DateTime, TimeZone, Utc};
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
-
-use crate::config::Config;
 
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
@@ -103,11 +102,11 @@ impl mlua::UserData for CodeReferenceWithDocument {
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
-#[alua(functions = [
-    "find_code_references(code: string?): CodeReferenceWithDocument[] - Find code references in the account",
-    "find_documents(document_type: string?): Document[] - Find documents in the account",
-    "find_discrete_values(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
-    "find_medications(medication_category: string?): Medication[] - Find medications in the account",
+#[alua(fields = [
+    "find_code_references fun(code: string?): CodeReferenceWithDocument[] - Find code references in the account",
+    "find_documents fun(document_type: string?): Document[] - Find documents in the account",
+    "find_discrete_values fun(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
+    "find_medications fun(medication_category: string?): Medication[] - Find medications in the account",
 ])]
 pub struct Account {
     /// Account number
@@ -798,11 +797,11 @@ pub async fn get_account_by_id<'connection>(
 }
 
 pub async fn save_cdi_alerts<'config>(
-    config: &'config Config,
+    connection_string: &'config str,
+    cdi_workgroup: &'config CdiWorkgroup,
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
-    let connection_string = &config.mongo.url;
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| SaveCdiAlertsError::ConnectionString {
@@ -815,18 +814,18 @@ pub async fn save_cdi_alerts<'config>(
     let workgroups_collection = cac_database.collection::<WorkGroupCategory>("workgroups");
 
     let workgroup_category = workgroups_collection
-        .find_one(doc! { "_id": config.cdi_workgroup.category.clone() }, None)
+        .find_one(doc! { "_id": cdi_workgroup.category.clone() }, None)
         .await?
         .ok_or(SaveCdiAlertsError::MissingWorkgroupCategory(
-            &config.cdi_workgroup.category,
+            &cdi_workgroup.category,
         ))?;
 
     let workgroup_object = workgroup_category
         .workgroups
         .iter()
-        .find(|x| x.work_group == config.cdi_workgroup.name)
+        .find(|x| x.work_group == cdi_workgroup.name)
         .ok_or(SaveCdiAlertsError::MissingWorkgroupName(
-            &config.cdi_workgroup.name,
+            &cdi_workgroup.name,
         ))?;
 
     // Find the first criteria group with a script matching a passing alert
@@ -878,7 +877,7 @@ pub async fn save_cdi_alerts<'config>(
     let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
         x.iter().find_map(|x| match x.work_group.clone() {
             Some(workgroup) => {
-                if workgroup == config.cdi_workgroup.name {
+                if workgroup == cdi_workgroup.name {
                     Some(x.clone())
                 } else {
                     None
@@ -895,8 +894,8 @@ pub async fn save_cdi_alerts<'config>(
                 .update_one(
                     doc! {
                         "_id": account.id.clone(),
-                        "CustomWorkflow.WorkGroupCategory": config.cdi_workgroup.name.clone(),
-                        "CustomWorkflow.WorkGroup": config.cdi_workgroup.name.clone(),
+                        "CustomWorkflow.WorkGroupCategory": cdi_workgroup.name.clone(),
+                        "CustomWorkflow.WorkGroup": cdi_workgroup.name.clone(),
                     },
                     doc! {
                         "$set": {
@@ -916,10 +915,10 @@ pub async fn save_cdi_alerts<'config>(
                     doc! {
                         "$push": {
                             "CustomWorkflow": {
-                                "WorkGroup": config.cdi_workgroup.name.clone(),
+                                "WorkGroup": cdi_workgroup.name.clone(),
                                 "CriteriaGroup": new_criteria_group,
                                 "CriteriaSequence": 0,
-                                "WorkGroupCategory": config.cdi_workgroup.category.clone(),
+                                "WorkGroupCategory": cdi_workgroup.category.clone(),
                                 "WorkGroupType": "CDI",
                                 "WorkGroupAssignedBy": "CDI",
                                 "WorkGroupAssignedDateTime": bson::DateTime::now(),
@@ -935,8 +934,7 @@ pub async fn save_cdi_alerts<'config>(
     Ok(())
 }
 
-pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError> {
-    let connection_string = &config.mongo.url;
+pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestDataError> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| CreateTestDataError::ConnectionString {
@@ -1097,8 +1095,7 @@ pub async fn create_test_data(config: &Config) -> Result<(), CreateTestDataError
     Ok(())
 }
 
-pub async fn delete_test_data(config: &Config) -> Result<(), DeleteTestDataError> {
-    let connection_string = &config.mongo.url;
+pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestDataError> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| DeleteTestDataError::ConnectionString {

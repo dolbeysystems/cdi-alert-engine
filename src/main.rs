@@ -1,4 +1,5 @@
 use cdi_alert_engine::*;
+use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::Lua;
@@ -11,7 +12,7 @@ use tracing::*;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Script {
     config: config::Script,
     contents: String,
@@ -19,42 +20,55 @@ struct Script {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().init();
-    // TODO: configure this from the command line.
-    let config_path = "config.toml";
-    let mut config = match config::InitialConfig::open(config_path) {
+    // `clap` takes care of its own logging.
+    let cli = config::Cli::parse();
+    tracing_subscriber::fmt()
+        .with_max_level(cli.log.to_tracing())
+        .init();
+
+    let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
         Err(msg) => {
-            error!("failed to open {config_path}: {msg}");
+            error!("failed to open {}: {msg}", cli.config.display());
             exit(1);
         }
     };
+    let mut script_changes = config::ScriptDiff::default();
+    for path in &cli.scripts {
+        match config::ScriptDiff::open(path) {
+            Ok(diff) => {
+                script_changes.merge(diff);
+            }
+            Err(msg) => {
+                error!("failed to open {}: {msg}", path.display());
+            }
+        }
+    }
     // Replace fields with environment variables.
     if let Err(msg) = config.with_env(ENV_PREFIX) {
         error!("{msg}");
     }
-    let config::InitialConfig {
+    let config::Config {
         scripts,
         polling_seconds,
         create_test_data,
-        mut config,
+        mongo,
+        cdi_workgroup,
     } = config;
-    // This is the sub-config struct, which also needs to respect environment variables.
-    if let Err(msg) = config.with_env(ENV_PREFIX) {
-        error!("{msg}");
-    }
 
     if create_test_data {
-        if let Err(e) = cac_data::delete_test_data(&config).await {
+        if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
             error!("failed to delete test data: {e}");
         }
-        if let Err(e) = cac_data::create_test_data(&config).await {
+        if let Err(e) = cac_data::create_test_data(&mongo.url).await {
             error!("failed to create test data: {e}");
         }
     }
 
     let scripts: Arc<[Script]> = match scripts
         .into_iter()
+        .filter(|x| !script_changes.remove.contains(&x.path))
+        .chain(script_changes.scripts.into_iter())
         .map(|x| match fs::read_to_string(&x.path) {
             Ok(contents) => Ok(Script {
                 contents,
@@ -71,6 +85,13 @@ async fn main() {
         }
     };
 
+    info!(
+        "loaded the following scripts:{}",
+        scripts.iter().fold(String::new(), |s, x| {
+            s + "\n\t" + &x.config.path.to_string_lossy()
+        })
+    );
+
     loop {
         info!("scanning collection");
 
@@ -79,7 +100,7 @@ async fn main() {
         // so that results can be written to the database in bulk.
         let mut script_threads = Vec::new();
 
-        while let Some(account) = cac_data::get_next_pending_account(&config.mongo.url)
+        while let Some(account) = cac_data::get_next_pending_account(&mongo.url)
             .await
             // print error message
             .map_err(|e| error!("failed to get account: {e}"))
@@ -170,7 +191,9 @@ async fn main() {
                 .push(result)
         }
         for (_, (account, result)) in results.into_iter() {
-            let save_result = cac_data::save_cdi_alerts(&config, account, result.into_iter()).await;
+            let save_result =
+                cac_data::save_cdi_alerts(&mongo.url, &cdi_workgroup, account, result.into_iter())
+                    .await;
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.
                 error!("failed to save results: {e}");
