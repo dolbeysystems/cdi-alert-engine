@@ -27,12 +27,12 @@ require("libs.userdata_types")
 --- @field codes string[]? List of codes to search for 
 --- @field code string? Single code to search for
 --- @field documentTypes string[]? List of document types that the code must be found in
---- @field predicate (fun(code_reference: CodeReference, document: Document): boolean)? Predicate function to filter code references
+--- @field predicate (fun(code_reference: CodeReference, document: CACDocument): boolean)? Predicate function to filter code references
 
 --- @class (exact) GetDocumentLinksArgs : LinkArgs
 --- @field documentTypes string[]? List of document types to search for
 --- @field documentType string? Single document type to search for
---- @field predicate (fun(document: Document): boolean)? Predicate function to filter documents
+--- @field predicate (fun(document: CACDocument): boolean)? Predicate function to filter documents
 
 --- @class (exact) GetMedicationLinksArgs : LinkArgs
 --- @field cats string[]? List of medication categories to search for
@@ -224,7 +224,7 @@ function GetDocumentLinks(args)
 
     --- @type CdiAlertLink[]
     local links = {}
-    --- @type Document[]
+    --- @type CACDocument[]
     local documents = {}
 
     for i = 1, #documentTypes do
@@ -424,7 +424,7 @@ end
 ---
 --- @param linkTemplate string the template for the link
 --- @param codeReference CodeReference? the code reference to use for the link
---- @param document Document? the document to use for the link
+--- @param document CACDocument? the document to use for the link
 --- @param discreteValue DiscreteValue? the discrete value to use for the link
 --- @param medication Medication? the medication to use for the link
 ---
@@ -546,7 +546,7 @@ end
 --------------------------------------------------------------------------------
 function DateIsLessThanXDaysAgo(dateString, days)
     local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
-    local year, month, day, hour, min, sec, msec = dateString:match(pattern)
+    local year, month, day, hour, min, sec, _ = dateString:match(pattern)
     local date = os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec})
 
     --- @diagnostic disable-next-line: param-type-mismatch
@@ -565,7 +565,7 @@ end
 --------------------------------------------------------------------------------
 function DateIsLessThanXMinutesAgo(dateString, minutes)
     local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
-    local year, month, day, hour, min, sec, msec = dateString:match(pattern)
+    local year, month, day, hour, min, sec, _ = dateString:match(pattern)
     local date = os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec})
 
     local nowUtcStr = os.date("!*t")
@@ -598,5 +598,91 @@ function CheckDvResultNumber(discreteValue, predicate)
     else
         return predicate(result)
     end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+function GetOrderedDiscreteValues(args)
+    local account = args.account or Account
+    local discreteValueName = args.discreteValueName
+    local daysBack = args.daysBack or 7
+    -- @type DiscreteValue[]
+    local discreteValues = {}
+
+    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    for i = 1, #discreteValuesForName do
+        if DateIsLessThanXDaysAgo(discreteValuesForName[i].result_date, daysBack) then
+            table.insert(discreteValues, discreteValuesForName[i])
+        end
+    end
+
+    table.sort(discreteValues, function(a, b)
+        return a.result_date < b.result_date
+    end)
+end
+
+function GetDiscreteValueNearestToDate(args)
+    local account = args.account or Account
+    local discreteValueName = args.discreteValueName
+    local date = args.date
+    local predicate = args.predicate
+
+    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    local nearest = nil
+    local nearestDiff = math.huge
+    for i = 1, #discreteValuesForName do
+        local diff = math.abs(os.difftime(date, os.time(discreteValuesForName[i].result_date)))
+        if diff < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
+            nearest = discreteValuesForName[i]
+            nearestDiff = diff
+        end
+    end
+    return nearest
+end
+
+function GetDiscreteValueNearestAfterDate(args)
+    local account = args.account or Account
+    local discreteValueName = args.discreteValueName
+    local date = args.date
+    local predicate = args.predicate
+
+    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    local nearest = nil
+    local nearestDiff = math.huge
+    for i = 1, #discreteValuesForName do
+        if os.time(discreteValuesForName[i].result_date) > date and os.time(discreteValuesForName[i].result_date) - date < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
+            nearest = discreteValuesForName[i]
+            nearestDiff = os.time(discreteValuesForName[i].result_date) - date
+        end
+    end
+    return nearest
+end
+
+function GetDiscreteValueNearestBeforeDate(args)
+    local account = args.account or Account
+    local discreteValueName = args.discreteValueName
+    local date = args.date
+    local predicate = args.predicate
+
+    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    local nearest = nil
+    local nearestDiff = math.huge
+    for i = 1, #discreteValuesForName do
+        if os.time(discreteValuesForName[i].result_date) < date and date - os.time(discreteValuesForName[i].result_date) < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
+            nearest = discreteValuesForName[i]
+            nearestDiff = date - os.time(discreteValuesForName[i].result_date)
+        end
+    end
+    return nearest
 end
 
