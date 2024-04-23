@@ -13,17 +13,10 @@
 --- @field discrete_values DiscreteValue[] - List of discrete values
 --- @field cdi_alerts CdiAlert[] - List of cdi alerts
 --- @field custom_workflow AccountCustomWorkFlowEntry[]? -
-<<<<<<< HEAD
---- @field find_code_references fun(code: string?): CodeReferenceWithDocument[] - Find code references in the account
---- @field find_documents fun(document_type: string?): CACDocument[] - Find documents in the account
---- @field find_discrete_values fun(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
---- @field find_medications fun(medication_category: string?): Medication[] - Find medications in the account
-=======
 --- @field find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account
 --- @field find_documents fun(self: Account, document_type: string?): Document[] - Find documents in the account
 --- @field find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
 --- @field find_medications fun(self: Account, medication_category: string?): Medication[] - Find medications in the account
->>>>>>> 1bef4c7a6df9c99f0a3875a2d430f25a64e73668
 
 --- @class Patient
 --- @field mrn string? - Medical record number
