@@ -13,7 +13,10 @@
 --- @field discrete_values DiscreteValue[] - List of discrete values
 --- @field cdi_alerts CdiAlert[] - List of cdi alerts
 --- @field custom_workflow AccountCustomWorkFlowEntry[]? -
---- @field find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
+--- @field find_code_references fun(code: string?): CodeReferenceWithDocument[] - Find code references in the account
+--- @field find_documents fun(document_type: string?): CACDocument[] - Find documents in the account
+--- @field find_discrete_values fun(discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
+--- @field find_medications fun(medication_category: string?): Medication[] - Find medications in the account
 
 --- @class Patient
 --- @field mrn string? - Medical record number
@@ -70,9 +73,9 @@
 
 --- @class CdiAlert
 --- @field script_name string - The name of the script that generated the alert    
---- @field passed bool - Whether the alert passed or failed    
+--- @field passed boolean - Whether the alert passed or failed    
 --- @field links CdiAlertLink[] - A list of links to display in the alert    
---- @field validated bool - Whether the alert has been validated by a user or autoclosed    
+--- @field validated boolean - Whether the alert has been validated by a user or autoclosed    
 --- @field subtitle string? - A subtitle to display in the alert    
 --- @field outcome string? - The outcome of the alert    
 --- @field reason string? - The reason for the alert    
@@ -88,9 +91,9 @@
 --- @field medication_id string? - The medication id to link to
 --- @field medication_name string? - The medication name to link to
 --- @field latest_discrete_value_id string? - The latest discrete value to link to
---- @field is_validated bool - Whether the link has been validated by a user
+--- @field is_validated boolean - Whether the link has been validated by a user
 --- @field user_notes string? - User notes for the link
 --- @field links CdiAlertLink[] - A list of sublinks
 --- @field sequence integer - The sequence number of the link
---- @field hidden bool - Whether the link is hidden
+--- @field hidden boolean - Whether the link is hidden
 

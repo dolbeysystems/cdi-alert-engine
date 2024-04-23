@@ -612,16 +612,30 @@ end
 
 
 
+--- @class (exact) GetOrderedDiscreteValuesArgs 
+--- @field account Account? Account object (uses global account if not provided) 
+--- @field discreteValueName string The name of the discrete value to search for
+--- @field daysBack number? The number of days back to search for discrete values (default 7)
+--- @field predicate fun(discrete_value: DiscreteValue):boolean? Predicate function to filter discrete values
+
+--------------------------------------------------------------------------------
+--- Get all discrete values in the account that match some criteria and are ordered by date
+---
+--- @param args GetOrderedDiscreteValuesArgs a table of arguments
+---
+--- @return DiscreteValue[] - a list of DiscreteValue objects
+--------------------------------------------------------------------------------
 function GetOrderedDiscreteValues(args)
     local account = args.account or Account
     local discreteValueName = args.discreteValueName
     local daysBack = args.daysBack or 7
+    local predicate = args.predicate
     -- @type DiscreteValue[]
     local discreteValues = {}
 
     local discreteValuesForName = account:find_discrete_values(discreteValueName)
     for i = 1, #discreteValuesForName do
-        if DateIsLessThanXDaysAgo(discreteValuesForName[i].result_date, daysBack) then
+        if DateIsLessThanXDaysAgo(discreteValuesForName[i].result_date, daysBack) and (predicate == nil or predicate(discreteValuesForName[i])) then
             table.insert(discreteValues, discreteValuesForName[i])
         end
     end
