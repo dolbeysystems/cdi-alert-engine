@@ -14,7 +14,7 @@
 --- @field cdi_alerts CdiAlert[] - List of cdi alerts
 --- @field custom_workflow AccountCustomWorkFlowEntry[]? -
 --- @field find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account
---- @field find_documents fun(self: Account, document_type: string?): Document[] - Find documents in the account
+--- @field find_documents fun(self: Account, document_type: string?): CACDocument[] - Find documents in the account
 --- @field find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
 --- @field find_medications fun(self: Account, medication_category: string?): Medication[] - Find medications in the account
 

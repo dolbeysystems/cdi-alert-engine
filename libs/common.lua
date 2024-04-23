@@ -643,6 +643,7 @@ function GetOrderedDiscreteValues(args)
     table.sort(discreteValues, function(a, b)
         return a.result_date < b.result_date
     end)
+    return discreteValues
 end
 
 function GetDiscreteValueNearestToDate(args)
