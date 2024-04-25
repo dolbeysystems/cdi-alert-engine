@@ -11,10 +11,244 @@
 
 
 --------------------------------------------------------------------------------
+--- Lua type definitions
+--------------------------------------------------------------------------------
+--- @class HemoglobinHematocritDiscreteValuePair
+--- @field hemoglobin DiscreteValue
+--- @field hematocrit DiscreteValue
+---
+--- @class HemoglobinHematocritPeakDropLinks
+--- @field hemoglobinPeakLink CdiAlertLink
+--- @field hemoglobinDropLink CdiAlertLink
+--- @field hematocritPeakLink CdiAlertLink
+--- @field hematocritDropLink CdiAlertLink
+
+
+
+--------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
 require("libs.standard_cdi")
+
+
+
+--------------------------------------------------------------------------------
+--- Functions 
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+--- Get Low Hemoglobin Discrete Value Pairs
+---
+--- @return HemoglobinHematocritDiscreteValuePair[]
+--------------------------------------------------------------------------------
+local function GetLowHemoglobinValuePairs()
+    local lowHemoglobinValue = 12
+
+    if Account.patient.gender == "M" then
+        lowHemoglobinValue = 13.5
+    end
+
+    --- @type HemoglobinHematocritDiscreteValuePair[]
+    local lowHemoglobinPairs = {}
+
+    local lowHemoglobinValues = GetOrderedDiscreteValues({
+        discreteValueName = "Hemoglobin",
+        predicate = function(dv)
+            return GetDvValueNumber(dv) <= lowHemoglobinValue
+        end,
+        daysBack = 31
+    })
+    for i = 1, #lowHemoglobinValues do
+        local dvHemoglobin = lowHemoglobinValues[i]
+        local dvDate = dvHemoglobin.result_date
+        local dvHematocrit = GetDiscreteValueNearestToDate({
+            discreteValueName = "Hematocrit",
+            --- @cast dvDate string
+            date = dvDate
+        })
+        if dvHematocrit then
+            table.insert(lowHemoglobinPairs, { hemoglobin = dvHemoglobin, hematocrit = dvHematocrit })
+        end
+    end
+
+    return lowHemoglobinPairs
+end
+
+--------------------------------------------------------------------------------
+--- Get Low Hemoglobin Discrete Value Pairs
+---
+--- @return HemoglobinHematocritDiscreteValuePair[]
+--------------------------------------------------------------------------------
+local function GetLowHematocritDiscreteValuePairs()
+    local lowHematocritValue = 34
+
+    if Account.patient.gender == "M" then
+        lowHematocritValue = 40
+    end
+
+    --- @type HemoglobinHematocritDiscreteValuePair[]
+    local lowHematocritPairs = {}
+
+    local lowHematomocritValues = GetOrderedDiscreteValues({
+        discreteValueName = "Hematocrit",
+        predicate = function(dv)
+            return GetDvValueNumber(dv) <= lowHematocritValue
+        end,
+        daysBack = 31
+    })
+    for i = 1, #lowHematomocritValues do
+        local dvHematocrit = lowHematomocritValues[i]
+        local dvDate = dvHematocrit.result_date
+        local dvHemoglobin = GetDiscreteValueNearestToDate({
+            discreteValueName = "Hemoglobin",
+            --- @cast dvDate string
+            date = dvDate
+        })
+        if dvHemoglobin then
+            table.insert(lowHematocritPairs, { hemoglobin = dvHemoglobin, hematocrit = dvHematocrit })
+        end
+    end
+    return lowHematocritPairs
+end
+
+--------------------------------------------------------------------------------
+--- Get Hemoglobin and Hematocrit Links denoting a significant drop in hemoglobin 
+---
+--- @return HemoglobinHematocritPeakDropLinks? - Peak and Drop links for Hemoglobin and Hematocrit if present
+--------------------------------------------------------------------------------
+local function GetHemoglobinDropPairs()
+    local hemoglobinPeakLink = nil
+    local hemoglobinDropLink = nil
+    local hematocritPeakLink = nil
+    local hematocritDropLink = nil
+
+    local highestHemoglobinInPastWeek = GetHighestDiscreteValue({
+        discreteValueName = "Hemoglobin",
+        daysBack = 7
+    })
+    local lowestHemoglobinInPastWeekAfterHighest = GetLowestDiscreteValue({
+        discreteValueName = "Hemoglobin",
+        daysBack = 7,
+        predicate = function(dv)
+            return highestHemoglobinInPastWeek ~= nil and dv.result_date > highestHemoglobinInPastWeek.result_date
+        end
+    })
+    local hemoglobinDelta = 0
+
+    if highestHemoglobinInPastWeek and lowestHemoglobinInPastWeekAfterHighest then
+        hemoglobinDelta = GetDvValueNumber(highestHemoglobinInPastWeek) - GetDvValueNumber(lowestHemoglobinInPastWeekAfterHighest)
+        if hemoglobinDelta >= 2 then
+            hemoglobinPeakLink = GetLinkForDiscreteValue(highestHemoglobinInPastWeek, "Peak Hemoglobin", 1, true)
+            hemoglobinDropLink = GetLinkForDiscreteValue(lowestHemoglobinInPastWeekAfterHighest, "Dropped Hemoglobin", 2, true)
+            local hemoglobinPeakHemocrit = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hematocrit",
+                date = highestHemoglobinInPastWeek.result_date
+            })
+            local hemoglobinDropHemocrit = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hematocrit",
+                date = lowestHemoglobinInPastWeekAfterHighest.result_date
+            })
+            if hemoglobinPeakHemocrit then
+                hematocritPeakLink = GetLinkForDiscreteValue(hemoglobinPeakHemocrit, "Hematocrit at Hemoglobin Peak", 3, true)
+            end
+            if hemoglobinDropHemocrit then
+                hematocritDropLink = GetLinkForDiscreteValue(hemoglobinDropHemocrit, "Hematocrit at Hemoglobin Drop", 4, true)
+            end
+        end
+    end
+
+    if hemoglobinPeakLink and hemoglobinDropLink and hematocritPeakLink and hematocritDropLink then
+        return {
+            hemoglobinPeakLink = hemoglobinPeakLink,
+            hemoglobinDropLink = hemoglobinDropLink,
+            hematocritPeakLink = hematocritPeakLink,
+            hematocritDropLink = hematocritDropLink
+        }
+    else
+        return nil
+    end
+end
+
+--------------------------------------------------------------------------------
+--- Get Hemoglobin and Hematocrit Links denoting a significant drop in hematocrit
+---
+--- @return HemoglobinHematocritPeakDropLinks? - Peak and Drop links for Hemoglobin and Hematocrit if present
+--------------------------------------------------------------------------------
+local function GetHematocritDropPairs()
+    local hemoglobinPeakLink = nil
+    local hemoglobinDropLink = nil
+    local hematocritPeakLink = nil
+    local hematocritDropLink = nil
+
+    -- If we didn't find the hemoglobin drop, look for a hematocrit drop
+    local highestHematocritInPastWeek = GetHighestDiscreteValue({
+        discreteValueName = "Hematocrit",
+        daysBack = 7
+    })
+    local lowestHematocritInPastWeekAfterHighest = GetLowestDiscreteValue({
+        discreteValueName = "Hematocrit",
+        daysBack = 7,
+        predicate = function(dv)
+            return highestHematocritInPastWeek ~= nil and dv.result_date > highestHematocritInPastWeek.result_date
+        end
+    })
+    local hematocritDelta = 0
+
+    if highestHematocritInPastWeek and lowestHematocritInPastWeekAfterHighest then
+        hematocritDelta = GetDvValueNumber(highestHematocritInPastWeek) - GetDvValueNumber(lowestHematocritInPastWeekAfterHighest)
+        if hematocritDelta >= 6 then
+            hematocritPeakLink = GetLinkForDiscreteValue(highestHematocritInPastWeek, "Peak Hematocrit", 5, true)
+            hematocritDropLink = GetLinkForDiscreteValue(lowestHematocritInPastWeekAfterHighest, "Dropped Hematocrit", 6, true)
+            local hemocritPeakHemoglobin = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hemoglobin",
+                date = highestHematocritInPastWeek.result_date
+            })
+            local hemocritDropHemoglobin = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hemoglobin",
+                date = lowestHematocritInPastWeekAfterHighest.result_date
+            })
+            if hemocritPeakHemoglobin then
+                hemoglobinPeakLink = GetLinkForDiscreteValue(hemocritPeakHemoglobin, "Hemoglobin at Hematocrit Peak", 7, true)
+            end
+            if hemocritDropHemoglobin then
+                hemoglobinDropLink = GetLinkForDiscreteValue(hemocritDropHemoglobin, "Hemoglobin at Hematocrit Drop", 8, true)
+            end
+        end
+    end
+
+    if hemoglobinPeakLink and hemoglobinDropLink and hematocritPeakLink and hematocritDropLink then
+        return {
+            hemoglobinPeakLink = hemoglobinPeakLink,
+            hemoglobinDropLink = hemoglobinDropLink,
+            hematocritPeakLink = hematocritPeakLink,
+            hematocritDropLink = hematocritDropLink
+        }
+    else
+        return nil
+    end
+end
+
+--------------------------------------------------------------------------------
+--- Get Hemoglobin and Hematocrit Links
+---
+--- @param pairs HemoglobinHematocritDiscreteValuePair[] Pair of Hemoglobin and Hematocrit Discrete Values to get links for
+--- @param hemoglobinLinkTemplate string Link template for Hemoglobin values
+--- @param hematocritLinkTemplate string Link template for Hematocrit values 
+---
+--- @return CdiAlertLink[] - Links for the Hemoglobin and Hematocrit values in order
+--------------------------------------------------------------------------------
+local function GetLinksForHemoHemaPairs(pairs, hemoglobinLinkTemplate, hematocritLinkTemplate)
+    local links = MakeLinkArray()
+    for i = 1, #pairs do
+        local pair = pairs[i]
+        local hemoglobinLink = GetLinkForDiscreteValue(pair.hemoglobin, hemoglobinLinkTemplate, i, true)
+        local hematocritLink = GetLinkForDiscreteValue(pair.hematocrit, hematocritLinkTemplate, i, true)
+        table.insert(links, hemoglobinLink)
+        table.insert(links, hematocritLink)
+    end
+    return links
+end
 
 
 
@@ -144,26 +378,6 @@ calcAny1 = 0
 --]]
 
 
---[[
-hemoglobinLabs = MatchedCriteriaLink("Hemoglobin", None, "Hemoglobin", None, True, None, None, 87)
-hematocritLabs = MatchedCriteriaLink("Hematocrit", None, "Hematocrit", None, True, None, None, 88)
-hemoglobin = MatchedCriteriaLink("Hemoglobin", None, "Hemoglobin", None, True, None, None, 89)
-hematocrit = MatchedCriteriaLink("Hematocrit", None, "Hematocrit", None, True, None, None, 90)
-mch = MatchedCriteriaLink("MCH", None, "MCH", None, True, None, None, 91)
-mchc = MatchedCriteriaLink("MCHC", None, "MCHC", None, True, None, None, 92)
-mcv = MatchedCriteriaLink("MCV", None, "MCV", None, True, None, None, 93)
-platelets = MatchedCriteriaLink("Platelets", None, "Platelets", None, True, None, None, 94)
-rbc = MatchedCriteriaLink("RBC", None, "RBC", None, True, None, None, 95)
-rdw = MatchedCriteriaLink("RDW", None, "RDW", None, True, None, None, 96)
-ferritin = MatchedCriteriaLink("Ferritin", None, "Ferritin", None, True, None, None, 97)
-folate = MatchedCriteriaLink("Folate", None, "Folate", None, True, None, None, 98)
-iron = MatchedCriteriaLink("Iron", None, "Iron", None, True, None, None, 99)
-ironBindingCap = MatchedCriteriaLink("Iron Binding Capacity", None, "Iron Binding Capacity", None, True, None, None, 100)
-transferrin = MatchedCriteriaLink("Transferrin", None, "Transferrin", None, True, None, None, 101)
-vitaminB12 = MatchedCriteriaLink("Vitamin B12", None, "Vitamin B12", None, True, None, None, 102)
-wbc = MatchedCriteriaLink("WBC", None, "WBC", None, True, None, None, 103)
---]]
-
 local hemoglobinLabsHeader = MakeHeaderLink("Hemoglobin")
 local hematocritLabsHeader = MakeHeaderLink("Hematocrit")
 local hemoglobinHeader = MakeHeaderLink("Hemoglobin")
@@ -182,34 +396,28 @@ local transferrinHeader = MakeHeaderLink("Transferrin")
 local vitaminB12Header = MakeHeaderLink("Vitamin B12")
 local wbcHeader = MakeHeaderLink("WBC")
 
-
-local hemoglobinLabsLinks = MakeNilLinkArray()
-local hematocritLabsLinks = MakeNilLinkArray()
-local hemoglobinLinks = MakeNilLinkArray()
-local hematocritLinks = MakeNilLinkArray()
-local mchLinks = MakeNilLinkArray()
-local mchcLinks = MakeNilLinkArray()
-local mcvLinks = MakeNilLinkArray()
-local plateletsLinks = MakeNilLinkArray()
-local rbcLinks = MakeNilLinkArray()
-local rdwLinks = MakeNilLinkArray()
-local ferritinLinks = MakeNilLinkArray()
-local folateLinks = MakeNilLinkArray()
-local ironLinks = MakeNilLinkArray()
-local ironBindingCapLinks = MakeNilLinkArray()
-local transferrinLinks = MakeNilLinkArray()
-local vitaminB12Links = MakeNilLinkArray()
-local wbcLinks = MakeNilLinkArray()
+local hemoglobinLabsLinks = MakeLinkArray()
+local hematocritLabsLinks = MakeLinkArray()
+local hemoglobinLinks = MakeLinkArray()
+local hematocritLinks = MakeLinkArray()
+local mchLinks = MakeLinkArray()
+local mchcLinks = MakeLinkArray()
+local mcvLinks = MakeLinkArray()
+local plateletsLinks = MakeLinkArray()
+local rbcLinks = MakeLinkArray()
+local rdwLinks = MakeLinkArray()
+local ferritinLinks = MakeLinkArray()
+local folateLinks = MakeLinkArray()
+local ironLinks = MakeLinkArray()
+local ironBindingCapLinks = MakeLinkArray()
+local transferrinLinks = MakeLinkArray()
+local vitaminB12Links = MakeLinkArray()
+local wbcLinks = MakeLinkArray()
 
 local d649Code = MakeNilLink()
 local d500Code = MakeNilLink()
 local eblAbs = MakeNilLink()
 local d62Code = MakeNilLink()
-local lowHemoglobinDV = MakeNilLink()
-local highHemoglobinDV = MakeNilLink()
-local lowHematocritDV = MakeNilLink()
-local hemoHemaConsecutDropDV = { false, false }
-local procedureHemoDV = { false, false }
 local anemiaMedsAbs = MakeNilLink()
 local anemiaMeds = MakeNilLink()
 local fluidBolusMeds = MakeNilLink()
@@ -265,13 +473,19 @@ local g9752Code = MakeNilLink()
 local g9751Code = MakeNilLink()
 local j958Codes = MakeNilLinkArray()
 local k625Code = MakeNilLink()
+local lowHemoglobinAbs = MakeNilLink()
+-- @type HemoglobinHematocritPeakDropLinks?
+local hemoglobinDropLinks = nil
+-- @type HemoglobinHematocritPeakDropLinks?
+local hematocritDropLinks = nil
+-- @type HemoglobinHematocritDiscreteValuePair[]?
+local lowHemoglobinPairs = {}
+-- @type HemoglobinHematocritDiscreteValuePair[]?
+local lowHematocritPairs = {}
 
-local SOB = false
-local AT = false
-local noLabs = {}
 
-
-
+local anySignsOfBleeding = false
+local anyAnemiaTreatment = false
 
 
 
@@ -279,6 +493,255 @@ local noLabs = {}
 --- Alert Qualification 
 --------------------------------------------------------------------------------
 if not ExistingAlert or not ExistingAlert.validated then
+    -- Alert Trigger
+    d649Code = GetCodeLinks { code="D64.9", text="Anemia, Unspecified" }
+    d500Code = GetCodeLinks { code="D50.0", text="Iron Deficiency Anemia" }
+    eblAbs = GetAbstractionValueLinks { code="EVIDENCE_OF_BLEEDING", text="Evidence of Bleeding" }
+    d62Code = GetCodeLinks { code="D62", text="Acute Posthemorrhagic Anemia" }
+
+    -- Labs
+    lowHemoglobinPairs = GetLowHemoglobinValuePairs()
+    lowHematocritPairs = GetLowHematocritDiscreteValuePairs()
+    hemoglobinDropLinks = GetHemoglobinDropPairs()
+    hematocritDropLinks = GetHematocritDropPairs()
+
+    if Account.patient.gender == "F" then
+        lowHemoglobinAbs = GetAbstractionLinks { code="LOW_HEMOGLOBIN", text="Hemoglobin Female", seq=2 }
+    elseif Account.patient.gender == "M" then
+        lowHemoglobinAbs = GetAbstractionLinks { code="LOW_HEMOGLOBIN", text="Hemoglobin Male", seq=2 }
+    end
+
+    -- Meds
+    anemiaMedsAbs = GetAbstractionLinks { code="ANEMIA_MEDICATION", text="Anemia Medication", seq=1 }
+    anemiaMeds = GetMedicationLinks { cat="Anemia Supplements", text="Anemia Supplements", seq=2 }
+    fluidBolusMeds = GetMedicationLinks { cat="Fluid Bolus", text="Fluid Bolus", seq=3 }
+    hematopoeticMed = GetMedicationLinks { cat="Hemopoietic Agent", text="Hematopoietic Agent", seq=4 }
+    hemtopoeticAbs = GetAbstractionLinks { code="HEMATOPOIETIC_AGENT", text="Hematopoietic Agent", seq=5 }
+    isotonicIVSolMed = GetMedicationLinks { cat="Isotonic IV Solution", text="Isotonic IV Solution", seq=6 }
+    a30233N1Code = GetCodeLinks { code="30233N1", text="Red Blood Cell Transfusion", seq=7 }
+    sodiumChlorideMed = GetMedicationLinks { cat="Sodium Chloride", text="Sodium Chloride", seq=8 }
+
+    -- Signs of Bleeding
+    i975Codes = GetCodeLinks { codes={"I97.51", "I97.52"}, text="Accidental Puncture/Laceration of Circulatory System Organ During Procedure", seq=1 }
+    k917Codes = GetCodeLinks { codes={"K91.71", "K91.72"}, text="Accidental Puncture/Laceration of Digestive System Organ During Procedure", seq=2 }
+    j957Codes = GetCodeLinks { codes={"J95.71", "J95.72"}, text="Accidental Puncture/Laceration of Respiratory System Organ During Procedure", seq=3 }
+    k260Code = GetCodeLinks { code="K26.0", text="Acute Duodenal Ulcer with Hemorrhage", seq=4 }
+    k262Code = GetCodeLinks { code="K26.2", text="Acute Duodenal Ulcer with Hemorrhage and Perforation", seq=5 }
+    k250Code = GetCodeLinks { code="K25.0", text="Acute Gastric Ulcer with Hemorrhage", seq=6 }
+    k252Code = GetCodeLinks { code="K25.2", text="Acute Gastric Ulcer with Hemorrhage and Perforation", seq=7 }
+    k270Code = GetCodeLinks { code="K27.0", text="Acute Peptic Ulcer with Hemorrhage", seq=8 }
+    k272Code = GetCodeLinks { code="K27.2", text="Acute Peptic Ulcer with Hemorrhage and Perforation", seq=9 }
+    r319Code = GetCodeLinks { code="R31.9", text="Bloody Urine", seq=10 }
+    k264Code = GetCodeLinks { code="K26.4", text="Chronic Duodenal Ulcer with Hemorrhage", seq=11 }
+    k266Code = GetCodeLinks { code="K26.6", text="Chronic Duodenal Ulcer with Hemorrhage and Perforation", seq=12 }
+    k254Code = GetCodeLinks { code="K25.4", text="Chronic Gastric Ulcer with Hemorrhage", seq=13 }
+    k256Code = GetCodeLinks { code="K25.6", text="Chronic Gastric Ulcer with Hemorrhage and Perforation", seq=14 }
+    k276Code = GetCodeLinks { code="K27.6", text="Chronic Peptic Ulcer with Hemorrhage and Perforation", seq=15 }
+    n99510Code = GetCodeLinks { code="N99.510", text="Cystostomy Hemorrhage", seq=16 }
+    r040Code = GetCodeLinks { code="R04.0", text="Epistaxis", seq=17 }
+    i8501Code = GetCodeLinks { code="I85.01", text="Esophageal Varices with Bleeding", seq=18 }
+    giBleedCodes = GetCodeLinks {
+        codes = {
+            "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4", "K27.6", "K28.0",
+            "K28.2", "K28.4", "K28.6", "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61", "K29.71", "K29.81", "K29.91", "K31.811", "K31.82",
+            "K55.21", "K57.01", "K57.11", "K57.13", "K57.21", "K57.31", "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5",
+            "K92.0", "K92.2"
+        },
+        text = "GI Bleed",
+        seq = 19
+    }
+    k922Code = GetCodeLinks { code="K92.2", text="GI Hemorrhage", seq=20 }
+    hematomaAbs = GetAbstractionLinks { code="HEMATOMA", text="Hematoma", seq=21 }
+    k920Code = GetCodeLinks { code="K92.0", text="Hematemesis", seq=22 }
+    local r310Codes = GetCodeLinks { codes={"R31", "R31.0", "R31.1", "R31.2", "R31.21", "R31.29", "R31.9" }, text="Hematuria", seq=23 }
+    if #r310Codes > 0 and r310Codes ~= nil then
+        r310Code = r310Codes[1]
+    end
+    r195Code = GetCodeLinks { code="R19.5", text="Heme-Positive Stool", seq=24 }
+    k661Code = GetCodeLinks { code="K66.1", text="Hemoperitoneum", seq=25 }
+    n3091Code = GetCodeLinks { code="N30.91", text="Hemorrhagic Cystitis", seq=26 }
+    j9501Code = GetCodeLinks { code="J95.01", text="Hemorrhage from Tracheostomy Stoma", seq=27 }
+    r042Code = GetCodeLinks { code="R04.2", text="Hemoptysis", seq=28 }
+    i974Codes = GetCodeLinks { codes={"I97.410", "I97.411", "I97.418", "I97.42"}, text="Intraoperative Hemorrhage/Hematoma of Circulatory System Organ", seq=29 }
+    k916Codes = GetCodeLinks { codes={"K91.61", "K91.62"}, text="Intraoperative Hemorrhage/Hematoma of Digestive System Organ", seq=30 }
+    n99Codes = GetCodeLinks { codes={"N99.61", "N99.62"}, text="Intraoperative Hemorrhage/Hematoma of Genitourinary System", seq=31 }
+    g9732Code = GetCodeLinks { code="G97.32", text="Intraoperative Hemorrhage/Hematoma of Nervous System Organ", seq=32 }
+    g9731Code = GetCodeLinks { code="G97.31", text="Intraoperative Hemorrhage/Hematoma of Nervous System Procedure", seq=33 }
+    j956Codes = GetCodeLinks { codes={"J95.61", "J95.62"}, text="Intraoperative Hemorrhage/Hematoma of Respiratory System", seq=34 }
+    k921Code = GetCodeLinks { code="K92.1", text="Melena", seq=35 }
+    n920Code = GetCodeLinks { code="N92.0", text="Menorrhagia", seq=36 }
+    i61Codes = GetCodeLinks { codes={"I61.0", "I61.1", "I61.2", "I61.3", "I61.4", "I61.5", "I61.6", "I61.8", "I61.9"}, text="Nontraumatic Intracerebral Hemorrhage", seq=37 }
+    i62Codes = GetCodeLinks { codes={"I62.0", "I62.00", "I62.01", "I62.02", "I62.03", "I62.1", "I62.9"}, text="Nontraumatic Intracerebral Hemorrhage", seq=38 }
+    i60Codes = GetCodeLinks {
+        codes={
+            "I60.0", "I60.00", "I60.01", "I60.02", "I60.03", "I60.1", "I60.10", "I60.11", "I60.12",
+            "I60.2", "I60.3", "I60.30", "I60.31", "I60.32", "I60.4", "I60.5", "I60.50", "I60.51", "I60.52",
+            "I60.6", "I60.7", "I60.8", "I60.9"
+        },
+        text="Nontraumatic Subarachnoid Hemorrhage", seq=39
+    }
+    l7632Code = GetCodeLinks { code="L76.32", text="Postoperative Hematoma", seq=40 }
+    k918Codes = GetCodeLinks { codes={"K91.840", "K91.841", "K91.870", "K91.871"}, text="Postoperative Hemorrhage/Hematoma of Digestive System Organ", seq=41 }
+    i976Codes = GetCodeLinks { codes={"I97.610", "I97.611", "I97.618", "I97.620"}, text="Postoperative Hemorrhage/Hematoma of Circulatory System Organ", seq=42 }
+    n991Codes = GetCodeLinks { codes={"N99.820", "N99.821", "N99.840", "N99.841"}, text="Postoperative Hemorrhage/Hematoma of Genitourinary System", seq=43 }
+    g9752Code = GetCodeLinks { code="G97.52", text="Postoperative Hemorrhage/Hematoma of Nervous System Organ", seq=44 }
+    g9751Code = GetCodeLinks { code="G97.51", text="Postoperative Hemorrhage/Hematoma of Nervous System Procedure", seq=45 }
+    j958Codes = GetCodeLinks { codes={"J95.830", "J95.831", "J95.860", "J95.861"}, text="Postoperative Hemorrhage/Hematoma of Respiratory System", seq=46 }
+    k625Code = GetCodeLinks { code="K62.5", text="Rectal Bleeding", seq=47 }
+
+    anySignsOfBleeding =
+        (i975Codes ~= nil and #i975Codes > 0) or
+        (k917Codes ~= nil and #k917Codes > 0) or
+        (j957Codes ~= nil and #j957Codes > 0) or
+        k260Code ~= nil or
+        k262Code ~= nil or
+        k250Code ~= nil or
+        k252Code ~= nil or
+        k270Code ~= nil or
+        k272Code ~= nil or
+        k264Code ~= nil or
+        k266Code ~= nil or
+        k254Code ~= nil or
+        k256Code ~= nil or
+        k276Code ~= nil or
+        n99510Code ~= nil or
+        i8501Code ~= nil or
+        k922Code ~= nil or
+        hematomaAbs ~= nil or
+        k920Code ~= nil or
+        r310Code ~= nil or
+        k661Code ~= nil or
+        n3091Code ~= nil or
+        j9501Code ~= nil or
+        r042Code ~= nil or
+        (i974Codes ~= nil and #i974Codes > 0) or
+        (k916Codes ~= nil and #k916Codes > 0) or
+        (n99Codes ~= nil and #n99Codes > 0) or
+        g9732Code ~= nil or
+        g9731Code ~= nil or
+        (j956Codes ~= nil and #j956Codes > 0) or
+        k921Code ~= nil or
+        n920Code ~= nil or
+        l7632Code ~= nil or
+        (k918Codes ~= nil and #k918Codes > 0) or
+        (i976Codes ~= nil and #i976Codes > 0) or
+        (n991Codes ~= nil and #n991Codes > 0) or
+        g9752Code ~= nil or
+        g9751Code ~= nil or
+        (j958Codes ~= nil and #j958Codes > 0) or
+        k625Code ~= nil or
+        r319Code ~= nil or
+        r040Code ~= nil or
+        (giBleedCodes ~= nil and #giBleedCodes > 0) or
+        r195Code ~= nil or
+        (i61Codes ~= nil and #i61Codes > 0) or
+        (i62Codes ~= nil and #i62Codes > 0) or
+        (i60Codes ~= nil and #i60Codes > 0) or
+        (eblAbs ~= nil)
+
+    anyAnemiaTreatment =
+        anemiaMedsAbs ~= nil or
+        anemiaMeds ~= nil or
+        fluidBolusMeds ~= nil or
+        hematopoeticMed ~= nil or
+        hemtopoeticAbs ~= nil or
+        isotonicIVSolMed ~= nil or
+        a30233N1Code ~= nil or
+        sodiumChlorideMed ~= nil
+
+    local anyAlertCodePresent = (#accountAlertCodes > 0)
+    local acuteBloodLossAnemiaCodePresent = (d62Code ~= nil)
+    local unspecifiedOrSecondaryToBloodLossAnemiaCodePresent = (d649Code ~= nil or d500Code ~= nil)
+    local lowHemoglobinAbsPresent = (lowHemoglobinAbs ~= nil)
+    local lowHemoglobinDvCount = (#lowHemoglobinPairs)
+    local lowHemoglobinDvAbsCount = lowHemoglobinDvCount + (lowHemoglobinAbsPresent and 1 or 0)
+    local lowHematocritDvCount = (#lowHematocritPairs)
+    local hemoglobinDropPresent = (#hemoglobinDropLinks > 0)
+    local hematocritDropPresent = (#hematocritDropLinks > 0)
+
+    local acuteBloodLossAlertPresent = (ExistingAlert ~= nil and ExistingAlert.subtitle == "Possible Acute Blood Loss Anemia")
+    local anemiaAlertPresent = (ExistingAlert ~= nil and ExistingAlert.subtitle == "Possible Anemia")
+
+    local anemiaTreatmentTrigger = false
+    local signsOfBleedingTrigger = false
+    local lowHemoglobinOrHematocritTrigger = false
+
+    if acuteBloodLossAlertPresent and acuteBloodLossAnemiaCodePresent then
+        -- Autoresolve Possible Acute Blood Loss
+        table.insert(DocumentationIncludesLinks, d62Code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        AutoResolved = true
+
+    elseif not acuteBloodLossAnemiaCodePresent and unspecifiedOrSecondaryToBloodLossAnemiaCodePresent and anySignsOfBleeding and anyAnemiaTreatment then
+        -- Possible acute blood loss by d649Code or d500Code (#2)
+        if d500Code ~= nil then
+            table.insert(DocumentationIncludesLinks, d500Code)
+        end
+        if d649Code ~= nil then
+            table.insert(DocumentationIncludesLinks, d649Code)
+        end
+        anemiaTreatmentTrigger = true
+        signsOfBleedingTrigger = true
+        Result.subtitle = "Possible Acute Blood Loss Anemia"
+        AlertMatched = true
+
+    elseif not acuteBloodLossAnemiaCodePresent and (lowHemoglobinDvCount >= 1 or lowHematocritDvCount >= 1 or lowHemoglobinAbsPresent) and anySignsOfBleeding and anyAnemiaTreatment then
+        -- Possible acute blood loss by lowHemoHemaPairs or lowHemoglobinAbs (#3)
+        anemiaTreatmentTrigger = true
+        signsOfBleedingTrigger = true
+        lowHemoglobinOrHematocritTrigger = true
+        Result.subtitle = "Possible Acute Blood Loss Anemia"
+        AlertMatched = true
+
+    elseif not acuteBloodLossAnemiaCodePresent and (hemoglobinDropPresent or hematocritDropPresent) and anySignsOfBleeding then
+        -- Possible acute blood loss by hemoHemaPeakDropLinks (#4)
+        signsOfBleedingTrigger = true
+        if hemoglobinDropLinks ~= nil then
+            table.insert(hemoglobinLinks, hemoglobinDropLinks.hemoglobinPeakLink)
+            table.insert(hemoglobinLinks, hemoglobinDropLinks.hemoglobinDropLink)
+            table.insert(hemoglobinLinks, hemoglobinDropLinks.hematocritPeakLink)
+            table.insert(hemoglobinLinks, hemoglobinDropLinks.hematocritDropLink)
+            hemoglobinHeader.links = hemoglobinLinks
+            table.insert(DocumentationIncludesLinks, hemoglobinHeader)
+        elseif hematocritDropLinks ~= nil then
+            table.insert(hematocritLinks, hematocritDropLinks.hematocritPeakLink)
+            table.insert(hematocritLinks, hematocritDropLinks.hematocritDropLink)
+            table.insert(hematocritLinks, hematocritDropLinks.hemoglobinPeakLink)
+            table.insert(hematocritLinks, hematocritDropLinks.hemoglobinDropLink)
+            hematocritHeader.links = hematocritLinks
+            table.insert(DocumentationIncludesLinks, hematocritHeader)
+        end
+        Result.subtitle = "Possible Acute Blood Loss Anemia"
+        AlertMatched = true
+
+    elseif anemiaAlertPresent and anyAlertCodePresent then
+        -- Autoresolve Possible Anemia
+        for _, code in ipairs(accountAlertCodes) do
+            local desc = alertCodeDictionary[code]
+            local codeLink = GetCodeLinks { code=code, text="Autoresolved Specified Code - " + desc }
+            if codeLink ~= nil then
+                table.insert(DocumentationIncludesLinks, codeLink)
+                break
+            end
+        end
+        AutoResolved = true
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+
+    elseif not acuteBloodLossAnemiaCodePresent and (lowHemoglobinDvAbsCount >= 3 or lowHematocritDvCount >= 3) and anyAnemiaTreatment then
+        -- Possible Anemia (#6)
+        lowHemoglobinOrHematocritTrigger = true
+        Result.subtitle = "Possible Anemia Dx"
+        AlertMatched = true
+
+    else
+        -- No alert / autoresolve action to be taken
+        AlertMatched = false
+
+    end
 end
 
 

@@ -46,12 +46,6 @@ local sbpDiscreteValueNames = {
 local ekgHeading = MakeHeaderLink("EKG")
 local ekgLinks = MakeLinkArray()
 
---- @param docType string
---- @param text string
-local function AddEKGDoc(docType, text)
-    GetDocumentLinks { target=ekgLinks, documentType=docType, text=text }
-end
-
 
 
 --------------------------------------------------------------------------------
@@ -128,8 +122,9 @@ if AlertMatched then
     AddEvidenceAbs("WATCHMAN_PROCEDURE", "Watchman Procedure", 21)
 
     -- EKG Links (Document Links)
-    AddEKGDoc("EKG", "EKG")
-    AddEKGDoc("Telemetry Strips", "Telemetry Strips")
+
+    GetDocumentLinks { target=ekgLinks, documentType="EKG", text="EKG" }
+    GetDocumentLinks { target=ekgLinks, documentType="Telemetry Strips", text="Telemetry Strips" }
 
     -- Treatment Links (Medication Links)
     AddTreatmentMed("Adenosine", "Adenosine", 1)
