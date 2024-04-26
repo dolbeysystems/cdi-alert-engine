@@ -741,6 +741,144 @@ if not ExistingAlert or not ExistingAlert.validated then
         -- No alert / autoresolve action to be taken
         AlertMatched = false
 
+        -- Abstractions
+        AddEvidenceCode("T45.1X5A", "Adverse Effect of Antineoplastic and Immunosuppressive Drug", 1)
+        GetCodeLinks { target = ClinicalEvidenceLinks, text="Alcohol Abuse", seq=2, codes = {
+            "F10.1",
+            "F10.10",
+            "F10.11",
+            "F10.12", "F10.120", "F10.121", "F10.129",
+            "F10.13", "F10.130", "F10.131", "F10.132", "F10.139",
+            "F10.14",
+            "F10.15", "F10.150", "F10.151", "F10.159",
+            "F10.18", "F10.180", "F10.181", "F10.182", "F10.188",
+            "F10.19",
+        }}
+        GetCodeLinks { target = ClinicalEvidenceLinks, text="Alcohol Dependence", seq=3, codes = {
+            "F10.2",
+            "F10.20",
+            "F10.21",
+            "F10.22","F10.220", "F10.221", "F10.229",
+            "F10.23", "F10.230", "F10.231", "F10.232", "F10.239",
+            "F10.24",
+            "F10.25", "F10.250", "F10.251", "F10.259",
+            "F10.26",
+            "F10.27",
+            "F10.28", "F10.280", "F10.281", "F10.282", "F10.288",
+            "F10.29"
+        }}
+        AddEvidenceCode("K70.31", "Alcoholic Liver Cirrhosis", 4)
+        AddEvidenceCode("T45.7X1A", "Anticoagulant-Induced Bleeding", 5)
+        AddEvidenceCode("Z51.11", "Chemotherapy", 6)
+        AddEvidenceCode("3E04305", "Chemotherapy Administration", 7)
+
+        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Chronic Kidney Disease", seq = 8, codes = {
+            "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9"
+        }}
+        AddEvidenceCode("K27.4", "Chronic Peptic Ulcer with Hemorrhage", 9)
+        AddEvidenceAbs("CURRENT_CHEMOTHERAPY", "Current Chemotherapy", 10)
+        AddEvidenceAbs("DYSPNEA_ON_EXERTION", "Dyspnea on Exertion", 11)
+        AddEvidenceCode("N18.6", "End-Stage Renal Disease", 12)
+        AddEvidenceCode("R53.83", "Fatigue", 13)
+        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Follicular Lymphoma", seq = 14, codes = {
+            "C82.0", "C82.00", "C82.01", "C82.02", "C82.03", "C82.04", "C82.05", "C82.06", "C82.07", "C82.08", "C82.09",
+            "C82.1", "C82.10", "C82.11", "C82.12", "C82.13", "C82.14", "C82.15", "C82.16", "C82.17", "C82.18", "C82.19",
+            "C82.2", "C82.20", "C82.21", "C82.22", "C82.23", "C82.24", "C82.25", "C82.26", "C82.27", "C82.28", "C82.29",
+            "C82.3", "C82.30", "C82.31", "C82.32", "C82.33", "C82.34", "C82.35", "C82.36", "C82.37", "C82.38", "C82.39",
+            "C82.4", "C82.40", "C82.41", "C82.42", "C82.43", "C82.44", "C82.45", "C82.46", "C82.47", "C82.48", "C82.49",
+            "C82.5", "C82.50", "C82.51", "C82.52", "C82.53", "C82.54", "C82.55", "C82.56", "C82.57", "C82.58", "C82.59",
+            "C82.6", "C82.60", "C82.61", "C82.62", "C82.63", "C82.64", "C82.65", "C82.66", "C82.67", "C82.68", "C82.69",
+            "C82.8", "C82.80", "C82.81", "C82.82", "C82.83", "C82.84", "C82.85", "C82.86", "C82.87", "C82.88", "C82.89",
+            "C82.9", "C82.90", "C82.91", "C82.92", "C82.93", "C82.94", "C82.95", "C82.96", "C82.97", "C82.98", "C82.99"
+        }}
+
+        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Heart Failure", seq = 15, codes = {
+            "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
+        }}
+        AddEvidenceCode("D58.0", "Hereditary Spherocytosis", 16)
+        AddEvidenceCode("B20", "HIV", 17)
+        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Hodgkin Lymphoma", seq = 18, codes = {
+            "C81.0", "C81.00", "C81.01", "C81.02", "C81.03", "C81.04", "C81.05", "C81.06", "C81.07", "C81.08", "C81.09",
+            "C81.1", "C81.10", "C81.11", "C81.12", "C81.13", "C81.14", "C81.15", "C81.16", "C81.17", "C81.18", "C81.19",
+            "C81.2", "C81.20", "C81.21", "C81.22", "C81.23", "C81.24", "C81.25", "C81.26", "C81.27", "C81.28", "C81.29",
+            "C81.3", "C81.30", "C81.31", "C81.32", "C81.33", "C81.34", "C81.35", "C81.36", "C81.37", "C81.38", "C81.39",
+            "C81.4", "C81.40", "C81.41", "C81.42", "C81.43", "C81.44", "C81.45", "C81.46", "C81.47", "C81.48", "C81.49",
+            "C81.5", "C81.50", "C81.51", "C81.52", "C81.53", "C81.54", "C81.55", "C81.56", "C81.57", "C81.58", "C81.59",
+            "C81.6", "C81.60", "C81.61", "C81.62", "C81.63", "C81.64", "C81.65", "C81.66", "C81.67", "C81.68", "C81.69",
+            "C81.7", "C81.70", "C81.71", "C81.72", "C81.73", "C81.74", "C81.75", "C81.76", "C81.77", "C81.78", "C81.79",
+            "C81.9", "C81.90", "C81.91", "C81.92", "C81.93", "C81.94", "C81.95", "C81.96", "C81.97", "C81.98", "C81.99",
+        }}
+        AddEvidenceCode("E61.1", "Iron Deficiency", 19)
+        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Leukemia of Unspecified Cell Type", seq = 20, codes = {
+            "C95.0", "C95.00", "C95.01", "C95.02",
+            "C95.1", "C95.10", "C95.11", "C95.12",
+            "C95.9", "C95.90", "C95.91", "C95.92",
+        }}
+--[[
+    prefixCodeValue("^C91\.", "Lymphoid Leukemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 21, abs, True)
+    codeValue("K22.6", "Mallory-Weiss Tear: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 22, abs, True)
+    multiCodeValue(["E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45"], "Malnutrition: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 23, abs, True)
+    prefixCodeValue("^C84\.", "Mature T/NK-Cell Lymphoma: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 24, abs, True)
+    prefixCodeValue("^C90\.", "Multiple Myeloma: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 25, abs, True)
+    prefixCodeValue("^C93\.", "Monocytic Leukemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 26, abs, True)
+--]]
+--[[
+    codeValue("D46.9", "Myelodysplastic Syndrome: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 27, abs, True)
+    prefixCodeValue("^C92\.", "Myeloid Leukemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 28, abs, True)
+    prefixCodeValue("^C83\.", "Non-Follicular Lymphoma: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 29, abs, True)
+    prefixCodeValue("^C94\.", "Other Leukemias: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 30, abs, True)
+    prefixCodeValue("^C86\.", "Other Types of T/NK-Cell Lymphoma: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 31, abs, True)
+--]]
+--[[
+    codeValue("R23.1", "Pale [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 32, abs, True)
+    codeValue("K27.9", "Peptic Ulcer: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 33, abs, True)
+    codeValue("F19.10", "Psychoactive Substance Abuse: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 34, abs, True)
+    codeValue("Z51.0", "Radiation Therapy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 35, abs, True)
+    prefixCodeValue("^M05\.", "Rheumatoid Arthritis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 36, abs, True)
+--]]
+--[[
+    prefixCodeValue("^D86\.", "Sarcoidosis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 37, abs, True)
+    abstractValue("SHORTNESS_OF_BREATH", "Shortness of Breath: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 38, abs, True)
+    prefixCodeValue("^D57\.", "Sickle Cell Disorder: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 39, abs, True)
+    codeValue("R16.1", "Splenomegaly: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 40, abs, True)
+    prefixCodeValue("^M32\.", "Systemic Lupus Erthematosus (SLE): [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 41, abs, True)
+    prefixCodeValue("^C85\.", "Unspecified Non-Hodgkin Lymphoma: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 42, abs, True)
+    abstractValue("WEAKNESS", "Weakness: '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 43, abs, True)
+--]]
+--[[
+    #Labs
+    dvValue(dvImmatureReticulocyteFraction, "Immature Reticulocyte Fraction: [VALUE] (Result Date: [RESULTDATETIME])", calcImmatureReticulocyteFraction1, 3, labs, True)
+    abstractValue("LOW_IMMATURE_RETICULOCYTE_FRACTION", "Immature Reticulocyte Fraction: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 4, labs, True)
+    dvValue(dvOccultBloodGastric, "Occult Blood: [VALUE] (Result Date: [RESULTDATETIME])", calcAny, 5, labs, True)
+    dvValue(dvReticulocyteCount, "Reticulocyte Count: [VALUE] (Result Date: [RESULTDATETIME])", calcAny, 6, labs, True)
+--]]
+--[[
+    abstractValue("LOW_RETICULOCYTE_COUNT", "Reticulocyte Count: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7, labs, True)
+    abstractValue("LOW_SERUM_FERRITIN", "Serum Ferritin: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 8, labs, True)
+    codeValue("LOW_SERUM_FOLATE", "Serum Folate '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 9, labs, True)
+    abstractValue("LOW_SERUM_IRON", "Serum Iron: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 10, labs, True)
+    abstractValue("LOW_TOTAL_IRON_BINDING_CAPACITY", "Total Iron Binding Capacity: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 11, labs, True)
+    abstractValue("LOW_TRANSFERRIN", "Transferrin: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, labs, True)
+    abstractValue("LOW_VITAMIN_B12", "Vitamin B12 Deficiency '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 13, labs, True)
+--]]
+--[[
+    #Labs Subheading Categories
+    dvValueMulti(dict(maindiscreteDic), dvMCH, "MCH: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, mch, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvMCHC, "MCHC: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, mchc, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvMCV, "MCV: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, mcv, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvPlateletCount, "Platelet Count: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, platelets, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvRBC, "RBC: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, rbc, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvRDW, "RDW: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, rdw, True, 3)
+--]]
+--[[
+    dvValueMulti(dict(maindiscreteDic), dvSerumFerritin, "Ferritin: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, ferritin, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvFolate, "Folate: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, folate, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvSerumIron, "Iron: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, iron, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvTotalIronBindingCapacity, "Total Iron Binding Capacity: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, ironBindingCap, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvTransferrin, "Transferrin: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, transferrin, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvVitaminB12, "Vitamin B12: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, vitaminB12, True, 3)
+    dvValueMulti(dict(maindiscreteDic), dvWBC, "WBC: [VALUE] (Result Date: [RESULTDATETIME])", calcAny1, gt, 0, wbc, True, 3)
+        --]]
     end
 end
 
@@ -750,6 +888,7 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if AlertMatched then
+
 end
 
 
