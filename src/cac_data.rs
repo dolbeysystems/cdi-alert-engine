@@ -107,6 +107,11 @@ impl mlua::UserData for CodeReferenceWithDocument {
     "find_documents fun(self: Account, document_type: string?): CACDocument[] - Find documents in the account",
     "find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account",
     "find_medications fun(self: Account, medication_category: string?): Medication[] - Find medications in the account",
+
+    "get_unique_code_references fun(self: Account): string[] - Return all code reference keys in the account",
+    "get_unique_documents fun(self: Account): string[] - Return all document keys in the account",
+    "get_unique_discrete_values fun(self: Account): string[] - Return all discrete value keys in the account",
+    "get_unique_medications fun(self: Account): string[] - Return all medication keys in the account",
 ])]
 pub struct Account {
     /// Account number
@@ -217,6 +222,38 @@ impl mlua::UserData for Account {
             } else {
                 Ok(Vec::new())
             }
+        });
+        methods.add_method("get_unique_code_references", |_, this, ()| {
+            Ok(this
+                .hashed_code_references
+                .keys()
+                // Arc<str> is better for Rust, but Lua only understands String.
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>())
+        });
+        methods.add_method("get_unique_discrete_values", |_, this, ()| {
+            Ok(this
+                .hashed_discrete_values
+                .keys()
+                // Arc<str> is better for Rust, but Lua only understands String.
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>())
+        });
+        methods.add_method("get_unique_medications", |_, this, ()| {
+            Ok(this
+                .hashed_medications
+                .keys()
+                // Arc<str> is better for Rust, but Lua only understands String.
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>())
+        });
+        methods.add_method("get_unique_documents", |_, this, ()| {
+            Ok(this
+                .hashed_documents
+                .keys()
+                // Arc<str> is better for Rust, but Lua only understands String.
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>())
         });
     }
 }
