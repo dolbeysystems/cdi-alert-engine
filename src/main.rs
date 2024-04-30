@@ -11,6 +11,7 @@ use tokio::task;
 use tracing::*;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
+const NUM_TEST_ACCOUNTS: usize = 10;
 
 #[derive(Clone, Debug)]
 struct Script {
@@ -54,6 +55,7 @@ async fn main() {
         create_test_data,
         mongo,
         cdi_workgroup,
+        update_workgroup_assignment,
     } = config;
 
     if create_test_data {
@@ -62,7 +64,7 @@ async fn main() {
             error!("Failed to delete test data: {e}");
         }
         info!("Creating test data");
-        if let Err(e) = cac_data::create_test_data(&mongo.url).await {
+        if let Err(e) = cac_data::create_test_data(&mongo.url, NUM_TEST_ACCOUNTS).await {
             error!("Failed to create test data: {e}");
         }
     }
@@ -191,9 +193,14 @@ async fn main() {
                 .push(result)
         }
         for (_, (account, result)) in results.into_iter() {
-            let save_result =
-                cac_data::save_cdi_alerts(&mongo.url, &cdi_workgroup, account, result.into_iter())
-                    .await;
+            let save_result = cac_data::save_cdi_alerts(
+                &mongo.url,
+                &cdi_workgroup,
+                account,
+                result.into_iter(),
+                update_workgroup_assignment,
+            )
+            .await;
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.
                 error!("Failed to save results: {e}");

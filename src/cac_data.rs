@@ -6,8 +6,6 @@ use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
-pub const NUM_TEST_ACCOUNTS: usize = 3000;
-
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
         $fields.add_field_method_get(stringify!($field), |_, this| Ok(this.$field.clone()));
@@ -838,6 +836,7 @@ pub async fn save_cdi_alerts<'config>(
     cdi_workgroup: &'config CdiWorkgroup,
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
+    update_workgroup_assignment: bool,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
@@ -908,70 +907,75 @@ pub async fn save_cdi_alerts<'config>(
         )
         .await?;
 
-    let new_criteria_group = first_matching_criteria_group.map(|x| x.name.clone());
+    if update_workgroup_assignment {
+        let new_criteria_group = first_matching_criteria_group.map(|x| x.name.clone());
 
-    // find existing workgroup assignment
-    let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
-        x.iter().find_map(|x| match x.work_group.clone() {
-            Some(workgroup) => {
-                if workgroup == cdi_workgroup.name {
-                    Some(x.clone())
-                } else {
-                    None
+        // find existing workgroup assignment
+        let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
+            x.iter().find_map(|x| match x.work_group.clone() {
+                Some(workgroup) => {
+                    if workgroup == cdi_workgroup.name {
+                        Some(x.clone())
+                    } else {
+                        None
+                    }
                 }
-            }
-            None => None,
-        })
-    });
+                None => None,
+            })
+        });
 
-    // Update or insert workgroup assignment for the category/workgroup
-    match existing_workgroup_assignment {
-        Some(_) => {
-            account_collection
-                .update_one(
-                    doc! {
-                        "_id": account.id.clone(),
-                        "CustomWorkflow.WorkGroupCategory": cdi_workgroup.name.clone(),
-                        "CustomWorkflow.WorkGroup": cdi_workgroup.name.clone(),
-                    },
-                    doc! {
-                        "$set": {
-                            "CustomWorkflow.$.CriteriaGroup" : new_criteria_group,
-                        }
-                    },
-                    None,
-                )
-                .await?;
-        }
-        None => {
-            account_collection
-                .update_one(
-                    doc! {
-                        "_id": account.id.clone(),
-                    },
-                    doc! {
-                        "$push": {
-                            "CustomWorkflow": {
-                                "WorkGroup": cdi_workgroup.name.clone(),
-                                "CriteriaGroup": new_criteria_group,
-                                "CriteriaSequence": 0,
-                                "WorkGroupCategory": cdi_workgroup.category.clone(),
-                                "WorkGroupType": "CDI",
-                                "WorkGroupAssignedBy": "CDI",
-                                "WorkGroupAssignedDateTime": bson::DateTime::now(),
+        // Update or insert workgroup assignment for the category/workgroup
+        match existing_workgroup_assignment {
+            Some(_) => {
+                account_collection
+                    .update_one(
+                        doc! {
+                            "_id": account.id.clone(),
+                            "CustomWorkflow.WorkGroupCategory": cdi_workgroup.name.clone(),
+                            "CustomWorkflow.WorkGroup": cdi_workgroup.name.clone(),
+                        },
+                        doc! {
+                            "$set": {
+                                "CustomWorkflow.$.CriteriaGroup" : new_criteria_group,
                             }
-                        }
-                    },
-                    None,
-                )
-                .await?;
-        }
-    };
+                        },
+                        None,
+                    )
+                    .await?;
+            }
+            None => {
+                account_collection
+                    .update_one(
+                        doc! {
+                            "_id": account.id.clone(),
+                        },
+                        doc! {
+                            "$push": {
+                                "CustomWorkflow": {
+                                    "WorkGroup": cdi_workgroup.name.clone(),
+                                    "CriteriaGroup": new_criteria_group,
+                                    "CriteriaSequence": 0,
+                                    "WorkGroupCategory": cdi_workgroup.category.clone(),
+                                    "WorkGroupType": "CDI",
+                                    "WorkGroupAssignedBy": "CDI",
+                                    "WorkGroupAssignedDateTime": bson::DateTime::now(),
+                                }
+                            }
+                        },
+                        None,
+                    )
+                    .await?;
+            }
+        };
+    }
 
     Ok(())
 }
 
-pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestDataError> {
+pub async fn create_test_data(
+    connection_string: &str,
+    number_of_test_accounts: usize,
+) -> Result<(), CreateTestDataError> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
         .map_err(|e| CreateTestDataError::ConnectionString {
@@ -984,7 +988,7 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
     let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
 
     // create test accounts #TEST_CDI_X
-    for i in 0..NUM_TEST_ACCOUNTS {
+    for i in 0..number_of_test_accounts {
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         account_collection
             .insert_one(
@@ -1075,7 +1079,7 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
     }
 
     // Queue up test accounts #TEST_CDI_X
-    for i in 0..NUM_TEST_ACCOUNTS {
+    for i in 0..number_of_test_accounts {
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         cdi_alert_queue_collection
             .insert_one(

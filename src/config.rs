@@ -75,8 +75,13 @@ pub struct Config {
     pub polling_seconds: u64,
     #[serde(default)]
     pub create_test_data: bool,
+    #[serde(default = "default_update_workgroup_assignment")]
+    pub update_workgroup_assignment: bool,
     pub mongo: Mongo,
     pub cdi_workgroup: CdiWorkgroup,
+}
+fn default_update_workgroup_assignment() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
