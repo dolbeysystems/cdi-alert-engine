@@ -6,6 +6,8 @@ use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
+pub const NUM_TEST_ACCOUNTS: usize = 3000;
+
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
         $fields.add_field_method_get(stringify!($field), |_, this| Ok(this.$field.clone()));
@@ -981,8 +983,8 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
     let account_collection = cac_database.collection::<Account>("accounts");
     let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
 
-    // create test accounts #TEST_CDI_1 - #TEST_CDI_1000
-    for i in 0..1000 {
+    // create test accounts #TEST_CDI_X
+    for i in 0..NUM_TEST_ACCOUNTS {
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         account_collection
             .insert_one(
@@ -1072,8 +1074,8 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
             .await?;
     }
 
-    // Queue up test accounts #TEST_CDI_1 - #TEST_CDI_1000
-    for i in 0..1000 {
+    // Queue up test accounts #TEST_CDI_X
+    for i in 0..NUM_TEST_ACCOUNTS {
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         cdi_alert_queue_collection
             .insert_one(
@@ -1087,55 +1089,6 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
             )
             .await?;
     }
-
-    // create test account #TEST_CDI_002
-    /*
-    account_collection
-        .insert_one(
-            Account {
-                id: "TEST_CDI_002".to_string(),
-                admit_date_time: Some(Utc::now()),
-                discharge_date_time: None,
-                patient: Some(Arc::new(Patient {
-                    mrn: Some("123456".to_string()),
-                    first_name: Some("John".to_string()),
-                    middle_name: Some("Q".to_string()),
-                    last_name: Some("Public".to_string()),
-                    gender: Some("M".to_string()),
-                    birthdate: Some(Utc::now()),
-                })),
-                patient_type: Some("Inpatient".to_string()),
-                admit_source: Some("Emergency Room".to_string()),
-                admit_type: Some("Emergency".to_string()),
-                hospital_service: Some("Medicine".to_string()),
-                building: Some("Main".to_string()),
-                documents: vec![],
-                medications: vec![],
-                discrete_values: vec![],
-                cdi_alerts: vec![],
-                custom_workflow: Some(vec![]),
-                hashed_code_references: HashMap::new(),
-                hashed_discrete_values: HashMap::new(),
-                hashed_medications: HashMap::new(),
-                hashed_documents: HashMap::new(),
-            },
-            None,
-        )
-        .await?;
-
-    cdi_alert_queue_collection
-        .insert_one(
-            CdiAlertQueueEntry {
-                id: "TEST_CDI_002".to_string(),
-                time_queued: Utc::now(),
-                account_number: "TEST_CDI_002".to_string(),
-                script_name: "test_script_002".to_string(),
-            },
-            None,
-        )
-        .await?;
-    */
-
     Ok(())
 }
 
@@ -1153,20 +1106,12 @@ pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestD
 
     // delete test account #TEST_CDI_001
     account_collection
-        .delete_one(doc! { "_id": "TEST_CDI_001" }, None)
-        .await?;
-
-    // delete test account #TEST_CDI_002
-    account_collection
-        .delete_one(doc! { "_id": "TEST_CDI_002" }, None)
+        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } }, None)
         .await?;
 
     // delete cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
     cdi_alert_queue_collection
-        .delete_one(doc! { "_id": "TEST_CDI_001" }, None)
-        .await?;
-    cdi_alert_queue_collection
-        .delete_one(doc! { "_id": "TEST_CDI_002" }, None)
+        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } }, None)
         .await?;
 
     Ok(())

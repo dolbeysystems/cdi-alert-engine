@@ -57,9 +57,11 @@ async fn main() {
     } = config;
 
     if create_test_data {
+        info!("Removing old test data");
         if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
             error!("Failed to delete test data: {e}");
         }
+        info!("Creating test data");
         if let Err(e) = cac_data::create_test_data(&mongo.url).await {
             error!("Failed to create test data: {e}");
         }
