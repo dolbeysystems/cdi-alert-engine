@@ -29,7 +29,7 @@ async fn main() {
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
         Err(msg) => {
-            error!("failed to open {}: {msg}", cli.config.display());
+            error!("Failed to open {}: {msg}", cli.config.display());
             exit(1);
         }
     };
@@ -40,7 +40,7 @@ async fn main() {
                 script_changes.merge(diff);
             }
             Err(msg) => {
-                error!("failed to open {}: {msg}", path.display());
+                error!("Failed to open {}: {msg}", path.display());
             }
         }
     }
@@ -58,10 +58,10 @@ async fn main() {
 
     if create_test_data {
         if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
-            error!("failed to delete test data: {e}");
+            error!("Failed to delete test data: {e}");
         }
         if let Err(e) = cac_data::create_test_data(&mongo.url).await {
-            error!("failed to create test data: {e}");
+            error!("Failed to create test data: {e}");
         }
     }
 
@@ -80,21 +80,19 @@ async fn main() {
     {
         Ok(scripts) => scripts,
         Err((path, msg)) => {
-            error!("failed to load {}: {msg}", path.display());
+            error!("Failed to load {}: {msg}", path.display());
             exit(1);
         }
     };
 
     info!(
-        "loaded the following scripts:{}",
+        "Loaded the following scripts:{}",
         scripts.iter().fold(String::new(), |s, x| {
             s + "\n\t" + &x.config.path.to_string_lossy()
         })
     );
 
     loop {
-        info!("scanning collection");
-
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
@@ -103,7 +101,7 @@ async fn main() {
         while let Some(account) = cac_data::get_next_pending_account(&mongo.url)
             .await
             // print error message
-            .map_err(|e| error!("failed to get account: {e}"))
+            .map_err(|e| error!("Failed to get next pending account: {e}"))
             // discard error
             .ok()
             // coallesce Option<Option<T> into Option<T>.
@@ -111,7 +109,7 @@ async fn main() {
         {
             let scripts = scripts.clone();
 
-            info!("processing account: {:?}", account.id);
+            info!("Processing account: {:?}", account.id);
             for script in scripts.iter().cloned() {
                 // Script name without directory
                 let script_name = script.config.path.file_name().map(|x| x.to_string_lossy());
@@ -157,13 +155,13 @@ async fn main() {
                                     Some(result) => {
                                         let result = result.take();
                                         if let Err(msg) = &result {
-                                            error!("failed to retrieve result value: {msg}");
+                                            error!("Failed to retrieve result value: {msg}");
                                         }
                                         return result.ok().zip(Some(account));
                                     }
-                                    None => error!("result value is an unrecognized type"),
+                                    None => error!("Result value is an unrecognized type"),
                                 },
-                                Err(msg) => error!("result value is missing: {msg}"),
+                                Err(msg) => error!("Result value is missing: {msg}"),
                             };
                             None
                         })
@@ -172,13 +170,13 @@ async fn main() {
             }
         }
 
-        info!("joining {} threads", script_threads.len());
+        info!("Joining {} threads", script_threads.len());
         let alert_results = join_all(script_threads).await;
         let alert_results = alert_results
             .iter()
             .filter_map(|x| {
                 x.as_ref()
-                    .map_err(|msg| error!("failed to join thread: {msg}"))
+                    .map_err(|msg| error!("Failed to join thread: {msg}"))
                     .ok()
             })
             .filter_map(|x| if let Some(x) = &x { Some(x) } else { None });
@@ -196,9 +194,10 @@ async fn main() {
                     .await;
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.
-                error!("failed to save results: {e}");
+                error!("Failed to save results: {e}");
             }
         }
+        info!("Completed processing pending accounts");
 
         tokio::time::sleep(tokio::time::Duration::from_secs(polling_seconds)).await;
     }

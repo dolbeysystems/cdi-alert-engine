@@ -336,6 +336,54 @@ function MergeLinksWithExisting(alert, links)
         return links
     end
     -- TODO: Implement standard merge logic
-    return links
+    return MergeLinks(alert.links, links)
+end
+
+--------------------------------------------------------------------------------
+--- Merge links with old links
+---
+--- @param oldLinks CdiAlertLink[] The existing alert
+--- @param newLinks CdiAlertLink[] The links to merge
+---
+--- @return CdiAlertLink[] - The merged links
+--------------------------------------------------------------------------------
+function MergeLinks(oldLinks, newLinks)
+    --- @type CdiAlertLink[]
+    local mergedLinks = {}
+
+    --- @type fun(a: CdiAlertLink, b: CdiAlertLink): boolean
+    local comparison_fn = function(_, _) return false end
+
+    if #oldLinks == 0 then
+        return newLinks
+    elseif #newLinks == 0 then
+        return oldLinks
+    else
+        for _, oldLink in ipairs(oldLinks) do
+            if oldLink.code then
+                comparison_fn = function(a, b) return a.code == b.code end
+            elseif oldLink.medication_name then
+                comparison_fn = function(a, b) return a.medication_name == b.medication_name end
+            elseif oldLink.discrete_value_name then
+                comparison_fn = function(a, b) return a.discrete_value_name == b.discrete_value_name end
+            elseif oldLink.discrete_value_id then
+                comparison_fn = function(a, b) return a.discrete_value_id == b.discrete_value_id end
+            else
+                comparison_fn = function(a, b) return a.link_text == b.link_text end
+            end
+
+            for _, newLink in ipairs(newLinks) do
+                if comparison_fn(oldLink, newLink) then
+                    oldLink.is_validated = newLink.is_validated
+                    oldLink.sequence = newLink.sequence
+                    oldLink.hidden = newLink.hidden
+                    oldLink.link_text = newLink.link_text
+                    oldLink.links = MergeLinks(oldLink.links, newLink.links)
+                    table.insert(mergedLinks, newLink)
+                end
+            end
+        end
+        return mergedLinks
+    end
 end
 
