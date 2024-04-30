@@ -195,10 +195,8 @@ impl mlua::UserData for Account {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("find_code_references", |_, this, code: String| {
             if let Some(code_references) = this.hashed_code_references.get(&*code) {
-                info!("Found code references for code: {:?}", code);
                 Ok(code_references.clone())
             } else {
-                info!("No code references found for code: {:?}", code);
                 Ok(Vec::new())
             }
         });

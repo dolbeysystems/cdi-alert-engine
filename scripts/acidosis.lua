@@ -49,27 +49,27 @@ local bloodHeader = MakeHeaderLink("Blood CO2")
 local phHeader = MakeHeaderLink("PH")
 local lactateHeader = MakeHeaderLink("Lactate")
 
-local oxygenLinks = MakeNilLinkArray()
-local abgLinks = MakeNilLinkArray()
-local vbgLinks = MakeNilLinkArray()
-local bloodLinks = MakeNilLinkArray()
-local phLinks = MakeNilLinkArray()
-local lactateLinks = MakeNilLinkArray()
+local oxygenLinks = MakeLinkArray()
+local abgLinks = MakeLinkArray()
+local vbgLinks = MakeLinkArray()
+local bloodLinks = MakeLinkArray()
+local phLinks = MakeLinkArray()
+local lactateLinks = MakeLinkArray()
 
 local e8720CodeLink = MakeNilLink()
 local acuteRespAcidosisAbsLink = MakeNilLink()
 local chronicRespAcidosisAbsLink = MakeNilLink()
-local bloodCO2MultiDVLinks = MakeNilLinkArray()
-local highSerumLactateDVLinks = MakeNilLinkArray()
+local bloodCO2MultiDVLinks = MakeLinkArray()
+local highSerumLactateDVLinks = MakeLinkArray()
 local albuminMedLink = MakeNilLink()
 local fluidBolusMedLink = MakeNilLink()
 local fluidBolusAbsLink = MakeNilLink()
 local fluidResucAbsLink = MakeNilLink()
 local sodiumBicarMedLink = MakeNilLink()
-local lowArterialBloodPHMultiDVLinks = MakeNilLinkArray()
+local lowArterialBloodPHMultiDVLinks = MakeLinkArray()
 local highArterialBloodC02DVLink = MakeNilLink()
 local highSerumBicarbonateDVLink = MakeNilLink()
-local phMultiDVLinks = MakeNilLinkArray()
+local phMultiDVLinks = MakeLinkArray()
 
 
 
@@ -90,7 +90,7 @@ if not ExistingAlert or not ExistingAlert.validated then
             return CheckDvResultNumber(dv, function(v) return v < 21 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
-    }
+    } or {}
     highSerumLactateDVLinks = GetDiscreteValueLinks {
         discreteValueNames = { "Lactic Acid Lvl (mmol/L)" },
         text = "Serum Lactate",
@@ -98,7 +98,7 @@ if not ExistingAlert or not ExistingAlert.validated then
             return CheckDvResultNumber(dv, function(v) return v > 2 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
-    }
+    } or {}
 
     -- Meds
     albuminMedLink = GetMedicationLinks { cat = "Albumin",  text = "Albumin", seq = 1 }
@@ -116,7 +116,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         end,
         seq = 1,
         maxPerValue = 10
-    }
+    } or {}
     highArterialBloodC02DVLink = GetDiscreteValueLinks {
         discreteValueName = "pCO2 Art (mmHg)",
         text = "pC02",
@@ -142,7 +142,7 @@ if not ExistingAlert or not ExistingAlert.validated then
             return CheckDvResultNumber(dv, function(v) return v < 7.30 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
-    }
+    } or {}
 
     -- Main Algorithm
     if #accountAlertCodes >= 1 or (

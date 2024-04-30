@@ -26,8 +26,8 @@ local sodiumLinks = MakeLinkArray()
 
 local e870CodeLink = MakeNilLink()
 local e871CodeLink = MakeNilLink()
-local serumSodiumLowLinks = MakeNilLinkArray()
-local serumSodiumHighLinks = MakeNilLinkArray()
+local serumSodiumLowLinks = MakeLinkArray()
+local serumSodiumHighLinks = MakeLinkArray()
 
 local sodiumReplacementMedLink = MakeNilLink()
 local sodiumPhosphateAbsLink = MakeNilLink()
@@ -57,7 +57,7 @@ if not ExistingAlert or not ExistingAlert.validated then
            return CheckDvResultNumber(dv, function(v) return v <= 135 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
-    }
+    } or {}
     serumSodiumHighLinks = GetDiscreteValueLinks {
         discreteValueNames = { "Sodium Lvl (mmol/L)" },
         text = "Serum Sodium",
@@ -65,7 +65,7 @@ if not ExistingAlert or not ExistingAlert.validated then
            return CheckDvResultNumber(dv, function(v) return v >= 146 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
         end,
         maxPerValue = 10
-    }
+    } or {}
 
     -- Meds
     sodiumReplacementMedLink = GetMedicationLinks { cat = "Sodium Replacement", text = "Sodium Replacement", seq = 1 }

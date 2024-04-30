@@ -28,9 +28,9 @@ local n186CodeLink = MakeNilLink()
 local e875CodeLink = MakeNilLink()
 local e876CodeLink = MakeNilLink()
 local hemodialysisCodesLink = MakeNilLink()
-local serumPotassiumLowLinks = MakeNilLinkArray()
-local serumPotassiumHighLinks = MakeNilLinkArray()
-local serumPotassiumVeryHighLinks = MakeNilLinkArray()
+local serumPotassiumLowLinks = MakeLinkArray()
+local serumPotassiumHighLinks = MakeLinkArray()
+local serumPotassiumVeryHighLinks = MakeLinkArray()
 local dextroseMedLink = MakeNilLink()
 local insulinMedLink = MakeNilLink()
 local kayexalateMedLink = MakeNilLink()
@@ -65,7 +65,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         end,
         seq = 5,
         maxPerValue = 10
-    }
+    } or {}
 
     serumPotassiumHighLinks = GetDiscreteValueLinks {
         discreteValueNames = { "Potassium Lvl (mmol/L)" },
@@ -75,7 +75,7 @@ if not ExistingAlert or not ExistingAlert.validated then
         end,
         seq = 6,
         maxPerValue = 10
-    }
+    } or {}
 
     if n186CodeLink then
         serumPotassiumVeryHighLinks = GetDiscreteValueLinks {
@@ -86,7 +86,7 @@ if not ExistingAlert or not ExistingAlert.validated then
             end,
             seq = 7,
             maxPerValue = 10
-        }
+        } or {}
     end
 
     -- Medications

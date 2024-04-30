@@ -517,15 +517,6 @@ function MakeNilLink()
 end
 
 --------------------------------------------------------------------------------
---- Create a nil link (here for quick type hinting)
----
---- @return CdiAlertLink[]? - Always nil, but typed
---------------------------------------------------------------------------------
-function MakeNilLinkArray()
-    return nil
-end
-
---------------------------------------------------------------------------------
 --- Create an empty array of links (here for quick type hinting)
 ---
 --- @return CdiAlertLink[] - An empty array of links
@@ -851,5 +842,60 @@ function GetLinkForDiscreteValue(discreteValue, linkTemplate, sequence, includeS
     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discreteValue, nil)
     link.sequence = sequence
     return link
+end
+
+
+--------------------------------------------------------------------------------
+--- Get account codes matching a prefix
+---
+--- @param prefix string The prefix to search for
+---
+--- @return string[] - a list of codes that match the prefix
+--------------------------------------------------------------------------------
+function GetAccountCodesByPrefix(prefix)
+    local codes = {}
+    for _, code in ipairs(Account:get_unique_codes()) do
+        if code:sub(1, #prefix) == prefix then
+            table.insert(codes, code)
+        end
+    end
+    return codes
+end
+
+--------------------------------------------------------------------------------
+--- Get the first code link for a prefix
+---
+--- @param arguments table The arguments for the link
+---
+--- @return CdiAlertLink? - the link to the first code or nil if not found
+--------------------------------------------------------------------------------
+function GetFirstCodePrefixLink(arguments)
+    local codes = GetAccountCodesByPrefix(arguments.prefix)
+    if #codes == 0 then
+        return nil
+    end
+    arguments.code = codes[1]
+    local links = GetCodeLinks(arguments)
+    if type(links) == "table" then
+        return links[1]
+    else
+        return links
+    end
+end
+
+--------------------------------------------------------------------------------
+--- Get all code links for a prefix
+---
+--- @param arguments table The arguments for the link
+---
+--- @return CdiAlertLink[]? - a list of links to the codes or nil if not found
+--------------------------------------------------------------------------------
+function GetAllCodePrefixLinks(arguments)
+    local codes = GetAccountCodesByPrefix(arguments.prefix)
+    if #codes == 0 then
+        return nil
+    end
+    arguments.codes = codes
+    return GetCodeLinks(arguments)
 end
 
