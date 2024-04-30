@@ -1,14 +1,9 @@
 polling_seconds = 5
 create_test_data = true 
-update_workgroup_assignment = false
 logging_level = "trace"
 
 [mongo]
 url = "mongodb://dolbeyadmin:fusion@dockermain:27032/admin"
-
-[cdi_workgroup]
-category = "CDI Alerts"
-name = "CDI Alerts"
 
 [[scripts]]
 path = "scripts/substance_abuse.lua"

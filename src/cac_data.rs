@@ -1,5 +1,5 @@
-use crate::config::CdiWorkgroup;
 use chrono::{DateTime, TimeZone, Utc};
+
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -833,10 +833,8 @@ pub async fn get_account_by_id<'connection>(
 
 pub async fn save_cdi_alerts<'config>(
     connection_string: &'config str,
-    cdi_workgroup: &'config CdiWorkgroup,
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
-    update_workgroup_assignment: bool,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
@@ -847,45 +845,6 @@ pub async fn save_cdi_alerts<'config>(
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let workgroups_collection = cac_database.collection::<WorkGroupCategory>("workgroups");
-
-    let workgroup_category = workgroups_collection
-        .find_one(doc! { "_id": cdi_workgroup.category.clone() }, None)
-        .await?
-        .ok_or(SaveCdiAlertsError::MissingWorkgroupCategory(
-            &cdi_workgroup.category,
-        ))?;
-
-    let workgroup_object = workgroup_category
-        .workgroups
-        .iter()
-        .find(|x| x.work_group == cdi_workgroup.name)
-        .ok_or(SaveCdiAlertsError::MissingWorkgroupName(
-            &cdi_workgroup.name,
-        ))?;
-
-    // Find the first criteria group with a script matching a passing alert
-    let first_matching_criteria_group =
-        workgroup_object
-            .criteria_groups
-            .iter()
-            .find_map(|criteria_group| {
-                criteria_group
-                    .filters
-                    .iter()
-                    .find(|filter| {
-                        filter.property == "EvaluationScript"
-                            && cdi_alerts
-                                .clone()
-                                .any(|alert| alert.passed && alert.script_name == filter.value)
-                    })
-                    .map(|_| criteria_group)
-            });
-
-    debug!(
-        "First matching criteria group: {:?}",
-        first_matching_criteria_group
-    );
 
     // Create a bson array from our result iterator.
     // You *could* do this automatically with `bson::to_bson<Vec>`,
@@ -898,77 +857,32 @@ pub async fn save_cdi_alerts<'config>(
         }
     }
 
-    // We are going to take care of merge logic entirely in the scripts
-    account_collection
-        .update_one(
-            doc! { "_id": account.id.clone() },
-            doc! { "$set": { "CdiAlerts": cdi_alerts_bson } },
-            None,
-        )
+    // get existing account
+    let existing_account = account_collection
+        .find_one(doc! { "_id": account.id.clone() }, None)
         .await?;
 
-    if update_workgroup_assignment {
-        let new_criteria_group = first_matching_criteria_group.map(|x| x.name.clone());
+    let _existing_alerts = if let Some(existing_account) = existing_account {
+        existing_account.cdi_alerts
+    } else {
+        vec![]
+    };
 
-        // find existing workgroup assignment
-        let existing_workgroup_assignment = account.custom_workflow.clone().and_then(|x| {
-            x.iter().find_map(|x| match x.work_group.clone() {
-                Some(workgroup) => {
-                    if workgroup == cdi_workgroup.name {
-                        Some(x.clone())
-                    } else {
-                        None
-                    }
-                }
-                None => None,
-            })
-        });
+    // TODO: Need to know if existing_alerts are all the same as the new ones
+    let alerts_are_same = false;
 
-        // Update or insert workgroup assignment for the category/workgroup
-        match existing_workgroup_assignment {
-            Some(_) => {
-                account_collection
-                    .update_one(
-                        doc! {
-                            "_id": account.id.clone(),
-                            "CustomWorkflow.WorkGroupCategory": cdi_workgroup.name.clone(),
-                            "CustomWorkflow.WorkGroup": cdi_workgroup.name.clone(),
-                        },
-                        doc! {
-                            "$set": {
-                                "CustomWorkflow.$.CriteriaGroup" : new_criteria_group,
-                            }
-                        },
-                        None,
-                    )
-                    .await?;
-            }
-            None => {
-                account_collection
-                    .update_one(
-                        doc! {
-                            "_id": account.id.clone(),
-                        },
-                        doc! {
-                            "$push": {
-                                "CustomWorkflow": {
-                                    "WorkGroup": cdi_workgroup.name.clone(),
-                                    "CriteriaGroup": new_criteria_group,
-                                    "CriteriaSequence": 0,
-                                    "WorkGroupCategory": cdi_workgroup.category.clone(),
-                                    "WorkGroupType": "CDI",
-                                    "WorkGroupAssignedBy": "CDI",
-                                    "WorkGroupAssignedDateTime": bson::DateTime::now(),
-                                }
-                            }
-                        },
-                        None,
-                    )
-                    .await?;
-            }
-        };
+    if alerts_are_same {
+        info!("Alerts are the same, not updating account");
+    } else {
+        account_collection
+            .update_one(
+                doc! { "_id": account.id.clone() },
+                doc! { "$set": { "CdiAlerts": cdi_alerts_bson } },
+                None,
+            )
+            .await?;
+        // TODO: Need to publish a rabbit message to rerun workflow for the account
     }
-
     Ok(())
 }
 
