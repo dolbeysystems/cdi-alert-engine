@@ -526,6 +526,15 @@ function MakeLinkArray()
 end
 
 --------------------------------------------------------------------------------
+--- Create a nmil array of links (here for quick type hinting)
+---
+--- @return CdiAlertLink[]? - An empty array of links
+----------------{}----------------------------------------------------------------
+function MakeNilLinkArray()
+    return nil
+end
+
+--------------------------------------------------------------------------------
 --- Get the existing cdi alert for a script
 ---
 --- @param args GetExistingCdiAlertArgs a table of arguments
@@ -853,8 +862,10 @@ end
 --- @return string[] - a list of codes that match the prefix
 --------------------------------------------------------------------------------
 function GetAccountCodesByPrefix(prefix)
+    --- @type Account
+    local account = Account
     local codes = {}
-    for _, code in ipairs(Account:get_unique_codes()) do
+    for _, code in ipairs(account:get_unique_code_references()) do
         if code:sub(1, #prefix) == prefix then
             table.insert(codes, code)
         end

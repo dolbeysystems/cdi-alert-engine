@@ -229,27 +229,6 @@ local function GetHematocritDropPairs()
     end
 end
 
---------------------------------------------------------------------------------
---- Get Hemoglobin and Hematocrit Links
----
---- @param pairs HemoglobinHematocritDiscreteValuePair[] Pair of Hemoglobin and Hematocrit Discrete Values to get links for
---- @param hemoglobinLinkTemplate string Link template for Hemoglobin values
---- @param hematocritLinkTemplate string Link template for Hematocrit values 
----
---- @return CdiAlertLink[] - Links for the Hemoglobin and Hematocrit values in order
---------------------------------------------------------------------------------
-local function GetLinksForHemoHemaPairs(pairs, hemoglobinLinkTemplate, hematocritLinkTemplate)
-    local links = MakeLinkArray()
-    for i = 1, #pairs do
-        local pair = pairs[i]
-        local hemoglobinLink = GetLinkForDiscreteValue(pair.hemoglobin, hemoglobinLinkTemplate, i, true)
-        local hematocritLink = GetLinkForDiscreteValue(pair.hematocrit, hematocritLinkTemplate, i, true)
-        table.insert(links, hemoglobinLink)
-        table.insert(links, hematocritLink)
-    end
-    return links
-end
-
 
 
 --------------------------------------------------------------------------------
@@ -428,9 +407,9 @@ local hemtopoeticAbs = MakeNilLink()
 local isotonicIVSolMed = MakeNilLink()
 local a30233N1Code = MakeNilLink()
 local sodiumChlorideMed = MakeNilLink()
-local i975Codes = MakeLinkArray()
-local k917Codes = MakeLinkArray()
-local j957Codes = MakeLinkArray()
+local i975Codes = MakeNilLinkArray()
+local k917Codes = MakeNilLinkArray()
+local j957Codes = MakeNilLinkArray()
 local k260Code = MakeNilLink()
 local k262Code = MakeNilLink()
 local k250Code = MakeNilLink()
@@ -446,7 +425,7 @@ local k276Code = MakeNilLink()
 local n99510Code = MakeNilLink()
 local r040Code = MakeNilLink()
 local i8501Code = MakeNilLink()
-local giBleedCodes = MakeLinkArray()
+local giBleedCodes = MakeNilLinkArray()
 local k922Code = MakeNilLink()
 local hematomaAbs = MakeNilLink()
 local k920Code = MakeNilLink()
@@ -456,24 +435,24 @@ local k661Code = MakeNilLink()
 local n3091Code = MakeNilLink()
 local j9501Code = MakeNilLink()
 local r042Code = MakeNilLink()
-local i974Codes = MakeLinkArray()
-local k916Codes = MakeLinkArray()
-local n99Codes = MakeLinkArray()
+local i974Codes = MakeNilLinkArray()
+local k916Codes = MakeNilLinkArray()
+local n99Codes = MakeNilLinkArray()
 local g9732Code = MakeNilLink()
 local g9731Code = MakeNilLink()
-local j956Codes = MakeLinkArray()
+local j956Codes = MakeNilLinkArray()
 local k921Code = MakeNilLink()
 local n920Code = MakeNilLink()
-local i61Codes = MakeLinkArray()
-local i62Codes = MakeLinkArray()
-local i60Codes = MakeLinkArray()
+local i61Codes = MakeNilLinkArray()
+local i62Codes = MakeNilLinkArray()
+local i60Codes = MakeNilLinkArray()
 local l7632Code = MakeNilLink()
-local k918Codes = MakeLinkArray()
-local i976Codes = MakeLinkArray()
-local n991Codes = MakeLinkArray()
+local k918Codes = MakeNilLinkArray()
+local i976Codes = MakeNilLinkArray()
+local n991Codes = MakeNilLinkArray()
 local g9752Code = MakeNilLink()
 local g9751Code = MakeNilLink()
-local j958Codes = MakeLinkArray()
+local j958Codes = MakeNilLinkArray()
 local k625Code = MakeNilLink()
 local lowHemoglobinAbs = MakeNilLink()
 -- @type HemoglobinHematocritPeakDropLinks?
@@ -489,6 +468,10 @@ local lowHematocritPairs = {}
 local anySignsOfBleeding = false
 local anyAnemiaTreatment = false
 
+
+local anemiaTreatmentTrigger = false
+local signsOfBleedingTrigger = false
+local lowHemoglobinOrHematocritTrigger = false
 
 
 --------------------------------------------------------------------------------
@@ -648,15 +631,11 @@ if not ExistingAlert or not ExistingAlert.validated then
     local lowHemoglobinDvCount = (#lowHemoglobinPairs)
     local lowHemoglobinDvAbsCount = lowHemoglobinDvCount + (lowHemoglobinAbsPresent and 1 or 0)
     local lowHematocritDvCount = (#lowHematocritPairs)
-    local hemoglobinDropPresent = (#hemoglobinDropLinks > 0)
-    local hematocritDropPresent = (#hematocritDropLinks > 0)
+    local hemoglobinDropPresent = (hemoglobinDropLinks and #hemoglobinDropLinks > 0)
+    local hematocritDropPresent = (hematocritDropLinks and #hematocritDropLinks > 0)
 
     local acuteBloodLossAlertPresent = (ExistingAlert ~= nil and ExistingAlert.subtitle == "Possible Acute Blood Loss Anemia")
     local anemiaAlertPresent = (ExistingAlert ~= nil and ExistingAlert.subtitle == "Possible Anemia")
-
-    local anemiaTreatmentTrigger = false
-    local signsOfBleedingTrigger = false
-    local lowHemoglobinOrHematocritTrigger = false
 
     if acuteBloodLossAlertPresent and acuteBloodLossAnemiaCodePresent then
         -- Autoresolve Possible Acute Blood Loss
@@ -732,121 +711,6 @@ if not ExistingAlert or not ExistingAlert.validated then
     else
         -- No alert / autoresolve action to be taken
         AlertMatched = false
-
-        -- Abstractions
-        AddEvidenceCode("T45.1X5A", "Adverse Effect of Antineoplastic and Immunosuppressive Drug", 1)
-        GetFirstCodePrefixLink{ target = ClinicalEvidenceLinks, prefix="F10.1", text="Alcohol Abuse", seq=2 }
-        GetFirstCodePrefixLink { target = ClinicalEvidenceLinks, prefix="F10.2", text="Alcohol Dependence", seq=3 }
-        AddEvidenceCode("K70.31", "Alcoholic Liver Cirrhosis", 4)
-        AddEvidenceCode("T45.7X1A", "Anticoagulant-Induced Bleeding", 5)
-        AddEvidenceCode("Z51.11", "Chemotherapy", 6)
-        AddEvidenceCode("3E04305", "Chemotherapy Administration", 7)
-
-        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Chronic Kidney Disease", seq = 8, codes = {
-            "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9"
-        }}
-        AddEvidenceCode("K27.4", "Chronic Peptic Ulcer with Hemorrhage", 9)
-        AddEvidenceAbs("CURRENT_CHEMOTHERAPY", "Current Chemotherapy", 10)
-        AddEvidenceAbs("DYSPNEA_ON_EXERTION", "Dyspnea on Exertion", 11)
-        AddEvidenceCode("N18.6", "End-Stage Renal Disease", 12)
-        AddEvidenceCode("R53.83", "Fatigue", 13)
-        GetFirstCodePrefixLink { prefix="C82.", target=ClinicalEvidenceLinks, text="Follicular Lymphoma", seq=14 }
-
-        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Heart Failure", seq = 15, codes = {
-            "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
-        }}
-        AddEvidenceCode("D58.0", "Hereditary Spherocytosis", 16)
-        AddEvidenceCode("B20", "HIV", 17)
-        GetFirstCodePrefixLink { prefix="C81.", target=ClinicalEvidenceLinks, text="Hodgkin Lymphoma", seq=18 }
-        AddEvidenceCode("E61.1", "Iron Deficiency", 19)
-        GetFirstCodePrefixLink { prefix="C95.", target=ClinicalEvidenceLinks, text="Leukemia of Unspecified Cell Type", seq=20 }
-        GetFirstCodePrefixLink { prefix="C91.", target=ClinicalEvidenceLinks, text="Lymphoid Leukemia", seq=21 }
-        AddEvidenceCode("K22.6", "Mallory-Weiss Tear", 22)
-        GetCodeLinks { target = ClinicalEvidenceLinks, text = "Malnutrition", seq = 23, codes = {
-            "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45"
-        }}
-        GetFirstCodePrefixLink { prefix="C84.", target=ClinicalEvidenceLinks, text="Mature T/NK-Cell Lymphoma", seq=24 }
-        GetFirstCodePrefixLink { prefix="C90.", target=ClinicalEvidenceLinks, text="Multiple Myeloma", seq=25 }
-        GetFirstCodePrefixLink { prefix="C93.", target=ClinicalEvidenceLinks, text="Monocytic Leukemia", seq=26 }
-        AddEvidenceCode("D46.9", "Myelodysplastic Syndrome", 27)
-        GetFirstCodePrefixLink { prefix="C92.", target=ClinicalEvidenceLinks, text="Myeloid Leukemia", seq=28 }
-        GetFirstCodePrefixLink { prefix="C83.", target=ClinicalEvidenceLinks, text="Non-Follicular Lymphoma", seq=29 }
-        GetFirstCodePrefixLink { prefix="C94.", target=ClinicalEvidenceLinks, text="Other Leukemias", seq=30 }
-        GetFirstCodePrefixLink { prefix="C86.", target=ClinicalEvidenceLinks, text="Other Types of T/NK-Cell Lymphoma", seq=31 }
-        AddEvidenceCode("R23.1", "Pale", 32)
-        AddEvidenceCode("K27.9", "Peptic Ulcer", 33)
-        AddEvidenceCode("F19.10", "Psychoactive Substance Abuse", 34)
-        AddEvidenceCode("Z51.0", "Radiation Therapy", 35)
-        GetFirstCodePrefixLink { prefix="M05.", target=ClinicalEvidenceLinks, text="Rheumatoid Arthritis", seq=36 }
-        GetFirstCodePrefixLink { prefix="D86.", target=ClinicalEvidenceLinks, text="Sarcoidosis", seq=37 }
-        AddEvidenceAbs("SHORTNESS_OF_BREATH", "Shortness of Breath", 38)
-        GetFirstCodePrefixLink { prefix="D57.", target=ClinicalEvidenceLinks, text="Sickle Cell Disorder", seq=39 }
-        AddEvidenceCode("R16.1", "Splenomegaly", 40)
-        GetFirstCodePrefixLink { prefix="M32.", target=ClinicalEvidenceLinks, text="Systemic Lupus Erythematosus (SLE)", seq=41 }
-        GetFirstCodePrefixLink { prefix="C85.", target=ClinicalEvidenceLinks, text="Unspecified Non-Hodgkin Lymphoma", seq=42 }
-        AddEvidenceAbs("WEAKNESS", "Weakness", 43)
-
-        -- Labs
-        AddLabsDv("Immature Reticulocyte Fraction", "Immature Reticulocyte Fraction", 3, function(dv)
-            return CheckDvResultNumber(dv, function(v) return v < 3 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end)
-        AddLabsAbs("LOW_IMMATURE_RETICULOCYTE_FRACTION", "Immature Reticulocyte Fraction", 4)
-        AddLabsDv("Occult Blood Gastric", "Occult Blood", 5, function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end)
-        AddLabsDv("Reticulocyte Count", "Reticulocyte Count", 6, function(dv)
-            return CheckDvResultNumber(dv, function(v) return v < 0.5 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end)
-        AddLabsAbs("LOW_RETICULOCYTE_COUNT", "Reticulocyte Count", 7)
-        AddLabsAbs("LOW_SERUM_FERRITIN", "Serum Ferritin", 8)
-        AddLabsAbs("LOW_SERUM_FOLATE", "Serum Folate", 9)
-        AddLabsAbs("LOW_SERUM_IRON", "Serum Iron", 10)
-        AddLabsAbs("LOW_TOTAL_IRON_BINDING_CAPACITY", "Total Iron Binding Capacity", 11)
-        AddLabsAbs("LOW_TRANSFERRIN", "Transferrin", 12)
-        AddLabsAbs("LOW_VITAMIN_B12", "Vitamin B12 Deficiency", 13)
-
-        -- Labs Subheading Categories
-        GetDiscreteValueLinks { target=mchLinks, text="MCH", discreteValueName="MCH (pg)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=mchcLinks, text="MCHC", discreteValueName="MCHC (g/dL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=mcvLinks, text="MCV", discreteValueName="MCV (fL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=plateletsLinks, text="Platelet Count", discreteValueName="Platelets (10x3/uL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=rbcLinks, text="RBC", discreteValueName="RBC (10x6/uL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=rdwLinks, text="RDW", discreteValueName="RDW (%)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=ferritinLinks, text="Ferritin", discreteValueName="Ferritin Lvl (ng/mL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=folateLinks, text="Folate", discreteValueName="Folate Lvl (ng/mL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=ironLinks, text="Iron", discreteValueName="Iron Lvl (mcg/dL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=ironBindingCapLinks, text="Total Iron Binding Capacity", discreteValueName="TIBC (mcg/dL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=transferrinLinks, text="Transferrin", discreteValueName="Transferrin (mg/dL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=vitaminB12Links, text="Vitamin B12", discreteValueName="Vitamin B12 Lvl (pg/mL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-        GetDiscreteValueLinks { target=wbcLinks, text="WBC", discreteValueName="WBC (10x3/uL)", maxPerValue=3, predicate=function(dv)
-            return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
-        end }
-
-        -- TODO: (line 969)
     end
 end
 
@@ -856,7 +720,428 @@ end
 --- Additional Link Creation
 --------------------------------------------------------------------------------
 if AlertMatched then
+    -- Abstractions
+    AddEvidenceCode("T45.1X5A", "Adverse Effect of Antineoplastic and Immunosuppressive Drug", 1)
+    GetFirstCodePrefixLink{ target = ClinicalEvidenceLinks, prefix="F10.1", text="Alcohol Abuse", seq=2 }
+    GetFirstCodePrefixLink { target = ClinicalEvidenceLinks, prefix="F10.2", text="Alcohol Dependence", seq=3 }
+    AddEvidenceCode("K70.31", "Alcoholic Liver Cirrhosis", 4)
+    AddEvidenceCode("T45.7X1A", "Anticoagulant-Induced Bleeding", 5)
+    AddEvidenceCode("Z51.11", "Chemotherapy", 6)
+    AddEvidenceCode("3E04305", "Chemotherapy Administration", 7)
 
+    GetCodeLinks { target = ClinicalEvidenceLinks, text = "Chronic Kidney Disease", seq = 8, codes = {
+        "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9"
+    }}
+    AddEvidenceCode("K27.4", "Chronic Peptic Ulcer with Hemorrhage", 9)
+    AddEvidenceAbs("CURRENT_CHEMOTHERAPY", "Current Chemotherapy", 10)
+    AddEvidenceAbs("DYSPNEA_ON_EXERTION", "Dyspnea on Exertion", 11)
+    AddEvidenceCode("N18.6", "End-Stage Renal Disease", 12)
+    AddEvidenceCode("R53.83", "Fatigue", 13)
+    GetFirstCodePrefixLink { prefix="C82.", target=ClinicalEvidenceLinks, text="Follicular Lymphoma", seq=14 }
+
+    GetCodeLinks { target = ClinicalEvidenceLinks, text = "Heart Failure", seq = 15, codes = {
+        "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
+    }}
+    AddEvidenceCode("D58.0", "Hereditary Spherocytosis", 16)
+    AddEvidenceCode("B20", "HIV", 17)
+    GetFirstCodePrefixLink { prefix="C81.", target=ClinicalEvidenceLinks, text="Hodgkin Lymphoma", seq=18 }
+    AddEvidenceCode("E61.1", "Iron Deficiency", 19)
+    GetFirstCodePrefixLink { prefix="C95.", target=ClinicalEvidenceLinks, text="Leukemia of Unspecified Cell Type", seq=20 }
+    GetFirstCodePrefixLink { prefix="C91.", target=ClinicalEvidenceLinks, text="Lymphoid Leukemia", seq=21 }
+    AddEvidenceCode("K22.6", "Mallory-Weiss Tear", 22)
+    GetCodeLinks { target = ClinicalEvidenceLinks, text = "Malnutrition", seq = 23, codes = {
+        "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45"
+    }}
+    GetFirstCodePrefixLink { prefix="C84.", target=ClinicalEvidenceLinks, text="Mature T/NK-Cell Lymphoma", seq=24 }
+    GetFirstCodePrefixLink { prefix="C90.", target=ClinicalEvidenceLinks, text="Multiple Myeloma", seq=25 }
+    GetFirstCodePrefixLink { prefix="C93.", target=ClinicalEvidenceLinks, text="Monocytic Leukemia", seq=26 }
+    AddEvidenceCode("D46.9", "Myelodysplastic Syndrome", 27)
+    GetFirstCodePrefixLink { prefix="C92.", target=ClinicalEvidenceLinks, text="Myeloid Leukemia", seq=28 }
+    GetFirstCodePrefixLink { prefix="C83.", target=ClinicalEvidenceLinks, text="Non-Follicular Lymphoma", seq=29 }
+    GetFirstCodePrefixLink { prefix="C94.", target=ClinicalEvidenceLinks, text="Other Leukemias", seq=30 }
+    GetFirstCodePrefixLink { prefix="C86.", target=ClinicalEvidenceLinks, text="Other Types of T/NK-Cell Lymphoma", seq=31 }
+    AddEvidenceCode("R23.1", "Pale", 32)
+    AddEvidenceCode("K27.9", "Peptic Ulcer", 33)
+    AddEvidenceCode("F19.10", "Psychoactive Substance Abuse", 34)
+    AddEvidenceCode("Z51.0", "Radiation Therapy", 35)
+    GetFirstCodePrefixLink { prefix="M05.", target=ClinicalEvidenceLinks, text="Rheumatoid Arthritis", seq=36 }
+    GetFirstCodePrefixLink { prefix="D86.", target=ClinicalEvidenceLinks, text="Sarcoidosis", seq=37 }
+    AddEvidenceAbs("SHORTNESS_OF_BREATH", "Shortness of Breath", 38)
+    GetFirstCodePrefixLink { prefix="D57.", target=ClinicalEvidenceLinks, text="Sickle Cell Disorder", seq=39 }
+    AddEvidenceCode("R16.1", "Splenomegaly", 40)
+    GetFirstCodePrefixLink { prefix="M32.", target=ClinicalEvidenceLinks, text="Systemic Lupus Erythematosus (SLE)", seq=41 }
+    GetFirstCodePrefixLink { prefix="C85.", target=ClinicalEvidenceLinks, text="Unspecified Non-Hodgkin Lymphoma", seq=42 }
+    AddEvidenceAbs("WEAKNESS", "Weakness", 43)
+
+    -- Labs
+    AddLabsDv("Immature Reticulocyte Fraction", "Immature Reticulocyte Fraction", 3, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 3 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("LOW_IMMATURE_RETICULOCYTE_FRACTION", "Immature Reticulocyte Fraction", 4)
+    AddLabsDv("Occult Blood Gastric", "Occult Blood", 5, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsDv("Reticulocyte Count", "Reticulocyte Count", 6, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 0.5 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddLabsAbs("LOW_RETICULOCYTE_COUNT", "Reticulocyte Count", 7)
+    AddLabsAbs("LOW_SERUM_FERRITIN", "Serum Ferritin", 8)
+    AddLabsAbs("LOW_SERUM_FOLATE", "Serum Folate", 9)
+    AddLabsAbs("LOW_SERUM_IRON", "Serum Iron", 10)
+    AddLabsAbs("LOW_TOTAL_IRON_BINDING_CAPACITY", "Total Iron Binding Capacity", 11)
+    AddLabsAbs("LOW_TRANSFERRIN", "Transferrin", 12)
+    AddLabsAbs("LOW_VITAMIN_B12", "Vitamin B12 Deficiency", 13)
+
+    -- Labs Subheading Categories
+    GetDiscreteValueLinks { target=mchLinks, text="MCH", discreteValueName="MCH (pg)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=mchcLinks, text="MCHC", discreteValueName="MCHC (g/dL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=mcvLinks, text="MCV", discreteValueName="MCV (fL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=plateletsLinks, text="Platelet Count", discreteValueName="Platelets (10x3/uL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=rbcLinks, text="RBC", discreteValueName="RBC (10x6/uL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=rdwLinks, text="RDW", discreteValueName="RDW (%)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=ferritinLinks, text="Ferritin", discreteValueName="Ferritin Lvl (ng/mL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=folateLinks, text="Folate", discreteValueName="Folate Lvl (ng/mL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=ironLinks, text="Iron", discreteValueName="Iron Lvl (mcg/dL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=ironBindingCapLinks, text="Total Iron Binding Capacity", discreteValueName="TIBC (mcg/dL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=transferrinLinks, text="Transferrin", discreteValueName="Transferrin (mg/dL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=vitaminB12Links, text="Vitamin B12", discreteValueName="Vitamin B12 Lvl (pg/mL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+    GetDiscreteValueLinks { target=wbcLinks, text="WBC", discreteValueName="WBC (10x3/uL)", maxPerValue=3, predicate=function(dv)
+        return CheckDvResultNumber(dv, function(v) return v > 0 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end }
+
+    -- Hemoglobin/Hematocrit Links
+    if lowHemoglobinOrHematocritTrigger then
+        for _, pair in ipairs(lowHemoglobinPairs) do
+            local hemoglobinLink = GetLinkForDiscreteValue(pair.hemoglobin, "Hemoglobin (g/dL)", 0, true)
+            local hematocritLink = GetLinkForDiscreteValue(pair.hematocrit, "Hematocrit (%)", 0, true)
+            table.insert(hemoglobinLinks, hemoglobinLink)
+            table.insert(hematocritLinks, hematocritLink)
+        end
+        hemoglobinHeader.links = hemoglobinLinks
+        hematocritHeader.links = hematocritLinks
+
+        if #hemoglobinLinks > 0 then
+            table.insert(DocumentationIncludesLinks, hemoglobinLabsHeader)
+        end
+        if #hematocritLinks > 0 then
+            table.insert(DocumentationIncludesLinks, hematocritLabsHeader)
+        end
+    else
+        for _, pair in ipairs(lowHemoglobinPairs) do
+            local hemoglobinLink = GetLinkForDiscreteValue(pair.hemoglobin, "Hemoglobin (g/dL)", 0, true)
+            local hematocritLink = GetLinkForDiscreteValue(pair.hematocrit, "Hematocrit (%)", 0, true)
+            table.insert(hemoglobinLabsLinks, hemoglobinLink)
+            table.insert(hematocritLabsLinks, hematocritLink)
+        end
+    end
+
+    if Account.patient.gender == "F" then
+        GetAbstractionLinks {
+            target = hematocritLabsLinks,
+            code = "LOW_HEMATOCRIT",
+            text = "Hematocrit Female",
+            seq = 1
+        }
+        if lowHemoglobinAbs ~= nil then
+            table.insert(hemoglobinLabsLinks, lowHemoglobinAbs)
+        end
+    elseif Account.patient.gender == "M" then
+        GetAbstractionLinks {
+            target = hematocritLabsLinks,
+            code = "LOW_HEMATOCRIT",
+            text = "Hematocrit Male",
+            seq = 1
+        }
+        if lowHemoglobinAbs ~= nil then
+            table.insert(hemoglobinLabsLinks, lowHemoglobinAbs)
+        end
+    end
+
+    hemoglobinLabsHeader.links = hemoglobinLabsLinks
+    hematocritLabsHeader.links = hematocritLabsLinks
+
+    -- Meds
+    if not anemiaTreatmentTrigger then
+        if anemiaMedsAbs ~= nil then
+            table.insert(TreatmentLinks, anemiaMedsAbs)
+        end
+        if anemiaMeds ~= nil then
+            table.insert(TreatmentLinks, anemiaMeds)
+        end
+        if fluidBolusMeds ~= nil then
+            table.insert(TreatmentLinks, fluidBolusMeds)
+        end
+        if hematopoeticMed ~= nil then
+            table.insert(TreatmentLinks, hematopoeticMed)
+        end
+        if hemtopoeticAbs ~= nil then
+            table.insert(TreatmentLinks, hemtopoeticAbs)
+        end
+        if isotonicIVSolMed ~= nil then
+            table.insert(TreatmentLinks, isotonicIVSolMed)
+        end
+        if a30233N1Code ~= nil then
+            table.insert(TreatmentLinks, a30233N1Code)
+        end
+        if sodiumChlorideMed ~= nil then
+            table.insert(TreatmentLinks, sodiumChlorideMed)
+        end
+    else
+        if anemiaMedsAbs ~= nil then
+            table.insert(DocumentationIncludesLinks, anemiaMedsAbs)
+        end
+        if anemiaMeds ~= nil then
+            table.insert(DocumentationIncludesLinks, anemiaMeds)
+        end
+        if fluidBolusMeds ~= nil then
+            table.insert(DocumentationIncludesLinks, fluidBolusMeds)
+        end
+        if hematopoeticMed ~= nil then
+            table.insert(DocumentationIncludesLinks, hematopoeticMed)
+        end
+        if hemtopoeticAbs ~= nil then
+            table.insert(DocumentationIncludesLinks, hemtopoeticAbs)
+        end
+        if isotonicIVSolMed ~= nil then
+            table.insert(DocumentationIncludesLinks, isotonicIVSolMed)
+        end
+        if a30233N1Code ~= nil then
+            table.insert(DocumentationIncludesLinks, a30233N1Code)
+        end
+        if sodiumChlorideMed ~= nil then
+            table.insert(DocumentationIncludesLinks, sodiumChlorideMed)
+        end
+    end
+    -- Signs of Bleeding
+    if signsOfBleedingTrigger then
+        if i975Codes ~= nil then
+            for _, code in ipairs(i975Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k917Codes ~= nil then
+            for _, code in ipairs(k917Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if j957Codes ~= nil then
+            for _, code in ipairs(j957Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k260Code ~= nil then
+            table.insert(soBleedingLinks, k260Code)
+        end
+        if k262Code ~= nil then
+            table.insert(soBleedingLinks, k262Code)
+        end
+        if k250Code ~= nil then
+            table.insert(soBleedingLinks, k250Code)
+        end
+        if k252Code ~= nil then
+            table.insert(soBleedingLinks, k252Code)
+        end
+        if k270Code ~= nil then
+            table.insert(soBleedingLinks, k270Code)
+        end
+        if k272Code ~= nil then
+            table.insert(soBleedingLinks, k272Code)
+        end
+        if r319Code ~= nil then
+            table.insert(soBleedingLinks, r319Code)
+        end
+        if k264Code ~= nil then
+            table.insert(soBleedingLinks, k264Code)
+        end
+        if k266Code ~= nil then
+            table.insert(soBleedingLinks, k266Code)
+        end
+        if k254Code ~= nil then
+            table.insert(soBleedingLinks, k254Code)
+        end
+        if k256Code ~= nil then
+            table.insert(soBleedingLinks, k256Code)
+        end
+        if k276Code ~= nil then
+            table.insert(soBleedingLinks, k276Code)
+        end
+        if n99510Code ~= nil then
+            table.insert(soBleedingLinks, n99510Code)
+        end
+        if r040Code ~= nil then
+            table.insert(soBleedingLinks, r040Code)
+        end
+        if i8501Code ~= nil then
+            table.insert(soBleedingLinks, i8501Code)
+        end
+        if giBleedCodes ~= nil then
+            for _, code in ipairs(giBleedCodes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k922Code ~= nil then
+            table.insert(soBleedingLinks, k922Code)
+        end
+        if hematomaAbs ~= nil then
+            table.insert(soBleedingLinks, hematomaAbs)
+        end
+        if k920Code ~= nil then
+            table.insert(soBleedingLinks, k920Code)
+        end
+        if r310Code ~= nil then
+            table.insert(soBleedingLinks, r310Code)
+        end
+        if r195Code ~= nil then
+            table.insert(soBleedingLinks, r195Code)
+        end
+        if k661Code ~= nil then
+            table.insert(soBleedingLinks, k661Code)
+        end
+        if n3091Code ~= nil then
+            table.insert(soBleedingLinks, n3091Code)
+        end
+        if j9501Code ~= nil then
+            table.insert(soBleedingLinks, j9501Code)
+        end
+        if r042Code ~= nil then
+            table.insert(soBleedingLinks, r042Code)
+        end
+        if i974Codes ~= nil then
+            for _, code in ipairs(i974Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k916Codes ~= nil then
+            for _, code in ipairs(k916Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if n99Codes ~= nil then
+            for _, code in ipairs(n99Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if g9732Code ~= nil then
+            table.insert(soBleedingLinks, g9732Code)
+        end
+        if g9731Code ~= nil then
+            table.insert(soBleedingLinks, g9731Code)
+        end
+        if j956Codes ~= nil then
+            for _, code in ipairs(j956Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k921Code ~= nil then
+            table.insert(soBleedingLinks, k921Code)
+        end
+        if n920Code ~= nil then
+            table.insert(soBleedingLinks, n920Code)
+        end
+        if i61Codes ~= nil then
+            for _, code in ipairs(i61Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if i62Codes ~= nil then
+            for _, code in ipairs(i62Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if i60Codes ~= nil then
+            for _, code in ipairs(i60Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if l7632Code ~= nil then
+            table.insert(soBleedingLinks, l7632Code)
+        end
+        if k918Codes ~= nil then
+            for _, code in ipairs(k918Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if i976Codes ~= nil then
+            for _, code in ipairs(i976Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if n991Codes ~= nil then
+            for _, code in ipairs(n991Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if g9752Code ~= nil then
+            table.insert(soBleedingLinks, g9752Code)
+        end
+        if g9751Code ~= nil then
+            table.insert(soBleedingLinks, g9751Code)
+        end
+        if j958Codes ~= nil then
+            for _, code in ipairs(j958Codes) do
+                table.insert(soBleedingLinks, code)
+            end
+        end
+        if k625Code ~= nil then
+            table.insert(soBleedingLinks, k625Code)
+        end
+        if eblAbs ~= nil then
+            table.insert(soBleedingLinks, eblAbs)
+        end
+    end
+    soBleedingHeader.links = soBleedingLinks
+    if #soBleedingLinks > 0 then
+        table.insert(DocumentationIncludesLinks, soBleedingHeader)
+    end
+
+    -- Vitals
+    AddVitalsAbs("LOW_BLOOD_PRESSURE", "Blood Pressure", 1)
+    AddVitalsDv("Mean Arterial Pressure", "Mean Arterial Pressure", 2, function(dv)
+        return CheckDvResultNumber(dv, function(v) return v < 60 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+    end)
+    AddVitalsAbs("LOW_MEAN_ARTERIAL_BLOOD_PRESSURE", "Mean Arterial Pressure", 3)
+    if not GetDiscreteValueLinks {
+        target = VitalsLinks,
+        discreteValueName = "Systolic Blood Pressure",
+        text = "Systolic Blood Pressure",
+        predicate = function(dv)
+            return CheckDvResultNumber(dv, function(v) return v < 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        end
+    } then
+        GetDiscreteValueLinks {
+            target = VitalsLinks,
+            discreteValueName = "Systolic Blood Pressure (mmHg)",
+            text = "Systolic Blood Pressure",
+            predicate = function(dv)
+                return CheckDvResultNumber(dv, function(v) return v < 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+            end
+        }
+    end
+    AddVitalsAbs("LOW_SYSTOLIC_BLOOD_PRESSURE", "Systolic Pressure", 4)
 end
 
 
@@ -867,78 +1152,68 @@ end
 if AlertMatched or AlertAutoResolved then
     if hemoglobinLabsLinks and #hemoglobinLabsLinks > 0 then
         hemoglobinLabsHeader.links = hemoglobinLabsLinks
-        table.insert(Result.links, hemoglobinLabsHeader)
+        table.insert(LabsLinks, hemoglobinLabsHeader)
     end
     if hematocritLabsLinks and #hematocritLabsLinks > 0 then
         hematocritLabsHeader.links = hematocritLabsLinks
-        table.insert(Result.links, hematocritLabsHeader)
-    end
-    if hemoglobinLinks and #hemoglobinLinks > 0 then
-        hemoglobinHeader.links = hemoglobinLinks
-        table.insert(Result.links, hemoglobinHeader)
-    end
-    if hematocritLinks and #hematocritLinks > 0 then
-        hematocritHeader.links = hematocritLinks
-        table.insert(Result.links, hematocritHeader)
+        table.insert(LabsLinks, hematocritLabsHeader)
     end
     if mchLinks and #mchLinks > 0 then
         mchHeader.links = mchLinks
-        table.insert(Result.links, mchHeader)
+        table.insert(LabsLinks, mchHeader)
     end
     if mchcLinks and #mchcLinks > 0 then
         mchcHeader.links = mchcLinks
-        table.insert(Result.links, mchcHeader)
+        table.insert(LabsLinks, mchcHeader)
     end
     if mcvLinks and #mcvLinks > 0 then
         mcvHeader.links = mcvLinks
-        table.insert(Result.links, mcvHeader)
+        table.insert(LabsLinks, mcvHeader)
     end
     if plateletsLinks and #plateletsLinks > 0 then
         plateletsHeader.links = plateletsLinks
-        table.insert(Result.links, plateletsHeader)
+        table.insert(LabsLinks, plateletsHeader)
     end
     if rbcLinks and #rbcLinks > 0 then
         rbcHeader.links = rbcLinks
-        table.insert(Result.links, rbcHeader)
+        table.insert(LabsLinks, rbcHeader)
     end
     if rdwLinks and #rdwLinks > 0 then
         rdwHeader.links = rdwLinks
-        table.insert(Result.links, rdwHeader)
+        table.insert(LabsLinks, rdwHeader)
     end
     if ferritinLinks and #ferritinLinks > 0 then
         ferritinHeader.links = ferritinLinks
-        table.insert(Result.links, ferritinHeader)
+        table.insert(LabsLinks, ferritinHeader)
     end
     if folateLinks and #folateLinks > 0 then
         folateHeader.links = folateLinks
-        table.insert(Result.links, folateHeader)
+        table.insert(LabsLinks, folateHeader)
     end
     if ironLinks and #ironLinks > 0 then
         ironHeader.links = ironLinks
-        table.insert(Result.links, ironHeader)
+        table.insert(LabsLinks, ironHeader)
     end
     if ironBindingCapLinks and #ironBindingCapLinks > 0 then
         ironBindingCapHeader.links = ironBindingCapLinks
-        table.insert(Result.links, ironBindingCapHeader)
+        table.insert(LabsLinks, ironBindingCapHeader)
     end
     if transferrinLinks and #transferrinLinks > 0 then
         transferrinHeader.links = transferrinLinks
-        table.insert(Result.links, transferrinHeader)
+        table.insert(LabsLinks, transferrinHeader)
     end
     if vitaminB12Links and #vitaminB12Links > 0 then
         vitaminB12Header.links = vitaminB12Links
-        table.insert(Result.links, vitaminB12Header)
+        table.insert(LabsLinks, vitaminB12Header)
     end
     if wbcLinks and #wbcLinks > 0 then
-        wbcHeader.links = wbcLinks
+        LabsLinks= wbcLinks
         table.insert(Result.links, wbcHeader)
     end
 
     local resultLinks = GetFinalTopLinks({
         hemoglobinLabsHeader,
         hematocritLabsHeader,
-        hemoglobinHeader,
-        hematocritHeader,
         mchHeader,
         mchcHeader,
         mcvHeader,

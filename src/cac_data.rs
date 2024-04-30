@@ -981,103 +981,112 @@ pub async fn create_test_data(connection_string: &str) -> Result<(), CreateTestD
     let account_collection = cac_database.collection::<Account>("accounts");
     let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
 
-    // create test account #TEST_CDI_001
-    account_collection
-        .insert_one(
-            Account {
-                id: "TEST_CDI_001".to_string(),
-                // April 17, 2024 12:00:00 PM
-                admit_date_time: Some(Utc.with_ymd_and_hms(2024, 4, 17, 12, 0, 0).unwrap()),
-                discharge_date_time: None,
-                patient: Some(Arc::new(Patient {
-                    mrn: Some("123456".to_string()),
-                    first_name: Some("John".to_string()),
-                    middle_name: Some("Q".to_string()),
-                    last_name: Some("Public".to_string()),
-                    gender: Some("M".to_string()),
-                    birthdate: Some(Utc::now()),
-                })),
-                patient_type: Some("Inpatient".to_string()),
-                admit_source: Some("Emergency Room".to_string()),
-                admit_type: Some("Emergency".to_string()),
-                hospital_service: Some("Medicine".to_string()),
-                building: Some("Main".to_string()),
-                documents: vec![
-                    Arc::new(CACDocument {
-                        document_id: "DOC_001".into(),
-                        document_type: Some("Discharge Summary".to_string()),
-                        document_date: Some(Utc::now()),
-                        content_type: Some("text/plain".to_string()),
-                        code_references: vec![
-                            Arc::new(CodeReference {
-                                code: "I10".into(),
-                                value: None,
-                                description: Some("Essential (primary) hypertension".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                            Arc::new(CodeReference {
-                                code: "E11".into(),
-                                value: None,
-                                description: Some("Type 2 Diabetes".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                        ],
-                        abstraction_references: vec![],
-                    }),
-                    Arc::new(CACDocument {
-                        document_id: "DOC_002".into(),
-                        document_type: Some("Physician Note".to_string()),
-                        document_date: Some(Utc::now()),
-                        content_type: Some("text/plain".to_string()),
-                        code_references: vec![
-                            Arc::new(CodeReference {
-                                code: "R99".into(),
-                                value: None,
-                                description: Some("".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                            Arc::new(CodeReference {
-                                code: "A10".into(),
-                                value: None,
-                                description: Some("".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                        ],
-                        abstraction_references: vec![],
-                    }),
-                ],
-                medications: vec![],
-                discrete_values: vec![],
-                cdi_alerts: vec![],
-                custom_workflow: Some(vec![]),
-                hashed_code_references: HashMap::new(),
-                hashed_discrete_values: HashMap::new(),
-                hashed_medications: HashMap::new(),
-                hashed_documents: HashMap::new(),
-            },
-            None,
-        )
-        .await?;
+    // create test accounts #TEST_CDI_1 - #TEST_CDI_1000
+    for i in 0..1000 {
+        let account_number = format!("TEST_CDI_{}", &i.to_string());
+        account_collection
+            .insert_one(
+                Account {
+                    id: account_number,
+                    // April 17, 2024 12:00:00 PM
+                    admit_date_time: Some(Utc.with_ymd_and_hms(2024, 4, 17, 12, 0, 0).unwrap()),
+                    discharge_date_time: None,
+                    patient: Some(Arc::new(Patient {
+                        mrn: Some("123456".to_string()),
+                        first_name: Some("John".to_string()),
+                        middle_name: Some("Q".to_string()),
+                        last_name: Some("Public".to_string()),
+                        gender: Some("M".to_string()),
+                        birthdate: Some(Utc::now()),
+                    })),
+                    patient_type: Some("Inpatient".to_string()),
+                    admit_source: Some("Emergency Room".to_string()),
+                    admit_type: Some("Emergency".to_string()),
+                    hospital_service: Some("Medicine".to_string()),
+                    building: Some("Main".to_string()),
+                    documents: vec![
+                        Arc::new(CACDocument {
+                            document_id: "DOC_001".into(),
+                            document_type: Some("Discharge Summary".to_string()),
+                            document_date: Some(Utc::now()),
+                            content_type: Some("text/plain".to_string()),
+                            code_references: vec![
+                                Arc::new(CodeReference {
+                                    code: "I10".into(),
+                                    value: None,
+                                    description: Some(
+                                        "Essential (primary) hypertension".to_string(),
+                                    ),
+                                    phrase: Some("".to_string()),
+                                    start: Some(0),
+                                    length: Some(4),
+                                }),
+                                Arc::new(CodeReference {
+                                    code: "E11".into(),
+                                    value: None,
+                                    description: Some("Type 2 Diabetes".to_string()),
+                                    phrase: Some("".to_string()),
+                                    start: Some(0),
+                                    length: Some(4),
+                                }),
+                            ],
+                            abstraction_references: vec![],
+                        }),
+                        Arc::new(CACDocument {
+                            document_id: "DOC_002".into(),
+                            document_type: Some("Physician Note".to_string()),
+                            document_date: Some(Utc::now()),
+                            content_type: Some("text/plain".to_string()),
+                            code_references: vec![
+                                Arc::new(CodeReference {
+                                    code: "R99".into(),
+                                    value: None,
+                                    description: Some("".to_string()),
+                                    phrase: Some("".to_string()),
+                                    start: Some(0),
+                                    length: Some(4),
+                                }),
+                                Arc::new(CodeReference {
+                                    code: "A10".into(),
+                                    value: None,
+                                    description: Some("".to_string()),
+                                    phrase: Some("".to_string()),
+                                    start: Some(0),
+                                    length: Some(4),
+                                }),
+                            ],
+                            abstraction_references: vec![],
+                        }),
+                    ],
+                    medications: vec![],
+                    discrete_values: vec![],
+                    cdi_alerts: vec![],
+                    custom_workflow: Some(vec![]),
+                    hashed_code_references: HashMap::new(),
+                    hashed_discrete_values: HashMap::new(),
+                    hashed_medications: HashMap::new(),
+                    hashed_documents: HashMap::new(),
+                },
+                None,
+            )
+            .await?;
+    }
 
-    cdi_alert_queue_collection
-        .insert_one(
-            CdiAlertQueueEntry {
-                id: "TEST_CDI_001".to_string(),
-                time_queued: Utc::now(),
-                account_number: "TEST_CDI_001".to_string(),
-                script_name: "test_script_001".to_string(),
-            },
-            None,
-        )
-        .await?;
+    // Queue up test accounts #TEST_CDI_1 - #TEST_CDI_1000
+    for i in 0..1000 {
+        let account_number = format!("TEST_CDI_{}", &i.to_string());
+        cdi_alert_queue_collection
+            .insert_one(
+                CdiAlertQueueEntry {
+                    id: account_number,
+                    time_queued: Utc::now(),
+                    account_number: "TEST_CDI_001".to_string(),
+                    script_name: "test_script_001".to_string(),
+                },
+                None,
+            )
+            .await?;
+    }
 
     // create test account #TEST_CDI_002
     /*

@@ -34,6 +34,10 @@ path = "scripts/acidosis.lua"
 criteria_group = "Acidosis"
 
 [[scripts]] 
+path = "scripts/anemia.lua"
+criteria_group = "Anemia"
+
+[[scripts]] 
 path = "scripts/acute_mi_troponemia.lua"
 criteria_group = "Acute MI Troponemia"
 
