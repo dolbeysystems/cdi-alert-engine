@@ -168,7 +168,6 @@ async fn main() {
                             None
                         })
                 }));
-                info!("{} threads", script_threads.len());
             }
         }
 

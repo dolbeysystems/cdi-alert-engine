@@ -8,7 +8,6 @@ default-run = "cdi-alert-engine"
 ansi_term = "0.12.1"
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
-itertools = "0.12.1"
 lazy_static = "1.4.0"
 mongodb = { version = "2.8.2", features = ["tokio-runtime"] }
 serde = { version = "1.0.197", features = ["derive", "rc"] }
