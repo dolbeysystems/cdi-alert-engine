@@ -693,6 +693,7 @@ pub enum DeleteTestDataError<'connection> {
     Mongo(#[from] mongodb::error::Error),
 }
 
+#[profiling::function]
 pub async fn get_next_pending_account(
     connection_string: &str,
 ) -> Result<Option<Account>, GetAccountError> {
@@ -830,6 +831,7 @@ pub async fn get_account_by_id<'connection>(
     Ok(Some(account))
 }
 
+#[profiling::function]
 pub async fn save_cdi_alerts<'config>(
     connection_string: &'config str,
     account: &Account,

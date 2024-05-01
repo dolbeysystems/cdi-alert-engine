@@ -1,6 +1,5 @@
 polling_seconds = 5
-create_test_accounts = 3000
-logging_level = "trace"
+create_test_accounts = 10
 
 [mongo]
 url = "mongodb://dolbeyadmin:fusion@dockermain:27032/admin"

@@ -5,15 +5,11 @@ edition = "2021"
 default-run = "cdi-alert-engine"
 
 [dependencies]
-ansi_term = "0.12.1"
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
-lazy_static = "1.4.0"
 mongodb = { version = "2.8.2", features = ["tokio-runtime"] }
 serde = { version = "1.0.197", features = ["derive", "rc"] }
-serde_json = "1.0.115"
 serde_with = "3.7.0"
-erased-serde = "0.4.0-rc.1"
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
 futures = "0.3.28"
@@ -24,4 +20,11 @@ toml = "0.8.12"
 derive_environment = "1.1.0"
 alua = "0.1.0"
 clap = { version = "4.5.4", features = ["derive"] }
+puffin = { version = "0.19.0", optional = true }
+puffin_http = { version = "0.16.0", optional = true }
+profiling = "1.0.15"
+tracy-client = { version = "0.17.0", optional = true }
 
+[features]
+puffin = ["dep:puffin", "dep:puffin_http", "profiling/profile-with-puffin"]
+tracy = ["dep:tracy-client", "profiling/profile-with-tracy"]
