@@ -11,7 +11,6 @@ use tokio::task;
 use tracing::*;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
-const NUM_TEST_ACCOUNTS: usize = 10;
 
 #[derive(Clone, Debug)]
 struct Script {
@@ -26,6 +25,18 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(cli.log.to_tracing())
         .init();
+
+    #[cfg(feature = "tracy")]
+    tracy_client::Client::start();
+
+    #[cfg(feature = "puffin")]
+    let _puffin_server = {
+        let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
+        let puffin_server = puffin_http::Server::new(&server_addr).unwrap();
+        info!("Hosting puffin server on {server_addr}");
+        puffin::set_scopes_on(true);
+        puffin_server
+    };
 
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
@@ -52,17 +63,18 @@ async fn main() {
     let config::Config {
         scripts,
         polling_seconds,
-        create_test_data,
+        create_test_accounts,
         mongo,
     } = config;
 
-    if create_test_data {
+    if create_test_accounts > 0 {
         info!("Removing old test data");
         if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
             error!("Failed to delete test data: {e}");
         }
         info!("Creating test data");
-        if let Err(e) = cac_data::create_test_data(&mongo.url, NUM_TEST_ACCOUNTS).await {
+        if let Err(e) = cac_data::create_test_data(&mongo.url, create_test_accounts as usize).await
+        {
             error!("Failed to create test data: {e}");
         }
     }
@@ -95,6 +107,7 @@ async fn main() {
     );
 
     loop {
+        profiling::scope!("database poll");
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
@@ -109,10 +122,12 @@ async fn main() {
             // coallesce Option<Option<T> into Option<T>.
             .and_then(|x| x)
         {
-            let scripts = scripts.clone();
-
+            profiling::scope!("processing account");
             info!("Processing account: {:?}", account.id);
+
             for script in scripts.iter().cloned() {
+                profiling::scope!("initializing script");
+
                 // Script name without directory
                 let script_name = script.config.path.file_name().map(|x| x.to_string_lossy());
                 let script_name = script_name
@@ -135,6 +150,8 @@ async fn main() {
                 let account = account.clone();
 
                 script_threads.push(task::spawn_blocking(move || {
+                    profiling::scope!("executing script");
+
                     let lua = make_runtime();
                     let script_name = script.config.path.to_string_lossy();
                     let _enter =
@@ -168,7 +185,6 @@ async fn main() {
                             None
                         })
                 }));
-                info!("{} threads", script_threads.len());
             }
         }
 
@@ -199,6 +215,9 @@ async fn main() {
             }
         }
         info!("Completed processing pending accounts");
+
+        // Flush profiling information
+        profiling::finish_frame!();
 
         tokio::time::sleep(tokio::time::Duration::from_secs(polling_seconds)).await;
     }

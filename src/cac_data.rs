@@ -1,5 +1,4 @@
 use chrono::{DateTime, TimeZone, Utc};
-
 use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -692,6 +691,7 @@ pub enum DeleteTestDataError<'connection> {
     Mongo(#[from] mongodb::error::Error),
 }
 
+#[profiling::function]
 pub async fn get_next_pending_account(
     connection_string: &str,
 ) -> Result<Option<Account>, GetAccountError> {
@@ -829,6 +829,7 @@ pub async fn get_account_by_id<'connection>(
     Ok(Some(account))
 }
 
+#[profiling::function]
 pub async fn save_cdi_alerts<'config>(
     connection_string: &'config str,
     account: &Account,
@@ -849,7 +850,7 @@ pub async fn save_cdi_alerts<'config>(
     // but this is wasteful because it allocates a vector just to convert it into another vector
     // (`bson::Array` is a typedef for `Vec<Bson>`)
     let mut cdi_alerts_bson = bson::Array::new();
-    for i in cdi_alerts {
+    for i in cdi_alerts.clone() {
         if i.passed {
             cdi_alerts_bson.push(bson::to_bson(&i)?);
         }
@@ -859,18 +860,12 @@ pub async fn save_cdi_alerts<'config>(
     let existing_account = account_collection
         .find_one(doc! { "_id": account.id.clone() }, None)
         .await?;
-
-    let _existing_alerts = if let Some(existing_account) = existing_account {
-        existing_account.cdi_alerts
-    } else {
-        vec![]
-    };
-
-    // TODO: Need to know if existing_alerts are all the same as the new ones
-    let alerts_are_same = false;
+    // TODO: I think this field should be `#[serde(default)]` instead of `Option`.
+    let existing_alerts = existing_account.map_or(vec![], |x| x.cdi_alerts);
+    let alerts_are_same = existing_alerts.iter().map(|x| &**x).eq(cdi_alerts.clone());
 
     if alerts_are_same {
-        info!("Alerts are the same, not updating account");
+        info!("Alerts are unchanged; skipping account update");
     } else {
         account_collection
             .update_one(

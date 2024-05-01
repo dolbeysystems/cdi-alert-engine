@@ -74,7 +74,7 @@ pub struct Config {
     pub scripts: Vec<Script>,
     pub polling_seconds: u64,
     #[serde(default)]
-    pub create_test_data: bool,
+    pub create_test_accounts: u32,
     pub mongo: Mongo,
 }
 
