@@ -11,7 +11,6 @@ use tokio::task;
 use tracing::*;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
-const NUM_TEST_ACCOUNTS: usize = 10;
 
 #[derive(Clone, Debug)]
 struct Script {
@@ -52,17 +51,18 @@ async fn main() {
     let config::Config {
         scripts,
         polling_seconds,
-        create_test_data,
+        create_test_accounts,
         mongo,
     } = config;
 
-    if create_test_data {
+    if create_test_accounts > 0 {
         info!("Removing old test data");
         if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
             error!("Failed to delete test data: {e}");
         }
         info!("Creating test data");
-        if let Err(e) = cac_data::create_test_data(&mongo.url, NUM_TEST_ACCOUNTS).await {
+        if let Err(e) = cac_data::create_test_data(&mongo.url, create_test_accounts as usize).await
+        {
             error!("Failed to create test data: {e}");
         }
     }
