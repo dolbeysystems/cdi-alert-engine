@@ -65,6 +65,7 @@ async fn main() {
         polling_seconds,
         create_test_accounts,
         mongo,
+        script_engine_workflow_rest_url,
     } = config;
 
     if create_test_accounts > 0 {
@@ -207,8 +208,13 @@ async fn main() {
                 .push(result)
         }
         for (_, (account, result)) in results.into_iter() {
-            let save_result =
-                cac_data::save_cdi_alerts(&mongo.url, account, result.into_iter()).await;
+            let save_result = cac_data::save_cdi_alerts(
+                &mongo.url,
+                account,
+                result.into_iter(),
+                &script_engine_workflow_rest_url,
+            )
+            .await;
             if let Err(e) = save_result {
                 // The lack of requeue here is intentional. Best to just fail and log.
                 error!("Failed to save results: {e}");

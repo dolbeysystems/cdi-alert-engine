@@ -75,6 +75,8 @@ pub struct Config {
     pub polling_seconds: u64,
     #[serde(default)]
     pub create_test_accounts: u32,
+    #[serde(default)]
+    pub script_engine_workflow_rest_url: String,
     pub mongo: Mongo,
 }
 

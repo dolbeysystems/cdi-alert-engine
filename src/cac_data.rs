@@ -148,8 +148,6 @@ pub struct Account {
     /// List of cdi alerts
     #[serde(rename = "CdiAlerts", default)]
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
-    #[serde(rename = "CustomWorkflow", default)]
-    pub custom_workflow: Option<Vec<AccountCustomWorkFlowEntry>>,
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
@@ -834,6 +832,7 @@ pub async fn save_cdi_alerts<'config>(
     connection_string: &'config str,
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
+    _script_engine_workflow_rest_url: &'config str,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
@@ -860,6 +859,7 @@ pub async fn save_cdi_alerts<'config>(
     let existing_account = account_collection
         .find_one(doc! { "_id": account.id.clone() }, None)
         .await?;
+
     // TODO: I think this field should be `#[serde(default)]` instead of `Option`.
     let existing_alerts = existing_account.map_or(vec![], |x| x.cdi_alerts);
     let alerts_are_same = existing_alerts.iter().map(|x| &**x).eq(cdi_alerts.clone());
@@ -867,6 +867,9 @@ pub async fn save_cdi_alerts<'config>(
     if alerts_are_same {
         info!("Alerts are unchanged; skipping account update");
     } else {
+        // TODO: Need to save to Evaluation Results with _id and results remapped as properties by
+        // script name without lua extension.  E.g.:
+        // { _id: "001234", "anemia": { passed: true, links: [] }, "hypertension": { passed: false, links: [] } }
         account_collection
             .update_one(
                 doc! { "_id": account.id.clone() },
@@ -874,7 +877,7 @@ pub async fn save_cdi_alerts<'config>(
                 None,
             )
             .await?;
-        // TODO: Need to publish a rabbit message to rerun workflow for the account
+        // TODO: Make REST API call to fusion script engine to queue account for workflow
     }
     Ok(())
 }
@@ -975,7 +978,6 @@ pub async fn create_test_data(
                     medications: vec![],
                     discrete_values: vec![],
                     cdi_alerts: vec![],
-                    custom_workflow: Some(vec![]),
                     hashed_code_references: HashMap::new(),
                     hashed_discrete_values: HashMap::new(),
                     hashed_medications: HashMap::new(),
