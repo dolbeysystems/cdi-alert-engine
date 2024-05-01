@@ -628,16 +628,14 @@ impl mlua::UserData for CdiAlertLink {
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct CdiAlertQueueEntry {
+pub struct EvaluationQueueEntry {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(rename = "TimeQueued")]
     #[serde_as(as = "bson::DateTime")]
     pub time_queued: DateTime<Utc>,
-    #[serde(rename = "AccountNumber")]
-    pub account_number: String,
-    #[serde(rename = "ScriptName")]
-    pub script_name: String,
+    #[serde(rename = "Source")]
+    pub source: String,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -708,7 +706,7 @@ pub async fn get_next_pending_account(
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let pending_accounts_collection =
-        cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
+        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
     let pending_account = pending_accounts_collection
         .find_one_and_delete(
@@ -899,7 +897,8 @@ pub async fn create_test_data(
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
+    let cdi_alert_queue_collection =
+        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
     // create test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
@@ -997,11 +996,10 @@ pub async fn create_test_data(
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         cdi_alert_queue_collection
             .insert_one(
-                CdiAlertQueueEntry {
+                EvaluationQueueEntry {
                     id: account_number,
                     time_queued: Utc::now(),
-                    account_number: "TEST_CDI_001".to_string(),
-                    script_name: "test_script_001".to_string(),
+                    source: "test".to_string(),
                 },
                 None,
             )
@@ -1020,7 +1018,8 @@ pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestD
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let cdi_alert_queue_collection = cac_database.collection::<CdiAlertQueueEntry>("CdiAlertQueue");
+    let cdi_alert_queue_collection =
+        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
     // delete test account #TEST_CDI_001
     account_collection
