@@ -18,8 +18,15 @@ struct Script {
     contents: String,
 }
 
+struct InitResults {
+    mongo: config::Mongo,
+    scripts: Arc<[Script]>,
+    polling_seconds: u64,
+    script_engine_workflow_rest_url: String,
+}
+
 #[profiling::function]
-async fn init() -> (config::Mongo, Arc<[Script]>, u64, String) {
+async fn init() -> InitResults {
     // `clap` takes care of its own logging.
     let cli = config::Cli::parse();
     tracing_subscriber::fmt()
@@ -98,17 +105,22 @@ async fn init() -> (config::Mongo, Arc<[Script]>, u64, String) {
         })
     );
 
-    (
+    InitResults {
         mongo,
         scripts,
         polling_seconds,
         script_engine_workflow_rest_url,
-    )
+    }
 }
 
 #[tokio::main]
 async fn main() {
-    let (mongo, scripts, polling_seconds, script_engine_workflow_rest_url) = init().await;
+    let InitResults {
+        mongo,
+        scripts,
+        polling_seconds,
+        script_engine_workflow_rest_url,
+    } = init().await;
 
     loop {
         profiling::scope!("database poll");
