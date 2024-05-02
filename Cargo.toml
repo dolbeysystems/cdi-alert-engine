@@ -5,24 +5,24 @@ edition = "2021"
 default-run = "cdi-alert-engine"
 
 [dependencies]
+alua = "0.1.0"
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
+clap = { version = "4.5.4", features = ["derive"] }
+derive_environment = "1.1.0"
+futures = "0.3.28"
+mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serialize"] }
 mongodb = { version = "2.8.2", features = ["tokio-runtime"] }
+profiling = { version = "1.0.15", features = ["profile-with-tracing"] }
+reqwest = "0.12.4"
 serde = { version = "1.0.197", features = ["derive", "rc"] }
 serde_with = "3.7.0"
-tokio = { version = "1.37.0", features = ["full"] }
-tracing = "0.1.40"
-futures = "0.3.28"
 thiserror = "1.0.58"
-tracing-subscriber = "0.3.18"
-mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serialize"] }
+tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.12"
-derive_environment = "1.1.0"
-alua = "0.1.0"
-clap = { version = "4.5.4", features = ["derive"] }
-profiling = "1.0.15"
-tracy-client = { version = "0.17.0", optional = true }
-reqwest = "0.12.4"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+tracing-tracy = { version = "0.11.0", optional = true }
 
 [features]
-tracy = ["dep:tracy-client", "profiling/profile-with-tracy"]
+tracy = ["dep:tracing-tracy" ]

@@ -9,6 +9,7 @@ use std::process::exit;
 use std::sync::Arc;
 use tokio::task;
 use tracing::*;
+use tracing_subscriber::layer::SubscriberExt;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 
@@ -29,12 +30,14 @@ struct InitResults {
 async fn init() -> InitResults {
     // `clap` takes care of its own logging.
     let cli = config::Cli::parse();
-    tracing_subscriber::fmt()
-        .with_max_level(cli.log.to_tracing())
-        .init();
 
+    let tracing_registry = tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(cli.log.to_filter());
     #[cfg(feature = "tracy")]
-    tracy_client::Client::start();
+    let tracing_registry = tracing_registry.with(tracing_tracy::TracyLayer::default());
+
+    tracing::subscriber::set_global_default(tracing_registry).unwrap();
 
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,

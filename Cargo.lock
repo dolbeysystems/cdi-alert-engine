@@ -278,7 +278,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "tracy-client",
+ "tracing-tracy",
 ]
 
 [[package]]
@@ -1509,7 +1509,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43d84d1d7a6ac92673717f9f6d1518374ef257669c24ebc5ac25d5033828be58"
 dependencies = [
  "profiling-procmacros",
- "tracy-client",
+ "tracing",
 ]
 
 [[package]]
@@ -2450,6 +2450,17 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tracing-tracy"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6024d04f84a69fd0d1dc1eee3a2b070bd246530a0582f9982ae487cb6c703614"
+dependencies = [
+ "tracing-core",
+ "tracing-subscriber",
+ "tracy-client",
 ]
 
 [[package]]
