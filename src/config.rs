@@ -26,13 +26,13 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    pub fn to_tracing(self) -> tracing::Level {
+    pub fn to_filter(self) -> tracing_subscriber::filter::LevelFilter {
         match self {
-            LogLevel::Trace => tracing::Level::TRACE,
-            LogLevel::Debug => tracing::Level::DEBUG,
-            LogLevel::Info => tracing::Level::INFO,
-            LogLevel::Warn => tracing::Level::WARN,
-            LogLevel::Error => tracing::Level::ERROR,
+            LogLevel::Trace => tracing_subscriber::filter::LevelFilter::TRACE,
+            LogLevel::Debug => tracing_subscriber::filter::LevelFilter::DEBUG,
+            LogLevel::Info => tracing_subscriber::filter::LevelFilter::INFO,
+            LogLevel::Warn => tracing_subscriber::filter::LevelFilter::WARN,
+            LogLevel::Error => tracing_subscriber::filter::LevelFilter::ERROR,
         }
     }
 }

@@ -5,27 +5,34 @@ edition = "2021"
 default-run = "cdi-alert-engine"
 
 [dependencies]
+alua = "0.1.0"
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
+clap = { version = "4.5.4", features = ["derive"] }
+derive_environment = "1.1.0"
+futures = "0.3.28"
+mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serialize"] }
 mongodb = { version = "2.8.2", features = ["tokio-runtime"] }
+profiling = "1.0.15"
+reqwest = "0.12.4"
 serde = { version = "1.0.197", features = ["derive", "rc"] }
 serde_with = "3.7.0"
-tokio = { version = "1.37.0", features = ["full"] }
-tracing = "0.1.40"
-futures = "0.3.28"
 thiserror = "1.0.58"
-tracing-subscriber = "0.3.18"
-mlua = { version = "0.9.6", features = ["luajit", "vendored", "async", "serialize"] }
+tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.12"
-derive_environment = "1.1.0"
-alua = "0.1.0"
-clap = { version = "4.5.4", features = ["derive"] }
-puffin = { version = "0.19.0", optional = true }
-puffin_http = { version = "0.16.0", optional = true }
-profiling = "1.0.15"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+tracing-tracy = { version = "0.11.0", optional = true }
 tracy-client = { version = "0.17.0", optional = true }
-reqwest = "0.12.4"
 
 [features]
-puffin = ["dep:puffin", "dep:puffin_http", "profiling/profile-with-puffin"]
-tracy = ["dep:tracy-client", "profiling/profile-with-tracy"]
+# Add profiling spans to tracing's output.
+# This is required for tracy-tracing.
+extra-tracing = ["profiling/profile-with-tracing"]
+
+# Send tracing's output to tracy for profiling with log messages.
+tracy-tracing = ["dep:tracing-tracy", "extra-tracing"]
+
+# Send profiling information using just the tracy client,
+# without adding extra tracing spans.
+tracy-client = ["dep:tracy-client", "profiling/profile-with-tracy"]

@@ -95,6 +95,7 @@ pub struct CodeReferenceWithDocument {
     #[serde(rename = "code_reference")]
     pub code_reference: Arc<CodeReference>,
 }
+
 impl mlua::UserData for CodeReferenceWithDocument {
     fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
         fields.add_field_method_get("document", |_, this| Ok(this.document.clone()));
@@ -729,6 +730,7 @@ pub async fn get_next_pending_account(
     }
 }
 
+#[profiling::function]
 pub async fn get_account_by_id<'connection>(
     connection_string: &'connection str,
     id: &str,
@@ -963,6 +965,7 @@ pub async fn save_cdi_alerts<'config>(
     Ok(())
 }
 
+#[profiling::function]
 pub async fn create_test_data(
     connection_string: &str,
     number_of_test_accounts: usize,
@@ -981,6 +984,8 @@ pub async fn create_test_data(
 
     // create test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
+        profiling::scope!("creating test account");
+
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         account_collection
             .insert_one(
@@ -1071,6 +1076,7 @@ pub async fn create_test_data(
 
     // Queue up test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
+        profiling::scope!("queueing test account");
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         evaluation_queue_collection
             .insert_one(
@@ -1086,6 +1092,7 @@ pub async fn create_test_data(
     Ok(())
 }
 
+#[profiling::function]
 pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestDataError> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await

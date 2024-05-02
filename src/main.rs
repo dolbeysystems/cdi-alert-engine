@@ -9,6 +9,7 @@ use std::process::exit;
 use std::sync::Arc;
 use tokio::task;
 use tracing::*;
+use tracing_subscriber::layer::SubscriberExt;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 
@@ -18,26 +19,31 @@ struct Script {
     contents: String,
 }
 
-#[tokio::main]
-async fn main() {
+struct InitResults {
+    mongo: config::Mongo,
+    scripts: Arc<[Script]>,
+    polling_seconds: u64,
+    script_engine_workflow_rest_url: String,
+}
+
+#[profiling::function]
+async fn init() -> InitResults {
     // `clap` takes care of its own logging.
     let cli = config::Cli::parse();
 
-    tracing_subscriber::fmt()
-        .with_max_level(cli.log.to_tracing())
-        .init();
+    let tracing_registry = tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(cli.log.to_filter());
 
-    #[cfg(feature = "tracy")]
+    // Send tracing spans and logging to tracy.
+    // This is mutually exclusive with the "tracy" feature.
+    #[cfg(feature = "tracy-tracing")]
+    let tracing_registry = tracing_registry.with(tracing_tracy::TracyLayer::default());
+
+    tracing::subscriber::set_global_default(tracing_registry).unwrap();
+
+    #[cfg(feature = "tracy-client")]
     tracy_client::Client::start();
-
-    #[cfg(feature = "puffin")]
-    let _puffin_server = {
-        let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
-        let puffin_server = puffin_http::Server::new(&server_addr).unwrap();
-        info!("Hosting puffin server on {server_addr}");
-        puffin::set_scopes_on(true);
-        puffin_server
-    };
 
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
@@ -107,6 +113,23 @@ async fn main() {
             s + "\n\t" + &x.config.path.to_string_lossy()
         })
     );
+
+    InitResults {
+        mongo,
+        scripts,
+        polling_seconds,
+        script_engine_workflow_rest_url,
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let InitResults {
+        mongo,
+        scripts,
+        polling_seconds,
+        script_engine_workflow_rest_url,
+    } = init().await;
 
     loop {
         profiling::scope!("database poll");
@@ -231,6 +254,7 @@ async fn main() {
 }
 
 #[allow(clippy::unwrap_used)]
+#[profiling::function]
 fn make_runtime() -> Lua {
     let lua = Lua::new();
 
