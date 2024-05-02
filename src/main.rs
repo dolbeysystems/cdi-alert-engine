@@ -148,7 +148,7 @@ async fn main() {
             .and_then(|x| x)
         {
             profiling::scope!("processing account");
-            debug!("Processing account: {:?}", account.id);
+            info!("Evaluating account: {:?}", account.id);
 
             for script in scripts.iter().cloned() {
                 profiling::scope!("initializing script");
