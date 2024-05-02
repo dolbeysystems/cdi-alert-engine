@@ -1,5 +1,8 @@
 use chrono::{DateTime, TimeZone, Utc};
-use mongodb::{bson::doc, options::FindOneAndDeleteOptions};
+use mongodb::{
+    bson::doc,
+    options::{FindOneAndDeleteOptions, ReplaceOptions},
+};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
@@ -455,7 +458,7 @@ pub struct CdiAlert {
     /// A list of links to display in the alert    
     #[serde(rename = "Links", default)]
     pub links: Vec<Arc<CdiAlertLink>>,
-    /// Whether the alert has been validated by a user or autoclosed    
+    /// Whether the alert has been validated by a user or autoclosed
     #[serde(rename = "Validated")]
     pub validated: bool,
     /// A subtitle to display in the alert    
@@ -703,10 +706,10 @@ pub async fn get_next_pending_account(
 
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
-    let pending_accounts_collection =
+    let evaluation_queue_collection =
         cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
-    let pending_account = pending_accounts_collection
+    let pending_account = evaluation_queue_collection
         .find_one_and_delete(
             doc! {},
             FindOneAndDeleteOptions::builder()
@@ -832,7 +835,7 @@ pub async fn save_cdi_alerts<'config>(
     connection_string: &'config str,
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
-    _script_engine_workflow_rest_url: &'config str,
+    script_engine_workflow_rest_url: &'config str,
 ) -> Result<(), SaveCdiAlertsError<'config>> {
     let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
         .await
@@ -842,7 +845,8 @@ pub async fn save_cdi_alerts<'config>(
         })?;
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
-    let account_collection = cac_database.collection::<Account>("accounts");
+    let evaluation_results_collection =
+        cac_database.collection::<bson::Document>("EvaluationResults");
 
     // Create a bson array from our result iterator.
     // You *could* do this automatically with `bson::to_bson<Vec>`,
@@ -855,29 +859,106 @@ pub async fn save_cdi_alerts<'config>(
         }
     }
 
-    // get existing account
-    let existing_account = account_collection
+    // get existing alert result record (these are stored as properties on the record keyed off of
+    // script name without extension, not as an array, so there's some annoying unpacking here.)
+    let existing_result = evaluation_results_collection
         .find_one(doc! { "_id": account.id.clone() }, None)
         .await?;
 
-    // TODO: I think this field should be `#[serde(default)]` instead of `Option`.
-    let existing_alerts = existing_account.map_or(vec![], |x| x.cdi_alerts);
-    let alerts_are_same = existing_alerts.iter().map(|x| &**x).eq(cdi_alerts.clone());
-
-    if alerts_are_same {
-        info!("Alerts are unchanged; skipping account update");
+    let alerts_changed = if let Some(existing_result) = existing_result {
+        let mut any_different = false;
+        for alert in cdi_alerts.clone() {
+            let existing_alert_bson =
+                existing_result.get(alert.script_name.replace(".lua", "").clone());
+            if let Some(existing_alert_bson) = existing_alert_bson {
+                if let Ok(existing_alert) = bson::from_bson::<CdiAlert>(existing_alert_bson.clone())
+                {
+                    if existing_alert != *alert {
+                        // Present but different
+                        any_different = true;
+                        break;
+                    }
+                } else {
+                    // Problem deserializing
+                    any_different = true;
+                    break;
+                }
+            } else {
+                // Not present
+                any_different = true;
+                break;
+            }
+        }
+        any_different
     } else {
-        // TODO: Need to save to Evaluation Results with _id and results remapped as properties by
+        true
+    };
+
+    if alerts_changed {
+        // Save to Evaluation Results with _id and results remapped as properties by
         // script name without lua extension.  E.g.:
         // { _id: "001234", "anemia": { passed: true, links: [] }, "hypertension": { passed: false, links: [] } }
-        account_collection
-            .update_one(
+
+        let mut doc = doc! {
+            "_id" : account.id.clone(),
+        };
+
+        for alert in cdi_alerts.clone() {
+            let alert_doc = bson::to_bson(&alert)?;
+            doc.insert(alert.script_name.replace(".lua", "").clone(), alert_doc);
+        }
+
+        evaluation_results_collection
+            .replace_one(
                 doc! { "_id": account.id.clone() },
-                doc! { "$set": { "CdiAlerts": cdi_alerts_bson } },
-                None,
+                doc,
+                ReplaceOptions::builder().upsert(true).build(),
             )
             .await?;
-        // TODO: Make REST API call to fusion script engine to queue account for workflow
+
+        info!(
+            "Saved changed alert results for account {:?}, rerunning workflow",
+            account.id
+        );
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!(
+                "{}/{}",
+                script_engine_workflow_rest_url, account.id
+            ))
+            .send()
+            .await;
+
+        let requeue_successful = match response {
+            Ok(response) => {
+                if response.status().is_success() {
+                    true
+                } else {
+                    error!("Failed to queue account for workflow: {:?}", response);
+                    false
+                }
+            }
+            Err(e) => {
+                error!("Failed to queue account for workflow: {:?}", e);
+                false
+            }
+        };
+
+        if !requeue_successful {
+            let evaluation_queue_collection =
+                cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
+            evaluation_queue_collection
+                .insert_one(
+                    EvaluationQueueEntry {
+                        id: account.id.clone(),
+                        time_queued: Utc::now(),
+                        source: "Requeue".to_string(),
+                    },
+                    None,
+                )
+                .await?;
+        }
     }
     Ok(())
 }
@@ -895,7 +976,7 @@ pub async fn create_test_data(
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let cdi_alert_queue_collection =
+    let evaluation_queue_collection =
         cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
     // create test accounts #TEST_CDI_X
@@ -991,7 +1072,7 @@ pub async fn create_test_data(
     // Queue up test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
         let account_number = format!("TEST_CDI_{}", &i.to_string());
-        cdi_alert_queue_collection
+        evaluation_queue_collection
             .insert_one(
                 EvaluationQueueEntry {
                     id: account_number,
@@ -1015,8 +1096,10 @@ pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestD
     let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let cdi_alert_queue_collection =
+    let evaluation_queue_collection =
         cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
+    let evaluation_results_collection =
+        cac_database.collection::<bson::Document>("EvaluationResults");
 
     // delete test account #TEST_CDI_001
     account_collection
@@ -1024,7 +1107,12 @@ pub async fn delete_test_data(connection_string: &str) -> Result<(), DeleteTestD
         .await?;
 
     // delete cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
-    cdi_alert_queue_collection
+    evaluation_queue_collection
+        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } }, None)
+        .await?;
+
+    // delete cdi results for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
+    evaluation_results_collection
         .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } }, None)
         .await?;
 

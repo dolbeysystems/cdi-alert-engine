@@ -24,6 +24,7 @@ puffin = { version = "0.19.0", optional = true }
 puffin_http = { version = "0.16.0", optional = true }
 profiling = "1.0.15"
 tracy-client = { version = "0.17.0", optional = true }
+reqwest = "0.12.4"
 
 [features]
 puffin = ["dep:puffin", "dep:puffin_http", "profiling/profile-with-puffin"]
