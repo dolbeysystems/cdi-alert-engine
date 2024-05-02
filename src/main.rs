@@ -22,6 +22,7 @@ struct Script {
 async fn main() {
     // `clap` takes care of its own logging.
     let cli = config::Cli::parse();
+
     tracing_subscriber::fmt()
         .with_max_level(cli.log.to_tracing())
         .init();
@@ -124,7 +125,7 @@ async fn main() {
             .and_then(|x| x)
         {
             profiling::scope!("processing account");
-            info!("Processing account: {:?}", account.id);
+            debug!("Processing account: {:?}", account.id);
 
             for script in scripts.iter().cloned() {
                 profiling::scope!("initializing script");
@@ -189,7 +190,7 @@ async fn main() {
             }
         }
 
-        info!("Joining {} threads", script_threads.len());
+        debug!("Joining {} threads", script_threads.len());
         let alert_results = join_all(script_threads).await;
         let alert_results = alert_results
             .iter()
@@ -220,7 +221,7 @@ async fn main() {
                 error!("Failed to save results: {e}");
             }
         }
-        info!("Completed processing pending accounts");
+        debug!("Completed processing pending accounts");
 
         // Flush profiling information
         profiling::finish_frame!();

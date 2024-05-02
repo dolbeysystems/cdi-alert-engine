@@ -721,10 +721,10 @@ pub async fn get_next_pending_account(
     if let Some(pending_account) = pending_account {
         let id = pending_account.id.clone();
         let account = get_account_by_id(connection_string, &id).await?;
-        info!("Found pending account: {:?}", &id);
+        debug!("Found pending account: {:?}", &id);
         Ok(account)
     } else {
-        info!("No pending accounts found");
+        debug!("No pending accounts found");
         Ok(None)
     }
 }
