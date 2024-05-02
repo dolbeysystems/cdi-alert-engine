@@ -34,10 +34,16 @@ async fn init() -> InitResults {
     let tracing_registry = tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(cli.log.to_filter());
-    #[cfg(feature = "tracy")]
+
+    // Send tracing spans and logging to tracy.
+    // This is mutually exclusive with the "tracy" feature.
+    #[cfg(feature = "tracy-tracing")]
     let tracing_registry = tracing_registry.with(tracing_tracy::TracyLayer::default());
 
     tracing::subscriber::set_global_default(tracing_registry).unwrap();
+
+    #[cfg(feature = "tracy-client")]
+    tracy_client::Client::start();
 
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
