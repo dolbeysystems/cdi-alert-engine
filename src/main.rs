@@ -18,8 +18,8 @@ struct Script {
     contents: String,
 }
 
-#[tokio::main]
-async fn main() {
+#[profiling::function]
+async fn init() -> (config::Mongo, Arc<[Script]>, u64, String) {
     // `clap` takes care of its own logging.
     let cli = config::Cli::parse();
     tracing_subscriber::fmt()
@@ -28,15 +28,6 @@ async fn main() {
 
     #[cfg(feature = "tracy")]
     tracy_client::Client::start();
-
-    #[cfg(feature = "puffin")]
-    let _puffin_server = {
-        let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
-        let puffin_server = puffin_http::Server::new(&server_addr).unwrap();
-        info!("Hosting puffin server on {server_addr}");
-        puffin::set_scopes_on(true);
-        puffin_server
-    };
 
     let mut config = match config::Config::open(&cli.config) {
         Ok(config) => config,
@@ -106,6 +97,18 @@ async fn main() {
             s + "\n\t" + &x.config.path.to_string_lossy()
         })
     );
+
+    (
+        mongo,
+        scripts,
+        polling_seconds,
+        script_engine_workflow_rest_url,
+    )
+}
+
+#[tokio::main]
+async fn main() {
+    let (mongo, scripts, polling_seconds, script_engine_workflow_rest_url) = init().await;
 
     loop {
         profiling::scope!("database poll");
@@ -230,6 +233,7 @@ async fn main() {
 }
 
 #[allow(clippy::unwrap_used)]
+#[profiling::function]
 fn make_runtime() -> Lua {
     let lua = Lua::new();
 

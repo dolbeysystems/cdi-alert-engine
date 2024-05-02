@@ -20,12 +20,9 @@ toml = "0.8.12"
 derive_environment = "1.1.0"
 alua = "0.1.0"
 clap = { version = "4.5.4", features = ["derive"] }
-puffin = { version = "0.19.0", optional = true }
-puffin_http = { version = "0.16.0", optional = true }
 profiling = "1.0.15"
 tracy-client = { version = "0.17.0", optional = true }
 reqwest = "0.12.4"
 
 [features]
-puffin = ["dep:puffin", "dep:puffin_http", "profiling/profile-with-puffin"]
 tracy = ["dep:tracy-client", "profiling/profile-with-tracy"]
