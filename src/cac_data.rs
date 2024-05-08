@@ -1,8 +1,7 @@
+use alua::{ClassAnnotation, UserData};
 use chrono::{DateTime, TimeZone, Utc};
-use mongodb::{
-    bson::doc,
-    options::{FindOneAndDeleteOptions, ReplaceOptions},
-};
+use mongodb::bson::doc;
+use mongodb::options::{FindOneAndDeleteOptions, ReplaceOptions};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, sync::Arc};
@@ -26,7 +25,7 @@ macro_rules! setter {
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct AccountCustomWorkFlowEntry {
     #[serde(rename = "WorkGroup")]
     pub work_group: Option<String>,
@@ -87,24 +86,19 @@ pub struct CriteriaFilter {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct CodeReferenceWithDocument {
     #[serde(rename = "document")]
+    #[alua(get)]
     pub document: Arc<CACDocument>,
     /// Code
     #[serde(rename = "code_reference")]
+    #[alua(get)]
     pub code_reference: Arc<CodeReference>,
 }
 
-impl mlua::UserData for CodeReferenceWithDocument {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("document", |_, this| Ok(this.document.clone()));
-        fields.add_field_method_get("code_reference", |_, this| Ok(this.code_reference.clone()));
-    }
-}
-
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 #[alua(fields = [
     "find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account",
     "find_documents fun(self: Account, document_type: string?): CACDocument[] - Find documents in the account",
@@ -258,122 +252,89 @@ impl mlua::UserData for Account {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct Patient {
     /// Medical record number
     #[serde(rename = "MRN")]
+    #[alua(get)]
     pub mrn: Option<String>,
     #[serde(rename = "FirstName")]
+    #[alua(get)]
     pub first_name: Option<String>,
     #[serde(rename = "MiddleName")]
+    #[alua(get)]
     pub middle_name: Option<String>,
     #[serde(rename = "LastName")]
+    #[alua(get)]
     pub last_name: Option<String>,
     #[serde(rename = "Gender")]
+    #[alua(get)]
     pub gender: Option<String>,
     #[serde(rename = "BirthDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?")]
+    #[alua(as_lua = "string?", get)]
     pub birthdate: Option<DateTime<Utc>>,
 }
 
-impl mlua::UserData for Patient {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("mrn", |_, this| Ok(this.mrn.clone()));
-        fields.add_field_method_get("first_name", |_, this| Ok(this.first_name.clone()));
-        fields.add_field_method_get("middle_name", |_, this| Ok(this.middle_name.clone()));
-        fields.add_field_method_get("last_name", |_, this| Ok(this.last_name.clone()));
-        fields.add_field_method_get("gender", |_, this| Ok(this.gender.clone()));
-        fields.add_field_method_get("birthdate", |_, this| {
-            Ok(this.birthdate.map(|x| x.to_string()))
-        });
-    }
-}
-
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
-    #[alua(as_lua = "string")]
+    #[alua(as_lua = "string", get)]
     pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
     pub document_type: Option<String>,
     #[serde(rename = "DocumentDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?")]
+    #[alua(as_lua = "string?", get)]
     pub document_date: Option<DateTime<Utc>>,
     /// Content type (e.g. html, text, etc.)
     #[serde(rename = "ContentType")]
+    #[alua(get)]
     pub content_type: Option<String>,
     /// List of code references on this document
     #[serde(rename = "CodeReferences", default)]
+    #[alua(get)]
     pub code_references: Vec<Arc<CodeReference>>,
     /// List of abstraction references on this document
     #[serde(rename = "AbstractionReferences", default)]
+    #[alua(get)]
     pub abstraction_references: Vec<Arc<CodeReference>>,
-}
-impl mlua::UserData for CACDocument {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.to_string()));
-        fields.add_field_method_get("document_type", |_, this| Ok(this.document_type.clone()));
-        fields.add_field_method_get("document_date", |_, this| {
-            Ok(this.document_date.map(|d| d.to_string()))
-        });
-        fields.add_field_method_get("content_type", |_, this| Ok(this.content_type.clone()));
-        fields.add_field_method_get("code_references", |_, this| {
-            Ok(this.code_references.clone())
-        });
-        fields.add_field_method_get("abstraction_references", |_, this| {
-            Ok(this.abstraction_references.clone())
-        });
-    }
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
-    #[alua(as_lua = "string")]
+    #[alua(as_lua = "string", get)]
     pub external_id: Arc<str>,
     #[serde(rename = "Medication")]
+    #[alua(get)]
     pub medication: Option<String>,
     #[serde(rename = "Dosage")]
+    #[alua(get)]
     pub dosage: Option<String>,
     #[serde(rename = "Route")]
+    #[alua(get)]
     pub route: Option<String>,
     #[serde(rename = "StartDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?")]
+    #[alua(as_lua = "string?", get)]
     pub start_date: Option<DateTime<Utc>>,
     #[serde(rename = "EndDate")]
     #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?")]
+    #[alua(as_lua = "string?", get)]
     pub end_date: Option<DateTime<Utc>>,
     #[serde(rename = "Status")]
+    #[alua(get)]
     pub status: Option<String>,
     #[serde(rename = "Category")]
+    #[alua(get)]
     pub category: Option<String>,
 }
 
-impl mlua::UserData for Medication {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("external_id", |_, this| Ok(this.external_id.to_string()));
-        fields.add_field_method_get("medication", |_, this| Ok(this.medication.clone()));
-        fields.add_field_method_get("dosage", |_, this| Ok(this.dosage.clone()));
-        fields.add_field_method_get("route", |_, this| Ok(this.route.clone()));
-        fields.add_field_method_get("start_date", |_, this| {
-            Ok(this.start_date.map(|x| x.to_string()))
-        });
-        fields.add_field_method_get("end_date", |_, this| {
-            Ok(this.end_date.map(|x| x.to_string()))
-        });
-        fields.add_field_method_get("status", |_, this| Ok(this.status.clone()));
-        fields.add_field_method_get("category", |_, this| Ok(this.category.clone()));
-    }
-}
-
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
     #[alua(as_lua = "string")]
@@ -400,55 +361,48 @@ impl DiscreteValue {
 }
 
 impl mlua::UserData for DiscreteValue {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.to_string()));
-        fields.add_field_method_get("name", |_, this| Ok(this.name.clone()));
-        fields.add_field_method_get("result", |_, this| Ok(this.result.clone()));
-        fields.add_field_method_get("result_date", |_, this| {
+    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(f: &mut F) {
+        f.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.to_string()));
+        getter!(f, name);
+        getter!(f, result);
+        f.add_field_method_get("result_date", |_, this| {
             Ok(this.result_date.map(|x| x.to_string()))
         });
 
-        setter!(fields, name);
-        setter!(fields, result);
-
-        fields.add_field_method_set("unique_id", |_, this, value: String| {
+        f.add_field_method_set("unique_id", |_, this, value: String| {
             this.unique_id = value.into();
             Ok(())
         });
+        setter!(f, name);
+        setter!(f, result);
     }
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
-    #[alua(as_lua = "string")]
+    #[alua(as_lua = "string", get)]
     pub code: Arc<str>,
     #[serde(rename = "Value")]
+    #[alua(get)]
     pub value: Option<String>,
     #[serde(rename = "Description")]
+    #[alua(get)]
     pub description: Option<String>,
     #[serde(rename = "Phrase")]
+    #[alua(get)]
     pub phrase: Option<String>,
     #[serde(rename = "Start")]
+    #[alua(get)]
     pub start: Option<i32>,
     #[serde(rename = "Length")]
+    #[alua(get)]
     pub length: Option<i32>,
 }
 
-impl mlua::UserData for CodeReference {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
-        fields.add_field_method_get("code", |_, this| Ok(this.code.to_string()));
-        fields.add_field_method_get("value", |_, this| Ok(this.value.clone()));
-        fields.add_field_method_get("description", |_, this| Ok(this.description.clone()));
-        fields.add_field_method_get("phrase", |_, this| Ok(this.phrase.clone()));
-        fields.add_field_method_get("start", |_, this| Ok(this.start));
-        fields.add_field_method_get("length", |_, this| Ok(this.length));
-    }
-}
-
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct CdiAlert {
     /// The name of the script that generated the alert    
     #[serde(rename = "ScriptName")]
@@ -529,11 +483,15 @@ impl mlua::UserData for CdiAlert {
             this.weight = value;
             Ok(())
         });
+        fields.add_field_method_set("sequence", |_, this, value| {
+            this.weight = value;
+            Ok(())
+        });
     }
 }
 
 #[serde_as]
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, alua::ClassAnnotation)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct CdiAlertLink {
     /// The text to display for the link
     #[serde(rename = "LinkText")]

@@ -8,7 +8,7 @@ default-run = "cdi-alert-engine"
 license-file = "license.rtf"
 
 [dependencies]
-alua = "0.1.0"
+alua = { version = "0.1.3", features = ["userdata"] }
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
 clap = { version = "4.5.4", features = ["derive"] }

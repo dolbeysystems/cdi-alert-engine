@@ -41,18 +41,18 @@ dependencies = [
 
 [[package]]
 name = "alua"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4530f5de97a29c396779b2b49b48b994ef4850c8705b0847a6a6886927f5e48"
+checksum = "838026f844723c6f7ec30fc31390d23c3a98007eb3c3514607b8b4bf090e6543"
 dependencies = [
  "alua-macros",
 ]
 
 [[package]]
 name = "alua-macros"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d26ced5287a7dba0f31681637e1c5d5d4ba3d8e8da8b663acd012ca9aae8def3"
+checksum = "30dbc0f7ed620187b7b73cddf36c71f384d58d997d621ead683c09c63094a526"
 dependencies = [
  "darling 0.20.8",
  "proc-macro2",
