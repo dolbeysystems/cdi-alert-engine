@@ -309,7 +309,7 @@ function GetAccountCodesInDictionary(account, dictionary)
 
     -- Populate accountDependenceCodes list
     for i = 1, #account.documents do
-        --- @type Document
+        --- @type CACDocument
         local document = account.documents[i]
         for j = 1, #document.code_references do
             local codeReference = document.code_references[j]
