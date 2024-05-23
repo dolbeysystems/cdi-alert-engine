@@ -58,28 +58,6 @@ impl FromStr for LogLevel {
 
 derive_environment::impl_using_from_str!(LogLevel);
 
-#[derive(clap::Parser)]
-#[clap(author, version, about)]
-pub struct Cli {
-    #[clap(short, long, value_name = "path", default_value = "config.toml")]
-    pub config: PathBuf,
-    #[clap(short, long, value_name = "path")]
-    pub scripts: Vec<PathBuf>,
-    #[clap(short, long, value_name = "path", default_value = "info")]
-    pub log: LogLevel,
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
-pub struct Config {
-    pub scripts: Vec<Script>,
-    pub polling_seconds: u64,
-    #[serde(default)]
-    pub create_test_accounts: u32,
-    #[serde(default)]
-    pub script_engine_workflow_rest_url: String,
-    pub mongo: Mongo,
-}
-
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Mongo {
     pub url: String,
@@ -90,20 +68,6 @@ pub struct Script {
     pub path: PathBuf,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum OpenConfigError {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-    #[error(transparent)]
-    Toml(#[from] toml::de::Error),
-}
-
-impl Config {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, OpenConfigError> {
-        Ok(toml::from_str(&fs::read_to_string(path.as_ref())?)?)
-    }
-}
-
 /// Used for making small adjustments to the active scripts
 /// without modifying the central config file.
 #[derive(Clone, Default, Debug, serde::Serialize, serde::Deserialize)]
@@ -111,6 +75,14 @@ impl Config {
 pub struct ScriptDiff {
     pub scripts: Vec<Script>,
     pub remove: HashSet<PathBuf>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum OpenConfigError {
+    #[error(transparent)]
+    Io(#[from] io::Error),
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
 }
 
 impl ScriptDiff {

@@ -688,6 +688,38 @@ pub async fn get_next_pending_account(
     }
 }
 
+// TODO: All of this.
+#[profiling::function]
+pub async fn get_next_pending_script_account(
+    connection_string: &str,
+) -> Result<Option<Account>, GetAccountError> {
+    debug!("Getting next pending account");
+    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+        .await
+        .map_err(|e| GetAccountError::ConnectionString {
+            string: connection_string,
+            error: e,
+        })?;
+
+    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+    let cac_database = cac_database_client.database("FusionCAC2");
+    let evaluation_queue_collection = cac_database.collection::<EvaluationQueueEntry>("TODO");
+
+    let pending_account = evaluation_queue_collection
+        .find_one_and_delete(doc! {}, FindOneAndDeleteOptions::builder().build())
+        .await?;
+
+    if let Some(pending_account) = pending_account {
+        let id = pending_account.id.clone();
+        let account = get_account_by_id(connection_string, &id).await?;
+        debug!("Found pending account: {id:?}");
+        Ok(account)
+    } else {
+        debug!("No pending accounts found");
+        Ok(None)
+    }
+}
+
 #[profiling::function]
 pub async fn get_account_by_id<'connection>(
     connection_string: &'connection str,

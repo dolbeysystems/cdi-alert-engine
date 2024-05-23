@@ -5,6 +5,7 @@ use futures::future::join_all;
 use mlua::Lua;
 use std::collections::HashMap;
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::sync::Arc;
 use tokio::task;
@@ -12,6 +13,34 @@ use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
 
 const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
+
+#[derive(clap::Parser)]
+#[clap(author, version, about)]
+pub struct Cli {
+    #[clap(short, long, value_name = "path", default_value = "config.toml")]
+    pub config: PathBuf,
+    #[clap(short, long, value_name = "path")]
+    pub scripts: Vec<PathBuf>,
+    #[clap(short, long, value_name = "path", default_value = "info")]
+    pub log: config::LogLevel,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
+pub struct Config {
+    pub scripts: Vec<config::Script>,
+    pub polling_seconds: u64,
+    #[serde(default)]
+    pub create_test_accounts: u32,
+    #[serde(default)]
+    pub script_engine_workflow_rest_url: String,
+    pub mongo: config::Mongo,
+}
+
+impl Config {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, config::OpenConfigError> {
+        Ok(toml::from_str(&fs::read_to_string(path.as_ref())?)?)
+    }
+}
 
 #[derive(Clone, Debug)]
 struct Script {
@@ -29,7 +58,7 @@ struct InitResults {
 #[profiling::function]
 async fn init() -> InitResults {
     // `clap` takes care of its own logging.
-    let cli = config::Cli::parse();
+    let cli = Cli::parse();
 
     let tracing_registry = tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
@@ -45,7 +74,7 @@ async fn init() -> InitResults {
     #[cfg(feature = "tracy-client")]
     tracy_client::Client::start();
 
-    let mut config = match config::Config::open(&cli.config) {
+    let mut config = match Config::open(&cli.config) {
         Ok(config) => config,
         Err(msg) => {
             error!("Failed to open {}: {msg}", cli.config.display());
@@ -67,7 +96,7 @@ async fn init() -> InitResults {
     if let Err(msg) = config.with_env(ENV_PREFIX) {
         error!("{msg}");
     }
-    let config::Config {
+    let Config {
         scripts,
         polling_seconds,
         create_test_accounts,
