@@ -125,7 +125,7 @@ async fn main() {
     loop {
         profiling::scope!("database poll");
 
-        while let Some(account) = cac_data::get_next_pending_account(&mongo.url)
+        while let Some(account) = cdi_alerts::next_pending_account(&mongo.url)
             .await
             // print error message
             .map_err(|e| error!("Failed to get next pending account: {e}"))

@@ -4,6 +4,7 @@ script_engine_workflow_rest_url = "http://dockermain:5195/api/ProcessWorkflow/"
 
 [mongo]
 url = "mongodb://dolbeyadmin:fusion@dockermain:27095/admin"
+database = "FusionCAC2"
 
 [[scripts]]
 path = "scripts/substance_abuse.lua"

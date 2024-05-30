@@ -106,11 +106,12 @@ async fn init() -> InitResults {
 
     if create_test_accounts > 0 {
         info!("Removing old test data");
-        if let Err(e) = cac_data::delete_test_data(&mongo.url).await {
+        if let Err(e) = cdi_alerts::delete_test_data(&mongo.url).await {
             error!("Failed to delete test data: {e}");
         }
         info!("Creating test data");
-        if let Err(e) = cac_data::create_test_data(&mongo.url, create_test_accounts as usize).await
+        if let Err(e) =
+            cdi_alerts::create_test_data(&mongo.url, create_test_accounts as usize).await
         {
             error!("Failed to create test data: {e}");
         }
@@ -167,7 +168,7 @@ async fn main() {
         // so that results can be written to the database in bulk.
         let mut script_threads = Vec::new();
 
-        while let Some(account) = cac_data::get_next_pending_account(&mongo.url)
+        while let Some(account) = cdi_alerts::next_pending_account(&mongo.url)
             .await
             // print error message
             .map_err(|e| error!("Failed to get next pending account: {e}"))
@@ -261,8 +262,8 @@ async fn main() {
                 .push(result)
         }
         for (_, (account, result)) in results.into_iter() {
-            let save_result = cac_data::save_cdi_alerts(
-                &mongo.url,
+            let save_result = cdi_alerts::save(
+                &mongo,
                 account,
                 result.into_iter(),
                 &script_engine_workflow_rest_url,

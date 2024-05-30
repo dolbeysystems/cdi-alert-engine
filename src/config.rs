@@ -61,6 +61,7 @@ derive_environment::impl_using_from_str!(LogLevel);
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Mongo {
     pub url: String,
+    pub database: String,
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
