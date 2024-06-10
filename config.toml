@@ -3,8 +3,15 @@ create_test_accounts = 10
 script_engine_workflow_rest_url = "http://dockermain:5195/api/ProcessWorkflow/"
 
 [mongo]
-url = "mongodb://dolbeyadmin:fusion@dockermain:27095/admin"
+url = "mongodb://dockermain:27399/"
 database = "FusionCAC2"
+
+# TODO
+# [mongo.tls]
+# ca_file = "ca.crt"
+# cert_file = "dolbeyadmin-combined.crt"
+# password = "mongoClientPassword"
+# allow_invalid_hostnames = true
 
 [[scripts]]
 path = "scripts/substance_abuse.lua"

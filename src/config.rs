@@ -1,4 +1,5 @@
 use derive_environment::{FromEnv, FromEnvError};
+use mongodb::options::{ClientOptions, ConnectionString, TlsOptions};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -62,6 +63,15 @@ derive_environment::impl_using_from_str!(LogLevel);
 pub struct Mongo {
     pub url: String,
     pub database: String,
+}
+
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
+pub struct Tls {
+    pub ca_file: Option<PathBuf>,
+    pub cert_file: Option<PathBuf>,
+    pub password: Option<String>,
+    #[serde(default)]
+    pub allow_invalid_hostnames: bool,
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]

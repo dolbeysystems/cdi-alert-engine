@@ -1,3 +1,8 @@
+//! This module should be exclusively for database types that are shared
+//! between all scripting engines.
+//! Any engine-specific functionality should be placed in seperate,
+//! self-contained modules.
+
 use alua::{ClassAnnotation, UserData};
 use chrono::{DateTime, Utc};
 use mongodb::bson::doc;

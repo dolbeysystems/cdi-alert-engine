@@ -2,7 +2,7 @@ use cdi_alert_engine::*;
 use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
-use mlua::Lua;
+use mlua::{Lua, LuaSerdeExt};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,15 +17,21 @@ const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 #[derive(clap::Parser)]
 #[clap(author, version, about)]
 pub struct Cli {
+    /// Default config file.
+    /// Provides valid default values for every field.
     #[clap(short, long, value_name = "path", default_value = "config.toml")]
     pub config: PathBuf,
+    /// Modifies the config file using a lua script.
+    /// Each script will have access to the config structure through the `Config` global variable.
+    #[clap(long, value_name = "path")]
+    pub config_scripts: Vec<PathBuf>,
     #[clap(short, long, value_name = "path")]
     pub scripts: Vec<PathBuf>,
     #[clap(short, long, value_name = "path", default_value = "info")]
     pub log: config::LogLevel,
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Config {
     pub scripts: Vec<config::Script>,
     pub polling_seconds: u64,
@@ -81,6 +87,14 @@ async fn init() -> InitResults {
             exit(1);
         }
     };
+    for path in &cli.config_scripts {
+        if let Err(msg) = augment_config(&mut config, path) {
+            error!(
+                "failed to apply configuration script \"{}\": {msg}",
+                path.display()
+            );
+        }
+    }
     let mut script_changes = config::ScriptDiff::default();
     for path in &cli.scripts {
         match config::ScriptDiff::open(path) {
@@ -334,4 +348,12 @@ fn make_runtime() -> Lua {
         .unwrap();
 
     lua
+}
+
+fn augment_config(config: &mut Config, script: impl AsRef<Path>) -> mlua::Result<()> {
+    let lua = Lua::new();
+    lua.globals().set("Config", lua.to_value(config)?)?;
+    lua.load(fs::read_to_string(script)?).exec()?;
+    *config = lua.from_value(lua.globals().get("Config")?)?;
+    Ok(())
 }
