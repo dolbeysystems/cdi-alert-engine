@@ -394,7 +394,7 @@ function GetDiscreteValueLinks(args)
         local discreteValueName = discreteValueNames[i]
         local discreteValuesForName = account:find_discrete_values(discreteValueName)
         for j = 1, #discreteValuesForName do
-            if predicate == nil or predicate(discrete_values[i]) then
+            if predicate == nil or predicate(discreteValuesForName[i]) then
                 table.insert(discrete_values, discreteValuesForName[j])
 
                 if maxPerValue and #discrete_values >= maxPerValue then

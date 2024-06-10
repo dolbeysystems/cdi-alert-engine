@@ -225,7 +225,7 @@ pub async fn save<'config>(
         true
     };
 
-    if alerts_changed {
+    if alerts_changed && !script_engine_workflow_rest_url.is_empty() {
         // Save to Evaluation Results with _id and results remapped as properties by
         // script name without lua extension.  E.g.:
         // { _id: "001234", "anemia": { passed: true, links: [] }, "hypertension": { passed: false, links: [] } }
