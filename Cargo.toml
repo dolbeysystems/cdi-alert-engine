@@ -2,7 +2,7 @@
 name = "cdi-alert-engine"
 description = "Fusion CDI Alert Engine"
 authors = ["Dolbey Systems"]
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 default-run = "cdi-alert-engine"
 license-file = "license.rtf"

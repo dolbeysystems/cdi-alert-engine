@@ -146,15 +146,15 @@ if AlertMatched then
 
     -- Vital Links (Discete Value Links)
     AddVitalsDvs(heartRateDiscreteValueNames, "Heart Rate", 1, function(dv)
-        return CheckDvResultNumber(dv, function(v) return v.result > 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        return CheckDvResultNumber(dv, function(v) return v > 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
     end)
     AddVitalsAbs("HIGH_HEART_RATE", "Heart Rate", 1)
     AddVitalsDvs(mapDiscreteValueNames, "Mean Arterial Pressure", 2, function(dv)
-        return CheckDvResultNumber(dv, function(v) return v.result < 70 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        return CheckDvResultNumber(dv, function(v) return v < 70 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
     end)
     AddVitalsAbs("LOW_MEAN_ARTERIAL_BLOOD_PRESSURE", "Blood Pressure", 2)
     AddVitalsDvs(sbpDiscreteValueNames, "Systolic Blood Pressure", 3, function(dv)
-        return CheckDvResultNumber(dv, function(v) return v.result < 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
+        return CheckDvResultNumber(dv, function(v) return v < 90 end) and DateIsLessThanXDaysAgo(dv.result_date, 365)
     end)
     AddVitalsAbs("LOW_SYSTOLIC_BLOOD_PRESSURE", "Systolic Blood Pressure", 3)
 end

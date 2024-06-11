@@ -117,7 +117,7 @@ function GetCodeLinks(args)
     local includeStandardSuffix = args.includeStandardSuffix
     local onlyOne = args.code and not args.codes and maxPerValue == 1
     local sort = args.sort or function(a, b)
-        return a.code > b.code
+        return a.code_reference.code > b.code_reference.code
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then
@@ -394,7 +394,7 @@ function GetDiscreteValueLinks(args)
         local discreteValueName = discreteValueNames[i]
         local discreteValuesForName = account:find_discrete_values(discreteValueName)
         for j = 1, #discreteValuesForName do
-            if predicate == nil or predicate(discrete_values[i]) then
+            if predicate == nil or predicate(discreteValuesForName[j]) then
                 table.insert(discrete_values, discreteValuesForName[j])
 
                 if maxPerValue and #discrete_values >= maxPerValue then

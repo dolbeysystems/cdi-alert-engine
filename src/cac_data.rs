@@ -286,6 +286,7 @@ pub struct CACDocument {
     #[alua(as_lua = "string", get)]
     pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
+    #[alua(get)]
     pub document_type: Option<String>,
     #[serde(rename = "DocumentDate")]
     #[serde_as(as = "Option<bson::DateTime>")]

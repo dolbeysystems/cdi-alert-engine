@@ -4,10 +4,10 @@ use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::sync::Arc;
+use std::{fs, io};
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -56,7 +56,8 @@ struct Script {
 
 struct InitResults {
     mongo: config::Mongo,
-    scripts: Arc<[Script]>,
+    scripts: Vec<config::Script>,
+    script_changes: config::ScriptDiff,
     polling_seconds: u64,
     script_engine_workflow_rest_url: String,
 }
@@ -131,25 +132,31 @@ async fn init() -> InitResults {
         }
     }
 
-    let scripts: Arc<[Script]> = match scripts
-        .into_iter()
+    InitResults {
+        mongo,
+        scripts,
+        script_changes,
+        polling_seconds,
+        script_engine_workflow_rest_url,
+    }
+}
+
+fn load_scripts(
+    scripts: &[config::Script],
+    script_changes: &config::ScriptDiff,
+) -> Result<Arc<[Script]>, (PathBuf, io::Error)> {
+    let scripts: Arc<[Script]> = scripts
+        .iter()
         .filter(|x| !script_changes.remove.contains(&x.path))
-        .chain(script_changes.scripts.into_iter())
+        .chain(script_changes.scripts.iter())
         .map(|x| match fs::read_to_string(&x.path) {
             Ok(contents) => Ok(Script {
                 contents,
-                config: x,
+                config: x.clone(),
             }),
-            Err(e) => Err((x.path, e)),
+            Err(e) => Err((x.path.clone(), e)),
         })
-        .collect()
-    {
-        Ok(scripts) => scripts,
-        Err((path, msg)) => {
-            error!("Failed to load {}: {msg}", path.display());
-            exit(1);
-        }
-    };
+        .collect::<Result<Arc<[Script]>, (PathBuf, io::Error)>>()?;
 
     info!(
         "Loaded the following scripts:{}",
@@ -158,12 +165,7 @@ async fn init() -> InitResults {
         })
     );
 
-    InitResults {
-        mongo,
-        scripts,
-        polling_seconds,
-        script_engine_workflow_rest_url,
-    }
+    Ok(scripts)
 }
 
 #[tokio::main]
@@ -171,12 +173,23 @@ async fn main() {
     let InitResults {
         mongo,
         scripts,
+        script_changes,
         polling_seconds,
         script_engine_workflow_rest_url,
     } = init().await;
 
     loop {
         profiling::scope!("database poll");
+
+        info!("Reloading scripts");
+        let scripts = match load_scripts(&scripts, &script_changes) {
+            Ok(scripts) => scripts,
+            Err((path, msg)) => {
+                error!("Failed to open {}: {msg}", path.display());
+                exit(1);
+            }
+        };
+
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
