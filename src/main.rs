@@ -4,10 +4,9 @@ use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
 use std::collections::HashMap;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use std::sync::Arc;
-use std::{fs, io};
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -17,23 +16,16 @@ const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 #[derive(clap::Parser)]
 #[clap(author, version, about)]
 pub struct Cli {
-    /// Default config file.
-    /// Provides valid default values for every field.
-    #[clap(short, long, value_name = "path", default_value = "config.toml")]
+    #[clap(short, long, value_name = "path", default_value = "config.lua")]
     pub config: PathBuf,
-    /// Modifies the config file using a lua script.
-    /// Each script will have access to the config structure through the `Config` global variable.
-    #[clap(long, value_name = "path")]
-    pub config_scripts: Vec<PathBuf>,
-    #[clap(short, long, value_name = "path")]
-    pub scripts: Vec<PathBuf>,
     #[clap(short, long, value_name = "path", default_value = "info")]
     pub log: config::LogLevel,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Config {
-    pub scripts: Vec<config::Script>,
+    #[env(ignore)]
+    pub scripts: HashMap<Box<Path>, ScriptInfo>,
     pub polling_seconds: u64,
     #[serde(default)]
     pub create_test_accounts: u32,
@@ -43,41 +35,78 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, config::OpenConfigError> {
-        Ok(toml::from_str(&fs::read_to_string(path.as_ref())?)?)
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, crate::Error> {
+        use mlua::StdLib;
+        // Create a very light Lua runtime for evaluating the config file.
+        // Initializing a Lua runtime is cheap, but loading its libraries is not.
+        // There are two solutions for this: either load a subset of libraries,
+        // or "preload" the lua libraries and initialize them if a script `require`s them.
+        // The latter solution is better, but requires allowing the Lua runtime to open
+        // arbitrary native libraries which requires the use of `unsafe`, so we'll
+        // just load a subset for the time being.
+        // (it actually looks like Lua::load_from_stdlib might work but i'm not sure about the overhead)
+        let lua = mlua::Lua::new_with(
+            // The package library is always necessary, as it provides `require`.
+            StdLib::PACKAGE
+            // The table library is useful for modifying the list of loaded scripts.
+            | StdLib::TABLE,
+            mlua::LuaOptions::default(),
+        )?;
+        let path = path.as_ref();
+        lua.load(&fs::read_to_string(path)?)
+            .set_name(path.to_string_lossy())
+            .exec()?;
+        Ok(lua.from_value_with(
+            mlua::Value::Table(lua.globals()),
+            // These settings allow us to load our config from _G
+            mlua::DeserializeOptions::new()
+                // _G contains lua functions
+                .deny_unsupported_types(false)
+                // _G is recursive (_G._G)
+                .deny_recursive_tables(false),
+        )?)
     }
 }
 
 #[derive(Clone, Debug)]
 struct Script {
-    config: config::Script,
+    path: Box<Path>,
+    // We don't use this info yet, but it is necessary
+    info: ScriptInfo,
     contents: String,
 }
 
-struct InitResults {
-    mongo: config::Mongo,
-    scripts: Vec<config::Script>,
-    script_changes: config::ScriptDiff,
-    polling_seconds: u64,
-    script_engine_workflow_rest_url: String,
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
+pub struct ScriptInfo {
+    pub criteria_group: String,
 }
 
-#[profiling::function]
-async fn init() -> InitResults {
-    // `clap` takes care of its own logging.
+fn load_scripts(
+    scripts: impl Iterator<Item = (Box<Path>, ScriptInfo)>,
+) -> Result<Box<[Script]>, crate::Error> {
+    scripts
+        .map(|(path, info)| {
+            let contents = fs::read_to_string(&path)?;
+            info!("loaded script: {}", path.display());
+            Ok(Script {
+                path,
+                info,
+                contents,
+            })
+        })
+        .collect()
+}
+
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     let tracing_registry = tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(cli.log.to_filter());
-
-    // Send tracing spans and logging to tracy.
-    // This is mutually exclusive with the "tracy" feature.
     #[cfg(feature = "tracy-tracing")]
     let tracing_registry = tracing_registry.with(tracing_tracy::TracyLayer::default());
-
     tracing::subscriber::set_global_default(tracing_registry).unwrap();
-
     #[cfg(feature = "tracy-client")]
     tracy_client::Client::start();
 
@@ -88,29 +117,11 @@ async fn init() -> InitResults {
             exit(1);
         }
     };
-    for path in &cli.config_scripts {
-        if let Err(msg) = augment_config(&mut config, path) {
-            error!(
-                "failed to apply configuration script \"{}\": {msg}",
-                path.display()
-            );
-        }
-    }
-    let mut script_changes = config::ScriptDiff::default();
-    for path in &cli.scripts {
-        match config::ScriptDiff::open(path) {
-            Ok(diff) => {
-                script_changes.merge(diff);
-            }
-            Err(msg) => {
-                error!("Failed to open {}: {msg}", path.display());
-            }
-        }
-    }
-    // Replace fields with environment variables.
+
     if let Err(msg) = config.with_env(ENV_PREFIX) {
         error!("{msg}");
     }
+
     let Config {
         scripts,
         polling_seconds,
@@ -118,6 +129,7 @@ async fn init() -> InitResults {
         mongo,
         script_engine_workflow_rest_url,
     } = config;
+    let mut scripts = load_scripts(scripts.into_iter()).unwrap();
 
     if create_test_accounts > 0 {
         info!("Removing old test data");
@@ -132,61 +144,14 @@ async fn init() -> InitResults {
         }
     }
 
-    InitResults {
-        mongo,
-        scripts,
-        script_changes,
-        polling_seconds,
-        script_engine_workflow_rest_url,
-    }
-}
-
-fn load_scripts(
-    scripts: &[config::Script],
-    script_changes: &config::ScriptDiff,
-) -> Result<Arc<[Script]>, (PathBuf, io::Error)> {
-    let scripts: Arc<[Script]> = scripts
-        .iter()
-        .filter(|x| !script_changes.remove.contains(&x.path))
-        .chain(script_changes.scripts.iter())
-        .map(|x| match fs::read_to_string(&x.path) {
-            Ok(contents) => Ok(Script {
-                contents,
-                config: x.clone(),
-            }),
-            Err(e) => Err((x.path.clone(), e)),
-        })
-        .collect::<Result<Arc<[Script]>, (PathBuf, io::Error)>>()?;
-
-    info!(
-        "Loaded the following scripts:{}",
-        scripts.iter().fold(String::new(), |s, x| {
-            s + "\n\t" + &x.config.path.to_string_lossy()
-        })
-    );
-
-    Ok(scripts)
-}
-
-#[tokio::main]
-async fn main() {
-    let InitResults {
-        mongo,
-        scripts,
-        script_changes,
-        polling_seconds,
-        script_engine_workflow_rest_url,
-    } = init().await;
-
     loop {
         profiling::scope!("database poll");
 
         info!("Reloading scripts");
-        let scripts = match load_scripts(&scripts, &script_changes) {
-            Ok(scripts) => scripts,
-            Err((path, msg)) => {
-                error!("Failed to open {}: {msg}", path.display());
-                exit(1);
+        match Config::open(&cli.config) {
+            Ok(config) => scripts = load_scripts(config.scripts.into_iter()).unwrap(),
+            Err(msg) => {
+                error!("Failed to open {}: {msg}", cli.config.display());
             }
         };
 
@@ -211,7 +176,7 @@ async fn main() {
                 profiling::scope!("initializing script");
 
                 // Script name without directory
-                let script_name = script.config.path.file_name().map(|x| x.to_string_lossy());
+                let script_name = script.path.file_name().map(|x| x.to_string_lossy());
                 let script_name = script_name
                     .as_ref()
                     .map(|x| x.as_ref())
@@ -235,7 +200,7 @@ async fn main() {
                     profiling::scope!("executing script");
 
                     let lua = make_runtime();
-                    let script_name = script.config.path.to_string_lossy();
+                    let script_name = script.path.to_string_lossy();
                     let _enter =
                         error_span!("lua", path = &*script_name, account = &account.id).entered();
 
@@ -361,12 +326,4 @@ fn make_runtime() -> Lua {
         .unwrap();
 
     lua
-}
-
-fn augment_config(config: &mut Config, script: impl AsRef<Path>) -> mlua::Result<()> {
-    let lua = Lua::new();
-    lua.globals().set("Config", lua.to_value(config)?)?;
-    lua.load(fs::read_to_string(script)?).exec()?;
-    *config = lua.from_value(lua.globals().get("Config")?)?;
-    Ok(())
 }
