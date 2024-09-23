@@ -1,8 +1,5 @@
 use derive_environment::{FromEnv, FromEnvError};
-use std::collections::HashSet;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::{fs, io};
+use std::{path::PathBuf, str::FromStr};
 
 /// Logging level enum, used for deserialization.
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
@@ -65,36 +62,10 @@ pub struct Mongo {
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
-pub struct Script {
-    pub path: PathBuf,
-}
-
-/// Used for making small adjustments to the active scripts
-/// without modifying the central config file.
-#[derive(Clone, Default, Debug, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-pub struct ScriptDiff {
-    pub scripts: Vec<Script>,
-    pub remove: HashSet<PathBuf>,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum OpenConfigError {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-    #[error(transparent)]
-    Toml(#[from] toml::de::Error),
-}
-
-impl ScriptDiff {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, OpenConfigError> {
-        Ok(toml::from_str(&fs::read_to_string(path.as_ref())?)?)
-    }
-
-    pub fn merge(&mut self, mut other: Self) {
-        self.scripts.append(&mut other.scripts);
-        for i in other.remove.drain() {
-            self.remove.insert(i);
-        }
-    }
+pub struct Tls {
+    pub ca_file: Option<PathBuf>,
+    pub cert_file: Option<PathBuf>,
+    pub password: Option<String>,
+    #[serde(default)]
+    pub allow_invalid_hostnames: bool,
 }
