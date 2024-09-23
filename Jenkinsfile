@@ -8,6 +8,7 @@ pipeline {
         }
       }
       steps {
+        powershell 'cargo build'
         powershell 'cargo wix'
       }
     }
