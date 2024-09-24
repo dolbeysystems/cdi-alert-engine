@@ -13,8 +13,8 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-require("libs.common")
-require("libs.standard_cdi")
+require "libs.common" 
+require "libs.standard_cdi" 
 
 
 
