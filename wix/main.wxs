@@ -119,6 +119,17 @@
                             Source='$(var.CargoTargetBinDir)\cdi-alert-engine.exe'
                             KeyPath='yes'/>
                     </Component>
+                    <Component Id="shawl" Guid="*">
+                        <File Source="shawl.exe" />
+                        <ServiceInstall Id="ExchangeServiceInstall" Name="Fusion CDI Alert Engine" Arguments="run --name 'Fusion CDI Alert Engine' -- 'c:/program files/cdi-alert-engine/cdi-alert-engine.exe'" ErrorControl="ignore" Start="auto" Type="ownProcess" />
+                        <ServiceControl Id="ExchangeServiceControl" Name="Fusion CDI Alert Engine" Stop="both" Remove="uninstall" Wait="yes" />
+                    </Component>
+                    <Component Id="config" Guid="*">
+                        <File Source="wix/config.toml" />
+                    </Component>
+                    <Component Id="config_lua" Guid="*">
+                        <File Source="wix/config.lua" />
+                    </Component>
 
                     <Directory Id='scripts' Name='scripts'>
                         <Component Id='ScriptsDirectory' Guid='5bf7e057-fbbf-43cc-a000-a1721c349d2b'>
@@ -157,6 +168,9 @@
             -->
             <ComponentRef Id='License'/>
             <ComponentRef Id='binary'/>
+            <ComponentRef Id='shawl'/>
+            <ComponentRef Id="config"/>
+            <ComponentRef Id="config_lua"/>
             <ComponentRef Id='ScriptsDirectory' />
             <ComponentGroupRef Id='LibsGroup' />
 
