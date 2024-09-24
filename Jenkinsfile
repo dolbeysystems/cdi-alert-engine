@@ -9,7 +9,7 @@ pipeline {
       }
       steps {
         powershell 'cargo build'
-        powershell 'cargo wix'
+        powershell 'cargo wix -- -nocapture'
       }
     }
 
