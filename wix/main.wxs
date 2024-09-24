@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='windows-1252'?>
+<?xml version='1.0'?>
 <!--
   Copyright (C) 2017 Christopher R. Field.
 
@@ -121,29 +121,27 @@
                     </Component>
 
                     <Directory Id='scripts' Name='scripts'>
-                        <Component Id='ScriptsDirectory'>
+                        <Component Id='ScriptsDirectory' Guid='5bf7e057-fbbf-43cc-a000-a1721c349d2b'>
                             <CreateFolder/>
                         </Component>
                     </Directory>
 
                     <Directory Id='Libs' Name='libs'>
-                        <ComponentGroup Id='LibsGroup'>
-                            <Component>
-                                <File Source='common.lua' />
-                            </Component>
-                            <Component>
-                                <File Source='standard_cdi.lua' />
-                            </Component>
-                            <Component>
-                                <File Source='userdata_types.lua' />
-                            </Component>
-                        </ComponentGroup>
                     </Directory>
-
                 </Directory>
             </Directory>
         </Directory>
-
+        <ComponentGroup Id='LibsGroup' Directory="Libs">
+            <Component>
+                <File Source='libs/common.lua' />
+            </Component>
+            <Component>
+                <File Source='libs/standard_cdi.lua' />
+            </Component>
+            <Component>
+                <File Source='libs/userdata_types.lua' />
+            </Component>
+        </ComponentGroup>
         <Feature
             Id='Binaries'
             Title='Application'
