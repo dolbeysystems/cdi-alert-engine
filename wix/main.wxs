@@ -45,8 +45,8 @@
                     </Component>
                     <Component Id="shawl">
                         <File Source="shawl.exe" />
-                        <ServiceInstall Id="ExchangeServiceInstall" Name="Fusion CDI Alert Engine" Arguments="run --name &quot;Fusion CDI Alert Engine&quot; --log-rotate=daily --log-retain=5 --cwd=&quot;[APPLICATIONFOLDER]&quot; -- cdi-alert-engine.exe" ErrorControl="ignore" Start="auto" Type="ownProcess" />
-                        <ServiceControl Id="ExchangeServiceControl" Name="Fusion CDI Alert Engine" Stop="both" Remove="uninstall" Wait="yes" />
+                        <ServiceInstall Id="ServiceInstall" Name="Fusion CDI Alert Engine" Arguments="run --name &quot;Fusion CDI Alert Engine&quot; --cwd=&quot;[APPLICATIONFOLDER]&quot; -- cdi-alert-engine.exe" ErrorControl="ignore" Start="auto" Type="ownProcess" />
+                        <ServiceControl Id="ServiceControl" Name="Fusion CDI Alert Engine" Stop="both" Remove="uninstall" Wait="yes" />
                     </Component>
                     <Component Id="config">
                         <File Source="wix/config.toml" />
