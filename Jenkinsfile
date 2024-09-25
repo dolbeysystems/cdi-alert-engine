@@ -32,9 +32,8 @@ pipeline {
         }
       }
       steps {
-        powershell "D:\\jenkins-scripts\\deploy-artifacts.ps1 -target -join(\".\\target\\wix\\\", (ls target/wix/*.msi)) -deploymentpath \"Fusion CAC 2 - CDI Alert Engine\\v\" -branch \"${env.BRANCH_NAME}\""
+        powershell 'D:/jenkins-scripts/deploy-artifacts.ps1 -target -join("./target/wix/", (ls target/wix/*.msi)) -deploymentpath "Fusion CAC 2 - CDI Alert Engine/v" -branch "${env.BRANCH_NAME}"'
       }
     }
-
   }
 }
