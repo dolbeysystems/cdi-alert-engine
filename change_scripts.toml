@@ -1,7 +1,0 @@
-remove = [
-	"scripts/test.lua",
-]
-
-[[scripts]]
-path = "scripts/test.lua"
-criteria_group = "test"
