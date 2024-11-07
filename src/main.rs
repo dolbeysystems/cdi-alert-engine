@@ -216,7 +216,7 @@ async fn main() {
                         .map_err(|msg| error!("Lua script error: {msg}"))
                         .ok()
                         .and_then(|()| {
-                            match lua.globals().get::<_, mlua::Value>("Result") {
+                            match lua.globals().get::<mlua::Value>("Result") {
                                 Ok(result) => match result.as_userdata() {
                                     Some(result) => {
                                         let result = result.take();

@@ -50,7 +50,6 @@ pub struct AccountCustomWorkFlowEntry {
     pub work_group_date_time: Option<DateTime<Utc>>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkGroupCategory {
     #[serde(rename = "_id")]
@@ -59,7 +58,6 @@ pub struct WorkGroupCategory {
     pub workgroups: Vec<WorkGroup>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkGroup {
     #[serde(rename = "WorkGroup")]
@@ -68,7 +66,6 @@ pub struct WorkGroup {
     pub criteria_groups: Vec<CriteriaGroup>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CriteriaGroup {
     #[serde(rename = "Name")]
@@ -77,7 +74,6 @@ pub struct CriteriaGroup {
     pub filters: Vec<CriteriaFilter>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct CriteriaFilter {
     #[serde(rename = "Property")]
@@ -88,14 +84,11 @@ pub struct CriteriaFilter {
     pub value: String,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct CodeReferenceWithDocument {
-    #[serde(rename = "document")]
     #[alua(get)]
     pub document: Arc<CACDocument>,
     /// Code
-    #[serde(rename = "code_reference")]
     #[alua(get)]
     pub code_reference: Arc<CodeReference>,
 }
@@ -166,7 +159,7 @@ pub struct Account {
 }
 
 impl mlua::UserData for Account {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+    fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
         fields.add_field_method_get("id", |_, this| Ok(this.id.clone()));
         fields.add_field_method_get("admit_date_time", |_, this| {
             Ok(this.admit_date_time.map(|x| x.to_string()))
@@ -190,7 +183,7 @@ impl mlua::UserData for Account {
         fields.add_field_method_get("cdi_alerts", |_, this| Ok(this.cdi_alerts.clone()));
     }
 
-    fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("find_code_references", |_, this, code: String| {
             if let Some(code_references) = this.hashed_code_references.get(&*code) {
                 Ok(code_references.clone())
@@ -365,7 +358,7 @@ impl DiscreteValue {
 }
 
 impl mlua::UserData for DiscreteValue {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(f: &mut F) {
+    fn add_fields<F: mlua::UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.to_string()));
         getter!(f, name);
         getter!(f, result);
@@ -382,7 +375,6 @@ impl mlua::UserData for DiscreteValue {
     }
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
 pub struct CodeReference {
     #[serde(rename = "Code")]
@@ -405,7 +397,6 @@ pub struct CodeReference {
     pub length: Option<i32>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct CdiAlert {
     /// The name of the script that generated the alert    
@@ -438,7 +429,7 @@ pub struct CdiAlert {
 }
 
 impl mlua::UserData for CdiAlert {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+    fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
         fields.add_field_method_get("script_name", |_, this| Ok(this.script_name.clone()));
         fields.add_field_method_get("passed", |_, this| Ok(this.passed));
         fields.add_field_method_get("links", |_, this| Ok(this.links.clone()));
@@ -494,7 +485,6 @@ impl mlua::UserData for CdiAlert {
     }
 }
 
-#[serde_as]
 #[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct CdiAlertLink {
     /// The text to display for the link
@@ -539,7 +529,7 @@ pub struct CdiAlertLink {
 }
 
 impl mlua::UserData for CdiAlertLink {
-    fn add_fields<'lua, F: mlua::UserDataFields<'lua, Self>>(f: &mut F) {
+    fn add_fields<F: mlua::UserDataFields<Self>>(f: &mut F) {
         getter!(f, link_text);
         getter!(f, document_id);
         getter!(f, code);
