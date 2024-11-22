@@ -1,9 +1,9 @@
 polling_seconds = 5
 create_test_accounts = 10
-script_engine_workflow_rest_url = "http://dockermain:5195/api/ProcessWorkflow/"
+script_engine_workflow_rest_url = "http://dockermain:5024/api/ProcessWorkflow/"
 
 mongo = {
-	url = "mongodb://dolbeyadmin:fusion@dockermain:27095/admin",
+	url = "mongodb://dolbeyadmin:fusion@dockermain:27024/admin",
 	database = "FusionCAC2",
 }
 
