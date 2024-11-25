@@ -12,26 +12,5 @@ mongo = {
 scripts = {
 	["scripts/substance_abuse.lua"] = {
 		criteria_group = "Substance Abuse",
-	},
-	["scripts/atrial_fibrillation.lua"] = {
-		criteria_group = "Atrial Fibrillation",
-	},
-	["scripts/abnormal_serum_calcium.lua"] = {
-		criteria_group = "Abnormal Serum Calcium",
-	},
-	["scripts/abnormal_serum_potassium.lua"] = {
-		criteria_group = "Abnormal Serum Potassium",
-	},
-	["scripts/abnormal_serum_sodium.lua"] = {
-		criteria_group = "Abnormal Serum Sodium",
-	},
-	["scripts/acidosis.lua"] = {
-		criteria_group = "Acidosis",
-	},
-	["scripts/anemia.lua"] = {
-		criteria_group = "Anemia",
-	},
-	["scripts/acute_mi_troponemia.lua"] = {
-		criteria_group = "Acute MI Troponemia",
-	},
+	}
 }

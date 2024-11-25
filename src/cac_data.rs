@@ -328,6 +328,9 @@ pub struct Medication {
     #[serde(rename = "Category")]
     #[alua(get)]
     pub category: Option<String>,
+    #[serde(rename = "CDIAlertCategory")]
+    #[alua(get)]
+    pub cdi_alert_category: Option<String>,
 }
 
 #[serde_as]

@@ -1,12 +1,12 @@
 ---------------------------------------------------------------------------------------------------------------------
---- CDI Alert Script - Diabetes Ketoacidosis Hyperosmolarity Coma 
+--- CDI Alert Script - Diabetes Ketoacidosis Hyperosmolarity Coma
 ---
---- This script checks an account to see if it matches the criteria for a Diabetes Ketoacidosis Hyperosmolarity Coma 
---- alert. 
+--- This script checks an account to see if it matches the criteria for a diabetes ketoacidosis hyperosmolarity coma
+--- alert.
 ---
---- Date: 4/10/2024
+--- Date: 11/22/2024
 --- Version: 1.0
---- Site: (Default)
+--- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -15,7 +15,6 @@
 --- Requires 
 --------------------------------------------------------------------------------
 require("libs.common")
-require("libs.standard_cdi")
 
 
 
@@ -24,21 +23,24 @@ require("libs.standard_cdi")
 --------------------------------------------------------------------------------
 local alertCodeDictionary = {}
 local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+local alertMatched = false
+local alertAutoResolved = false
+local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
 
 
 
 --------------------------------------------------------------------------------
 --- Alert Qualification 
 --------------------------------------------------------------------------------
-if not ExistingAlert or not ExistingAlert.validated then
+if not existingAlert or not existingAlert.validated then
 end
 
 
 
 --------------------------------------------------------------------------------
---- Additional Link Creation
+--- Link Creation
 --------------------------------------------------------------------------------
-if AlertMatched then
+if alertMatched then
 end
 
 
@@ -46,10 +48,12 @@ end
 --------------------------------------------------------------------------------
 --- Result Finalization 
 --------------------------------------------------------------------------------
-if AlertMatched or AlertAutoResolved then
-    local resultLinks = GetFinalTopLinks({})
+if alertMatched or alertAutoResolved then
+    local resultLinks = {}
 
-    resultLinks = MergeLinksWithExisting(ExistingAlert, resultLinks)
+    if existingAlert then
+        resultLinks = MergeLinks(existingAlert.links, resultLinks)
+    end
     Result.links = resultLinks
     Result.passed = true
 end

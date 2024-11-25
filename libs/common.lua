@@ -621,7 +621,7 @@ function GetDvValueNumber(discreteValue)
 end
 
 --------------------------------------------------------------------------------
---- Check if a date is less than a certain number of hours ago
+--- Check if a discrete value matches a predicate
 ---
 --- @param discreteValue DiscreteValue The discrete value to check
 --- @param predicate fun(number):boolean The predicate to check the result against
@@ -908,5 +908,83 @@ function GetAllCodePrefixLinks(arguments)
     end
     arguments.codes = codes
     return GetCodeLinks(arguments)
+end
+
+--------------------------------------------------------------------------------
+--- Merge links with old links
+---
+--- @param oldLinks CdiAlertLink[] The existing alert
+--- @param newLinks CdiAlertLink[] The links to merge
+---
+--- @return CdiAlertLink[] - The merged links
+--------------------------------------------------------------------------------
+function MergeLinks(oldLinks, newLinks)
+    --- @type CdiAlertLink[]
+    local mergedLinks = {}
+
+    --- @type fun(a: CdiAlertLink, b: CdiAlertLink): boolean
+    local comparison_fn = function(_, _) return false end
+
+    if #oldLinks == 0 then
+        return newLinks
+    elseif #newLinks == 0 then
+        return oldLinks
+    else
+        for _, oldLink in ipairs(oldLinks) do
+            if oldLink.code then
+                comparison_fn = function(a, b) return a.code == b.code end
+            elseif oldLink.medication_name then
+                comparison_fn = function(a, b) return a.medication_name == b.medication_name end
+            elseif oldLink.discrete_value_name then
+                comparison_fn = function(a, b) return a.discrete_value_name == b.discrete_value_name end
+            elseif oldLink.discrete_value_id then
+                comparison_fn = function(a, b) return a.discrete_value_id == b.discrete_value_id end
+            else
+                comparison_fn = function(a, b) return a.link_text == b.link_text end
+            end
+
+            for _, newLink in ipairs(newLinks) do
+                if comparison_fn(oldLink, newLink) then
+                    oldLink.is_validated = newLink.is_validated
+                    oldLink.sequence = newLink.sequence
+                    oldLink.hidden = newLink.hidden
+                    oldLink.link_text = newLink.link_text
+                    oldLink.links = MergeLinks(oldLink.links, newLink.links)
+                    table.insert(mergedLinks, newLink)
+                end
+            end
+        end
+        return mergedLinks
+    end
+end
+
+--------------------------------------------------------------------------------
+--- Get the account codes that are present as keys in the provided dictionary
+---
+--- @param account Account The account to get the codes from
+--- @param dictionary table<string, string> The dictionary of codes to check against
+---
+--- @return string[] - List of codes in dependecy map that are present on the account (codes only)
+--------------------------------------------------------------------------------
+function GetAccountCodesInDictionary(account, dictionary)
+    --- List of codes in dependecy map that are present on the account (codes only)
+    ---
+    --- @type string[]
+    local codes = {}
+
+    -- Populate accountDependenceCodes list
+    for i = 1, #account.documents do
+        --- @type CACDocument
+        local document = account.documents[i]
+        for j = 1, #document.code_references do
+            local codeReference = document.code_references[j]
+
+            if dictionary[codeReference.code] then
+                local code = codeReference.code
+                table.insert(codes, code)
+            end
+        end
+    end
+    return codes
 end
 

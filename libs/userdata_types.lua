@@ -59,6 +59,7 @@
 --- @field end_date string? -
 --- @field status string? -
 --- @field category string? -
+--- @field cdi_alert_category string? -
 
 --- @class DiscreteValue
 --- @field unique_id string -
