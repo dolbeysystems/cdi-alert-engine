@@ -20,40 +20,45 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local alertCodeDictionary = {}
-local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
-local alertMatched = false
-local alertAutoResolved = false
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
 
 
 
---------------------------------------------------------------------------------
---- Alert Qualification 
---------------------------------------------------------------------------------
 if not existingAlert or not existingAlert.validated then
-end
+    ----------------------------------------
+    --- Alert Variables 
+    ----------------------------------------
+    local alertCodeDictionary = {
+
+    }
+    local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+
+    --------------------------------------------------------------------------------
+    --- Alert Qualification 
+    --------------------------------------------------------------------------------
 
 
 
---------------------------------------------------------------------------------
---- Link Creation
---------------------------------------------------------------------------------
-if alertMatched then
-end
+    --------------------------------------------------------------------------------
+    --- Link Composition and Alert Finalization
+    --------------------------------------------------------------------------------
+    if Result.passed then
+        local resultLinks = {}
 
+        if existingAlert then
+            -- Autoclose
+        else
+            -- Normal Alert
+        end
 
-
---------------------------------------------------------------------------------
---- Result Finalization 
---------------------------------------------------------------------------------
-if alertMatched or alertAutoResolved then
-    local resultLinks = {}
-
-    if existingAlert then
-        resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        ----------------------------------------
+        --- Result Finalization 
+        ----------------------------------------
+        if existingAlert then
+            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        end
+        Result.links = resultLinks
+        Result.passed = true
     end
-    Result.links = resultLinks
-    Result.passed = true
 end
 

@@ -41,6 +41,8 @@ require("libs.userdata_types")
 --- @field cat string? Single medication category to search for
 --- @field predicate (fun(medication: Medication): boolean)? Predicate function to filter medications
 --- @field sort(fun(l: Medication, r: Medication): boolean)? Sort function to sort the matched values before creating links
+--- @field useCdiAlertCategoryField boolean? If true, use the cdi_alert_category field to search for medications instead of the category field
+--- @field onePerDate boolean? If true, only one link will be created per date
 
 --- @class (exact) GetDiscreteValueLinksArgs : LinkArgs
 --- @field discreteValueNames string[]? List of discrete value names to search for
@@ -204,6 +206,10 @@ function GetCodeLinks(args)
     if onlyOne then
         return nil
     else
+
+    
+
+
         return links
     end
 end
@@ -302,8 +308,10 @@ function GetMedicationLinks(args)
     local targetTable = args.target
     local includeStandardSuffix = args.includeStandardSuffix
     local onlyOne = args.cat and not args.cats and maxPerValue == 1
+    local useCdiAlertCategoryField = args.useCdiAlertCategoryField or false
+    local onePerDate = args.onePerDate or false
     local sort = args.sort or function(a, b)
-        return a.start_date > b.start_date
+        return DateStringToInt(a.start_date) > DateStringToInt(b.start_date)
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then
@@ -317,7 +325,31 @@ function GetMedicationLinks(args)
 
     for i = 1, #medicationCategories do
         local medicationCategory = medicationCategories[i]
-        local medicationsForCategory = account:find_medications(medicationCategory)
+        local medicationsForCategory = {}
+
+        if useCdiAlertCategoryField then
+            for _, med in ipairs(account.medications) do
+                if med.cdi_alert_category == medicationCategory then
+                    table.insert(medications, med)
+                end
+            end
+        else
+            medicationsForCategory = account:find_medications(medicationCategory)
+        end
+
+        if onePerDate then
+            local uniqueDates = {}
+            local uniqueMedications = {}
+            for j = 1, #medicationsForCategory do
+                local medication = medicationsForCategory[j]
+                if not uniqueDates[medication.start_date] then
+                    uniqueDates[medication.start_date] = true
+                    table.insert(uniqueMedications, medication)
+                end
+            end
+            medicationsForCategory = uniqueMedications
+        end
+
         for j = 1, #medicationsForCategory do
             if predicate == nil or predicate(medicationsForCategory[j]) then
                 table.insert(medications, medicationsForCategory[j])
