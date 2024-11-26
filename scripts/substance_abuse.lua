@@ -107,7 +107,7 @@ if not existingAlert or not existingAlert.validated then
         useCdiAlertCategoryField = true,
         onePerDate = true,
         predicate = methadoneMedicationPredicate
-    }
+    } or {}
     local methadoneAbstractionLink = GetAbstractionValueLinks { code = "METHADONE", text = "Methadone", seq = 8 }
     local suboxoneMedicationLink = GetMedicationLinks {
         cat = suboxoneMedicationName,

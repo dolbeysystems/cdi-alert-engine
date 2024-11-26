@@ -206,10 +206,6 @@ function GetCodeLinks(args)
     if onlyOne then
         return nil
     else
-
-    
-
-
         return links
     end
 end
@@ -405,7 +401,7 @@ function GetDiscreteValueLinks(args)
     local predicate = args.predicate
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
-    local maxPerValue = args.maxPerValue
+    local maxPerValue = args.maxPerValue or 1
     local targetTable = args.target
     local includeStandardSuffix = args.includeStandardSuffix
     local onlyOne = args.discreteValueName and not args.discreteValueNames and maxPerValue == 1
