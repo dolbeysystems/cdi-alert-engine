@@ -12,7 +12,7 @@
 --- @field medications Medication[] - List of medications
 --- @field discrete_values DiscreteValue[] - List of discrete values
 --- @field cdi_alerts CdiAlert[] - List of cdi alerts
---- @field custom_workflow AccountCustomWorkFlowEntry[]? -
+--- @field working_history AccountWorkingHistoryEntry[] -
 --- @field find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account
 --- @field find_documents fun(self: Account, document_type: string?): CACDocument[] - Find documents in the account
 --- @field find_discrete_values fun(self: Account, discrete_value_name: string?): DiscreteValue[] - Find discrete values in the account
@@ -21,6 +21,8 @@
 --- @field get_unique_documents fun(self: Account): string[] - Return all document keys in the account
 --- @field get_unique_discrete_values fun(self: Account): string[] - Return all discrete value keys in the account
 --- @field get_unique_medications fun(self: Account): string[] - Return all medication keys in the account
+--- @field is_diagnosis_code_in_working_history fun(self: Account, code: string): boolean - Check if a diagnosis code is in the working history
+--- @field is_procedure_code_in_working_history fun(self: Account, code: string): boolean - Check if a procedure code is in the working history
 
 --- @class Patient
 --- @field mrn string? - Medical record number
@@ -80,7 +82,7 @@
 --- @field script_name string - The name of the script that generated the alert    
 --- @field passed boolean - Whether the alert passed or failed    
 --- @field links CdiAlertLink[] - A list of links to display in the alert    
---- @field validated boolean - Whether the alert has been validated by a user or autoclosed    
+--- @field validated boolean - Whether the alert has been validated by a user or autoclosed
 --- @field subtitle string? - A subtitle to display in the alert    
 --- @field outcome string? - The outcome of the alert    
 --- @field reason string? - The reason for the alert    
@@ -101,4 +103,18 @@
 --- @field links CdiAlertLink[] - A list of sublinks
 --- @field sequence integer - The sequence number of the link
 --- @field hidden boolean - Whether the link is hidden
+
+--- @class AccountWorkingHistoryEntry
+--- @field diagnoses DiagnosisCode[] -
+--- @field procedures ProcedureCode[] -
+
+--- @class DiagnosisCode
+--- @field code string -
+--- @field description string -
+--- @field is_principal boolean -
+
+--- @class ProcedureCode
+--- @field code string -
+--- @field description string -
+--- @field is_principal boolean -
 

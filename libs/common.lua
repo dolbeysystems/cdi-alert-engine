@@ -233,7 +233,7 @@ function GetDocumentLinks(args)
     local includeStandardSuffix = args.includeStandardSuffix
     local onlyOne = args.documentType and not args.documentTypes and maxPerValue == 1
     local sort = args.sort or function(a, b)
-        return a.document_date > b.document_date
+        return DateStringToInt(a.document_date) > DateStringToInt(b.document_date)
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then
@@ -410,7 +410,7 @@ function GetDiscreteValueLinks(args)
     local includeStandardSuffix = args.includeStandardSuffix
     local onlyOne = args.discreteValueName and not args.discreteValueNames and maxPerValue == 1
     local sort = args.sort or function(a, b)
-        return a.result_date > b.result_date
+        return DateStringToInt(a.result_date) > DateStringToInt(b.result_date)
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then

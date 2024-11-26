@@ -19,15 +19,30 @@ require("libs.common")
 
 --------------------------------------------------------------------------------
 --- Setup
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------- 
+local ciwaScoreDvName = "alcohol CIWA Calc score 1112"
+local ciwaScoreDvPredicate = function(dv) return GetDvValueNumber(dv) > 9 end
+local methadoneMedicationName = "Methadone"
+local methadoneMedicationPredicate = function(med) return DateIsLessThanXDaysAgo(med.start_date, 7) end
+local suboxoneMedicationName = "Suboxone"
+local suboxoneMedicationPredicate = function(med) return DateIsLessThanXDaysAgo(med.start_date, 7) end
+local benzodiazepineMedicationName = "Benzodiazepine"
+local dexmedetomidineMedicationName = "Dexmedetomidine"
+local lithiumMedicationName = "Lithium"
+local propofolMedicationName = "Propofol"
+local painDocumentTypes = { "Pain Team Consultation Note", "zzPain Team Consultation Note", "Pain Team Progress Note" }
+local opioidDependenceSubtitle = "Possible Opioid Dependence"
+local alcoholWithdrawalSubtitle = "Possible Alcohol Withdrawal"
+
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName, account = Account }
+local subtitle = existingAlert and existingAlert.subtitle or nil
 
 
 
 if not existingAlert or not existingAlert.validated then
-    ----------------------------------------
+    --------------------------------------------------------------------------------
     --- Alert Variables 
-    ----------------------------------------
+    --------------------------------------------------------------------------------
     local alcoholCodeDic = {
         ["F10.130"] = "Alcohol abuse with withdrawal, uncomplicated",
         ["F10.131"] = "Alcohol abuse with withdrawal delirium",
@@ -67,51 +82,51 @@ if not existingAlert or not existingAlert.validated then
     local accountAlcoholCodes = GetAccountCodesInDictionary(Account, alcoholCodeDic)
     local accountOpioidCodes = GetAccountCodesInDictionary(Account, opioidCodeDic)
 
-    local opioidHeaderSubtitle = "Possible Opioid Dependence"
-    local alcoholHeaderSubtitle = "Possible Alcohol Withdrawal"
 
-    --------------------------------------------------------------------------------
-    --- Alert Qualification 
-    --------------------------------------------------------------------------------
+
     --- @type CdiAlertLink?
     local autoResolvedCodeLink = nil
 
+
+
+    --------------------------------------------------------------------------------
+    --- Initial Qualification Link Collection
+    --------------------------------------------------------------------------------
     local ciwaScoreDvLink = GetDiscreteValueLinks {
-        discreteValueName = "alcohol CIWA Calc score 1112",
+        discreteValueName = ciwaScoreDvName,
         text = "CIWA Score",
         seq = 5,
-        predicate = function(dv)
-            return GetDvValueNumber(dv) >= 10
-        end
+        predicate = ciwaScoreDvPredicate
     }
-    local ciwaScoreAbstractionLink = GetAbstractionLinks { code = "CIWA_SCORE", text = "CIWA Score", seq = 6 }
-    local ciwaProtocolAbstractionLink = GetAbstractionLinks { code = "CIWA_PROTOCOL", text = "CIWA Protocol", seq = 7 }
+    local ciwaScoreAbstractionLink = GetAbstractionValueLinks { code = "CIWA_SCORE", text = "CIWA Score", seq = 6 }
+    local ciwaProtocolAbstractionLink = GetAbstractionValueLinks { code = "CIWA_PROTOCOL", text = "CIWA Protocol", seq = 7 }
     local methadoneMedicationLinks = GetMedicationLinks {
-        cat = "Methadone",
+        cat = methadoneMedicationName,
         text = "Methadone",
         seq = 9,
         useCdiAlertCategoryField = true,
         onePerDate = true,
-        predicate = function(med)
-            return DateIsLessThanXDaysAgo(med.start_date, 7)
-        end
+        predicate = methadoneMedicationPredicate
     }
-    local methadoneAbstractionLink = GetAbstractionLinks { code = "METHADONE", text = "Methadone", seq = 8 }
+    local methadoneAbstractionLink = GetAbstractionValueLinks { code = "METHADONE", text = "Methadone", seq = 8 }
     local suboxoneMedicationLink = GetMedicationLinks {
-        cat = "Suboxone",
+        cat = suboxoneMedicationName,
         text = "Suboxone",
         seq = 11,
         useCdiAlertCategoryField = true,
         onlyOne = true,
-        predicate = function(med)
-            return DateIsLessThanXDaysAgo(med.start_date, 7)
-        end
+        predicate = suboxoneMedicationPredicate
     }
-    local suboxoneAbstractionLink = GetAbstractionLinks { code = "SUBOXONE", text = "Suboxone", seq = 12 }
+    local suboxoneAbstractionLink = GetAbstractionValueLinks { code = "SUBOXONE", text = "Suboxone", seq = 12 }
     local methadoneClinicAbstractionLink = GetAbstractionLinks { code = "METHADONE_CLINIC", text = "Methadone Clinic", seq = 13 }
 
+
+
+    --------------------------------------------------------------------------------
+    --- Alert Qualification
+    --------------------------------------------------------------------------------
     -- Auto resolve alert if it currently triggered for alcohol but now has alcohol codes
-    if existingAlert and not existingAlert.validated and existingAlert.subtitle == alcoholHeaderSubtitle and #accountAlcoholCodes > 0 then
+    if subtitle == alcoholWithdrawalSubtitle and #accountAlcoholCodes > 0 then
         local code = accountAlcoholCodes[1]
         local codeDesc = alcoholCodeDic[code]
         autoResolvedCodeLink = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
@@ -121,7 +136,7 @@ if not existingAlert or not existingAlert.validated then
         Result.passed = true
 
     -- Auto resolve alert if it currently triggered for opioids but now has opioid codes
-    elseif existingAlert and not existingAlert.validated and existingAlert.subtitle == opioidHeaderSubtitle and #accountOpioidCodes > 0 then
+    elseif subtitle == opioidDependenceSubtitle and #accountOpioidCodes > 0 then
         local code = accountOpioidCodes[1]
         local codeDesc = opioidCodeDic[code]
         autoResolvedCodeLink = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
@@ -132,42 +147,33 @@ if not existingAlert or not existingAlert.validated then
 
     -- Trigger alert if it has no alcohol code, but has a ciwa score dv of 10 or greater, or a ciwa score abstraction, or a ciwa protcol abstraction
     elseif #accountAlcoholCodes == 0 and (ciwaScoreDvLink or ciwaScoreAbstractionLink or ciwaProtocolAbstractionLink) then
-        Result.subtitle = alcoholHeaderSubtitle
+        Result.subtitle = alcoholWithdrawalSubtitle
         Result.passed = true
 
     -- Trigger alert if it has no opioid code, but has a methadone medication, or a methadone abstraction, or a suboxone medication, or a suboxone abstraction, or a methadone clinic abstraction
     elseif #accountOpioidCodes == 0 and (#methadoneMedicationLinks > 0 or methadoneAbstractionLink or suboxoneMedicationLink or suboxoneAbstractionLink or methadoneClinicAbstractionLink) then
-        Result.subtitle = opioidHeaderSubtitle
+        Result.subtitle = opioidDependenceSubtitle
         Result.passed = true
-
-    -- Do nothing
-    else
-        Result.passed = false
     end
 
 
 
-    --------------------------------------------------------------------------------
-    --- Link Composition and Alert Finalization
-    --------------------------------------------------------------------------------
     if Result.passed then
+        --------------------------------------------------------------------------------
+        --- Link Collection
+        --------------------------------------------------------------------------------
         local resultLinks = {}
-
-        if existingAlert then
-            local documentedDxHeader = MakeHeaderLink("Documented Dx")
-            documentedDxHeader.links = { autoResolvedCodeLink }
-            resultLinks = { documentedDxHeader }
+        local documentedDxHeader = MakeHeaderLink("Documented Dx")
+        local documentedDxLinks= {}
+        local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
+        local clinicalEvidenceLinks = {}
+        local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
+        local treatmentAndMonitoringLinks = {}
+        local painTeamConsultHeader = MakeHeaderLink("Pain Team Consult")
+        local painTeamConsultLinks = {}
+        if Result.validated then
+            table.insert(documentedDxLinks, autoResolvedCodeLink)
         else
-            local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-            local clinicalEvidenceLinks = {}
-            local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
-            local treatmentAndMonitoringLinks = {}
-            local painTeamConsultHeader = MakeHeaderLink("Pain Team Consult")
-            local painTeamConsultLinks = {}
-
-            ----------------------------------------
-            -- Clinical Evidence Links (Abstractions and Codes)
-            ----------------------------------------
             GetCodeLinks {
                 codes = {
                     "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
@@ -210,14 +216,11 @@ if not existingAlert or not existingAlert.validated then
             GetCodeLinks { code = "R44.1", text = "Visual Hallucinations", seq = 21, target = clinicalEvidenceLinks }
             GetCodeLinks { code = "R11.10", text = "Vomiting", seq = 22, target = clinicalEvidenceLinks }
 
-            ----------------------------------------
-            -- Treatment and Monitoring Links (Medications and Abstractions)
-            ----------------------------------------
-            GetMedicationLinks { cat = "Benzodiazepine", text = "Suboxone", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = benzodiazepineMedicationName, text = "Suboxone", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2, target = treatmentAndMonitoringLinks }
-            GetMedicationLinks { cat = "Dexmedetomidine", text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = dexmedetomidineMedicationName, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4, target = treatmentAndMonitoringLinks }
-            GetMedicationLinks { cat = "Lithium", text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = lithiumMedicationName, text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "LITHIUM", text = "Lithium", seq = 6, target = treatmentAndMonitoringLinks }
             if methadoneMedicationLinks and #methadoneMedicationLinks > 0 then
                 for _, link in ipairs(methadoneMedicationLinks) do
@@ -227,7 +230,7 @@ if not existingAlert or not existingAlert.validated then
             if methadoneAbstractionLink then
                 table.insert(treatmentAndMonitoringLinks, methadoneAbstractionLink)
             end
-            GetMedicationLinks { cat = "Propofol", text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = propofolMedicationName, text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "PROPOFOL", text = "Propofol", seq = 11, target = treatmentAndMonitoringLinks }
             if suboxoneMedicationLink then
                 table.insert(treatmentAndMonitoringLinks, suboxoneMedicationLink)
@@ -236,28 +239,36 @@ if not existingAlert or not existingAlert.validated then
                 table.insert(treatmentAndMonitoringLinks, suboxoneAbstractionLink)
             end
 
-            ----------------------------------------
-            -- Pain Team Consultation Links (Document links)
-            ----------------------------------------
-            GetDocumentLinks { documentType = "Pain Team Consultation Note", text = "Pain Team Consultation Note", seq = 1, target = painTeamConsultLinks }
-            GetDocumentLinks { documentType = "zzPain Team Consultation Note", text = "zzPain Team Consultation Note", seq = 2, target = painTeamConsultLinks }
-            GetDocumentLinks { documentType = "Pain Team Progress Note", text = "Pain Team Progress Note", seq = 3, target = painTeamConsultLinks }
-
-            clinicalEvidenceHeader.links = clinicalEvidenceLinks
-            treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
-            painTeamConsultHeader.links = painTeamConsultLinks
-
-            resultLinks = { clinicalEvidenceHeader, treatmentAndMonitoringHeader, painTeamConsultHeader }
+            for i, docType in ipairs(painDocumentTypes) do
+                GetDocumentLinks { documentType = docType, text = docType, seq = i, target = painTeamConsultLinks }
+            end
         end
 
-        ----------------------------------------
+
+
+        --------------------------------------------------------------------------------
         --- Result Finalization 
-        ----------------------------------------
+        --------------------------------------------------------------------------------
+        if #documentedDxLinks > 0 then
+            documentedDxHeader.links = documentedDxLinks
+            table.insert(resultLinks, documentedDxHeader)
+        end
+        if #clinicalEvidenceLinks > 0 then
+            clinicalEvidenceHeader.links = clinicalEvidenceLinks
+            table.insert(resultLinks, clinicalEvidenceHeader)
+        end
+        if #treatmentAndMonitoringLinks > 0 then
+            treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
+            table.insert(resultLinks, treatmentAndMonitoringHeader)
+        end
+        if #painTeamConsultLinks > 0 then
+            painTeamConsultHeader.links = painTeamConsultLinks
+            table.insert(resultLinks, painTeamConsultHeader)
+        end
         if existingAlert then
             resultLinks = MergeLinks(existingAlert.links, resultLinks)
         end
         Result.links = resultLinks
-        Result.passed = true
     end
 end
 

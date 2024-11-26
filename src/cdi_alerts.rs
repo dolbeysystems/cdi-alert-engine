@@ -393,6 +393,8 @@ pub async fn create_test_data(
                     medications: vec![],
                     discrete_values: vec![],
                     cdi_alerts: vec![],
+                    working_history: vec![],
+
                     hashed_code_references: HashMap::new(),
                     hashed_discrete_values: HashMap::new(),
                     hashed_medications: HashMap::new(),

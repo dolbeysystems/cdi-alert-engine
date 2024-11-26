@@ -105,6 +105,8 @@ pub struct CodeReferenceWithDocument {
     "get_unique_documents fun(self: Account): string[] - Return all document keys in the account",
     "get_unique_discrete_values fun(self: Account): string[] - Return all discrete value keys in the account",
     "get_unique_medications fun(self: Account): string[] - Return all medication keys in the account",
+    "is_diagnosis_code_in_working_history fun(self: Account, code: string): boolean - Check if a diagnosis code is in the working history",
+    "is_procedure_code_in_working_history fun(self: Account, code: string): boolean - Check if a procedure code is in the working history",
 ])]
 pub struct Account {
     /// Account number
@@ -142,6 +144,9 @@ pub struct Account {
     /// List of cdi alerts
     #[serde(rename = "CdiAlerts", default)]
     pub cdi_alerts: Vec<Arc<CdiAlert>>,
+    // List of working history entries
+    #[serde(rename = "WorkingHistory", default)]
+    pub working_history: Vec<Arc<AccountWorkingHistoryEntry>>,
 
     // These are just caches, do not (de)serialize them.
     #[serde(skip)]
@@ -181,6 +186,7 @@ impl mlua::UserData for Account {
             Ok(this.discrete_values.clone())
         });
         fields.add_field_method_get("cdi_alerts", |_, this| Ok(this.cdi_alerts.clone()));
+        fields.add_field_method_get("working_history", |_, this| Ok(this.working_history.clone()));
     }
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
@@ -243,6 +249,19 @@ impl mlua::UserData for Account {
                 // Arc<str> is better for Rust, but Lua only understands String.
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>())
+        });
+        methods.add_method("is_diagnosis_code_in_working_history", |_, this, code: String| {
+            Ok(this
+                .working_history
+                .iter()
+                .any(|x| x.diagnoses.iter().any(|y| y.code == code)))
+        });
+
+        methods.add_method("is_procedure_code_in_working_history", |_, this, code: String| {
+            Ok(this
+                .working_history
+                .iter()
+                .any(|x| x.procedures.iter().any(|y| y.code == code)))
         });
     }
 }
@@ -348,7 +367,6 @@ pub struct DiscreteValue {
     #[alua(as_lua = "string?")]
     pub result_date: Option<DateTime<Utc>>,
 }
-
 impl DiscreteValue {
     pub fn new(unique_id: &str, name: String) -> Self {
         Self {
@@ -359,7 +377,6 @@ impl DiscreteValue {
         }
     }
 }
-
 impl mlua::UserData for DiscreteValue {
     fn add_fields<F: mlua::UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("unique_id", |_, this| Ok(this.unique_id.to_string()));
@@ -583,7 +600,7 @@ impl mlua::UserData for CdiAlertLink {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData)]
 pub struct EvaluationQueueEntry {
     #[serde(rename = "_id")]
     pub id: String,
@@ -592,4 +609,35 @@ pub struct EvaluationQueueEntry {
     pub time_queued: DateTime<Utc>,
     #[serde(rename = "Source")]
     pub source: String,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
+pub struct AccountWorkingHistoryEntry {
+    #[serde(rename = "Diagnoses")]
+    pub diagnoses: Vec<DiagnosisCode>,
+    #[serde(rename = "Procedures")]
+    pub procedures: Vec<ProcedureCode>,
+} 
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
+pub struct DiagnosisCode {
+    #[serde (rename = "Code")]
+    pub code: String,
+    #[serde (rename = "Description")]
+    pub description: String,
+    #[serde (rename = "isPrincipal")]
+    pub is_principal: bool,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
+pub struct ProcedureCode {
+    #[serde (rename = "Code")]
+    pub code: String,
+    #[serde (rename = "Description")]
+    pub description: String,
+    #[serde (rename = "isPrincipal")]    
+    pub is_principal: bool, 
 }

@@ -12,4 +12,7 @@ fn main() {
     println!("{}", AccountCustomWorkFlowEntry::class_annotation());
     println!("{}", CdiAlert::class_annotation());
     println!("{}", CdiAlertLink::class_annotation());
+    println!("{}", AccountWorkingHistoryEntry::class_annotation());
+    println!("{}", DiagnosisCode::class_annotation());
+    println!("{}", ProcedureCode::class_annotation());
 }

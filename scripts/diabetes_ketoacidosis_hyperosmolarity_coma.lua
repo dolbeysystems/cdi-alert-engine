@@ -22,35 +22,46 @@ require("libs.common")
 --- Setup
 --------------------------------------------------------------------------------
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
+local subtitle = existingAlert and existingAlert.subtitle or nil
 
 
 
 if not existingAlert or not existingAlert.validated then
-    ----------------------------------------
+    --------------------------------------------------------------------------------
     --- Alert Variables 
-    ----------------------------------------
+    --------------------------------------------------------------------------------
     local alertCodeDictionary = {
 
     }
     local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 
+
+
     --------------------------------------------------------------------------------
-    --- Alert Qualification 
+    --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
 
 
 
     --------------------------------------------------------------------------------
-    --- Link Composition and Alert Finalization
+    --- Alert Qualification
     --------------------------------------------------------------------------------
+
+
+
     if Result.passed then
+        --------------------------------------------------------------------------------
+        --- Link Collection
+        --------------------------------------------------------------------------------
         local resultLinks = {}
 
-        if existingAlert then
+        if Result.validated then
             -- Autoclose
         else
             -- Normal Alert
         end
+
+
 
         ----------------------------------------
         --- Result Finalization 
@@ -59,7 +70,6 @@ if not existingAlert or not existingAlert.validated then
             resultLinks = MergeLinks(existingAlert.links, resultLinks)
         end
         Result.links = resultLinks
-        Result.passed = true
     end
 end
 
