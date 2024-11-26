@@ -1,3 +1,4 @@
+use anyhow::Result;
 use cdi_alert_engine::*;
 use clap::Parser;
 use derive_environment::FromEnv;
@@ -35,7 +36,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, crate::Error> {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         use mlua::StdLib;
         // Create a very light Lua runtime for evaluating the config file.
         // Initializing a Lua runtime is cheap, but loading its libraries is not.
@@ -81,9 +82,7 @@ pub struct ScriptInfo {
     pub criteria_group: String,
 }
 
-fn load_scripts(
-    scripts: impl Iterator<Item = (Box<Path>, ScriptInfo)>,
-) -> Result<Box<[Script]>, crate::Error> {
+fn load_scripts(scripts: impl Iterator<Item = (Box<Path>, ScriptInfo)>) -> Result<Box<[Script]>> {
     scripts
         .map(|(path, info)| {
             let contents = fs::read_to_string(&path)?;
