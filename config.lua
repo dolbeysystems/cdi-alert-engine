@@ -12,5 +12,8 @@ mongo = {
 scripts = {
 	["scripts/substance_abuse.lua"] = {
 		criteria_group = "Substance Abuse",
+	},
+	["scripts/abnormal_serum_potassium.lua"] = {
+		criteria_group = "Abnormal Serum Potassium",
 	}
 }
