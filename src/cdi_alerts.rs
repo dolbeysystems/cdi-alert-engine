@@ -1,39 +1,17 @@
 use crate::cac_data::*;
 use crate::config;
+use anyhow::{Context, Result};
 use chrono::{TimeZone, Utc};
 use mongodb::bson::doc;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
-#[derive(thiserror::Error, Debug)]
-pub enum Error<'config> {
-    #[error("failed to parse CAC database connection string ({string}): {error}")]
-    ConnectionString {
-        string: &'config str,
-        error: mongodb::error::Error,
-    },
-    #[error("workgroup category \"{0}\" not found")]
-    MissingWorkgroupCategory(&'config str),
-    #[error("workgroup named \"{0}\" not found")]
-    MissingWorkgroupName(&'config str),
-    // For any other generic mongo errors.
-    #[error(transparent)]
-    Mongo(#[from] mongodb::error::Error),
-    #[error(transparent)]
-    Bson(#[from] bson::ser::Error),
-}
-
 #[profiling::function]
-pub async fn next_pending_account(connection_string: &str) -> Result<Option<Account>, Error> {
+pub async fn next_pending_account(connection_string: &str) -> Result<Option<Account>> {
     debug!("Getting next pending account");
-    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
-        .map_err(|e| Error::ConnectionString {
-            string: connection_string,
-            error: e,
-        })?;
-
-    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+        .with_context(|| format!("while connecting to {connection_string}"))?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let evaluation_queue_collection =
         cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
@@ -55,19 +33,11 @@ pub async fn next_pending_account(connection_string: &str) -> Result<Option<Acco
 }
 
 #[profiling::function]
-pub async fn get_account_by_id<'connection>(
-    connection_string: &'connection str,
-    id: &str,
-) -> Result<Option<Account>, Error<'connection>> {
+pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Option<Account>> {
     debug!("Loading account #{:?} from database", id);
-    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
-        .map_err(|e| Error::ConnectionString {
-            string: connection_string,
-            error: e,
-        })?;
-
-    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+        .with_context(|| format!("while connecting to {connection_string}"))?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
     let mut account_cursor = account_collection.find(doc! { "_id" : id }).await?;
@@ -160,14 +130,10 @@ pub async fn save<'config>(
     account: &Account,
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
     script_engine_workflow_rest_url: &'config str,
-) -> Result<(), Error<'config>> {
-    let cac_database_client_options = mongodb::options::ClientOptions::parse(&mongo.url)
+) -> Result<()> {
+    let cac_database_client = mongodb::Client::with_uri_str(&mongo.url)
         .await
-        .map_err(|e| Error::ConnectionString {
-            string: &mongo.url,
-            error: e,
-        })?;
-    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+        .with_context(|| format!("while connecting to {}", mongo.url))?;
     let cac_database = cac_database_client.database(&mongo.database);
     let evaluation_results_collection =
         cac_database.collection::<bson::Document>("EvaluationResults");
@@ -285,14 +251,10 @@ pub async fn save<'config>(
 pub async fn create_test_data(
     connection_string: &str,
     number_of_test_accounts: usize,
-) -> Result<(), Error> {
-    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+) -> Result<()> {
+    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
-        .map_err(|e| Error::ConnectionString {
-            string: connection_string,
-            error: e,
-        })?;
-    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+        .with_context(|| format!("while connecting to {connection_string}"))?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
     let evaluation_queue_collection =
@@ -401,14 +363,10 @@ pub async fn create_test_data(
 }
 
 #[profiling::function]
-pub async fn delete_test_data(connection_string: &str) -> Result<(), Error> {
-    let cac_database_client_options = mongodb::options::ClientOptions::parse(connection_string)
+pub async fn delete_test_data(connection_string: &str) -> Result<()> {
+    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
-        .map_err(|e| Error::ConnectionString {
-            string: connection_string,
-            error: e,
-        })?;
-    let cac_database_client = mongodb::Client::with_options(cac_database_client_options)?;
+        .with_context(|| format!("while connecting to {connection_string}"))?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
     let evaluation_queue_collection =

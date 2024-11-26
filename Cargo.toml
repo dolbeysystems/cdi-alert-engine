@@ -9,12 +9,13 @@ license-file = "license.rtf"
 
 [dependencies]
 alua = { version = "0.2.0", features = ["userdata"] }
+anyhow = "1.0.93"
 bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.37"
 clap = { version = "4.5.4", features = ["derive"] }
 derive_environment = "1.1.0"
 futures = "0.3.28"
-mlua = { version = "0.10.1", features = ["luajit", "vendored", "async", "serialize", "userdata-wrappers"] }
+mlua = { version = "0.10.1", features = ["async", "error-send", "luajit", "serialize", "userdata-wrappers", "vendored"] }
 mongodb = "3.1.0"
 profiling = "1.0.15"
 reqwest = { version = "0.12.4", features = ["rustls-tls"], default-features = false }
