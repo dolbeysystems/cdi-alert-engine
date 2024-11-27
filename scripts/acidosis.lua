@@ -7,6 +7,11 @@
 ---
 --- This script checks an account to see if it matches the criteria for an acidosis alert.
 ---
+--- Alerts:
+---     - Possible Acute Respiratory Acidosis
+---     - Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence
+---     - Possible Lactic Acidosis
+---     - Possible Acidosis
 ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -33,39 +38,39 @@ if not existingAlert or not existingAlert.validated then
     --- @type string[]
     local anionGapDvName = { "" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local anionGap1Predicate = function(dv) return GetDvValueNumber(dv) > 14 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local anionGap1Predicate = function(dv) return GetDvValueNumber(dv) > 14 end
     --- @type string[]
     local arterialBloodPHDvName = { "pH" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local arterialBloodPH1Predicate = function(dv) return GetDvValueNumber(dv) < 7.32 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local arterialBloodPH1Predicate = function(dv) return GetDvValueNumber(dv) < 7.32 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local arterialBloodPH2Predicate = function (dv) return GetDvValueNumber(dv) < 7.32 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local arterialBloodPH2Predicate = function (dv) return GetDvValueNumber(dv) < 7.32 end
     --- @type string[]
     local baseExcessDvName = { "BASE EXCESS (mmol/L)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local baseExcess1Predicate = function(dv) return GetDvValueNumber(dv) < -2 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local baseExcess1Predicate = function(dv) return GetDvValueNumber(dv) < -2 end
     --- @type string[]
     local bloodCO2DvName = { "CO2 (mmol/L)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local bloodCO21Predicate = function(dv) return GetDvValueNumber(dv) < 21 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local bloodCO21Predicate = function(dv) return GetDvValueNumber(dv) < 21 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local bloodCO22Predicate = function(dv) return GetDvValueNumber(dv) > 32 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local bloodCO22Predicate = function(dv) return GetDvValueNumber(dv) > 32 end
     --- @type string[]
     local bloodGlucoseDvName = {  "GLUCOSE (mg/dL)", "GLUCOSE" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local bloodGlucose1Predicate = function(dv) return GetDvValueNumber(dv) > 250 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local bloodGlucose1Predicate = function(dv) return GetDvValueNumber(dv) > 250 end
     --- @type string[]
     local bloodGlucosePOCDvName = { "GLUCOSE ACCUCHECK (mg/dL)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local bloodGlucosePOC1Predicate = function(dv) return GetDvValueNumber(dv) > 250 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local bloodGlucosePOC1Predicate = function(dv) return GetDvValueNumber(dv) > 250 end
     --- @type string[]
     local fIO2DvName = { "FIO2" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local fIO21Predicate = function(dv) return GetDvValueNumber(dv) <= 100 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local fIO21Predicate = function(dv) return GetDvValueNumber(dv) <= 100 end
     --- @type string[]
     local glasgowComaScaleDvName = { "3.5 Neuro Glasgow Score" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local glasgowComaScale1Predicate = function(dv) return GetDvValueNumber(dv) < 15 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local glasgowComaScale1Predicate = function(dv) return GetDvValueNumber(dv) < 15 end
     --- @type string[]
     local hCO3DvName = { "HCO3 VENOUS (meq/L)" }
     local hCO31Predicate = 22
@@ -73,75 +78,75 @@ if not existingAlert or not existingAlert.validated then
     --- @type string[]
     local heartRateDvName = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)",  "SCC Monitor Pulse (bpm)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local heartRate1Predicate = function(dv) return GetDvValueNumber(dv) > 90 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local heartRate1Predicate = function(dv) return GetDvValueNumber(dv) > 90 end
     --- @type string[]
     local mAPDvName = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local mAP1Predicate = function(dv) return GetDvValueNumber(dv) < 70 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local mAP1Predicate = function(dv) return GetDvValueNumber(dv) < 70 end
     --- @type string[]
     local paO2DvName = { "BLD GAS O2 (mmHg)" }
     local pAO21Predicate = 60
     --- @type string[]
     local pO2DvName = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local pO21Predicate = function(dv) return GetDvValueNumber(dv) < 80 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local pO21Predicate = function(dv) return GetDvValueNumber(dv) < 80 end
     --- @type string[]
     local pCO2DvName = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local pCO21Predicate = function(dv) return GetDvValueNumber(dv) > 50 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local pCO21Predicate = function(dv) return GetDvValueNumber(dv) > 50 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local pCO22Predicate = function(dv) return GetDvValueNumber(dv) < 30 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local pCO22Predicate = function(dv) return GetDvValueNumber(dv) < 30 end
     --- @type string[]
     local pHDvName = { "pH (VENOUS)", "pH VENOUS" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local pH1Predicate = function(dv) return GetDvValueNumber(dv) < 7.30 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local pH1Predicate = function(dv) return GetDvValueNumber(dv) < 7.30 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local pH2Predicate = function(dv) return GetDvValueNumber(dv) < 7.30 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local pH2Predicate = function(dv) return GetDvValueNumber(dv) < 7.30 end
     --- @type string[]
     local respiratoryRateDvName = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local respiratoryRate1Predicate = function(dv) return GetDvValueNumber(dv) > 20 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local respiratoryRate1Predicate = function(dv) return GetDvValueNumber(dv) > 20 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local respiratoryRate2Predicate = function(dv) return GetDvValueNumber(dv) < 12 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local respiratoryRate2Predicate = function(dv) return GetDvValueNumber(dv) < 12 end
     --- @type string[]
     local sBPDvName = { "SBP 3.5 (No Calculation) (mm Hg)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local sBP1Predicate = function(dv) return GetDvValueNumber(dv) < 90 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local sBP1Predicate = function(dv) return GetDvValueNumber(dv) < 90 end
     --- @type string[]
     local serumBloodUreaNitrogenDvName = { "BUN (mg/dL)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumBloodUreaNitrogen1Predicate = function(dv) return GetDvValueNumber(dv) > 23 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumBloodUreaNitrogen1Predicate = function(dv) return GetDvValueNumber(dv) > 23 end
     --- @type string[]
     local serumBicarbonateDvName = { "HCO3 (meq/L)", "HCO3 (mmol/L)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumBicarbonate1Predicate = function(dv) return GetDvValueNumber(dv) > 26 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumBicarbonate1Predicate = function(dv) return GetDvValueNumber(dv) > 26 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumBicarbonate3Predicate = function(dv) return GetDvValueNumber(dv) < 22 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumBicarbonate3Predicate = function(dv) return GetDvValueNumber(dv) < 22 end
     --- @type string[]
     local serumChlorideDvName = { "CHLORIDE (mmol/L)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumChloride1Predicate = function(dv) return GetDvValueNumber(dv) > 107 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumChloride1Predicate = function(dv) return GetDvValueNumber(dv) > 107 end
     --- @type string[]
     local serumCreatinineDvName = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumCreatinine1Predicate = function(dv) return GetDvValueNumber(dv) > 1.3 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumCreatinine1Predicate = function(dv) return GetDvValueNumber(dv) > 1.3 end
     --- @type string[]
     local serumLactateDvName = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumLactate1Predicate = function(dv) return GetDvValueNumber(dv) >= 4 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumLactate1Predicate = function(dv) return GetDvValueNumber(dv) >= 4 end
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumLactate2Predicate = function(dv) return 2 < GetDvValueNumber(dv) < 4 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumLactate2Predicate = function(dv) return 2 < GetDvValueNumber(dv) < 4 end
     --- @type string[]
     local sPO2DvName = { "Pulse Oximetry(Num) (%)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local sPO21Predicate = function(dv) return GetDvValueNumber(dv) < 90 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local sPO21Predicate = function(dv) return GetDvValueNumber(dv) < 90 end
     --- @type string[]
     local venousBloodCO2DvName = { "BLD GAS CO2 VEN (mmHg)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local venousBloodCO2Predicate = function(dv) return GetDvValueNumber(dv) > 55 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local venousBloodCO2Predicate = function(dv) return GetDvValueNumber(dv) > 55 end
     local serumKetoneDvName = { "KETONES (mg/dL)" }
     --- @type (fun (dv:DiscreteValue): boolean)
-    local serumKetone1Predicate = function(dv) return GetDvValueNumber(dv) > 0 and DateIsLessThanXDaysAgo(dv.result_date, 7) end
+    local serumKetone1Predicate = function(dv) return GetDvValueNumber(dv) > 0 end
     --- @type string[]
     local urineKetonesDvName = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
