@@ -1,12 +1,10 @@
 {
+    "runtime": {
+        "version": "LuaJIT",
+    }
     "diagnostics.globals": [
-        "info",
-        "error",
-        "warn",
-        "debug",
         "Account",
         "Result",
         "ScriptName",
-        "CdiAlertLink"
     ]
 }
