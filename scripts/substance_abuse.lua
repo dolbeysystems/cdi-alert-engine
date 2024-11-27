@@ -1,11 +1,69 @@
 ---------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Substance Abuse
----
---- This script checks an account to see if it matches the criteria for a substance abuse alert.
----
+--- 
 --- Date: 11/22/2024
 --- Version: 1.0
 --- Site: Sarasota County Health District
+---
+--- This script checks an account to see if it matches the criteria for a substance abuse alert.
+---
+--- Alerts:
+---     - Possible Alcohol Withdrawal: 
+---         Triggered if the account has no alcohol codes, but has a CIWA score DV of 10 or greater, 
+---         or a CIWA score abstraction, or a CIWA protocol abstraction.
+--- 
+---         Autoresolved if the account gets an alcohol code.
+--- 
+---    - Possible Opioid Dependence:
+---         Triggered if the account has no opioid codes, but has a methadone medication, or a methadone abstraction,
+---         or a suboxone medication, or a suboxone abstraction, or a methadone clinic abstraction.
+--- 
+---         Autoresolved if the account gets an opioid code.
+--- 
+--- Possible Links:
+---     - Documented Dx (Only if auto-resolved):
+---         - Autoresolved Specified Code (Code)
+---     - Clinical Evidence:
+---         - Alcohol Dependence (Code)
+---         - Altered Level of Consciousness (Code)
+---         - Altered Level of Consciousness (Abstraction)
+---         - Auditory Hallucinations (Code)
+---         - CIWA Score (Discrete Value)
+---         - CIWA Score (Abstraction)
+---         - CIWA Protocol (Abstraction)
+---         - Combative (Abstraction)
+---         - Delirium (Abstraction)
+---         - Hallucinations (Code)
+---         - Headache (Code)
+---         - Irritability and Anger (Code)
+---         - Methadone Clinic (Abstraction)
+---         - Nausea (Code)
+---         - Nervousness (Code)
+---         - One to One Supervision (Abstraction)
+---         - Projectile Vomiting (Code)
+---         - Restlessness and Agitation (Code)
+---         - Sweating (Code)
+---         - Tremor (Code)
+---         - Visual Hallucinations (Code)
+---         - Vomiting (Code)
+---    - Treatment and Monitoring:
+---         - Benzodiazepine (Medication)
+---         - Benzodiazepine (Abstraction)
+---         - Dexmedetomidine (Medication)
+---         - Dexmedetomidine (Abstraction)
+---         - Lithium (Medication)
+---         - Lithium (Abstraction)
+---         - Methadone (Medication) [Multiple]
+---         - Methadone (Abstraction)
+---         - Propofol (Medication)
+---         - Propofol (Abstraction)
+---         - Suboxone (Medication)
+---         - Suboxone (Abstraction)
+---    - Pain Team Consult:
+---         - Pain Team Consultation Note
+---         - zzPain Team Consultation Note
+---         - Pain Team Progress Note
+---         
 ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -20,12 +78,11 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 -------------------------------------------------------------------------------- 
+-- Site variables
 local ciwaScoreDvName = "alcohol CIWA Calc score 1112"
 local ciwaScoreDvPredicate = function(dv) return GetDvValueNumber(dv) > 9 end
 local methadoneMedicationName = "Methadone"
-local methadoneMedicationPredicate = function(med) return DateIsLessThanXDaysAgo(med.start_date, 365) end
 local suboxoneMedicationName = "Suboxone"
-local suboxoneMedicationPredicate = function(med) return DateIsLessThanXDaysAgo(med.start_date, 365) end
 local benzodiazepineMedicationName = "Benzodiazepine"
 local dexmedetomidineMedicationName = "Dexmedetomidine"
 local lithiumMedicationName = "Lithium"
@@ -34,6 +91,7 @@ local painDocumentTypes = { "Pain Team Consultation Note", "zzPain Team Consulta
 local opioidDependenceSubtitle = "Possible Opioid Dependence"
 local alcoholWithdrawalSubtitle = "Possible Alcohol Withdrawal"
 
+-- Get the existing alert and its subtitle (if any)
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName, account = Account }
 local subtitle = existingAlert and existingAlert.subtitle or nil
 
@@ -93,7 +151,7 @@ if not existingAlert or not existingAlert.validated then
         ["F11.288"] = "Opioid dependence with other opioid-induced disorder",
         ["F11.29"] = "Opioid dependence with unspecified opioid-induced disorder"
     }
-
+    -- Get the alcohol and opioid codes on the account
     local accountAlcoholCodes = GetAccountCodesInDictionary(Account, alcoholCodeDic)
     local accountOpioidCodes = GetAccountCodesInDictionary(Account, opioidCodeDic)
 
@@ -117,7 +175,6 @@ if not existingAlert or not existingAlert.validated then
         useCdiAlertCategoryField = true,
         onePerDate = true,
         maxPerValue = 9999,
-        predicate = methadoneMedicationPredicate
     } or {}
     local methadoneAbstractionLink = GetAbstractionValueLinks { code = "METHADONE", text = "Methadone", seq = 8 }
     local suboxoneMedicationLink = GetMedicationLinks {
@@ -126,7 +183,6 @@ if not existingAlert or not existingAlert.validated then
         seq = 11,
         useCdiAlertCategoryField = true,
         onlyOne = true,
-        predicate = suboxoneMedicationPredicate
     }
     local suboxoneAbstractionLink = GetAbstractionValueLinks { code = "SUBOXONE", text = "Suboxone", seq = 12 }
     local methadoneClinicAbstractionLink = GetAbstractionLinks { code = "METHADONE_CLINIC", text = "Methadone Clinic", seq = 13 }
@@ -175,7 +231,7 @@ if not existingAlert or not existingAlert.validated then
 
     if Result.passed then
         --------------------------------------------------------------------------------
-        --- Additional Link Collection
+        --- Additional Link Collection (Get___Links with target table)
         --------------------------------------------------------------------------------
         if not Result.validated then
             GetCodeLinks {
@@ -216,7 +272,7 @@ if not existingAlert or not existingAlert.validated then
             GetCodeLinks { code = "R44.1", text = "Visual Hallucinations", seq = 21, target = clinicalEvidenceLinks }
             GetCodeLinks { code = "R11.10", text = "Vomiting", seq = 22, target = clinicalEvidenceLinks }
 
-            GetMedicationLinks { cat = benzodiazepineMedicationName, text = "Suboxone", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = benzodiazepineMedicationName, text = "Benzodiazepine", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2, target = treatmentAndMonitoringLinks }
             GetMedicationLinks { cat = dexmedetomidineMedicationName, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
             GetAbstractionLinks { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4, target = treatmentAndMonitoringLinks }
@@ -244,6 +300,7 @@ if not existingAlert or not existingAlert.validated then
         --------------------------------------------------------------------------------
         --- Result Finalization 
         --------------------------------------------------------------------------------
+        -- Build the link heirarchy
         if #documentedDxLinks > 0 then
             documentedDxHeader.links = documentedDxLinks
             table.insert(resultLinks, documentedDxHeader)
@@ -260,6 +317,8 @@ if not existingAlert or not existingAlert.validated then
             painTeamConsultHeader.links = painTeamConsultLinks
             table.insert(resultLinks, painTeamConsultHeader)
         end
+
+        -- Merge links if we need to
         if existingAlert then
             resultLinks = MergeLinks(existingAlert.links, resultLinks)
         end

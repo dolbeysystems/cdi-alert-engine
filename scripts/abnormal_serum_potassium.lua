@@ -1,11 +1,72 @@
 ---------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Abnormal Serum Potassium
 ---
---- This script checks an account to see if it matches the criteria for an abnormal serum potassium alert.
----
 --- Date: 11/22/2024
 --- Version: 1.0
 --- Site: Sarasota County Health District
+---
+--- This script checks an account to see if it matches the criteria for an abnormal serum potassium alert.
+---
+--- Alerts:
+---     - Possible Hyperkalemia Dx
+---         Triggered if there are no hyperkalemia codes on the account and there is account potassium value
+---         greater than 5.4 mmol/L within the last 7 days and there is evidence of kayexalate or insulin and dextrose
+---         or hemodialysis
+---         
+---         Autoresolved if there is a hyperkalemia code on the account
+--- 
+---     - Possible Hypokalemia Dx
+---         Triggered if there are no hypokalemia codes on the account and there is account potassium value
+---         less than 3.1 mmol/L within the last 7 days and there is evidence of potassium replacement or potassium
+---         chloride absorption or potassium phosphate absorption or potassium bicarbonate absorption
+--- 
+---        Autoresolved if there is a hypokalemia code on the account
+--- 
+---     - Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence
+---         Triggered if there is a hyperkalemia code on the account and there are no account potassium values greater
+---         than 5.1 mmol/L within the last 7 days
+--- 
+---         Autoresolved if there is a hyperkalemia code on the account and there is at least one account potassium value
+---         greater than 5.1 mmol/L within the last 7 days
+--- 
+---     - Hypokalemia Dx Documented Possibly Lacking Supporting Evidence
+---         Triggered if there is a hypokalemia code on the account and there are no account potassium values less than
+---         3.4 mmol/L within the last 7 days
+--- 
+---         Autoresolved if there is a hypokalemia code on the account and there is at least one account potassium value
+---         less than 3.4 mmol/L within the last 7 days
+--- 
+--- Possible Links:
+---     - Documented Dx 
+---         - Autoresolved Specified Code - Hyperkalemia Fully Specified Code (Code)
+---         - Autoresolved Specified Code - Hypokalemia Fully Specified Code (Code)
+---         - Hyperkalemia Fully Specified Code (Code)
+---         - Hypokalemia Fully Specified Code (Code)
+---    - Laboratory Studies
+---         - Review High Serum Potassium Levels (Discrete Value)
+---         - Review Low Serum Potassium Levels (Discrete Value)
+---     - Clinical Evidence
+---         - Addison's Disease (Code)
+---         - Cushing's Syndrome (Code)
+---         - Diarrhea (Abstraction)
+---         - EKG Changes (Abstraction)
+---         - Fatigue (Code)
+---         - Heart Palpitations (Abstraction)
+---         - Kidney Failure (Code)
+---         - Muscle Cramps (Abstraction)
+---         - Muscle Weakness (Abstraction)
+---         - Vomiting (Abstraction)
+---    - Treatment and Monitoring
+---         - Dextrose (Medication)
+---         - Hemodialysis (Code)
+---         - Insulin (Medication)
+---         - Kayexalate (Medication)
+---         - Potassium Replacement (Medication)
+---         - Potassium Chloride Absorption (Abstraction)
+---         - Potassium Phosphate Absorption (Abstraction)
+---         - Potassium Bicarbonate Absorption (Abstraction)
+---   - Serum Potassium
+---         - Serum Potassium (Discrete Value) [Multiple]
 ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -62,8 +123,6 @@ if not existingAlert or not existingAlert.validated then
     local clinicalEvidenceLinks = {}
     local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
     local treatmentAndMonitoringLinks = {}
-    local otherHeader = MakeHeaderLink("Other")
-    local otherLinks = {}
     local potassiumHeader = MakeHeaderLink("Serum Potassium")
     local potassiumLinks = {}
 
@@ -288,10 +347,6 @@ if not existingAlert or not existingAlert.validated then
         if #treatmentAndMonitoringLinks > 0 then
             treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
             table.insert(resultLinks, treatmentAndMonitoringHeader)
-        end
-        if #otherLinks > 0 then
-            otherHeader.links = otherLinks
-            table.insert(resultLinks, otherHeader)
         end
         if #potassiumLinks > 0 then
             potassiumHeader.links = potassiumLinks

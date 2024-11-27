@@ -1,11 +1,12 @@
 ---------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Acidosis
 ---
---- This script checks an account to see if it matches the criteria for a acidosis alert.
----
 --- Date: 11/22/2024
 --- Version: 1.0
 --- Site: Sarasota County Health District
+---
+--- This script checks an account to see if it matches the criteria for an acidosis alert.
+---
 ---------------------------------------------------------------------------------------------------------------------
 
 
