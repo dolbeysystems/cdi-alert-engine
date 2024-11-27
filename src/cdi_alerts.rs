@@ -7,7 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
 #[profiling::function]
-pub async fn next_pending_account(connection_string: &str) -> Result<Option<Account>> {
+pub async fn next_pending_account(connection_string: &str, dv_days_back: u32, med_days_back: u32) -> Result<Option<Account>> {
     debug!("Getting next pending account");
     let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
@@ -23,7 +23,7 @@ pub async fn next_pending_account(connection_string: &str) -> Result<Option<Acco
 
     if let Some(pending_account) = pending_account {
         let id = pending_account.id.clone();
-        let account = get_account_by_id(connection_string, &id).await?;
+        let account = get_account_by_id(connection_string, &id, dv_days_back, med_days_back).await?;
         debug!("Found pending account: {:?}", &id);
         Ok(account)
     } else {
@@ -33,7 +33,7 @@ pub async fn next_pending_account(connection_string: &str) -> Result<Option<Acco
 }
 
 #[profiling::function]
-pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Option<Account>> {
+pub async fn get_account_by_id(connection_string: &str, id: &str, dv_days_back: u32, med_days_back: u32) -> Result<Option<Account>> {
     debug!("Loading account #{:?} from database", id);
     let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
@@ -56,7 +56,7 @@ pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Opti
     debug!("Checking account #{:?} for external discrete values", id);
     let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
     let mut discrete_values_cursor = discrete_values_collection
-        .find(doc! { "AccountNumber" : id })
+        .find(doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : Utc::now() - chrono::Duration::days(dv_days_back as i64) } })
         .await?;
 
     let mut external_discrete_values = Vec::new();
@@ -72,7 +72,13 @@ pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Opti
     }
 
     debug!("Building HashMaps for account #{:?}", id);
-    for discrete_value in account.discrete_values.iter() {
+    for discrete_value in account.discrete_values.iter().filter(|dv| 
+        if let Some(result_date) = dv.result_date {
+            result_date >= Utc::now() - chrono::Duration::days(dv_days_back as i64)
+        } else {
+            false
+        }
+    ) {
         let name = discrete_value.name.clone().unwrap_or("".to_string());
         account
             .hashed_discrete_values
@@ -81,7 +87,13 @@ pub async fn get_account_by_id(connection_string: &str, id: &str) -> Result<Opti
             .push(discrete_value.clone());
     }
 
-    for medication in account.medications.iter() {
+    for medication in account.medications.iter().filter(|med|
+        if let Some(start_date) = med.start_date {
+            start_date >= Utc::now() - chrono::Duration::days(med_days_back as i64)
+        } else {
+            false
+        }
+    ) {
         let category = medication.category.clone().unwrap_or("".to_string());
         account
             .hashed_medications

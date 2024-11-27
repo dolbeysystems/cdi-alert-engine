@@ -5,7 +5,7 @@ use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
 use std::collections::HashMap;
-use std::fs;
+use std::{fs, usize};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use tokio::task;
@@ -33,7 +33,13 @@ pub struct Config {
     #[serde(default)]
     pub script_engine_workflow_rest_url: String,
     pub mongo: config::Mongo,
+    #[serde(default="default_dv_days_back")]
+    pub dv_days_back: u32,
+    #[serde(default="default_med_days_back")]
+    pub med_days_back: u32,
 }
+fn default_dv_days_back() -> u32 { 7 }
+fn default_med_days_back() -> u32 { 7 }
 
 impl Config {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
@@ -112,6 +118,8 @@ async fn main() {
         create_test_accounts,
         mongo,
         script_engine_workflow_rest_url,
+        dv_days_back,
+        med_days_back,   
     } = config;
     let mut scripts = load_scripts(scripts.into_iter()).unwrap();
 
@@ -144,7 +152,7 @@ async fn main() {
         // so that results can be written to the database in bulk.
         let mut script_threads = Vec::new();
 
-        while let Some(account) = cdi_alerts::next_pending_account(&mongo.url)
+        while let Some(account) = cdi_alerts::next_pending_account(&mongo.url, dv_days_back, med_days_back)
             .await
             // print error message
             .map_err(|e| error!("Failed to get next pending account: {e}"))
