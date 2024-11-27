@@ -8,6 +8,7 @@
 --- Requires
 ---------------------------------------------------------------------------------------------
 require("libs.userdata_types")
+local cdi_alert_link = require "cdi.link"
 
 
 
@@ -24,7 +25,7 @@ require("libs.userdata_types")
 --- @field includeStandardSuffix boolean? If true, the standard suffix will be appended to the link text
 
 --- @class (exact) GetCodeLinksArgs : LinkArgs
---- @field codes string[]? List of codes to search for 
+--- @field codes string[]? List of codes to search for
 --- @field code string? Single code to search for
 --- @field documentTypes string[]? List of document types that the code must be found in
 --- @field predicate (fun(code_reference: CodeReferenceWithDocument): boolean)? Predicate function to filter code references
@@ -94,7 +95,7 @@ end
 function GetAbstractionValueLinks(args)
     if args.includeStandardSuffix == nil or args.includeStandardSuffix then
         args.includeStandardSuffix = false
-        args.text = args.text ..  ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+        args.text = args.text .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
     return GetCodeLinks(args)
 end
@@ -126,7 +127,7 @@ function GetCodeLinks(args)
         linkTemplate = linkTemplate .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
 
-     --- @type CdiAlertLink[]
+    --- @type CdiAlertLink[]
     local links = {}
 
     --- @type CodeReferenceWithDocument[]
@@ -156,7 +157,7 @@ function GetCodeLinks(args)
 
         if documentTypes == nil or #documentTypes == 0 then
             --- @type CdiAlertLink
-            local link = CdiAlertLink:new()
+            local link = cdi_alert_link()
             link.code = code_reference.code
             link.document_id = document.document_id
             link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
@@ -174,7 +175,7 @@ function GetCodeLinks(args)
         else
             for j = 1, #documentTypes do
                 if documentTypes[j] == document.document_type then
-                    local link = CdiAlertLink:new()
+                    local link = cdi_alert_link()
                     link.code = code_reference.code
                     link.document_id = document.document_id
                     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, code_reference, document, nil, nil)
@@ -258,8 +259,7 @@ function GetDocumentLinks(args)
 
     for i = 1, #documents do
         local document = documents[i]
-        --- @type CdiAlertLink
-        local link = CdiAlertLink:new()
+        local link = cdi_alert_link()
         link.document_id = document.document_id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
         link.sequence = sequence
@@ -311,7 +311,7 @@ function GetMedicationLinks(args)
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate ..  ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+        linkTemplate = linkTemplate .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
     end
 
     --- @type CdiAlertLink[]
@@ -358,12 +358,11 @@ function GetMedicationLinks(args)
 
     table.sort(medications, sort)
     for i = 1, #medications do
-        local medication = medications[i]
-        --- @type CdiAlertLink
-        local link = CdiAlertLink:new()
-        link.medication_id  = medication.external_id
-        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
-        link.sequence = sequence
+        local medication   = medications[i]
+        local link         = cdi_alert_link()
+        link.medication_id = medication.external_id
+        link.link_text     = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
+        link.sequence      = sequence
         if onlyOne then
             if targetTable then
                 table.insert(targetTable, link)
@@ -410,10 +409,10 @@ function GetDiscreteValueLinks(args)
     end
 
     if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate ..  ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+        linkTemplate = linkTemplate .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
     end
 
-     --- @type CdiAlertLink[]
+    --- @type CdiAlertLink[]
     local links = {}
     --- @type DiscreteValue[]
     local discrete_values = {}
@@ -436,8 +435,7 @@ function GetDiscreteValueLinks(args)
 
     for i = 1, #discrete_values do
         local discrete_value = discrete_values[i]
-        --- @type CdiAlertLink
-        local link = CdiAlertLink:new()
+        local link = cdi_alert_link()
         link.discrete_value_name = discrete_value.name
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
         link.sequence = sequence
@@ -521,7 +519,6 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
     return link
 end
 
-
 --------------------------------------------------------------------------------
 --- Create a link to a header
 ---
@@ -530,7 +527,7 @@ end
 --- @return CdiAlertLink - the link to the header
 --------------------------------------------------------------------------------
 function MakeHeaderLink(headerText)
-    local link = CdiAlertLink:new()
+    local link = cdi_alert_link()
     link.link_text = headerText
     return link
 end
@@ -582,9 +579,8 @@ function GetExistingCdiAlert(args)
     return nil
 end
 
-
 --------------------------------------------------------------------------------
---- Convert a date string to an integer 
+--- Convert a date string to an integer
 ---
 --- @param dateString string The date string to convert
 ---
@@ -593,7 +589,7 @@ end
 function DateStringToInt(dateString)
     local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
     local year, month, day, hour, min, sec, _ = dateString:match(pattern)
-    return os.time({year=year, month=month, day=day, hour=hour, min=min, sec=sec})
+    return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 end
 
 --------------------------------------------------------------------------------
@@ -665,8 +661,8 @@ function CheckDvResultNumber(discreteValue, predicate)
     end
 end
 
---- @class (exact) GetOrderedDiscreteValuesArgs 
---- @field account Account? Account object (uses global account if not provided) 
+--- @class (exact) GetOrderedDiscreteValuesArgs
+--- @field account Account? Account object (uses global account if not provided)
 --- @field discreteValueName string The name of the discrete value to search for
 --- @field daysBack number? The number of days back to search for discrete values (default 7)
 --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
@@ -700,7 +696,7 @@ function GetOrderedDiscreteValues(args)
 end
 
 --------------------------------------------------------------------------------
---- Get the highest discrete value in the account that matches some criteria 
+--- Get the highest discrete value in the account that matches some criteria
 ---
 --- @param args GetOrderedDiscreteValuesArgs a table of arguments
 ---
@@ -745,10 +741,8 @@ function GetLowestDiscreteValue(args)
     return lowest
 end
 
-
-
 --- @class (exact) GetDiscreteValueNearestToDateArgs
---- @field account Account? Account object (uses global account if not provided) 
+--- @field account Account? Account object (uses global account if not provided)
 --- @field discreteValueName string The name of the discrete value to search for
 --- @field date string The date to search for the nearest discrete value to
 --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
@@ -786,7 +780,7 @@ function GetDiscreteValueNearestToDate(args)
 end
 
 --- @class (exact) GetDiscreteValueNearestAfterDateArgs
---- @field account Account? Account object (uses global account if not provided) 
+--- @field account Account? Account object (uses global account if not provided)
 --- @field discreteValueName string The name of the discrete value to search for
 --- @field date string The date to search for the nearest discrete value to
 --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
@@ -823,7 +817,7 @@ function GetDiscreteValueNearestAfterDate(args)
 end
 
 --- @class (exact) GetDiscreteValueNearestBeforeDateArgs
---- @field account Account? Account object (uses global account if not provided) 
+--- @field account Account? Account object (uses global account if not provided)
 --- @field discreteValueName string The name of the discrete value to search for
 --- @field date string The date to search for the nearest discrete value to
 --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
@@ -871,16 +865,15 @@ end
 --------------------------------------------------------------------------------
 function GetLinkForDiscreteValue(discreteValue, linkTemplate, sequence, includeStandardSuffix)
     if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate ..  ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+        linkTemplate = linkTemplate .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
     end
 
-    local link = CdiAlertLink:new()
+    local link = cdi_alert_link()
     link.discrete_value_name = discreteValue.name
     link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discreteValue, nil)
     link.sequence = sequence
     return link
 end
-
 
 --------------------------------------------------------------------------------
 --- Get account codes matching a prefix
@@ -1018,11 +1011,11 @@ end
 
 --------------------------------------------------------------------------------
 --- Get the account codes that are present as keys in the provided dictionary
---- 
+---
 --- @param account Account The account to get the codes from
 --- @param dvNames string[] The names of the discrete values to check against
 --- @param minDateInt number The minimum date to check against
---- 
+---
 --- @return number[] - List of dates in discrete values that are present on the account
 --------------------------------------------------------------------------------
 function GetDvDates(account, dvNames, minDateInt)
