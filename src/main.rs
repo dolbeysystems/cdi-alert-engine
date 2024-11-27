@@ -37,22 +37,7 @@ pub struct Config {
 
 impl Config {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        use mlua::StdLib;
-        // Create a very light Lua runtime for evaluating the config file.
-        // Initializing a Lua runtime is cheap, but loading its libraries is not.
-        // There are two solutions for this: either load a subset of libraries,
-        // or "preload" the lua libraries and initialize them if a script `require`s them.
-        // The latter solution is better, but requires allowing the Lua runtime to open
-        // arbitrary native libraries which requires the use of `unsafe`, so we'll
-        // just load a subset for the time being.
-        // (it actually looks like Lua::load_from_stdlib might work but i'm not sure about the overhead)
-        let lua = mlua::Lua::new_with(
-            // The package library is always necessary, as it provides `require`.
-            StdLib::PACKAGE
-            // The table library is useful for modifying the list of loaded scripts.
-            | StdLib::TABLE,
-            mlua::LuaOptions::default(),
-        )?;
+        let lua = mlua::Lua::new();
         let path = path.as_ref();
         lua.load(&fs::read_to_string(path)?)
             .set_name(path.to_string_lossy())
@@ -198,7 +183,7 @@ async fn main() {
                 script_threads.push(task::spawn_blocking(move || {
                     profiling::scope!("executing script");
 
-                    let lua = make_runtime();
+                    let lua = make_runtime().unwrap();
                     let script_name = script.path.to_string_lossy();
                     let _enter =
                         error_span!("lua", path = &*script_name, account = &account.id).entered();
@@ -276,21 +261,21 @@ async fn main() {
 
 #[allow(clippy::unwrap_used)]
 #[profiling::function]
-fn make_runtime() -> Lua {
+fn make_runtime() -> mlua::Result<Lua> {
     let lua = Lua::new();
+    let log = lua.create_table()?;
 
     macro_rules! register_logging {
         ($type:ident) => {
-            lua.globals()
-                .set(
-                    stringify!($type),
-                    lua.create_function(|_lua, s: String| {
-                        $type!("{s}");
-                        Ok(())
-                    })
-                    .unwrap(),
-                )
-                .unwrap();
+            log.set(
+                stringify!($type),
+                lua.create_function(|_, s: String| {
+                    $type!("{s}");
+                    Ok(())
+                })
+                .unwrap(),
+            )
+            .unwrap();
         };
     }
 
@@ -299,30 +284,25 @@ fn make_runtime() -> Lua {
     register_logging!(info);
     register_logging!(debug);
 
-    lua.globals()
-        .set(
-            "CdiAlertLink",
-            lua.create_table_from([(
-                "new",
-                lua.create_function(|_lua, ()| Ok(cac_data::CdiAlertLink::default()))
-                    .unwrap(),
-            )])
-            .unwrap(),
-        )
-        .unwrap();
-    lua.globals()
-        .set(
-            "DiscreteValue",
-            lua.create_table_from([(
-                "new",
-                lua.create_function(|_lua, (id, name): (String, _)| {
-                    Ok(cac_data::DiscreteValue::new(&id, name))
-                })
-                .unwrap(),
-            )])
-            .unwrap(),
-        )
-        .unwrap();
+    lua.load_from_function::<mlua::Value>(
+        "cdi.log",
+        lua.create_function(move |_, ()| Ok(log.clone()))?,
+    )?;
+    // TODO: Why aren't these used anywhere?
+    lua.load_from_function::<mlua::Value>(
+        "cdi.link",
+        lua.create_function(move |lua, ()| {
+            lua.create_function(|_, ()| Ok(cac_data::CdiAlertLink::default()))
+        })?,
+    )?;
+    lua.load_from_function::<mlua::Value>(
+        "cdi.discrete_value",
+        lua.create_function(move |lua, ()| {
+            lua.create_function(|_, (id, name): (String, _)| {
+                Ok(cac_data::DiscreteValue::new(&id, name))
+            })
+        })?,
+    )?;
 
-    lua
+    Ok(lua)
 }
