@@ -276,13 +276,14 @@ if not existingAlert or not existingAlert.validated then
             GetCodeLinks { code = "R11.11", text = "Vomiting Without Nausea", seq = 25, target = clinicalEvidenceHeader }
             GetAbstractionLinks { code = "WEAKNESS", text = "Muscle Weakness", seq = 26, target = clinicalEvidenceHeader }
 
-            if not GetDiscreteValueLinks {
+            local bloodGlucoseLinks = GetDiscreteValueLinks {
                 dvNames = bloodGlucoseDvNames,
                 predicate = bloodGlucosePredicate,
                 text = "Blood Glucose",
                 maxPerValue = 1,
                 target = labsHeader
-            } then
+            } or {}
+            if #bloodGlucoseLinks == 0 then
                 GetDiscreteValueLinks {
                     dvNames = blooGlucosePocDvNames,
                     predicate = bloodGlucosePocPredicate,
