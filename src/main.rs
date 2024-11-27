@@ -277,8 +277,8 @@ fn make_runtime() -> mlua::Result<Lua> {
         ($type:ident) => {
             log.set(
                 stringify!($type),
-                lua.create_function(|_, s: String| {
-                    $type!("{s}");
+                lua.create_function(|_, s: mlua::String| {
+                    $type!("{}", s.to_str()?.as_ref());
                     Ok(())
                 })
                 .unwrap(),
