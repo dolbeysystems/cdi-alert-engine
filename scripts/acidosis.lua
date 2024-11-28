@@ -169,6 +169,31 @@ if not existingAlert or not existingAlert.validated then
     }
     local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
 
+    --------------------------------------------------------------------------------
+    --- Predicate function filtering a medication list to only include medications 
+    --- within 12 hours of one of these three discrete values: arterialBlood, pH, blood CO2
+    --- 
+    --- @param med Medication Medication being filtered
+    --- 
+    --- @return boolean True if the medication passes, false otherwise
+    --------------------------------------------------------------------------------
+    local acidosisMedPredicate = function (med)
+        local medDvDates = {}
+        for _, date in ipairs(GetDvDates(Account, arterialBloodPHDvName)) do table.insert(medDvDates, date) end
+        for _, date in ipairs(GetDvDates(Account, pHDvName)) do table.insert(medDvDates, date) end
+        for _, date in ipairs(GetDvDates(Account, bloodCO2DvName)) do table.insert(medDvDates, date) end
+
+        local medDate = DateStringToInt(med.start_date)
+        for _, dvDate in ipairs(medDvDates) do
+            local dvDateAfter = dvDate + 12 * 60 * 60
+            local dvDateBefore = dvDate - 12 * 60 * 60
+            if medDate >= dvDateBefore and medDate <= dvDateAfter then
+                return true
+            end
+        end
+        return false
+    end
+
 
 
     --------------------------------------------------------------------------------
@@ -276,13 +301,85 @@ if not existingAlert or not existingAlert.validated then
         maxPerValue = 9999
     }
 
+    -- Meds
+    local albuminMedicationLinks = GetMedicationLinks {
+        cat = "Albumin",
+        text = "Albumin",
+        useCdiAlertCategoryField = true,
+        maxPerValue = 9999,
+        predicate = acidosisMedPredicate
+    }
+    local fluidBolusMedicationLinks = GetMedicationLinks {
+        cat = "Fluid Bolus",
+        text = "Fluid Bolus",
+        useCdiAlertCategoryField = true,
+        maxPerValue = 9999,
+        predicate = acidosisMedPredicate
+    }
+    local fluidBolusAbstractionLinks = GetAbstractionValueLinks {
+        code = "FLUID_BOLUS",
+        text = "Fluid Bolus"
+    }
+    local fluidResuscitationAbstractionLinks = GetAbstractionValueLinks {
+        code = "FLUID_RESCUSITATION",
+        text = "Fluid Resuscitation"
+    }
+    local sodiumBicarbonateMedLink = GetMedicationLinks {
+        cat = "Sodium Bicarbonate",
+        text = "Sodium Bicarbonate",
+        useCdiAlertCategoryField = true,
+        maxPerValue = 9999,
+        predicate = acidosisMedPredicate
+    }
+    local sodiumBicarbonateAbstractionLinks = GetAbstractionValueLinks {
+        code = "SODIUM_BICARBONATE",
+        text = "Sodium Bicarbonate"
+    }
+
+    local fullSpecifiedExist =
+        #accountAlertCodes >= 1 or
+        chronicRepiratoryAcidosisAbstractionLink ~= nil or
+        lacticAcidosisAbstractionLink ~= nil or
+        metaAcidosisAbstractionLink ~= nil
+
+    local unspecifiedExist =
+        e8720CodeLink ~= nil or
+        e8729CodeLink ~= nil or
+        acuteAcidosisAbtractionLink ~= nil or
+        chronicAcidosisAbstractionLink ~= nil
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
+    -- Auto resolve alert if it currently triggered for acute respiratory acidosis
+    if subtitle == "Possible Acute Respiratory Acidosis" and (acuteRespiratoryAcidosisAbstractionLink or j9602CodeLink) then
+        for _, code in pairs(accountAlertCodes) do
+            local codeLink = GetCodeLinks {
+                code = code,
+                text = "Autoresolved Specified Code - " .. alertCodeDictionary[code]
+            }
+            if codeLink then
+                table.insert(documentedDxLinks, codeLink)
+                break
+            end
+        end
 
+        if j9602CodeLink then
+            j9602CodeLink.link_text = "Autoresolved Evidence - " .. j9602CodeLink.link_text
+            table.insert(documentedDxLinks, j9602CodeLink)
+        end
+        if acuteRespiratoryAcidosisAbstractionLink then
+            acuteAcidosisAbtractionLink.link_text = "Autoresolved Evidence - " .. acuteRespiratoryAcidosisAbstractionLink.link_text
+            table.insert(documentedDxLinks, acuteRespiratoryAcidosisAbstractionLink)
+        end
+
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+    end
 
 
 
