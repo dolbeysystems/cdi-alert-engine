@@ -7,7 +7,6 @@
 ---------------------------------------------------------------------------------------------
 --- Requires
 ---------------------------------------------------------------------------------------------
-require("libs.userdata_types")
 local cdi_alert_link = require "cdi.link"
 
 
@@ -1027,4 +1026,3 @@ function GetDvDates(account, dvNames)
     end
     return dvDates
 end
-
