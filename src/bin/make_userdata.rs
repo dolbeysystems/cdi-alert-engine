@@ -2,6 +2,8 @@ use alua::ClassAnnotation;
 use cdi_alert_engine::cac_data::*;
 
 fn main() {
+    println!("---@meta _");
+    println!();
     println!("{}", Account::class_annotation());
     println!("{}", Patient::class_annotation());
     println!("{}", CACDocument::class_annotation());

@@ -7,7 +7,6 @@
 ---------------------------------------------------------------------------------------------
 --- Requires
 ---------------------------------------------------------------------------------------------
-require("libs.userdata_types")
 local cdi_alert_link = require "cdi.link"
 
 
@@ -1014,18 +1013,15 @@ end
 ---
 --- @param account Account The account to get the codes from
 --- @param dvNames string[] The names of the discrete values to check against
---- @param minDateInt number The minimum date to check against
 ---
 --- @return number[] - List of dates in discrete values that are present on the account
 --------------------------------------------------------------------------------
-function GetDvDates(account, dvNames, minDateInt)
+function GetDvDates(account, dvNames)
     local dvDates = {}
     for _, dvName in ipairs(dvNames) do
         for _, dv in ipairs(account:find_discrete_values(dvName)) do
             local dvDate = DateStringToInt(dv.result_date)
-            if dvDate >= minDateInt then
-                table.insert(dvDates, dvDate)
-            end
+            table.insert(dvDates, dvDate)
         end
     end
     return dvDates
