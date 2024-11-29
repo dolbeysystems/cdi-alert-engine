@@ -1030,3 +1030,85 @@ function GetDvDates(account, dvNames, minDateInt)
     end
     return dvDates
 end
+
+---@class GetDiscreteValuesAsSingleLinkArgs
+---@field account Account The account to get the discrete values from
+---@field dvNames string[] The names of the discrete values to check against
+---@field dvName string The name of the discrete value
+---@field linkText string The text of the link_text
+---@field target table The target table to insert the link into
+--------------------------------------------------------------------------------
+--- Get discrete values on an account and return a single link containing all
+--- numeric values as one link 
+--- 
+--- @param params GetDiscreteValuesAsSingleLinkArgs a table of arguments
+--- 
+--- @return CdiAlertLink? - The link to the discrete values or nil if not found
+--------------------------------------------------------------------------------
+function GetDvValuesAsSingleLink(params)
+    local account = params.account or Account
+    local dvNames = params.dvNames or  { params.dvName }
+    local linkText = params.linkText
+    local targetTable = params.target
+    local discreteValues = {}
+
+    --- @type string
+    local firstDate = nil
+    --- @type string
+    local lastDate = nil
+    --- @type string
+    local concatValues = ""
+    --- @type string
+    local id = nil
+
+    for _, dvName in dvNames do
+        local discreteValuesForName = account:find_discrete_values(dvName)
+        for _, dv in discreteValuesForName do
+            table.insert(discreteValues, dv) 
+        end
+    end
+    table.sort(discreteValues, function(a, b)
+        return DateStringToInt(a.result_date) > DateStringToInt(b.result_date)
+    end)
+
+    if #discreteValues == 0 then
+        return nil
+    end
+
+    for _, dv in ipairs(discreteValues) do
+        if firstDate == nil and dv.result_date then
+            firstDate = dv.result_date
+        end
+        if dv.result_date then
+            lastDate = dv.result_date
+        end
+        if id == nil and dv.unique_id then
+            id = dv.unique_id
+        end
+
+        local cleanedValue = dv.result:gsub("[\\>\\>]", "")
+        if tonumber(cleanedValue) then
+            concatValues = concatValues .. cleanedValue .. ", "
+        end
+    end
+
+    -- Remove final trailing , 
+    if concatValues ~= "" then
+        concatValues = concatValues:sub(1, -3)
+    end
+
+    if firstDate and lastDate then
+        linkText = linkText:gsub("%[DATE1%]", firstDate)
+        linkText = linkText:gsub("%[DATE2%]", lastDate)
+        linkText = linkText .. concatValues
+        local link = cdi_alert_link()
+        link.discrete_value_name = dvNames[1]
+        link.link_text = linkText
+        link.discrete_value_id = id
+
+        if targetTable then
+            table.insert(targetTable, link)
+        end
+        return link
+    end
+end
