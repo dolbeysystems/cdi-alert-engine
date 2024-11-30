@@ -1,3 +1,5 @@
+---@meta _
+
 --- @class Account
 --- @field id string - Account number
 --- @field admit_date_time string? -
