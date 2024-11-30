@@ -150,6 +150,11 @@ if not existingAlert or not existingAlert.validated then
     --- @type string[]
     local urineKetonesDvName = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
+    local possibleAcuteRespiratoryAcidosisSubtitle = "Possible Acute Respiratory Acidosis"
+    local respiratoryAcidosisLackingEvidenceSubtitle = "Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence"
+    local possibleLacticAcidosisSubtitle = "Possible Lactic Acidosis"
+    local possibleAcidosisSubtitle = "Possible Acidosis"
+
     
     local alertCodeDictionary = {
         ["E08.10"] = "Diabetes mellitus due to underlying condition with ketoacidosis without coma",
@@ -200,7 +205,7 @@ if not existingAlert or not existingAlert.validated then
     --- Top-Level Link Header Variables
     --------------------------------------------------------------------------------
     local resultLinks = {}
-    
+
     local documentedDxHeader = MakeHeaderLink("Documented Dx")
     local documentedDxLinks = {}
     local labsHeader = MakeHeaderLink("Laboratory Studies")
@@ -354,7 +359,7 @@ if not existingAlert or not existingAlert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
     -- Auto resolve alert if it currently triggered for acute respiratory acidosis
-    if subtitle == "Possible Acute Respiratory Acidosis" and (acuteRespiratoryAcidosisAbstractionLink or j9602CodeLink) then
+    if subtitle == possibleAcuteRespiratoryAcidosisSubtitle and (acuteRespiratoryAcidosisAbstractionLink or j9602CodeLink) then
         for _, code in pairs(accountAlertCodes) do
             local codeLink = GetCodeLinks {
                 code = code,
@@ -379,6 +384,9 @@ if not existingAlert or not existingAlert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
+
+    -- Auto resolve alert if it currently triggered for acute respiratory acidosis
+
     end
 
 
