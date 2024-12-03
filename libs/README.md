@@ -31,8 +31,9 @@ functions (GetCodeLink, etc.)
 #### abstractValue(abstraction_name, link_text, calculation, sequence=0, category=None, abstract=False)
 
 Look at the suffix of link_text, it will be one of these two:
-    " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+
+1. `" '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"`
+2. `": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"`
 
 If it's the first one (without the ABSTRACTVALUE):
 
