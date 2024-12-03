@@ -94,11 +94,8 @@ if not existingAlert or not existingAlert.validated then
     local r8271Code = GetCodeLinks { code = "R82.71", text = "Bacteriuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 1 }
     local r8279Code = GetCodeLinks { code = "R82.79", text = "Positive Urine Culture: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 7 }
     local r8281Code = GetCodeLinks { code = "R82.81", text = "Pyuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 8 }
-    -- #Labs
-    -- cUrineDV = dvcUrineCheck(dict(maindiscreteDic), dvCUrine, "Urine Culture: '[VALUE]' (Result Date: [RESULTDATETIME])", 4)
-    -- #Urine
-    -- bacteriaUrineDV = dvUrineCheck(dict(maindiscreteDic), dvUABacteria, "UA Bacteria: [VALUE] (Result Date: [RESULTDATETIME])", 1)
-    -- #uti
+    -- urineCulture = dvcUrineCheck(dict(maindiscreteDic), dvCUrine, "Urine Culture: '[VALUE]' (Result Date: [RESULTDATETIME])", 4)
+    -- urineBacteria = dvUrineCheck(dict(maindiscreteDic), dvUABacteria, "UA Bacteria: [VALUE] (Result Date: [RESULTDATETIME])", 1)
     local chronicCystostomyCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_CYSTOSTOMY_CATHETER",
         text = "Cystostomy Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
@@ -164,6 +161,23 @@ if not existingAlert or not existingAlert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
 
+    --- This function returns false if all of its parameters are nil,
+    --- in order to make it usable as a condition.
+    ---@param ... CdiAlertLink[]?[]
+    ---@return boolean
+    local function addLinks(...)
+        local hadNonNil = false
+        for _, links in pairs { ... } do
+            if links ~= nil then
+                for _, link in ipairs(links) do
+                    table.insert(documentedDxLinks, link)
+                end
+                hadNonNil = true
+            end
+        end
+        return hadNonNil
+    end
+
     if #accountAlertCodes > 0 then
         local code = accountAlertCodes[1]
         local codeDesc = alertCodeDictionary[code]
@@ -174,148 +188,65 @@ if not existingAlert or not existingAlert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-    elseif utiCode == nil and n390Code ~= nil and (chronicCystostomyCatheterAbstractionLink ~= nil or cystostomyCatheterAbstractionLink ~= nil) then
-        if chronicCystostomyCatheterAbstractionLink ~= nil then
-            for _, link in ipairs(chronicCystostomyCatheterAbstractionLink) do
-                table.insert(documentedDxLinks, link)
-            end
+    elseif utiCode == nil and n390Code ~= nil then
+        if addLinks(chronicCystostomyCatheterAbstractionLink, cystostomyCatheterAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
+            Result.passed = true
+        elseif addLinks(chronicIndwellingUrethralCatheterAbstractionLink, indwellingUrethralCatheterAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Indwelling Urethral Catheter"
+            Result.passed = true
+        elseif addLinks(chronicNephrostomyCatheterAbstractionLink, nephrostomyCatheterAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
+            Result.passed = true
+            -- #5
+        elseif addLinks(chronicUrinaryDrainageDeviceAbstractionLink, urinaryDrainageDeviceAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
+            Result.passed = true
+            -- #6
+        elseif addLinks(chronicUreteralStentAbstractionLink, ureteralStentAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Ureteral Stent"
+            Result.passed = true
+            -- #7
+        elseif addLinks(selfCatheterizationAbstractionLink, straightCatheterizationAbstractionLink) then
+            table.insert(documentedDxLinks, n390Code)
+            Result.subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
+            Result.passed = true
         end
-        if cystostomyCatheterAbstractionLink ~= nil then
-            for _, link in ipairs(cystostomyCatheterAbstractionLink) do
-                table.insert(documentedDxLinks, link)
+    elseif urineCulture or r8271Code or r8279Code or r8281Code or urineBacteria then
+        if n390Code == nil then
+            if addLinks(chronicCystostomyCatheterAbstractionLink) then
+                Result.subtitle = "Possible UTI with Possible Link to Cystostomy Catheter"
+                Result.passed = true
+            elseif addLinks(chronicIndwellingUrethralCatheterAbstractionLink) then
+                Result.subtitle = "Possible UTI With Possible Link to Indwelling Urethral Catheter"
+                Result.passed = true
+            elseif addLinks(chronicNephrostomyCatheterAbstractionLink) then
+                Result.subtitle = "Possible UTI With Possible Link to Nephrostomy Catheter"
+                Result.passed = true
+            elseif addLinks(chronicUrinaryDrainageDeviceAbstractionLink) then
+                Result.subtitle = "Possible UTI With Possible Link to Other Urinary Drainage Device"
+                Result.passed = true
             end
+        elseif addLinks(chronicUreteralStentAbstractionLink, ureteralStentAbstractionLink) then
+            addLinks(urineBacteria)
+            addLinks(r8271Code)
+            Result.subtitle = "Possible UTI with Possible Link to Ureteral Stent"
+            Result.passed = true
+        elseif addLinks(selfCatheterizationAbstractionLink, straightCatheterizationAbstractionLink) then
+            addLinks(urineBacteria)
+            addLinks(r8271Code)
+            Result.subtitle = "Possible UTI with Possible Link to Intermittent Catheterization"
+            Result.passed = true
         end
-        table.insert(documentedDxLinks, n390Code)
-        Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
+    elseif #accountAlertCodes == 0 and n390Code == nil and (urineCulture or urineBacteria) then --TODO
+        Result.subtitle = "Possible UTI"
         Result.passed = true
     end
-    -- elif UTICode is None and n390Code is not None and (chronicIndwellingUrethralCatheterAbs is not None or indwellingUrethralCatheterAbs is not None):
-    --     if chronicIndwellingUrethralCatheterAbs is not None: dc.Links.Add(chronicIndwellingUrethralCatheterAbs)
-    --     if indwellingUrethralCatheterAbs is not None: dc.Links.Add(indwellingUrethralCatheterAbs)
-    --     dc.Links.Add(n390Code)
-    --     result.Subtitle = "UTI Dx Possible Link To Indwelling Urethral Catheter"
-    --     AlertPassed = True
-    -- #4
-    -- elif UTICode is None and n390Code is not None and (chronicNephrostomyCatheterAbs is not None or nephrostomyCatheterAbs is not None):
-    --     if chronicNephrostomyCatheterAbs is not None: dc.Links.Add(chronicNephrostomyCatheterAbs)
-    --     if nephrostomyCatheterAbs is not None: dc.Links.Add(nephrostomyCatheterAbs)
-    --     dc.Links.Add(n390Code)
-    --     result.Subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
-    --     AlertPassed = True
-    -- #5
-    -- elif UTICode is None and n390Code is not None and (chronicUrinaryDrainageDeviceAbs is not None or urinaryDrainageDeviceAbs is not None):
-    --     if chronicUrinaryDrainageDeviceAbs is not None: dc.Links.Add(chronicUrinaryDrainageDeviceAbs)
-    --     if urinaryDrainageDeviceAbs is not None: dc.Links.Add(urinaryDrainageDeviceAbs)
-    --     dc.Links.Add(n390Code)
-    --     result.Subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
-    --     AlertPassed = True
-    -- #6
-    -- elif UTICode is None and n390Code is not None and (chronicUreteralStentAbs is not None or ureteralStentAbs is not None):
-    --     dc.Links.Add(n390Code)
-    --     if chronicUreteralStentAbs is not None: dc.Links.Add(chronicUreteralStentAbs)
-    --     if ureteralStentAbs is not None: dc.Links.Add(ureteralStentAbs)
-    --     result.Subtitle = "UTI Dx Possible Link To Ureteral Stent"
-    --     AlertPassed = True
-    -- #7
-    -- elif UTICode is None and n390Code is not None and (selfCatheterizationAbs is not None or straghtCatheterizationAbs is not None):
-    --     dc.Links.Add(n390Code)
-    --     if selfCatheterizationAbs is not None: dc.Links.Add(selfCatheterizationAbs)
-    --     if straghtCatheterizationAbs is not None: dc.Links.Add(straghtCatheterizationAbs)
-    --     result.Subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
-    --     AlertPassed = True
-    -- #8
-    -- elif (
-    --     n390Code is None and
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     chronicCystostomyCatheterAbs is not None
-    -- ):
-    --     dc.Links.Add(chronicCystostomyCatheterAbs)
-    --     result.Subtitle = "Possible UTI with Possible Link to Cystostomy Catheter"
-    --     AlertPassed = True
-    -- #9
-    -- elif (
-    --     n390Code is None and
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     chronicIndwellingUrethralCatheterAbs is not None
-    -- ):
-    --     dc.Links.Add(chronicIndwellingUrethralCatheterAbs)
-    --     result.Subtitle = "Possible UTI With Possible Link to Indwelling Urethral Catheter"
-    --     AlertPassed = True
-    -- #10
-    -- elif (
-    --     n390Code is None and
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     chronicNephrostomyCatheterAbs is not None
-    -- ):
-    --     if chronicNephrostomyCatheterAbs is not None: dc.Links.Add(chronicNephrostomyCatheterAbs)
-    --     result.Subtitle = "Possible UTI With Possible Link to Nephrostomy Catheter"
-    --     AlertPassed = True
-    -- #11
-    -- elif (
-    --     n390Code is None and
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     chronicUrinaryDrainageDeviceAbs is not None
-    -- ):
-    --     if chronicUrinaryDrainageDeviceAbs is not None: dc.Links.Add(chronicUrinaryDrainageDeviceAbs)
-    --     result.Subtitle = "Possible UTI With Possible Link to Other Urinary Drainage Device"
-    --     AlertPassed = True
-    -- #12
-    -- elif (
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     (chronicUreteralStentAbs is not None or
-    --     ureteralStentAbs is not None)
-    -- ):
-    --     if bacteriaUrineDV is not None: dc.Links.Add(bacteriaUrineDV)
-    --     if r8271Code is not None: dc.Links.Add(r8271Code)
-    --     if chronicUreteralStentAbs is not None: dc.Links.Add(chronicUreteralStentAbs)
-    --     if ureteralStentAbs is not None: dc.Links.Add(ureteralStentAbs)
-    --     result.Subtitle = "Possible UTI with Possible Link to Ureteral Stent"
-    --     AlertPassed = True
-    -- #13
-    -- elif (
-    --     (cUrineDV or
-    --     r8271Code is not None or
-    --     r8279Code is not None or
-    --     bacteriaUrineDV is not None or
-    --     r8281Code is not None) and
-    --     (selfCatheterizationAbs is not None or
-    --     straghtCatheterizationAbs is not None)
-    -- ):
-    --     if bacteriaUrineDV is not None: dc.Links.Add(bacteriaUrineDV)
-    --     if r8271Code is not None: dc.Links.Add(r8271Code)
-    --     if selfCatheterizationAbs is not None: dc.Links.Add(selfCatheterizationAbs)
-    --     if straghtCatheterizationAbs is not None: dc.Links.Add(straghtCatheterizationAbs)
-    --     result.Subtitle = "Possible UTI with Possible Link to Intermittent Catheterization"
-    --     AlertPassed = True
-    -- #14
-    -- elif codesExist == 0 and n390Code is None and (cUrineDV or bacteriaUrineDV):
-    --     result.Subtitle = "Possible UTI"
-    --     AlertPassed = True
-
-    -- else:
-    --     db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-    --     result.Passed = False
-    --     AlertPassed = False
 
     if Result.passed then
         --------------------------------------------------------------------------------

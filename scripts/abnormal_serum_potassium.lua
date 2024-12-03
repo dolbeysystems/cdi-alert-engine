@@ -131,16 +131,15 @@ if not existingAlert or not existingAlert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local e875CodeLink = GetCodeLinks { code = "E87.5", text = "Hyperkalemia Fully Specified Code" }
-    local e876CodeLink = GetCodeLinks { code = "E87.6", text = "Hypokalemia Fully Specified Code" }
+    local e875CodeLink = GetCodeLink { code = "E87.5", text = "Hyperkalemia Fully Specified Code" }
+    local e876CodeLink = GetCodeLink { code = "E87.6", text = "Hypokalemia Fully Specified Code" }
 
     function GetPotassiumDvLinks (dvPredicate)
         return GetDiscreteValueLinks {
             discreteValueNames = potassiumDvNames,
             text = "Serum Potassium",
             predicate = dvPredicate,
-            maxPerValue = 9999,
-        } or {}
+        }
     end
 
     local serumPotassiumDvVeryLowLinks = GetPotassiumDvLinks(potassiumVeryLowPredicate)
@@ -148,17 +147,17 @@ if not existingAlert or not existingAlert.validated then
     local serumPotassiumDvHighLinks = GetPotassiumDvLinks(potassiumHighPredicate)
     local serumPotassiumDvVeryHighLinks = GetPotassiumDvLinks(potassiumVeryHighPredicate)
 
-    local dextroseMedicationLink = GetMedicationLinks {
+    local dextroseMedicationLink = GetMedicationLink {
         cat = dextroseMedicationName,
         text = "Dextrose",
         seq = 1,
     }
-    local hemodialysisCodesLink = GetCodeLinks {
+    local hemodialysisCodesLinks = GetCodeLinks {
         codes = { "5A1D70Z", "5A1D80Z", "5A1D90Z" },
         text = "Hemodialysis",
         seq = 2,
     }
-    local insulinMedicationLink = GetMedicationLinks {
+    local insulinMedicationLink = GetMedicationLink {
         cat = insulinMedicationName,
         text = "Insulin",
         predicate = function(med)
@@ -172,11 +171,11 @@ if not existingAlert or not existingAlert.validated then
         end,
         seq = 3,
     }
-    local kayexalateMedLink = GetMedicationLinks { cat = kayexalateMedicationName, text = "Kayexalate", seq = 4 }
-    local potassiumReplacementMedLink = GetMedicationLinks { cat = potassiumReplacementMedicationName, text = "Potassium Replacement", seq = 5 }
-    local potassiumChlorideAbsLink = GetAbstractionValueLinks { code = "POTASSIUM_CHLORIDE", text = "Potassium Chloride Absorption", seq = 6 }
-    local potassiumPhosphateAbsLink = GetAbstractionValueLinks { code = "POTASSIUM_PHOSPHATE", text = "Potassium Phosphate Absorption", seq = 7 }
-    local potassiumBiCarbonateAbsLink = GetAbstractionValueLinks { code = "POTASSIUM_BICARBONATE", text = "Potassium Bicarbonate Absorption", seq = 8 }
+    local kayexalateMedLink = GetMedicationLink { cat = kayexalateMedicationName, text = "Kayexalate", seq = 4 }
+    local potassiumReplacementMedLink = GetMedicationLink { cat = potassiumReplacementMedicationName, text = "Potassium Replacement", seq = 5 }
+    local potassiumChlorideAbsLink = GetAbstractionValueLink { code = "POTASSIUM_CHLORIDE", text = "Potassium Chloride Absorption", seq = 6 }
+    local potassiumPhosphateAbsLink = GetAbstractionValueLink { code = "POTASSIUM_PHOSPHATE", text = "Potassium Phosphate Absorption", seq = 7 }
+    local potassiumBiCarbonateAbsLink = GetAbstractionValueLink { code = "POTASSIUM_BICARBONATE", text = "Potassium Bicarbonate Absorption", seq = 8 }
 
 
 
@@ -239,7 +238,7 @@ if not existingAlert or not existingAlert.validated then
     elseif not e875CodeLink and #serumPotassiumDvVeryHighLinks > 1 and (
         kayexalateMedLink or
         (insulinMedicationLink and dextroseMedicationLink) or
-        #hemodialysisCodesLink > 1
+        #hemodialysisCodesLinks > 1
     ) then
         for _, link in ipairs(serumPotassiumDvHighLinks) do
             table.insert(potassiumLinks, link)
@@ -292,19 +291,19 @@ if not existingAlert or not existingAlert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            GetCodeLinks { code = "E27.1", text = "Addison's Disease", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.0", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.1", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.2", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.3", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.4", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.8", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E24.9", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "DIARRHEA", text = "Diarrhea", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R53.83", text = "Fatigue", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E27.1", text = "Addison's Disease", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.0", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.1", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.2", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.3", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.4", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.8", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E24.9", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "DIARRHEA", text = "Diarrhea", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R53.83", text = "Fatigue", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinicalEvidenceLinks }
             GetCodeLinks {
                 codes = {
                     "N17.0", "N17.1", "N17.2", "N18.30", "N18.31", "N18.32",
@@ -314,12 +313,12 @@ if not existingAlert or not existingAlert.validated then
                 text = "Kidney Failure",
                 target = clinicalEvidenceLinks
             }
-            GetAbstractionLinks { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "WEAKNESS", text = "Muscle Weakness", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "VOMITING", text = "Vomiting", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "WEAKNESS", text = "Muscle Weakness", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "VOMITING", text = "Vomiting", target = clinicalEvidenceLinks }
 
             table.insert(treatmentAndMonitoringLinks, dextroseMedicationLink)
-            table.insert(treatmentAndMonitoringLinks, hemodialysisCodesLink)
+            table.insert(treatmentAndMonitoringLinks, hemodialysisCodesLinks)
             table.insert(treatmentAndMonitoringLinks, insulinMedicationLink)
             table.insert(treatmentAndMonitoringLinks, kayexalateMedLink)
             table.insert(treatmentAndMonitoringLinks, potassiumReplacementMedLink)

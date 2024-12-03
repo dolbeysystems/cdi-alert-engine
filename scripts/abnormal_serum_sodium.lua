@@ -135,8 +135,8 @@ if not existingAlert or not existingAlert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local e870CodeLink = GetCodeLinks { code = "E870", text = "Hyperosmolality and Hypernatremia", seq = 12 }
-    local e871CodeLink = GetCodeLinks { code = "E871", text = "Hypoosmolality and Hyponatremia", seq = 14 }
+    local e870CodeLink = GetCodeLink { code = "E870", text = "Hyperosmolality and Hypernatremia", seq = 12 }
+    local e871CodeLink = GetCodeLink { code = "E871", text = "Hypoosmolality and Hyponatremia", seq = 14 }
 
     function GetSodiumDvLinks(predicate)
         return GetDiscreteValueLinks {
@@ -144,7 +144,7 @@ if not existingAlert or not existingAlert.validated then
             predicate = predicate,
             text = "Serum Sodium",
             maxPerValue = 99999
-        } or {}
+        }
     end
 
     local veryLowSodiumLinks = GetSodiumDvLinks(sodiumVeryLowPredicate)
@@ -152,13 +152,13 @@ if not existingAlert or not existingAlert.validated then
     local highSodiumLinks = GetSodiumDvLinks(sodiumHighPredicate)
     local veryHighSodiumLinks = GetSodiumDvLinks(sodiumVeryHighPredicate)
 
-    local dextroseMedicationLink = GetMedicationLinks { cat = dextroseMedicationName, text = "Dextrose", seq = 1 }
-    local dextroseAbstractLink = GetAbstractionLinks { code = "DEXTROSE_5_IN_WATER", text = "Dextrose", seq = 2 }
-    local fluidRestrictionAbstractionLink = GetAbstractionLinks { code = "FLUID_RESTRICTION", text = "Fluid Restriction", seq = 3 }
-    local hypertonicSalineMedicationLink = GetMedicationLinks { cat = hypertonicSalineMedicationName, text = "Hypertonic Saline", seq = 4 }
-    local hypertonicSalineAbstractLink = GetAbstractionLinks { code = "HYPERTONIC_SALINE", text = "Hypertonic Saline", seq = 5 }
-    local hypotonicSolutionMedicationLink = GetMedicationLinks { cat = hypotonicSolutionMedicationName, text = "Hypotonic Solution", seq = 6 }
-    local hypotonicSolutionAbstractLink = GetAbstractionLinks { code = "HYPOTONIC_SOLUTION", text = "Hypotonic Solution", seq = 7 }
+    local dextroseMedicationLink = GetMedicationLink { cat = dextroseMedicationName, text = "Dextrose", seq = 1 }
+    local dextroseAbstractLink = GetAbstractionLink { code = "DEXTROSE_5_IN_WATER", text = "Dextrose", seq = 2 }
+    local fluidRestrictionAbstractionLink = GetAbstractionLink { code = "FLUID_RESTRICTION", text = "Fluid Restriction", seq = 3 }
+    local hypertonicSalineMedicationLink = GetMedicationLink { cat = hypertonicSalineMedicationName, text = "Hypertonic Saline", seq = 4 }
+    local hypertonicSalineAbstractLink = GetAbstractionLink { code = "HYPERTONIC_SALINE", text = "Hypertonic Saline", seq = 5 }
+    local hypotonicSolutionMedicationLink = GetMedicationLink { cat = hypotonicSolutionMedicationName, text = "Hypotonic Solution", seq = 6 }
+    local hypotonicSolutionAbstractLink = GetAbstractionLink { code = "HYPOTONIC_SOLUTION", text = "Hypotonic Solution", seq = 7 }
 
 
 
@@ -168,8 +168,8 @@ if not existingAlert or not existingAlert.validated then
     -- Auto resolve SIADH and Hyponatremia both being assigned
     if
         subtitle == bothCodesAssignedSubtitle and (
-            not Account.is_diagnosis_code_in_working_history("E22.2") or
-            not Account.is_diagnosis_code_in_working_history("E87.1")
+            not Account:is_diagnosis_code_in_working_history("E22.2") or
+            not Account:is_diagnosis_code_in_working_history("E87.1")
         )
     then
         Result.outcome = "AUTORESOLVED"
@@ -228,7 +228,7 @@ if not existingAlert or not existingAlert.validated then
         Result.validated = true
 
     -- Alert if both SIADH (E22.2) and Hyponatermia (E87.1) are cdi assigned (in working history)
-    elseif Account.is_diagnosis_code_in_working_history("E22.2") and Account.is_diagnosis_code_in_working_history("E87.1") then
+    elseif Account:is_diagnosis_code_in_working_history("E22.2") and Account:is_diagnosis_code_in_working_history("E87.1") then
         Result.subtitle = bothCodesAssignedSubtitle
         Result.passed = true
 
@@ -279,8 +279,8 @@ if not existingAlert or not existingAlert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            local r4182CodeLink = GetCodeLinks { code = "R41.82", text = "Altered Level of Consciousness", seq = 1 }
-            local alteredAbsLink = GetAbstractionLinks { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 2 }
+            local r4182CodeLink = GetCodeLink { code = "R41.82", text = "Altered Level of Consciousness", seq = 1 }
+            local alteredAbsLink = GetAbstractionLink { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 2 }
 
             if r4182CodeLink then
                 table.insert(clinicalEvidenceLinks, r4182CodeLink)
@@ -292,9 +292,9 @@ if not existingAlert or not existingAlert.validated then
                 table.insert(clinicalEvidenceLinks, alteredAbsLink)
             end
 
-            GetCodeLinks { code = "F10.230", text = "Beer Potomania", seq = 3, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.14", text = "Bilious Vomiting", seq = 4, target = clinicalEvidenceLinks }
-            GetCodeLinks {
+            GetCodeLink { code = "F10.230", text = "Beer Potomania", seq = 3, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.14", text = "Bilious Vomiting", seq = 4, target = clinicalEvidenceLinks }
+            GetCodeLink {
                 codes = {
                     "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
                     "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
@@ -303,15 +303,15 @@ if not existingAlert or not existingAlert.validated then
                 seq = 5,
                 target = clinicalEvidenceLinks
             }
-            GetCodeLinks { code = "R11.15", text = "Cyclical Vomiting", seq = 6, target = clinicalEvidenceLinks }
-            GetAbstractionValueLinks { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7, target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "DIARRHEA", text = "Diarrhea", seq = 8, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R41.0", text = "Disorientation", seq = 9, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E86.0", text = "Dehydration", seq = 10, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R53.83", text = "Fatigue", seq = 11, target = clinicalEvidenceLinks }
-            GetAbstractionValueLinks { code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME", text = "Hyperosmolar Hyperglycemic Syndrome", seq = 13, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "E86.1", text = "Hypovolemia", seq = 15, target = clinicalEvidenceLinks }
-            GetCodeLinks {
+            GetCodeLink { code = "R11.15", text = "Cyclical Vomiting", seq = 6, target = clinicalEvidenceLinks }
+            GetAbstractionValueLink { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7, target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "DIARRHEA", text = "Diarrhea", seq = 8, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R41.0", text = "Disorientation", seq = 9, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E86.0", text = "Dehydration", seq = 10, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R53.83", text = "Fatigue", seq = 11, target = clinicalEvidenceLinks }
+            GetAbstractionValueLink { code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME", text = "Hyperosmolar Hyperglycemic Syndrome", seq = 13, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E86.1", text = "Hypovolemia", seq = 15, target = clinicalEvidenceLinks }
+            GetCodeLink {
                 codes = {
                     "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
                 },
@@ -319,22 +319,22 @@ if not existingAlert or not existingAlert.validated then
                 seq = 16,
                 target = clinicalEvidenceLinks
             }
-            GetAbstractionLinks { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R63.1", text = "Polydipsia", seq = 18, target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "SEIZURE", text = "Seizure", seq = 19, target = clinicalEvidenceLinks }
-            GetCodeLinks {
+            GetAbstractionLink { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R63.1", text = "Polydipsia", seq = 18, target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "SEIZURE", text = "Seizure", seq = 19, target = clinicalEvidenceLinks }
+            GetCodeLink {
                 codes = { "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91" },
                 text = "Thyrotoxic Crisis Storm Code",
                 seq = 21,
                 target = clinicalEvidenceLinks
             }
-            GetCodeLinks { code = "E86.9", text = "Volume Depletion", seq = 22, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.10", text = "Vomiting", seq = 23, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.11", text = "Vomiting Without Nausea", seq = 25, target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "WEAKNESS", text = "Muscle Weakness", seq = 26, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E86.9", text = "Volume Depletion", seq = 22, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.10", text = "Vomiting", seq = 23, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24, target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.11", text = "Vomiting Without Nausea", seq = 25, target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "WEAKNESS", text = "Muscle Weakness", seq = 26, target = clinicalEvidenceLinks }
 
-            local bloodGlucoseLinks = GetDiscreteValueLinks {
+            local bloodGlucoseLinks = GetDiscreteValueLink {
                 dvNames = bloodGlucoseDvNames,
                 predicate = bloodGlucosePredicate,
                 text = "Blood Glucose",
@@ -342,7 +342,7 @@ if not existingAlert or not existingAlert.validated then
                 target = labsLinks
             } or {}
             if #bloodGlucoseLinks == 0 then
-                GetDiscreteValueLinks {
+                GetDiscreteValueLink {
                     dvNames = blooGlucosePocDvNames,
                     predicate = bloodGlucosePocPredicate,
                     text = "Blood Glucose POC",
