@@ -331,86 +331,78 @@ if not existingAlert or not existingAlert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local chronicRepiratoryAcidosisAbstractionLink = GetAbstractionLinks { code = "CHRONIC_RESPIRATORY_ACIDOSIS", text = "Chronic Respiratory Acidosis" }
-    local metaAcidosisAbstractionLink = GetAbstractionLinks { code = "METABOLIC_ACIDOSIS", text = "Metabolic Acidosis" }
-    local acuteAcidosisAbtractionLink = GetAbstractionLinks { code = "ACUTE_ACIDOSIS", text = "Acute Acidosis" }
-    local chronicAcidosisAbstractionLink = GetAbstractionLinks { code = "CHRONIC_ACIDOSIS", text = "Chronic Acidosis" }
-    local lacticAcidosisAbstractionLink = GetAbstractionLinks { code = "LACTIC_ACIDOSIS", text = "Lactic Acidosis" }
-    local e8720CodeLink = GetCodeLinks { code = "E87.20", text = "Acidosis Unspecified" }
-    local e8729CodeLink = GetCodeLinks { code = "E87.29", text = "Other Acidosis" }
+    local chronicRepiratoryAcidosisAbstractionLink = GetAbstractionLink { code = "CHRONIC_RESPIRATORY_ACIDOSIS", text = "Chronic Respiratory Acidosis" }
+    local metaAcidosisAbstractionLink = GetAbstractionLink { code = "METABOLIC_ACIDOSIS", text = "Metabolic Acidosis" }
+    local acuteAcidosisAbtractionLink = GetAbstractionLink { code = "ACUTE_ACIDOSIS", text = "Acute Acidosis" }
+    local chronicAcidosisAbstractionLink = GetAbstractionLink { code = "CHRONIC_ACIDOSIS", text = "Chronic Acidosis" }
+    local lacticAcidosisAbstractionLink = GetAbstractionLink { code = "LACTIC_ACIDOSIS", text = "Lactic Acidosis" }
+    local e8720CodeLink = GetCodeLink { code = "E87.20", text = "Acidosis Unspecified" }
+    local e8729CodeLink = GetCodeLink { code = "E87.29", text = "Other Acidosis" }
 
     -- Documented Dx
-    local acuteRespiratoryAcidosisAbstractionLink = GetAbstractionLinks { code = "ACUTE_RESPIRATORY_ACIDOSIS", text = "Acute Respiratory Acidosis" }
-    local j9602CodeLink = GetCodeLinks { code = "J96.02", text = "Acute Respiratory Failure with Hypercapnia" }
+    local acuteRespiratoryAcidosisAbstractionLink = GetAbstractionLink { code = "ACUTE_RESPIRATORY_ACIDOSIS", text = "Acute Respiratory Acidosis" }
+    local j9602CodeLink = GetCodeLink { code = "J96.02", text = "Acute Respiratory Failure with Hypercapnia" }
     -- Labs Subheading
     local bloodCO2DvLinks = GetDiscreteValueLinks {
         dvNames = bloodCO2DvName,
         predicate = bloodCO21Predicate,
         text = "Blood CO2",
-        maxPerValue = 9999,
         target = bloodCO2Links
-    } or {}
+    }
     local highSerumLactateLevelDvLinks = GetDiscreteValueLinks {
         dvNames = serumLactateDvName,
         predicate = serumLactate1Predicate,
         text = "Serum Lactate",
-        maxPerValue = 9999,
         target = lactateLinks
-    } or {}
+    }
 
     -- ABG Subheading
     local lowArterialBloodPHMultiDiscreteValueLinks = GetDiscreteValueLinks {
         dvNames = arterialBloodPHDvName,
         predicates = arterialBloodPH2Predicate,
         text = "PH",
-        maxPerValue = 9999
-    } or {}
+    }
     local paco2DvLinks = GetDiscreteValueLinks {
         dvNames = pCO2DvName,
         predicate = pCO21Predicate,
         text = "paC02",
-        maxPerValue = 9999
-    } or {}
+    }
     local highSerumBicarbonateDvLinks = GetDiscreteValueLinks {
         dvNames = serumBicarbonateDvName,
         predicate = serumBicarbonate1Predicate,
         text = "HC03",
-        maxPerValue = 9999
-    } or {}
+    }
     -- VBG Subheading
     local phDvLinks = GetDiscreteValueLinks {
         dvNames = pHDvName,
         predicate = pH2Predicate,
         text = "PH",
-        maxPerValue = 9999
-    } or {}
+    }
     local venousCO2DvLinks = GetDiscreteValueLinks {
         dvNames = venousBloodCO2DvName,
         predicate = venousBloodCO2Predicate,
         text = "pCO2",
-        maxPerValue = 9999
-    } or {}
+    }
 
     -- Meds
     local albuminMedicationLinks = GetMedicationLinks {
         cat = "Albumin",
         text = "Albumin",
         useCdiAlertCategoryField = true,
-        maxPerValue = 9999,
         predicate = acidosisMedPredicate
-    } or {}
+    }
     local fluidBolusMedicationLinks = GetMedicationLinks {
         cat = "Fluid Bolus",
         text = "Fluid Bolus",
         useCdiAlertCategoryField = true,
         maxPerValue = 9999,
         predicate = acidosisMedPredicate
-    } or {}
-    local fluidBolusAbstractionLink = GetAbstractionValueLinks {
+    }
+    local fluidBolusAbstractionLink = GetAbstractionValueLink {
         code = "FLUID_BOLUS",
         text = "Fluid Bolus"
     }
-    local fluidResuscitationAbstractionLink = GetAbstractionValueLinks {
+    local fluidResuscitationAbstractionLink = GetAbstractionValueLink {
         code = "FLUID_RESCUSITATION",
         text = "Fluid Resuscitation"
     }
@@ -420,7 +412,7 @@ if not existingAlert or not existingAlert.validated then
         useCdiAlertCategoryField = true,
         maxPerValue = 9999,
         predicate = acidosisMedPredicate
-    } or {}
+    }
     local sodiumBicarbonateAbstractionLinks = GetAbstractionValueLinks {
         code = "SODIUM_BICARBONATE",
         text = "Sodium Bicarbonate"
@@ -446,7 +438,7 @@ if not existingAlert or not existingAlert.validated then
     -- Auto resolve alert if it currently triggered for acute respiratory acidosis
     if subtitle == possibleAcuteRespiratoryAcidosisSubtitle and (acuteRespiratoryAcidosisAbstractionLink or j9602CodeLink) then
         for _, code in pairs(accountAlertCodes) do
-            local codeLink = GetCodeLinks {
+            local codeLink = GetCodeLink {
                 code = code,
                 text = "Autoresolved Specified Code - " .. alertCodeDictionary[code]
             }
@@ -485,7 +477,7 @@ if not existingAlert or not existingAlert.validated then
     elseif (subtitle == possibleLacticAcidosisSubtitle or subtitle == possibleAcidosisSubtitle) and (unspecifiedExist or fullSpecifiedExist) then
         if #accountAlertCodes > 0 then
             for _, code in pairs(accountAlertCodes) do
-                local codeLink = GetCodeLinks {
+                local codeLink = GetCodeLink {
                     code = code,
                     text = "Autoresolved Specified Code - " .. alertCodeDictionary[code]
                 }
@@ -608,31 +600,31 @@ if not existingAlert or not existingAlert.validated then
                 local alteredAbsLink = GetAbstractionLinks { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
                 table.insert(clinicalEvidenceLinks, alteredAbsLink)
             end
-            GetAbstractionLinks { code = "AZOTEMIA", text = "Azotemia", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.14", text = "Bilious Vomiting", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.15", text = "Cyclical Vomiting", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "DIARRHEA", text = "Diarrhea", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R41.0", text = "Disorientation", target = clinicalEvidenceLinks }
-            GetDiscreteValueLinks { dvNames = fIO2DvName, predicate = fIO21Predicate, text = "Fi02", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R53.83", text = "Fatigue", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "OPIOID_OVERDOSE", text = "Opioid Overdose", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.10", text = "Vomiting", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.13", text = "Vomiting Fecal Matter", target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.11", text = "Vomiting Without Nausea", target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "WEAKNESS", text = "Weakness", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "AZOTEMIA", text = "Azotemia", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.14", text = "Bilious Vomiting", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.15", text = "Cyclical Vomiting", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "DIARRHEA", text = "Diarrhea", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R41.0", text = "Disorientation", target = clinicalEvidenceLinks }
+            GetDiscreteValueLink { dvNames = fIO2DvName, predicate = fIO21Predicate, text = "Fi02", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R53.83", text = "Fatigue", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "OPIOID_OVERDOSE", text = "Opioid Overdose", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.10", text = "Vomiting", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.13", text = "Vomiting Fecal Matter", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "R11.11", text = "Vomiting Without Nausea", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "WEAKNESS", text = "Weakness", target = clinicalEvidenceLinks }
 
             -- Labs
-            GetDiscreteValueLinks { dvNames = anionGapDvName, predicate = anionGap1Predicate, text = "Anion Gap", target = labsLinks }
-            if not GetDiscreteValueLinks { dvNames = bloodGlucoseDvName, predicate = bloodGlucose1Predicate, text = "Blood Glucose", target = labsLinks } then
-                GetDiscreteValueLinks { dvNames = bloodGlucosePOCDvName, predicate = bloodGlucosePOC1Predicate, text = "Blood Glucose POC", target = labsLinks }
+            GetDiscreteValueLink { dvNames = anionGapDvName, predicate = anionGap1Predicate, text = "Anion Gap", target = labsLinks }
+            if not GetDiscreteValueLink { dvNames = bloodGlucoseDvName, predicate = bloodGlucose1Predicate, text = "Blood Glucose", target = labsLinks } then
+                GetDiscreteValueLink { dvNames = bloodGlucosePOCDvName, predicate = bloodGlucosePOC1Predicate, text = "Blood Glucose POC", target = labsLinks }
             end
-            GetAbstractionLinks { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine", target = labsLinks }
-            GetDiscreteValueLinks { dvNames = serumBloodUreaNitrogenDvName, predicate = serumBloodUreaNitrogen1Predicate, text = "Serum Blood Urea Nitrogen", target = labsLinks }
-            GetDiscreteValueLinks { dvNames = serumChlorideDvName, predicate = serumChloride1Predicate, text = "Serum Chloride", target = labsLinks }
-            GetDiscreteValueLinks { dvNames = serumCreatinineDvName, predicate = serumCreatinine1Predicate, text = "Serum Creatinine", target = labsLinks }
-            GetDiscreteValueLinks { dvNames = serumKetoneDvName, predicate = serumKetone1Predicate, text = "Serum Ketones", target = labsLinks }
-            GetDiscreteValueLinks {
+            GetAbstractionLink { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine", target = labsLinks }
+            GetDiscreteValueLink { dvNames = serumBloodUreaNitrogenDvName, predicate = serumBloodUreaNitrogen1Predicate, text = "Serum Blood Urea Nitrogen", target = labsLinks }
+            GetDiscreteValueLink { dvNames = serumChlorideDvName, predicate = serumChloride1Predicate, text = "Serum Chloride", target = labsLinks }
+            GetDiscreteValueLink { dvNames = serumCreatinineDvName, predicate = serumCreatinine1Predicate, text = "Serum Creatinine", target = labsLinks }
+            GetDiscreteValueLink { dvNames = serumKetoneDvName, predicate = serumKetone1Predicate, text = "Serum Ketones", target = labsLinks }
+            GetDiscreteValueLink {
                 dvNames = urineKetonesDvName,
                 predicate = function(dv)
                     return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
@@ -642,7 +634,7 @@ if not existingAlert or not existingAlert.validated then
             }
 
             -- Lactate, ph, and blood links
-            GetDiscreteValueLinks { dvNames = serumLactateDvName, predicate = serumLactate2Predicate, text = "Serum Lactate", target = lactateLinks }
+            GetDiscreteValueLink { dvNames = serumLactateDvName, predicate = serumLactate2Predicate, text = "Serum Lactate", target = lactateLinks }
             for _, entry in ipairs(highSerumLactateLevelDvLinks or {}) do
                 table.insert(lactateLinks, entry)
             end
@@ -652,37 +644,37 @@ if not existingAlert or not existingAlert.validated then
             for _, entry in ipairs(phDvLinks or {}) do
                 table.insert(phLinks, entry)
             end      
-            GetDiscreteValueLinks { dvNames = bloodCO2DvName, predicate = bloodCO22Predicate, text = "Blood CO2", target = bloodCO2Links }
+            GetDiscreteValueLink { dvNames = bloodCO2DvName, predicate = bloodCO22Predicate, text = "Blood CO2", target = bloodCO2Links }
             for _, entry in ipairs(bloodCO2DvLinks or {}) do
                 table.insert(bloodCO2Links, entry)
             end
 
             -- Vitals
-            GetDiscreteValueLinks { dvNames = glasgowComaScaleDvName, predicate = glasgowComaScale1Predicate, text = "Glasgow Coma Scale", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = heartRateDvName, predicate = heartRate1Predicate, text = "Heart Rate", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = mAPDvName, predicate = mAP1Predicate, text = "Mean Arterial Pressure", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = respiratoryRateDvName, predicate = respiratoryRate1Predicate, text = "Respiratory Rate", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = respiratoryRateDvName, predicate = respiratoryRate2Predicate, text = "Respiratory Rate", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = sPO2DvName, predicate = sPO21Predicate, text = "SpO2", target = vitalSignsIntakeLinks }
-            GetDiscreteValueLinks { dvNames = sBPDvName, predicate = sBP1Predicate, text = "Systolic Blood Pressure", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = glasgowComaScaleDvName, predicate = glasgowComaScale1Predicate, text = "Glasgow Coma Scale", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = heartRateDvName, predicate = heartRate1Predicate, text = "Heart Rate", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = mAPDvName, predicate = mAP1Predicate, text = "Mean Arterial Pressure", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = respiratoryRateDvName, predicate = respiratoryRate1Predicate, text = "Respiratory Rate", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = respiratoryRateDvName, predicate = respiratoryRate2Predicate, text = "Respiratory Rate", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = sPO2DvName, predicate = sPO21Predicate, text = "SpO2", target = vitalSignsIntakeLinks }
+            GetDiscreteValueLink { dvNames = sBPDvName, predicate = sBP1Predicate, text = "Systolic Blood Pressure", target = vitalSignsIntakeLinks }
 
             -- ABG
-            GetDiscreteValueLinks { dvNames = baseExcessDvName, predicate = baseExcess1Predicate, text = "Base Excess", target = abgLinks }
-            GetDiscreteValueLinks { dvNames = fIO2DvName, predicate = fIO21Predicate, text = "FiO2", target = abgLinks }
-            GetDiscreteValueLinks { dvNames = pO2DvName, predicate = pO21Predicate, text = "pO2", target = abgLinks }
+            GetDiscreteValueLink { dvNames = baseExcessDvName, predicate = baseExcess1Predicate, text = "Base Excess", target = abgLinks }
+            GetDiscreteValueLink { dvNames = fIO2DvName, predicate = fIO21Predicate, text = "FiO2", target = abgLinks }
+            GetDiscreteValueLink { dvNames = pO2DvName, predicate = pO21Predicate, text = "pO2", target = abgLinks }
             if paco2DvLinks and #paco2DvLinks > 0 then
                 for _, entry in ipairs(paco2DvLinks or {}) do
                     table.insert(paCO2Links, entry)
                 end
             else
-                GetDiscreteValueLinks { dvNames = pCO2DvName, predicate = pCO22Predicate, text = "paC02", target = paCO2Links }
+                GetDiscreteValueLink { dvNames = pCO2DvName, predicate = pCO22Predicate, text = "paC02", target = paCO2Links }
             end
             if highSerumBicarbonateDvLinks and #highSerumBicarbonateDvLinks > 0 then
                 for _, entry in ipairs(highSerumBicarbonateDvLinks or {}) do
                     table.insert(abgHCO3Links, entry)
                 end
             else
-                GetDiscreteValueLinks { dvNames = serumBicarbonateDvName, predicate = serumBicarbonate3Predicate, text = "HC03", target = abgHCO3Links }
+                GetDiscreteValueLink { dvNames = serumBicarbonateDvName, predicate = serumBicarbonate3Predicate, text = "HC03", target = abgHCO3Links }
             end
 
             -- ABG
