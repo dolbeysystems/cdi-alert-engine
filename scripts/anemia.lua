@@ -252,6 +252,31 @@ if not existingAlert or not existingAlert.validated then
     local k625CodeLink = GetCodeLink { code = "K62.5", text = "Rectal Bleeding", seq = 48 }
 
     -- Labs
+     GetDiscreteValuePairsAsCombinedSingleLineLink {
+        discreteValueNames1 = dvHemoglobin,
+        discreteValueNames2 = dvHematocrit,
+        linkTemplate = "Hemoglobin/Hematocrit: ([DATE1] - [DATE2]) - [VALUE_PAIRS]",
+        target = labsLinks,
+    }
+    local lowHemoglobin10DVLink = GetDiscreteValueLink { discreteValueNames = dvHemoglobin, text = "Hemoglobin", predicate = calcHemoglobin3 }
+    local lowHematocrit30DVLink = GetDiscreteValueLink { discreteValueNames = dvHematocrit, text = "Hematocrit", predicate = calcHematocrit3 }
+    --- @type CdiAlertLink?
+    local lowHemoglobinDVLink
+    --- @type CdiAlertLinkPair[]
+    local hemoHemaConsecutDropDVLinkPairs = {}
+    --- @type CdiAlertLinkPair[]
+    local lowHemoglobinMultiDVLinkPairs = {}
+
+    local gender = Account.patient and Account.patient.gender or ""
+    if gender == "F" then
+        --[[
+        --]]
+    else
+        --[[
+        --]]
+    end
+
+
     --[[
     hemoHemaConsecutDropDV = [ [False], [False] ]
     lowHemoglobinMultiDV = [ [False], [False] ]

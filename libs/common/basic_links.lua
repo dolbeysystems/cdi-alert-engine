@@ -121,6 +121,7 @@ end
 --- @return CdiAlertLink? # the link to the first code or nil if not found
 -------------------------------------------------------------------------------- 
 function GetCodeLink(args)
+    args.maxPerValue = 1
     local links = GetCodeLinks(args)
     if #links > 0 then
         return links[1]
@@ -154,6 +155,7 @@ end
 --- @return CdiAlertLink? # the link to the first abstraction or nil if not found
 -----------------------------------------------------------------------------
 function GetAbstractionLink(args)
+    args.maxPerValue = 1
     local links = GetAbstractionLinks(args)
     if #links > 0 then
         return links[1]
@@ -187,6 +189,7 @@ end
 --- @return CdiAlertLink? # the link to the first abstraction or nil if not found
 --------------------------------------------------------------------------------
 function GetAbstractionValueLink(args)
+    args.maxPerValue = 1
     local links = GetAbstractionValueLinks(args)
     if #links > 0 then
         return links[1]
@@ -273,6 +276,7 @@ end
 --- @return CdiAlertLink? # the link to the first document or nil if not found
 --------------------------------------------------------------------------------
 function GetDocumentLink(args)
+    args.maxPerValue = 1
     local links = GetDocumentLinks(args)
     if #links > 0 then
         return links[1]
@@ -386,6 +390,7 @@ end
 --- @return CdiAlertLink? # the link to the first medication or nil if not found
 --------------------------------------------------------------------------------
 function GetMedicationLink(args)
+    args.maxPerValue = 1
     local links = GetMedicationLinks(args)
     if #links > 0 then
         return links[1]
@@ -450,6 +455,7 @@ function GetDiscreteValueLinks(args)
         local discrete_value = discrete_values[i]
         local link = cdi_alert_link()
         link.discrete_value_name = discrete_value.name
+        link.discrete_value_id = discrete_value.id
         link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
         link.sequence = sequence
         table.insert(links, link)
@@ -473,6 +479,7 @@ end
 --- @return CdiAlertLink? # the link to the first discrete value or nil if not found
 --------------------------------------------------------------------------------
 function GetDiscreteValueLink(args)
+    args.maxPerValue = 1
     local links = GetDiscreteValueLinks(args)
     if #links > 0 then
         return links[1]
