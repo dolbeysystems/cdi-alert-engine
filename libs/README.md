@@ -153,3 +153,10 @@ GetDocumentLink {
     text = linkText,            -- ommit the suffix " ([DOCUMENTTYPE], [DOCUMENTDATE])"
 }
 ```
+
+### Notes For Script Specific Functions
+
+Check the `discrete_values.lua` file for a number of useful functions for
+dealing with getting discrete values in different ways.  Add as needed.
+
+There are similar libraries for codes, etc.
