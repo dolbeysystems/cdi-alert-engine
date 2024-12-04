@@ -100,7 +100,7 @@ if not existingAlert or not existingAlert.validated then
         text = "GI Bleed",
         seq = 7
     }
-    local k922CodeLink = GetCodeLink { code = "K92.2", text = "GI Hemorrhage", seq = 8 }
+    local k922_code_link = GetCodeLink { code = "K92.2", text = "GI Hemorrhage", seq = 8 }
     local k920CodeLink = GetCodeLink { code = "K92.0", text = "Hematemesis", seq = 9 }
     local hematocheziaAbsLink = GetAbstractionLink { code = "HEMATCHEZIA", text = "Hematochezia", seq = 10 }
     local hematomaAbsLink = GetAbstractionLink { code = "HEMATOMA", text = "Hematoma", seq = 11 }
@@ -143,7 +143,7 @@ if not existingAlert or not existingAlert.validated then
         i60CodesLink or
         n99510CodeLink or
         r040CodeLink or
-        k922CodeLink or
+        k922_code_link or
         giBleedCodesLink or
         hemorrhageAbsLink or
         j9501CodeLink or

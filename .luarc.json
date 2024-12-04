@@ -1,7 +1,7 @@
 {
     "runtime": {
         "version": "LuaJIT",
-    }
+    },
     "diagnostics.groupFileStatus": {
         "ambiguity": "Any",
         "await": "Any",
@@ -19,5 +19,4 @@
     "diagnostics.neededFileStatus": {
         "spell-check": "None!"
     }
-}
 }
