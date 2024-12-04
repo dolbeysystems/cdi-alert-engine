@@ -169,7 +169,6 @@ then
     
     elseif triggerAlert and codeCount > 0 and i2489CodeLink then
 
-    -- 4
     elseif triggerAlert and i219CodeLink then
 
     -- 5

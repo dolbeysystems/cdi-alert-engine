@@ -25,6 +25,10 @@ local alertSubtitle = "Urinary Tract Infection"
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
 local subtitle = existingAlert and existingAlert.subtitle or nil
 
+local function numeric_result_predicate(discreteValue)
+    return discreteValue.name ~= nil and string.find(discreteValue.name, "%d+") ~= nil
+end
+
 if not existingAlert or not existingAlert.validated then
     local resultLinks = {}
     local documentedDxHeader = MakeHeaderLink("Documented Dx")
@@ -66,94 +70,90 @@ if not existingAlert or not existingAlert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    -- #Find all discrete values for custom lookups within the last 7 days
-    -- maindiscreteDic = {}
-    -- unsortedDicsreteDic = {}
-    -- dvCount = 0
-    -- #Combine all items into one list to search against
-    -- discreteSearchList = [i for j in [dvCUrine, dvUABacteria, dvUAWBC, dvUASquamousEpithelias,
-    --                     dvUARBC, dvUAProtein, dvUAHyalineCast, dvUABlood, dvUAGranCast, dvUALeakEsterase] for i in j]
-    -- #Set datelimit for how far back to
-    -- dvDateLimit = System.DateTime.Now.AddDays(-7)
-    -- #Loop through all dvs finding any that match in the combined list adding to a dictionary the matches
-    -- for dv in discreteValues or []:
-    --     if dv.ResultDate >= dvDateLimit:
-    --         if any(item == dv.Name for item in discreteSearchList):
-    --             dvCount += 1
-    --             unsortedDicsreteDic[dvCount] = dv
-    -- #Sort List by latest
-    -- maindiscreteDic = sorted(unsortedDicsreteDic.items(), key=lambda x: x[1]['ResultDate'], reverse=True)
-
-    -- #Alert Trigger
     local utiCode = GetCodeLinks {
         codes = { "T83.510A", "T83.511A", "T83.512A", "T83.518" },
-        text = "UTI with Device Link Codes: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "UTI with Device Link Codes",
         sequence = 1,
     }
-    local n390Code = GetCodeLinks { code = "N39.0", text = "Urinary Tract Infection: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])" }
-    local r8271Code = GetCodeLinks { code = "R82.71", text = "Bacteriuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 1 }
-    local r8279Code = GetCodeLinks { code = "R82.79", text = "Positive Urine Culture: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 7 }
-    local r8281Code = GetCodeLinks { code = "R82.81", text = "Pyuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", sequence = 8 }
-    -- urineCulture = dvcUrineCheck(dict(maindiscreteDic), dvCUrine, "Urine Culture: '[VALUE]' (Result Date: [RESULTDATETIME])", 4)
-    -- urineBacteria = dvUrineCheck(dict(maindiscreteDic), dvUABacteria, "UA Bacteria: [VALUE] (Result Date: [RESULTDATETIME])", 1)
+    local n390Code = GetCodeLink { code = "N39.0", text = "Urinary Tract Infection" }
+    local r8271Code = GetCodeLink { code = "R82.71", text = "Bacteriuria", sequence = 1 }
+    local r8279Code = GetCodeLink { code = "R82.79", text = "Positive Urine Culture", sequence = 7 }
+    local r8281Code = GetCodeLink { code = "R82.81", text = "Pyuria", sequence = 8 }
+
+    local urineCulture = GetDiscreteValueLink {
+        discreteValueName = "BACTERIA (/HPF)",
+        linkText = "Urine Culture",
+        sequence = 4,
+        predicate = function(discreteValue)
+            return discreteValue.result ~= nil and
+                (string.find(discreteValue.result, "positive") ~= nil or string.find(discreteValue.result, "negative") ~= nil)
+        end,
+    }
+    local urineBacteria = GetDiscreteValueLink {
+        discreteValueName = "BACTERIA (/HPF)",
+        linkText = "UA Bacteria",
+        sequence = 1,
+        predicate = numeric_result_predicate,
+    }
+
     local chronicCystostomyCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_CYSTOSTOMY_CATHETER",
-        text = "Cystostomy Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Cystostomy Catheter",
         seq = 1
     }
     local cystostomyCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "CYSTOSTOMY_CATHETER",
-        text = "Cystostomy Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Cystostomy Catheter",
         seq = 2
     }
     local chronicIndwellingUrethralCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_INDWELLING_URETHRAL_CATHETER",
-        text = "Indwelling Urethral Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Indwelling Urethral Catheter",
         seq = 3
     }
     local indwellingUrethralCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "INDWELLING_URETHRAL_CATHETER",
-        text = "Indwelling Urethral Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Indwelling Urethral Catheter",
         seq = 4
     }
     local chronicNephrostomyCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_NEPHROSTOMY_CATHETER",
-        text = "Nephrostomy Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Nephrostomy Catheter",
         seq = 5
     }
     local nephrostomyCatheterAbstractionLink = GetAbstractionValueLinks {
         code = "NEPHROSTOMY_CATHETER",
-        text = "Nephrostomy Catheter '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Nephrostomy Catheter",
         seq = 6
     }
     local selfCatheterizationAbstractionLink = GetAbstractionValueLinks {
         code = "SELF_CATHETERIZATION",
-        text = "Self Catheterization '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Self Catheterization",
         seq = 7
     }
     local straightCatheterizationAbstractionLink = GetAbstractionValueLinks {
         code = "STRAIGHT_CATHETERIZATION",
-        text = "Straight Catheterization '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Straight Catheterization",
         seq = 8
     }
     local chronicUrinaryDrainageDeviceAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE",
-        text = "Urinary Drainage Device '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Urinary Drainage Device",
         seq = 9
     }
     local urinaryDrainageDeviceAbstractionLink = GetAbstractionValueLinks {
         code = "OTHER_URINARY_DRAINAGE_DEVICE",
-        text = "Urinary Drainage Device '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Urinary Drainage Device",
         seq = 10
     }
     local chronicUreteralStentAbstractionLink = GetAbstractionValueLinks {
         code = "CHRONIC_URETERAL_STENT",
-        text = "Ureteral Stent '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Ureteral Stent",
         seq = 11
     }
     local ureteralStentAbstractionLink = GetAbstractionValueLinks {
         code = "URETERAL_STENT",
-        text = "Ureteral Stent '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])",
+        text = "Ureteral Stent",
         seq = 12
     }
 
@@ -163,7 +163,7 @@ if not existingAlert or not existingAlert.validated then
 
     --- This function returns false if all of its parameters are nil,
     --- in order to make it usable as a condition.
-    ---@param ... CdiAlertLink[]?[]
+    ---@param ... CdiAlertLink[]?
     ---@return boolean
     local function addLinks(...)
         local hadNonNil = false
@@ -181,7 +181,7 @@ if not existingAlert or not existingAlert.validated then
     if #accountAlertCodes > 0 then
         local code = accountAlertCodes[1]
         local codeDesc = alertCodeDictionary[code]
-        local autoResolvedCodeLink = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
+        local autoResolvedCodeLink = GetCodeLink { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
         table.insert(documentedDxLinks, autoResolvedCodeLink)
 
         Result.outcome = "AUTORESOLVED"
