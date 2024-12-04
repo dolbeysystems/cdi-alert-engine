@@ -140,7 +140,7 @@ end
 --- @class (exact) GetDiscreteValueNearestToDateArgs
 --- @field account Account? Account object (uses global account if not provided)
 --- @field discreteValueName? string The name of the discrete value to search for
---- @field discreteValueNames string[] The names of the discrete values to search for
+--- @field discreteValueNames? string[] The names of the discrete values to search for
 --- @field date string The date to search for the nearest discrete value to
 --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
 

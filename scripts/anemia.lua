@@ -18,6 +18,223 @@ require("libs.common")
 
 
 --------------------------------------------------------------------------------
+--- Lua type definitions
+--------------------------------------------------------------------------------
+--- @class HemoglobinHematocritDiscreteValuePair
+--- @field hemoglobin DiscreteValue
+--- @field hematocrit DiscreteValue
+---
+--- @class HemoglobinHematocritPeakDropLinks
+--- @field hemoglobinPeakLink CdiAlertLink
+--- @field hemoglobinDropLink CdiAlertLink
+--- @field hematocritPeakLink CdiAlertLink
+--- @field hematocritDropLink CdiAlertLink
+
+
+
+--------------------------------------------------------------------------------
+--- Functions 
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+--- Get Low Hemoglobin Discrete Value Pairs
+---
+--- @param gender string Gender of the patient
+--- 
+--- @return HemoglobinHematocritDiscreteValuePair[]
+--------------------------------------------------------------------------------
+local function GetLowHemoglobinValuePairs(gender)
+    local lowHemoglobinValue = 12
+
+    if gender == "M" then
+        lowHemoglobinValue = 13.5
+    end
+
+    --- @type HemoglobinHematocritDiscreteValuePair[]
+    local lowHemoglobinPairs = {}
+
+    local lowHemoglobinValues = GetOrderedDiscreteValues({
+        discreteValueName = "Hemoglobin",
+        predicate = function(dv)
+            return GetDvValueNumber(dv) <= lowHemoglobinValue
+        end,
+        daysBack = 31
+    })
+    for i = 1, #lowHemoglobinValues do
+        local dvHemoglobin = lowHemoglobinValues[i]
+        local dvDate = dvHemoglobin.result_date
+        local dvHematocrit = GetDiscreteValueNearestToDate({
+            discreteValueName = "Hematocrit",
+            --- @cast dvDate string
+            date = dvDate
+        })
+        if dvHematocrit then
+            table.insert(lowHemoglobinPairs, { hemoglobin = dvHemoglobin, hematocrit = dvHematocrit })
+        end
+    end
+
+    return lowHemoglobinPairs
+end
+
+--------------------------------------------------------------------------------
+--- Get Low Hemoglobin Discrete Value Pairs
+--- 
+--- @param gender string Gender of the patient
+---
+--- @return HemoglobinHematocritDiscreteValuePair[]
+--------------------------------------------------------------------------------
+local function GetLowHematocritDiscreteValuePairs(gender)
+    local lowHematocritValue = 35
+
+    if gender == "M" then
+        lowHematocritValue = 38
+    end
+
+    --- @type HemoglobinHematocritDiscreteValuePair[]
+    local lowHematocritPairs = {}
+
+    local lowHematomocritValues = GetOrderedDiscreteValues({
+        discreteValueName = "Hematocrit",
+        predicate = function(dv)
+            return GetDvValueNumber(dv) <= lowHematocritValue
+        end,
+        daysBack = 31
+    })
+    for i = 1, #lowHematomocritValues do
+        local dvHematocrit = lowHematomocritValues[i]
+        local dvDate = dvHematocrit.result_date
+        local dvHemoglobin = GetDiscreteValueNearestToDate({
+            discreteValueName = "Hemoglobin",
+            --- @cast dvDate string
+            date = dvDate
+        })
+        if dvHemoglobin then
+            table.insert(lowHematocritPairs, { hemoglobin = dvHemoglobin, hematocrit = dvHematocrit })
+        end
+    end
+    return lowHematocritPairs
+end
+
+--------------------------------------------------------------------------------
+--- Get Hemoglobin and Hematocrit Links denoting a significant drop in hemoglobin 
+---
+--- @return HemoglobinHematocritPeakDropLinks? - Peak and Drop links for Hemoglobin and Hematocrit if present
+--------------------------------------------------------------------------------
+local function GetHemoglobinDropPairs()
+    local hemoglobinPeakLink = nil
+    local hemoglobinDropLink = nil
+    local hematocritPeakLink = nil
+    local hematocritDropLink = nil
+
+    local highestHemoglobinInPastWeek = GetHighestDiscreteValue({
+        discreteValueName = "Hemoglobin",
+        daysBack = 7
+    })
+    local lowestHemoglobinInPastWeekAfterHighest = GetLowestDiscreteValue({
+        discreteValueName = "Hemoglobin",
+        daysBack = 7,
+        predicate = function(dv)
+            return highestHemoglobinInPastWeek ~= nil and dv.result_date > highestHemoglobinInPastWeek.result_date
+        end
+    })
+    local hemoglobinDelta = 0
+
+    if highestHemoglobinInPastWeek and lowestHemoglobinInPastWeekAfterHighest then
+        hemoglobinDelta = GetDvValueNumber(highestHemoglobinInPastWeek) - GetDvValueNumber(lowestHemoglobinInPastWeekAfterHighest)
+        if hemoglobinDelta >= 2 then
+            hemoglobinPeakLink = GetLinkForDiscreteValue(highestHemoglobinInPastWeek, "Peak Hemoglobin", 1, true)
+            hemoglobinDropLink = GetLinkForDiscreteValue(lowestHemoglobinInPastWeekAfterHighest, "Dropped Hemoglobin", 2, true)
+            local hemoglobinPeakHemocrit = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hematocrit",
+                date = highestHemoglobinInPastWeek.result_date
+            })
+            local hemoglobinDropHemocrit = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hematocrit",
+                date = lowestHemoglobinInPastWeekAfterHighest.result_date
+            })
+            if hemoglobinPeakHemocrit then
+                hematocritPeakLink = GetLinkForDiscreteValue(hemoglobinPeakHemocrit, "Hematocrit at Hemoglobin Peak", 3, true)
+            end
+            if hemoglobinDropHemocrit then
+                hematocritDropLink = GetLinkForDiscreteValue(hemoglobinDropHemocrit, "Hematocrit at Hemoglobin Drop", 4, true)
+            end
+        end
+    end
+
+    if hemoglobinPeakLink and hemoglobinDropLink and hematocritPeakLink and hematocritDropLink then
+        return {
+            hemoglobinPeakLink = hemoglobinPeakLink,
+            hemoglobinDropLink = hemoglobinDropLink,
+            hematocritPeakLink = hematocritPeakLink,
+            hematocritDropLink = hematocritDropLink
+        }
+    else
+        return nil
+    end
+end
+
+--------------------------------------------------------------------------------
+--- Get Hemoglobin and Hematocrit Links denoting a significant drop in hematocrit
+---
+--- @return HemoglobinHematocritPeakDropLinks? - Peak and Drop links for Hemoglobin and Hematocrit if present
+--------------------------------------------------------------------------------
+local function GetHematocritDropPairs()
+    local hemoglobinPeakLink = nil
+    local hemoglobinDropLink = nil
+    local hematocritPeakLink = nil
+    local hematocritDropLink = nil
+
+    -- If we didn't find the hemoglobin drop, look for a hematocrit drop
+    local highestHematocritInPastWeek = GetHighestDiscreteValue({
+        discreteValueName = "Hematocrit",
+        daysBack = 7
+    })
+    local lowestHematocritInPastWeekAfterHighest = GetLowestDiscreteValue({
+        discreteValueName = "Hematocrit",
+        daysBack = 7,
+        predicate = function(dv)
+            return highestHematocritInPastWeek ~= nil and dv.result_date > highestHematocritInPastWeek.result_date
+        end
+    })
+    local hematocritDelta = 0
+
+    if highestHematocritInPastWeek and lowestHematocritInPastWeekAfterHighest then
+        hematocritDelta = GetDvValueNumber(highestHematocritInPastWeek) - GetDvValueNumber(lowestHematocritInPastWeekAfterHighest)
+        if hematocritDelta >= 6 then
+            hematocritPeakLink = GetLinkForDiscreteValue(highestHematocritInPastWeek, "Peak Hematocrit", 5, true)
+            hematocritDropLink = GetLinkForDiscreteValue(lowestHematocritInPastWeekAfterHighest, "Dropped Hematocrit", 6, true)
+            local hemocritPeakHemoglobin = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hemoglobin",
+                date = highestHematocritInPastWeek.result_date
+            })
+            local hemocritDropHemoglobin = GetDiscreteValueNearestToDate({
+                discreteValueName = "Hemoglobin",
+                date = lowestHematocritInPastWeekAfterHighest.result_date
+            })
+            if hemocritPeakHemoglobin then
+                hemoglobinPeakLink = GetLinkForDiscreteValue(hemocritPeakHemoglobin, "Hemoglobin at Hematocrit Peak", 7, true)
+            end
+            if hemocritDropHemoglobin then
+                hemoglobinDropLink = GetLinkForDiscreteValue(hemocritDropHemoglobin, "Hemoglobin at Hematocrit Drop", 8, true)
+            end
+        end
+    end
+
+    if hemoglobinPeakLink and hemoglobinDropLink and hematocritPeakLink and hematocritDropLink then
+        return {
+            hemoglobinPeakLink = hemoglobinPeakLink,
+            hemoglobinDropLink = hemoglobinDropLink,
+            hematocritPeakLink = hematocritPeakLink,
+            hematocritDropLink = hematocritDropLink
+        }
+    else
+        return nil
+    end
+end
+
+
+
+--------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
 local dvBloodLoss = {""}
@@ -68,6 +285,32 @@ local calcAny1 = function(dv) return GetDvValueNumber(dv)  > 0 end
 
 local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
 local subtitle = existingAlert and existingAlert.subtitle or nil
+
+
+LinkText1 = "Possible No Low Hemoglobin, Low Hematocrit or Anemia Treatment"
+LinkText2 = "Possible No Sign of Bleeding Please Review"
+LinkText3 = "Possible No Hemoglobin Values Meeting Criteria Please Review"
+LinkText4 = "Possible No Anemia Treatment found"
+
+LinkText1Found = false
+LinkText2Found = false
+LinkText3Found = false
+LinkText4Found = false
+
+if existingAlert and existingAlert.links then
+    for _, link in ipairs(existingAlert.links) do
+        if link.link_text == LinkText1 then
+            LinkText1Found = true
+        elseif link.link_text == LinkText2 then
+            LinkText2Found = true
+        elseif link.link_text == LinkText3 then
+            LinkText3Found = true
+        elseif link.link_text == LinkText4 then
+            LinkText4Found = true
+        end
+    end
+end
+
 
 
 
@@ -252,7 +495,8 @@ if not existingAlert or not existingAlert.validated then
     local k625CodeLink = GetCodeLink { code = "K62.5", text = "Rectal Bleeding", seq = 48 }
 
     -- Labs
-     GetDiscreteValuePairsAsCombinedSingleLineLink {
+    local gender = Account.patient and Account.patient.gender or ""
+    GetDiscreteValuePairsAsCombinedSingleLineLink {
         discreteValueNames1 = dvHemoglobin,
         discreteValueNames2 = dvHematocrit,
         linkTemplate = "Hemoglobin/Hematocrit: ([DATE1] - [DATE2]) - [VALUE_PAIRS]",
@@ -260,42 +504,18 @@ if not existingAlert or not existingAlert.validated then
     }
     local lowHemoglobin10DVLink = GetDiscreteValueLink { discreteValueNames = dvHemoglobin, text = "Hemoglobin", predicate = calcHemoglobin3 }
     local lowHematocrit30DVLink = GetDiscreteValueLink { discreteValueNames = dvHematocrit, text = "Hematocrit", predicate = calcHematocrit3 }
-    --- @type CdiAlertLink?
-    local lowHemoglobinDVLink
-    --- @type CdiAlertLinkPair[]
-    local hemoHemaConsecutDropDVLinkPairs = {}
-    --- @type CdiAlertLinkPair[]
-    local lowHemoglobinMultiDVLinkPairs = {}
+    local lowHemoglobinDVLink = 
+        GetDiscreteValueLink {
+            discreteValueNames = dvHemoglobin,
+            text = "Hemoglobin",
+            predicate = gender == "F" and calcHemoglobin2 or calcHemoglobin1
+        }
 
-    local gender = Account.patient and Account.patient.gender or ""
-    if gender == "F" then
-        --[[
-        --]]
-    else
-        --[[
-        --]]
-    end
-
-
-    --[[
-    hemoHemaConsecutDropDV = [ [False], [False] ]
-    lowHemoglobinMultiDV = [ [False], [False] ]
-    dvLookUpAllLinkedValuesSingleLine(dict(maindiscreteDic), dvHemoglobin, dvHematocrit, 0, labs, "Hemoglobin/Hematocrit: (DATE1 - DATE2) - ")
-    if gender == 'F':
-        lowHemoglobinDV = dvValue(dvHemoglobin, "Hemoglobin: [VALUE] (Result Date: [RESULTDATETIME])", calcHemoglobin2, 0)
-        lowHemoglobinMultiDV = HemoglobinHematocritValues(dict(maindiscreteDic), "Female", 12.5, 34, 10)
-        hemoHemaConsecutDropDV = percentageDropDVValues(dict(maindiscreteDic), dvHemoglobin, dvHematocrit, 11, 34,
-            "Hemoglobin: [VALUE] (Result Date: [RESULTDATETIME])", "Hematocrit: [VALUE] (Result Date: [RESULTDATETIME])",
-            hemoglobin, hematocrit)
-    if gender == 'M':
-        lowHemoglobinDV = dvValue(dvHemoglobin, "Hemoglobin: [VALUE] (Result Date: [RESULTDATETIME])", calcHemoglobin1, 0)
-        lowHemoglobinMultiDV = HemoglobinHematocritValues(dict(maindiscreteDic), "Male", 13.5, 40, 10)
-        hemoHemaConsecutDropDV = percentageDropDVValues(dict(maindiscreteDic), dvHemoglobin, dvHematocrit, 12, 38,
-            "Hemoglobin: [VALUE] (Result Date: [RESULTDATETIME])", "Hematocrit: [VALUE] (Result Date: [RESULTDATETIME])",
-            hemoglobin, hematocrit)
-    lowHemoglobin10DV = dvValue(dvHemoglobin, "Hemoglobin: [VALUE] (Result Date: [RESULTDATETIME])", calcHemoglobin3, 0)
-    lowHematocrit30DV = dvValue(dvHematocrit, "Hematocrit: [VALUE] (Result Date: [RESULTDATETIME])", calcHematocrit3, 0)
-    --]]
+    local lowHemoglobinMultiDVLinkPairs = GetLowHemoglobinValuePairs(gender)
+    local lowHematocritMultiDVLinkPairs = GetLowHematocritDiscreteValuePairs(gender)
+    
+    local hematocritDropDVLinkPairs = GetHematocritDropPairs()
+    local hemoglobinDropDVLinkPairs = GetHemoglobinDropPairs()
 
     -- Meds
     local anemiaMedsAbstractionLink = GetAbstractionLink { code="ANEMIA_MEDICATION", text="Anemia Medication", seq=1 }
@@ -306,7 +526,7 @@ if not existingAlert or not existingAlert.validated then
     local rBloTransfusionCodeLink = GetCodeLink { codes = {"30233N1", "30243N1"}, text = "Red Blood Cell Transfusion", seq = 6 }
     local redBloodCellDVLink = GetDiscreteValueLink { discreteValueNames = dvRedBloodCellTransfusion, text = "Red Blood Cell Transfusion", predicate = calcAny1, seq = 7 }
 
-    local sob =
+    local signsOfBleeding =
         i975CodeLink and
         k917CodeLink and
         j957CodeLink and
@@ -357,7 +577,7 @@ if not existingAlert or not existingAlert.validated then
         bleedingAbstractionLink and
         hemorrhageAbstractionLink
 
-    local AT =
+    local anemiaTreatment =
         anemiaMedsAbstractionLink and
         anemiaMedicationLink and
         hematopoeticMedicationLink and
@@ -370,9 +590,65 @@ if not existingAlert or not existingAlert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
+    -- Autoresolve "Anemia Dx Possibly Lacking Supporting Evidence"
     if
         subtitle == "Anemia Dx Possibly Lacking Supporting Evidence" and
+        #accountAlertCodes > 0 and
+        (lowHemoglobinDVLink or lowHematocrit30DVLink)
+    then
+
+    -- Autoresolve "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence"
+    elseif
+        subtitle == "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence" and
+        d62CodeLink and
+        (
+            (not LinkText2Found or signsOfBleeding) and
+            (not LinkText3Found or lowHemoglobinDVLink) and
+            (not LinkText4Found or not anemiaTreatment)
+        )
+    then
+
+    -- Autoresolve "Possible Acute Blood Loss Anemia"
+    elseif
+        subtitle == "Possible Acute Blood Loss Anemia" and
+        d62CodeLink
+    then
+
+    -- Autoresolve "Possible Anemia Dx"
+    elseif 
+        subtitle == "Possible Anemia Dx" and
         #accountAlertCodes > 0
+    then
+
+    -- Alert for "Anemia Dx Possibly Lacking Supporting Evidence"
+    elseif #accountAlertCodes > 0 and not lowHemoglobinDVLink and not lowHematocrit30DVLink and not anemiaTreatment then
+
+    -- Alert for "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence"
+    elseif d62CodeLink and (not signsOfBleeding or not lowHemoglobinDVLink or not anemiaTreatment) then
+
+    -- Alert for "Possible Acute Blood Loss Anemia" - Drops
+    elseif
+        not d62CodeLink
+    then
+
+    -- Alert for "Possible Acute Blood Loss Anemia" - Low hemoglobin, sign of bleeding, and anemia treatment
+    elseif
+        not d62CodeLink
+    then
+
+    -- Alert for "Possible Acute Blood Loss Anemia" -Hgb <10 or Hct <30 and possible sign of Bleeding present
+    elseif
+        not d62CodeLink
+    then
+
+    -- Alert for "Possible Acute Blood Loss Anemia" - Anemia dx and sign of bleeding and anemia treatment
+    elseif
+        not d62CodeLink
+    then
+
+    -- Alert for "Possible Acute Blood Loss Anemia" - Low pairs and anemia treatment
+    elseif
+        not d62CodeLink
     then
     end
 
