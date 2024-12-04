@@ -20,13 +20,19 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local alert_subtitle = "Urinary Tract Infection"
 
 local existing_alert = GetExistingCdiAlert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
 
 local function numeric_result_predicate(discrete_value)
     return discrete_value.result ~= nil and string.find(discrete_value.name, "%d+") ~= nil
+end
+
+local function presence_predicate(discrete_value)
+    local normalized_case = string.lower(discrete_value.name)
+    return discrete_value.result ~= nil
+        and string.find(normalized_case, "negative") == nil
+        and string.find(normalized_case, "trace") == nil
+        and string.find(normalized_case, "not found") == nil
 end
 
 if not existing_alert or not existing_alert.validated then
@@ -43,8 +49,6 @@ if not existing_alert or not existing_alert.validated then
     local laboratory_studies_links = {}
     local vital_signs_header = MakeHeaderLink("Vital Signs/Intake and Output Data")
     local vital_signs_links = {}
-    local other_header = MakeHeaderLink("Other")
-    local other_links = {}
     local urine_analysis_header = MakeHeaderLink("Urine Analysis")
     local urine_analysis_links = {}
 
@@ -344,18 +348,6 @@ if not existing_alert or not existing_alert.validated then
         )
         table.insert(urinary_devices_links, urine_bacteria)
 
-        -- dvUrineCheckTwo(dict(maindiscreteDic), dvUARBC, 3, gt, "UA RBC", 7, urine, True)
-        -- dvUrineCheckTwo(dict(maindiscreteDic), dvUAWBC, 5, gt, "UA WBC", 9, urine, True)
-        -- dvUrineCheckFour(dict(maindiscreteDic), dvUASquamousEpithelias, "UA Squamous Epithelias", 8, urine, True)
-        -- dvUrineCheckFive(dict(maindiscreteDic), dvUAHyalineCast, "UA Hyaline Casts", 4, urine, True)
-        -- dvUrineCheckFive(dict(maindiscreteDic), dvUALeakEsterase, "UA Leak Esterase", 5, urine, True)
-        -- dvUABacteria = ["BACTERIA (/HPF)"]
-        -- dvUARBC = ["RBC/HPF (/HPF)"]
-        -- dvUASquamousEpithelias = [""]
-        -- dvUALeakEsterase = ["LEUK ESTERASE"]
-        -- dvUAWBC = ["WBC/HPF (/HPF)"]
-        -- dvUAHyalineCast = ["HYALINE CASTS (/LPF)"]
-
         table.insert(urine_analysis_links, GetDiscreteValueLink {
             discreteValueName = "BLOOD",
             linkText = "UA Blood",
@@ -370,62 +362,67 @@ if not existing_alert or not existing_alert.validated then
         })
         table.insert(urine_analysis_links, GetDiscreteValueLink {
             discreteValueName = "PROTEIN (mg/dL)",
-            linkText = "UA Protien",
+            linkText = "UA Protein",
             sequence = 6,
             predicate = numeric_result_predicate,
         })
-        -- FOR: UA RBC, UA WBC
-        -- def dvUrineCheckTwo(dvDic, discreteValueName, value, sign, linkText, sequence=0, category=None, abstract=False):
-        --     abstraction = None
-        --     for dv in dvDic or []:
-        --         dvr = cleanNumbers(dvDic[dv]['Result'])
-        --         if dvDic[dv]['Name'] in discreteValueName and dvDic[dv]['Result'] is not None and dvr is not None and sign(float(dvr), float(value)):
-        --             if abstract:
-        --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
-        --                 return True
-        --             else:
-        --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
-        --                 return abstraction
-        --     return abstraction
-        -- FOR: UA Squamous Epithelias
-        -- def dvUrineCheckFour(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-        --     abstraction = None
-        --     for dv in dvDic or []:
-        --         if dvDic[dv]['Name'] in discreteValueName and dvDic[dv]['Result'] is not None:
-        --             list = []
-        --             list = dvDic[dv]['Result'].split('-')
-        --             list[0]
-        --             if list[0] > 20 or list[1] > 20:
-        --                 if abstract:
-        --                     dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
-        --                     return True
-        --                 else:
-        --                     abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
-        --                     return abstraction
-        --     return abstraction
-        -- FOR: UA Hyaline Casts, Leak Esterase
-        -- def dvUrineCheckFive(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-        --     abstraction = None
-        --     for dv in dvDic or []:
-        --         if (
-        --             dvDic[dv]['Name'] in discreteValueName and
-        --             dvDic[dv]['Result'] is not None and
-        --             not re.search(r'\bNegative\b', dvDic[dv]['Result'], re.IGNORECASE) and
-        --             not re.search(r'\bTrace\b', dvDic[dv]['Result'], re.IGNORECASE) and
-        --             not re.search(r'\bNot Seen\b', dvDic[dv]['Result'], re.IGNORECASE)
-        --         ):
-        --             if abstract:
-        --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
-        --                 return True
-        --             else:
-        --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
-        --                 return abstraction
-        --     return abstraction
-
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "RBC/HPF (/HPF)",
+            linkText = "UA RBC",
+            sequence = 7,
+            predicate = function(discrete_value)
+                return GetDvValueNumber(discrete_value) > 3
+            end,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "WBC/HPF (/HPF)",
+            linkText = "UA WBC",
+            sequence = 7,
+            predicate = function(discrete_value)
+                return GetDvValueNumber(discrete_value) > 5
+            end,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "",
+            linkText = "UA Squamous Epithelias",
+            sequence = 8,
+            predicate = function(discrete_value)
+                if discrete_value.result == nil then return false end
+                local a, b = string.match(discrete_value.result, "(%d+)-(%d+)")
+                return tonumber(a) > 20 or tonumber(b) > 20
+            end,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "HYALINE CASTS (/LPF)",
+            linkText = "UA Hyaline Casts",
+            sequence = 4,
+            predicate = presence_predicate,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "LEAK ESTERASE",
+            linkText = "UA Leak Esterase",
+            sequence = 5,
+            predicate = presence_predicate,
+        })
 
         ----------------------------------------
         --- Result Finalization
         ----------------------------------------
+        -- #If alert passed or alert conditions was triggered add categories to result if they have links
+        -- if AlertPassed or AlertConditions:
+        --     if urine.Links: labs.Links.Add(urine); urineLinks = True
+        --     if dc.Links: result.Links.Add(dc); dcLinks = True
+        --     if abs.Links: result.Links.Add(abs); absLinks = True
+        --     if labs.Links: result.Links.Add(labs); labsLinks = True
+        --     if vitals.Links: result.Links.Add(vitals); vitalsLinks = True
+        --     result.Links.Add(meds)
+        --     if meds.Links: medsLinks = True
+        --     if uti.Links: result.Links.Add(uti); utiLinks = True
+        --     result.Links.Add(other)
+        --     db.LogEvaluationScriptMessage("Alert Passed Adding Links. Alert Triggered: " + str(result.Subtitle) + " Autoresolved: " + str(result.Outcome) + "; " +
+        --         str(result.Validated) + "; Links: Documented Dx- " + str(dcLinks) + ", Abs- " + str(absLinks) + ", labs- " + str(labsLinks) + ", vitals- " + str(vitalsLinks) + ", meds- " + str(medsLinks) + ", Uti- " + str(utiLinks) + ", Urine- "
+        --         + str(urineLinks) + "; Acct: " + str(account._id), scriptName, scriptInstance, "Debug")
+        --     result.Passed = True
         if existing_alert then
             result_links = MergeLinks(existing_alert.links, result_links)
         end
