@@ -300,7 +300,7 @@ end
 function GetDvValuesAsSingleLink(params)
     local account = params.account or Account
     local dvNames = params.dvNames or  { params.dvName }
-    local linkText = params.linkText
+    local linkText = params.linkText or ""
     local targetTable = params.target
     local discreteValues = {}
 
@@ -628,3 +628,4 @@ function GetDiscreteValuePairsAsCombinedSingleLineLink(args)
     end
     return link
 end
+

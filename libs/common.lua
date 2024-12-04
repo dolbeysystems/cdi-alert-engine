@@ -8,6 +8,7 @@ require("libs.common.medications")
 require("libs.common.discrete_values")
 require("libs.common.basic_links")
 require("libs.common.alerts")
+require("libs.common.blood")
 
 --------------------------------------------------------------------------------
 --- Global setup/configuration

@@ -105,7 +105,7 @@ GetCodeLink {
 
 ```lua
 GetCodeLink {
-    code = code_name,
+    codes = code_list,
     text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     seq = sequence,
     target = category
