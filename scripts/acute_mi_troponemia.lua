@@ -125,19 +125,19 @@ then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Documented Dx
-    local i219CodeLink = GetCodeLinks { code = "I21.9", text = "Acute Myocardial Infarction Unspecified" }
-    local r778CodeLink = GetCodeLinks { code = "R77.8", text = "Other Specified Abnormalities of Plasma Proteins" }
-    local i21A1CodeLink = GetCodeLinks { code = "I21.A1", text = "Myocardial Infarction Type 2" }
+    local i219CodeLink = GetCodeLink { code = "I21.9", text = "Acute Myocardial Infarction Unspecified" }
+    local r778CodeLink = GetCodeLink { code = "R77.8", text = "Other Specified Abnormalities of Plasma Proteins" }
+    local i21A1CodeLink = GetCodeLink { code = "I21.A1", text = "Myocardial Infarction Type 2" }
     -- Clinical Evidence (Abstractions)
-    local r07CodeLinks = GetCodeLinks { codes = { "R07.89", "R07.9" }, text = "Chest Pain" } or {}
-    local i2489CodeLink = GetCodeLinks { code = "I24.89", text = "Demand Ischemia" }
-    local irregularEKGFindingsAbstractionLink = GetAbstractionLinks { code = "IRREGULAR_EKG_FINDINGS_MI", text = "Irregular EKG Finding" }
+    local r07CodeLinks = GetCodeLink { codes = { "R07.89", "R07.9" }, text = "Chest Pain" } or {}
+    local i2489CodeLink = GetCodeLink { code = "I24.89", text = "Demand Ischemia" }
+    local irregularEKGFindingsAbstractionLink = GetAbstractionLink { code = "IRREGULAR_EKG_FINDINGS_MI", text = "Irregular EKG Finding" }
     -- Medications
-    local antiplatlet2MedicationLink = GetMedicationLinks { cat = "Antiplatelet 2" }
-    local aspirinMedicationLink = GetMedicationLinks { cat = "Aspirin" }
-    local heparinMedicationLink = GetMedicationLinks { cat = "Heparin" }
-    local morphineMedicationLink = GetMedicationLinks { cat = "Morphine" }
-    local nitroglycerinMedicationLink = GetMedicationLinks { cat = "Nitroglycerin" }
+    local antiplatlet2MedicationLink = GetMedicationLink { cat = "Antiplatelet 2" }
+    local aspirinMedicationLink = GetMedicationLink { cat = "Aspirin" }
+    local heparinMedicationLink = GetMedicationLink { cat = "Heparin" }
+    local morphineMedicationLink = GetMedicationLink { cat = "Morphine" }
+    local nitroglycerinMedicationLink = GetMedicationLink { cat = "Nitroglycerin" }
     -- Laboratory Studies
     GetDvValuesAsSingleLink {
         account = Account,
@@ -145,15 +145,15 @@ then
         linkText = "Troponin T High Sensitivity: (DATE1, DATE2) - ",
         target = troponinLinks
     }
-    local highTroponinDiscreteValueLinks =
-        GetDiscreteValueLinks { dvNames = dvTroponinNames, predicate = highTroponinPredicate, maxPerValue = 10 } or {}
+    local highTroponinDiscreteValueLinks = GetDiscreteValueLinks { dvNames = dvTroponinNames, predicate = highTroponinPredicate, maxPerValue = 10 } 
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    if codeCount == 1 and not i2489CodeLink or (i21A1CodeLink and i2489CodeLink) then
+    if codeCount == 1 and not i2489CodeLink then
+        
     elseif codeCount > 1 then
     elseif triggerAlert and i21A1CodeLink and i2489CodeLink then
     elseif
