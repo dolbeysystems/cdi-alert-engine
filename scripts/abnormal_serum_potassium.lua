@@ -12,7 +12,7 @@
 ---         Triggered if there are no hyperkalemia codes on the account and there is account potassium value
 ---         greater than 5.4 mmol/L within the last 7 days and there is evidence of kayexalate or insulin and dextrose
 ---         or hemodialysis
----         
+---
 ---         Autoresolved if there is a hyperkalemia code on the account
 --- 
 ---     - Possible Hypokalemia Dx
@@ -81,87 +81,94 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local potassiumDvNames = { "POTASSIUM (mmol/L)" }
-local potassiumVeryLowPredicate = function (dv)
+local potassium_dv_names = { "POTASSIUM (mmol/L)" }
+local potassium_very_low_predicate = function(dv)
     return GetDvValueNumber(dv) < 3.1 and DateIsLessThanXDaysAgo(dv.result_date, 7)
 end
-local potassiumLowPredicate = function (dv)
+local potassium_low_predicate = function(dv)
     return GetDvValueNumber(dv) < 3.4 and DateIsLessThanXDaysAgo(dv.result_date, 7)
 end
-local potassiumHighPredicate = function (dv)
+local potassium_high_predicate = function(dv)
     return GetDvValueNumber(dv) > 5.1 and DateIsLessThanXDaysAgo(dv.result_date, 7)
 end
-local potassiumVeryHighPredicate = function (dv)
+local potassium_very_high_predicate = function(dv)
     return GetDvValueNumber(dv) > 5.4 and DateIsLessThanXDaysAgo(dv.result_date, 7)
 end
-local dextroseMedicationName = "Dextrose 5% In Water"
-local insulinMedicationName = "Insulin"
-local kayexalateMedicationName = "Kayexalate"
-local potassiumReplacementMedicationName = "Potassium Replacement"
-local possibleHyperkalemiaSubtitle = "Possible Hyperkalemia Dx"
-local possibleHypokalemiaSubtitle = "Possible Hypokalemia Dx"
-local hyperkalemiaLackingSupportingEvidenceSubtitle = "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence"
-local hypokalemiaLackingSupportingEvidenceSubtitle = "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"
-local reviewHighPotassiumLinkText = "Possible No High Serum Potassium Levels Were Found Please Review"
-local reviewLowPotassiumLinkText = "Possible No Low Serum Potassium Levels Were Found Please Review"
+local dextrose_medication_name = "Dextrose 5% In Water"
+local insulin_medication_name = "Insulin"
+local kayexalate_medication_name = "Kayexalate"
+local potassium_replacement_medication_name = "Potassium Replacement"
+local possible_hyperkalemia_subtitle = "Possible Hyperkalemia Dx"
+local possible_hypokalemia_subtitle = "Possible Hypokalemia Dx"
+local hyperkalemia_lacking_supporting_evidence_subtitle = "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence"
+local hypokalemia_lacking_supporting_evidence_subtitle = "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"
+local review_high_potassium_link_text = "Possible No High Serum Potassium Levels Were Found Please Review"
+local review_low_potassium_link_text = "Possible No Low Serum Potassium Levels Were Found Please Review"
 
-local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
-local subtitle = existingAlert and existingAlert.subtitle or nil
+local existing_alert = GetExistingCdiAlert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 
-if not existingAlert or not existingAlert.validated then
+if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Top-Level Link Header Variables
     --------------------------------------------------------------------------------
-    local resultLinks = {}
-    local documentedDxHeader = MakeHeaderLink("Documented Dx")
-    local documentedDxLinks = {}
-    local laboratoryStudiesHeader = MakeHeaderLink("Laboratory Studies")
-    local laboratoryStudiesLinks = {}
-    local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-    local clinicalEvidenceLinks = {}
-    local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
-    local treatmentAndMonitoringLinks = {}
-    local potassiumHeader = MakeHeaderLink("Serum Potassium")
-    local potassiumLinks = {}
+    local result_links = {}
+    local documented_dx_header = MakeHeaderLink("Documented Dx")
+    local documented_dx_links = {}
+    local laboratory_studies_header = MakeHeaderLink("Laboratory Studies")
+    local laboratory_studies_links = {}
+    local clinical_evidence_header = MakeHeaderLink("Clinical Evidence")
+    local clinical_evidence_links = {}
+    local treatment_and_monitoring_header = MakeHeaderLink("Treatment and Monitoring")
+    local treatment_and_monitoring_links = {}
+    local potassium_header = MakeHeaderLink("Serum Potassium")
+    local potassium_links = {}
 
 
 
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local e875CodeLink = GetCodeLink { code = "E87.5", text = "Hyperkalemia Fully Specified Code" }
-    local e876CodeLink = GetCodeLink { code = "E87.6", text = "Hypokalemia Fully Specified Code" }
+    local e875_code_link = GetCodeLink { code = "E87.5", text = "Hyperkalemia Fully Specified Code" }
+    local e876_code_link = GetCodeLink { code = "E87.6", text = "Hypokalemia Fully Specified Code" }
 
-    function GetPotassiumDvLinks (dvPredicate)
+    --------------------------------------------------------------------------------
+    --- Potassium Dv Link Retrieval Function
+    ---
+    --- @param dv_predicate function The predicate to filter the discrete values
+    ---
+    --- @return CdiAlertLink[] The discrete value links
+    --------------------------------------------------------------------------------
+    local function get_potassium_dv_links(dv_predicate)
         return GetDiscreteValueLinks {
-            discreteValueNames = potassiumDvNames,
+            discreteValueNames = potassium_dv_names,
             text = "Serum Potassium",
-            predicate = dvPredicate,
+            predicate = dv_predicate,
         }
     end
 
-    local serumPotassiumDvVeryLowLinks = GetPotassiumDvLinks(potassiumVeryLowPredicate)
-    local serumPotassiumDvLowLinks = GetPotassiumDvLinks(potassiumLowPredicate)
-    local serumPotassiumDvHighLinks = GetPotassiumDvLinks(potassiumHighPredicate)
-    local serumPotassiumDvVeryHighLinks = GetPotassiumDvLinks(potassiumVeryHighPredicate)
+    local serum_potassium_dx_very_low_links = get_potassium_dv_links(potassium_very_low_predicate)
+    local serum_potassium_dv_low_links = get_potassium_dv_links(potassium_low_predicate)
+    local serum_potassium_dv_high_links = get_potassium_dv_links(potassium_high_predicate)
+    local serum_potassium_dv_very_high_links = get_potassium_dv_links(potassium_very_high_predicate)
 
-    local dextroseMedicationLink = GetMedicationLink {
-        cat = dextroseMedicationName,
+    local dextrose_medication_link = GetMedicationLink {
+        cat = dextrose_medication_name,
         text = "Dextrose",
         seq = 1,
     }
-    local hemodialysisCodesLinks = GetCodeLinks {
+    local hemodialysis_codes_links = GetCodeLinks {
         codes = { "5A1D70Z", "5A1D80Z", "5A1D90Z" },
         text = "Hemodialysis",
         seq = 2,
     }
-    local insulinMedicationLink = GetMedicationLink {
-        cat = insulinMedicationName,
+    local insulin_medication_link = GetMedicationLink {
+        cat = insulin_medication_name,
         text = "Insulin",
         predicate = function(med)
-            local route_appropriate = med.route ~= nil and (string.find(med.route, "%bIntravenous%b") ~= nil  or string.find(med.route, "%bIV Push%b") ~= nil)
+            local route_appropriate = med.route ~= nil and (string.find(med.route, "%bIntravenous%b") ~= nil or string.find(med.route, "%bIV Push%b") ~= nil)
             local dosage = med.dosage and tonumber(string.gsub(med.dosage, "[^%d.]", ""))
             return (
                 route_appropriate and
@@ -171,115 +178,122 @@ if not existingAlert or not existingAlert.validated then
         end,
         seq = 3,
     }
-    local kayexalateMedLink = GetMedicationLink { cat = kayexalateMedicationName, text = "Kayexalate", seq = 4 }
-    local potassiumReplacementMedLink = GetMedicationLink { cat = potassiumReplacementMedicationName, text = "Potassium Replacement", seq = 5 }
-    local potassiumChlorideAbsLink = GetAbstractionValueLink { code = "POTASSIUM_CHLORIDE", text = "Potassium Chloride Absorption", seq = 6 }
-    local potassiumPhosphateAbsLink = GetAbstractionValueLink { code = "POTASSIUM_PHOSPHATE", text = "Potassium Phosphate Absorption", seq = 7 }
-    local potassiumBiCarbonateAbsLink = GetAbstractionValueLink { code = "POTASSIUM_BICARBONATE", text = "Potassium Bicarbonate Absorption", seq = 8 }
+    local kayexalate_med_link = GetMedicationLink { cat = kayexalate_medication_name, text = "Kayexalate", seq = 4 }
+    local potassium_replacement_med_link = GetMedicationLink { cat = potassium_replacement_medication_name, text = "Potassium Replacement", seq = 5 }
+    local potassium_chloride_abs_link = GetAbstractionValueLink { code = "POTASSIUM_CHLORIDE", text = "Potassium Chloride Absorption", seq = 6 }
+    local potassium_phosphate_abs_link = GetAbstractionValueLink { code = "POTASSIUM_PHOSPHATE", text = "Potassium Phosphate Absorption", seq = 7 }
+    local potassium_bicarbonate_abs_link = GetAbstractionValueLink { code = "POTASSIUM_BICARBONATE", text = "Potassium Bicarbonate Absorption", seq = 8 }
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    -- Auto resolve Hyperkalemia alert
-    if subtitle == possibleHyperkalemiaSubtitle and e875CodeLink then
-        e875CodeLink.link_text = "Autoresolved Code - " .. e875CodeLink.link_text
-        table.insert(documentedDxLinks, e875CodeLink)
+    if subtitle == possible_hyperkalemia_subtitle and e875_code_link then
+        -- Auto resolve Hyperkalemia alert
+        e875_code_link.link_text = "Autoresolved Code - " .. e875_code_link.link_text
+        table.insert(documented_dx_links, e875_code_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Auto resolve Hypokalemia alert
-    elseif subtitle == possibleHypokalemiaSubtitle and e876CodeLink then
-        e876CodeLink.link_text = "Autoresolved Code - " .. e876CodeLink.link_text
-        table.insert(documentedDxLinks, e876CodeLink)
+    elseif subtitle == possible_hypokalemia_subtitle and e876_code_link then
+        -- Auto resolve Hypokalemia alert
+        e876_code_link.link_text = "Autoresolved Code - " .. e876_code_link.link_text
+        table.insert(documented_dx_links, e876_code_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Auto resolve Hyperkalemia possibly lacking supporting evidence
-    elseif subtitle == hyperkalemiaLackingSupportingEvidenceSubtitle and e875CodeLink and #serumPotassiumDvHighLinks > 1  then
-        e875CodeLink.link_text = "Autoresolved Evidence - " .. e875CodeLink.link_text
-        table.insert(documentedDxLinks, e875CodeLink)
-        for _, link in ipairs(serumPotassiumDvHighLinks) do
+    elseif subtitle == hyperkalemia_lacking_supporting_evidence_subtitle and e875_code_link and #serum_potassium_dv_high_links > 1 then
+        -- Auto resolve Hyperkalemia possibly lacking supporting evidence
+        e875_code_link.link_text = "Autoresolved Evidence - " .. e875_code_link.link_text
+        table.insert(documented_dx_links, e875_code_link)
+        for _, link in ipairs(serum_potassium_dv_high_links) do
             link.link_text = "Autoresolved Evidence - " .. link.link_text
-            table.insert(potassiumLinks, link)
+            table.insert(potassium_links, link)
         end
-        local reviewHighPotassiumLink = MakeHeaderLink(reviewHighPotassiumLinkText)
-        reviewHighPotassiumLink.is_validated = false
-        table.insert(laboratoryStudiesLinks, reviewHighPotassiumLink)
+        local review_high_potassium_link = MakeHeaderLink(review_high_potassium_link_text)
+        review_high_potassium_link.is_validated = false
+        table.insert(laboratory_studies_links, review_high_potassium_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Auto resolve Hypokalemia possibly lacking supporting evidence
-    elseif subtitle == hypokalemiaLackingSupportingEvidenceSubtitle and e876CodeLink and #serumPotassiumDvLowLinks > 1 then
-        e876CodeLink.link_text = "Autoresolved Evidence - " .. e876CodeLink.link_text
-        table.insert(documentedDxLinks, e876CodeLink)
-        for _, link in ipairs(serumPotassiumDvLowLinks) do
+    elseif subtitle == hypokalemia_lacking_supporting_evidence_subtitle and e876_code_link and #serum_potassium_dv_low_links > 1 then
+        -- Auto resolve Hypokalemia possibly lacking supporting evidence
+        e876_code_link.link_text = "Autoresolved Evidence - " .. e876_code_link.link_text
+        table.insert(documented_dx_links, e876_code_link)
+        for _, link in ipairs(serum_potassium_dv_low_links) do
             link.link_text = "Autoresolved Evidence - " .. link.link_text
-            table.insert(potassiumLinks, link)
+            table.insert(potassium_links, link)
         end
-        local reviewLowPotassiumLink = MakeHeaderLink(reviewLowPotassiumLinkText)
-        reviewLowPotassiumLink.is_validated = false
-        table.insert(laboratoryStudiesLinks, reviewLowPotassiumLink)
+        local review_low_potassium_link = MakeHeaderLink(review_low_potassium_link_text)
+        review_low_potassium_link.is_validated = false
+        table.insert(laboratory_studies_links, review_low_potassium_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Create Hyperkalemia alert
-    elseif not e875CodeLink and #serumPotassiumDvVeryHighLinks > 1 and (
-        kayexalateMedLink or
-        (insulinMedicationLink and dextroseMedicationLink) or
-        #hemodialysisCodesLinks > 1
-    ) then
-        for _, link in ipairs(serumPotassiumDvHighLinks) do
-            table.insert(potassiumLinks, link)
-        end
-        Result.subtitle = possibleHyperkalemiaSubtitle
-        Result.passed = true
-
-    -- Create Hypokalemia alert
-    elseif not e876CodeLink and #serumPotassiumDvVeryLowLinks > 1 and (
-        potassiumReplacementMedLink or
-        potassiumChlorideAbsLink or
-        potassiumPhosphateAbsLink or
-        potassiumBiCarbonateAbsLink
-    ) then
-        for _, link in ipairs(serumPotassiumDvLowLinks) do
-            table.insert(potassiumLinks, link)
-        end
-        Result.subtitle = possibleHypokalemiaSubtitle
-        Result.passed = true
-
-    -- Create alert for Hyperkalemia coded, but lacking evidence in labs
-    elseif e875CodeLink and #serumPotassiumDvHighLinks == 0 then
-        table.insert(documentedDxLinks, e875CodeLink)
-        local reviewHighPotassiumLink = MakeHeaderLink(reviewHighPotassiumLinkText)
-        table.insert(laboratoryStudiesLinks, reviewHighPotassiumLink)
-        Result.subtitle = hyperkalemiaLackingSupportingEvidenceSubtitle
-        Result.passed = true
-
-    -- Create alert for Hypokalemia coded, but lacking evidence in labs, medications or abstractions
-    elseif
-        e876CodeLink and
-        #serumPotassiumDvLowLinks == 0 and
-        not potassiumReplacementMedLink and
-        not potassiumChlorideAbsLink and
-        not potassiumPhosphateAbsLink and
-        not potassiumBiCarbonateAbsLink
+    elseif not
+        e875_code_link and
+        #serum_potassium_dv_very_high_links > 1
+        and (
+            kayexalate_med_link or
+            (insulin_medication_link and dextrose_medication_link) or
+            #hemodialysis_codes_links > 1
+        )
     then
-        table.insert(documentedDxLinks, e876CodeLink)
-        local reviewLowPotassiumLink = MakeHeaderLink(reviewLowPotassiumLinkText)
-        table.insert(laboratoryStudiesLinks, reviewLowPotassiumLink)
-        Result.subtitle = hyperkalemiaLackingSupportingEvidenceSubtitle
+        -- Create Hyperkalemia alert
+        for _, link in ipairs(serum_potassium_dv_high_links) do
+            table.insert(potassium_links, link)
+        end
+        Result.subtitle = possible_hyperkalemia_subtitle
+        Result.passed = true
+
+    elseif
+        not e876_code_link and
+        #serum_potassium_dx_very_low_links > 1 and (
+            potassium_replacement_med_link or
+            potassium_chloride_abs_link or
+            potassium_phosphate_abs_link or
+            potassium_bicarbonate_abs_link
+        )
+    then
+        -- Create Hypokalemia alert
+        for _, link in ipairs(serum_potassium_dv_low_links) do
+            table.insert(potassium_links, link)
+        end
+        Result.subtitle = possible_hypokalemia_subtitle
+        Result.passed = true
+
+    elseif e875_code_link and #serum_potassium_dv_high_links == 0 then
+        -- Create alert for Hyperkalemia coded, but lacking evidence in labs
+        table.insert(documented_dx_links, e875_code_link)
+        local review_high_potassium_link = MakeHeaderLink(review_high_potassium_link_text)
+        table.insert(laboratory_studies_links, review_high_potassium_link)
+        Result.subtitle = hyperkalemia_lacking_supporting_evidence_subtitle
+        Result.passed = true
+
+    elseif
+        e876_code_link and
+        #serum_potassium_dv_low_links == 0 and
+        not potassium_replacement_med_link and
+        not potassium_chloride_abs_link and
+        not potassium_phosphate_abs_link and
+        not potassium_bicarbonate_abs_link
+    then
+        -- Create alert for Hypokalemia coded, but lacking evidence in labs, medications or abstractions
+        table.insert(documented_dx_links, e876_code_link)
+        local review_low_potassium_link = MakeHeaderLink(review_low_potassium_link_text)
+        table.insert(laboratory_studies_links, review_low_potassium_link)
+        Result.subtitle = hyperkalemia_lacking_supporting_evidence_subtitle
         Result.passed = true
 
     end
@@ -291,19 +305,19 @@ if not existingAlert or not existingAlert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            GetCodeLink { code = "E27.1", text = "Addison's Disease", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.0", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.1", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.2", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.3", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.4", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.8", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "E24.9", text = "Cushing's Syndrome", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "DIARRHEA", text = "Diarrhea", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinicalEvidenceLinks }
-            GetCodeLink { code = "R53.83", text = "Fatigue", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinicalEvidenceLinks }
+            GetCodeLink { code = "E27.1", text = "Addison's Disease", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.0", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.1", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.2", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.3", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.4", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.8", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetCodeLink { code = "E24.9", text = "Cushing's Syndrome", target = clinical_evidence_links }
+            GetAbstractionLink { code = "DIARRHEA", text = "Diarrhea", target = clinical_evidence_links }
+            GetAbstractionLink { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinical_evidence_links }
+            GetAbstractionLink { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinical_evidence_links }
+            GetCodeLink { code = "R53.83", text = "Fatigue", target = clinical_evidence_links }
+            GetAbstractionLink { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinical_evidence_links }
             GetCodeLinks {
                 codes = {
                     "N17.0", "N17.1", "N17.2", "N18.30", "N18.31", "N18.32",
@@ -311,20 +325,20 @@ if not existingAlert or not existingAlert.validated then
                     "N18.5", "N18.6"
                 },
                 text = "Kidney Failure",
-                target = clinicalEvidenceLinks
+                target = clinical_evidence_links
             }
-            GetAbstractionLink { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "WEAKNESS", text = "Muscle Weakness", target = clinicalEvidenceLinks }
-            GetAbstractionLink { code = "VOMITING", text = "Vomiting", target = clinicalEvidenceLinks }
+            GetAbstractionLink { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", target = clinical_evidence_links }
+            GetAbstractionLink { code = "WEAKNESS", text = "Muscle Weakness", target = clinical_evidence_links }
+            GetAbstractionLink { code = "VOMITING", text = "Vomiting", target = clinical_evidence_links }
 
-            table.insert(treatmentAndMonitoringLinks, dextroseMedicationLink)
-            table.insert(treatmentAndMonitoringLinks, hemodialysisCodesLinks)
-            table.insert(treatmentAndMonitoringLinks, insulinMedicationLink)
-            table.insert(treatmentAndMonitoringLinks, kayexalateMedLink)
-            table.insert(treatmentAndMonitoringLinks, potassiumReplacementMedLink)
-            table.insert(treatmentAndMonitoringLinks, potassiumChlorideAbsLink)
-            table.insert(treatmentAndMonitoringLinks, potassiumPhosphateAbsLink)
-            table.insert(treatmentAndMonitoringLinks, potassiumBiCarbonateAbsLink)
+            table.insert(treatment_and_monitoring_links, dextrose_medication_link)
+            table.insert(treatment_and_monitoring_links, hemodialysis_codes_links)
+            table.insert(treatment_and_monitoring_links, insulin_medication_link)
+            table.insert(treatment_and_monitoring_links, kayexalate_med_link)
+            table.insert(treatment_and_monitoring_links, potassium_replacement_med_link)
+            table.insert(treatment_and_monitoring_links, potassium_chloride_abs_link)
+            table.insert(treatment_and_monitoring_links, potassium_phosphate_abs_link)
+            table.insert(treatment_and_monitoring_links, potassium_bicarbonate_abs_link)
         end
 
 
@@ -332,28 +346,28 @@ if not existingAlert or not existingAlert.validated then
         --------------------------------------------------------------------------------
         --- Result Finalization 
         --------------------------------------------------------------------------------
-        if #documentedDxHeader.links > 0 then
-            table.insert(resultLinks, documentedDxHeader)
+        if #documented_dx_header.links > 0 then
+            table.insert(result_links, documented_dx_header)
         end
-        if #laboratoryStudiesLinks > 0 then
-            laboratoryStudiesHeader.links = laboratoryStudiesLinks
-            table.insert(resultLinks, laboratoryStudiesHeader)
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
         end
-        if #clinicalEvidenceLinks > 0 then
-            clinicalEvidenceHeader.links = clinicalEvidenceLinks
-            table.insert(resultLinks, clinicalEvidenceHeader)
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
         end
-        if #treatmentAndMonitoringLinks > 0 then
-            treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
-            table.insert(resultLinks, treatmentAndMonitoringHeader)
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
         end
-        if #potassiumLinks > 0 then
-            potassiumHeader.links = potassiumLinks
-            table.insert(resultLinks, potassiumHeader)
+        if #potassium_links > 0 then
+            potassium_header.links = potassium_links
+            table.insert(result_links, potassium_header)
         end
-        if existingAlert then
-            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        if existing_alert then
+            result_links = MergeLinks(existing_alert.links, result_links)
         end
-        Result.links = resultLinks
+        Result.links = result_links
     end
 end

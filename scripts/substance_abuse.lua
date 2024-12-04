@@ -79,44 +79,44 @@ require("libs.common")
 --- Setup
 -------------------------------------------------------------------------------- 
 -- Site variables
-local ciwaScoreDvName = "alcohol CIWA Calc score 1112"
-local ciwaScoreDvPredicate = function(dv) return GetDvValueNumber(dv) > 9 end
-local methadoneMedicationName = "Methadone"
-local suboxoneMedicationName = "Suboxone"
-local benzodiazepineMedicationName = "Benzodiazepine"
-local dexmedetomidineMedicationName = "Dexmedetomidine"
-local lithiumMedicationName = "Lithium"
-local propofolMedicationName = "Propofol"
-local painDocumentTypes = { "Pain Team Consultation Note", "zzPain Team Consultation Note", "Pain Team Progress Note" }
-local opioidDependenceSubtitle = "Possible Opioid Dependence"
-local alcoholWithdrawalSubtitle = "Possible Alcohol Withdrawal"
+local ciwa_score_dv_name = "alcohol CIWA Calc score 1112"
+local ciwa_score_dv_predicate = function(dv) return GetDvValueNumber(dv) > 9 end
+local methadone_medication_name = "Methadone"
+local suboxone_medication_name = "Suboxone"
+local benzodiazepine_medication_name = "Benzodiazepine"
+local dexmedetomidine_medication_name = "Dexmedetomidine"
+local lithium_medication_name = "Lithium"
+local propofol_medication_name = "Propofol"
+local pain_document_types = { "Pain Team Consultation Note", "zzPain Team Consultation Note", "Pain Team Progress Note" }
+local opioid_dependence_subtitle = "Possible Opioid Dependence"
+local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
 
 -- Get the existing alert and its subtitle (if any)
-local existingAlert = GetExistingCdiAlert { scriptName = ScriptName, account = Account }
-local subtitle = existingAlert and existingAlert.subtitle or nil
+local existing_alert = GetExistingCdiAlert { scriptName = ScriptName, account = Account }
+local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 
-if not existingAlert or not existingAlert.validated then
+if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Top-Level Link Header Variables
     --------------------------------------------------------------------------------
-    local resultLinks = {}
-    local documentedDxHeader = MakeHeaderLink("Documented Dx")
-    local documentedDxLinks= {}
-    local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-    local clinicalEvidenceLinks = {}
-    local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
-    local treatmentAndMonitoringLinks = {}
-    local painTeamConsultHeader = MakeHeaderLink("Pain Team Consult")
-    local painTeamConsultLinks = {}
+    local result_links = {}
+    local documented_dx_header = MakeHeaderLink("Documented Dx")
+    local documented_dx_links = {}
+    local clinical_evidence_header = MakeHeaderLink("Clinical Evidence")
+    local clinical_evidence_links = {}
+    local treatment_and_monitoring_header = MakeHeaderLink("Treatment and Monitoring")
+    local treatment_and_monitoring_links = {}
+    local pain_team_consult_header = MakeHeaderLink("Pain Team Consult")
+    local pain_team_consult_links = {}
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
-    local alcoholCodeDic = {
+    local alcohol_code_dic = {
         ["F10.130"] = "Alcohol abuse with withdrawal, uncomplicated",
         ["F10.131"] = "Alcohol abuse with withdrawal delirium",
         ["F10.132"] = "Alcohol Abuse with Withdrawal",
@@ -131,7 +131,7 @@ if not existingAlert or not existingAlert.validated then
         ["F10.939"] = "Alcohol use, unspecified with withdrawal, unspecified"
     }
 
-    local opioidCodeDic = {
+    local opioid_code_dic = {
         ["F11.20"] = "Opioid Dependence, Uncomplicated",
         ["F11.21"] = "Opioid Dependence, In Remission",
         ["F11.22"] = "Opioid Dependence with Intoxication",
@@ -152,40 +152,40 @@ if not existingAlert or not existingAlert.validated then
         ["F11.29"] = "Opioid dependence with unspecified opioid-induced disorder"
     }
     -- Get the alcohol and opioid codes on the account
-    local accountAlcoholCodes = GetAccountCodesInDictionary(Account, alcoholCodeDic)
-    local accountOpioidCodes = GetAccountCodesInDictionary(Account, opioidCodeDic)
+    local account_alcohol_codes = GetAccountCodesInDictionary(Account, alcohol_code_dic)
+    local account_opioid_codes = GetAccountCodesInDictionary(Account, opioid_code_dic)
 
 
 
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local ciwaScoreDvLink = GetDiscreteValueLinks {
-        discreteValueName = ciwaScoreDvName,
+    local ciwa_score_dv_link = GetDiscreteValueLinks {
+        discreteValueName = ciwa_score_dv_name,
         text = "CIWA Score",
         seq = 5,
-        predicate = ciwaScoreDvPredicate
+        predicate = ciwa_score_dv_predicate
     }
-    local ciwaScoreAbstractionLink = GetAbstractionValueLinks { code = "CIWA_SCORE", text = "CIWA Score", seq = 6 }
-    local ciwaProtocolAbstractionLink = GetAbstractionValueLinks { code = "CIWA_PROTOCOL", text = "CIWA Protocol", seq = 7 }
-    local methadoneMedicationLinks = GetMedicationLinks {
-        cat = methadoneMedicationName,
+    local ciwa_score_abstraction_link = GetAbstractionValueLink { code = "CIWA_SCORE", text = "CIWA Score", seq = 6 }
+    local ciwa_protocol_abstraction_link = GetAbstractionValueLink { code = "CIWA_PROTOCOL", text = "CIWA Protocol", seq = 7 }
+    local methadone_medication_links = GetMedicationLinks {
+        cat = methadone_medication_name,
         text = "Methadone",
         seq = 9,
         useCdiAlertCategoryField = true,
         onePerDate = true,
         maxPerValue = 9999,
     } or {}
-    local methadoneAbstractionLink = GetAbstractionValueLinks { code = "METHADONE", text = "Methadone", seq = 8 }
-    local suboxoneMedicationLink = GetMedicationLinks {
-        cat = suboxoneMedicationName,
+    local methadone_abstraction_link = GetAbstractionValueLink { code = "METHADONE", text = "Methadone", seq = 8 }
+    local suboxone_medication_link = GetMedicationLink {
+        cat = suboxone_medication_name,
         text = "Suboxone",
         seq = 11,
         useCdiAlertCategoryField = true,
         onlyOne = true,
     }
-    local suboxoneAbstractionLink = GetAbstractionValueLinks { code = "SUBOXONE", text = "Suboxone", seq = 12 }
-    local methadoneClinicAbstractionLink = GetAbstractionLinks { code = "METHADONE_CLINIC", text = "Methadone Clinic", seq = 13 }
+    local suboxone_abstraction_link = GetAbstractionValueLink { code = "SUBOXONE", text = "Suboxone", seq = 12 }
+    local methadone_clinic_abstraction_link = GetAbstractionLink { code = "METHADONE_CLINIC", text = "Methadone Clinic", seq = 13 }
 
 
 
@@ -193,37 +193,37 @@ if not existingAlert or not existingAlert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
     -- Auto resolve alert if it currently triggered for alcohol but now has alcohol codes
-    if subtitle == alcoholWithdrawalSubtitle and #accountAlcoholCodes > 0 then
-        local code = accountAlcoholCodes[1]
-        local codeDesc = alcoholCodeDic[code]
-        local autoResolvedCodeLink = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
-        table.insert(documentedDxLinks, autoResolvedCodeLink)
+    if subtitle == alcohol_withdrawal_subtitle and #account_alcohol_codes > 0 then
+        local code = account_alcohol_codes[1]
+        local code_desc = alcohol_code_dic[code]
+        local auto_resolved_code_link = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
+        table.insert(documented_dx_links, auto_resolved_code_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Auto resolve alert if it currently triggered for opioids but now has opioid codes
-    elseif subtitle == opioidDependenceSubtitle and #accountOpioidCodes > 0 then
-        local code = accountOpioidCodes[1]
-        local codeDesc = opioidCodeDic[code]
-        local autoResolvedCodeLink = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
-        table.insert(documentedDxLinks, autoResolvedCodeLink)
+    elseif subtitle == opioid_dependence_subtitle and #account_opioid_codes > 0 then
+        -- Auto resolve alert if it currently triggered for opioids but now has opioid codes
+        local code = account_opioid_codes[1]
+        local code_desc = opioid_code_dic[code]
+        local auto_resolved_code_link = GetCodeLinks { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
+        table.insert(documented_dx_links, auto_resolved_code_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Trigger alert if it has no alcohol code, but has a ciwa score dv of 10 or greater, or a ciwa score abstraction, or a ciwa protcol abstraction
-    elseif #accountAlcoholCodes == 0 and (ciwaScoreDvLink or ciwaScoreAbstractionLink or ciwaProtocolAbstractionLink) then
-        Result.subtitle = alcoholWithdrawalSubtitle
+    elseif #account_alcohol_codes == 0 and (ciwa_score_dv_link or ciwa_score_abstraction_link or ciwa_protocol_abstraction_link) then
+        -- Trigger alert if it has no alcohol code, but has a ciwa score dv of 10 or greater, or a ciwa score abstraction, or a ciwa protcol abstraction
+        Result.subtitle = alcohol_withdrawal_subtitle
         Result.passed = true
 
-    -- Trigger alert if it has no opioid code, but has a methadone medication, or a methadone abstraction, or a suboxone medication, or a suboxone abstraction, or a methadone clinic abstraction
-    elseif #accountOpioidCodes == 0 and (#methadoneMedicationLinks > 0 or methadoneAbstractionLink or suboxoneMedicationLink or suboxoneAbstractionLink or methadoneClinicAbstractionLink) then
-        Result.subtitle = opioidDependenceSubtitle
+    elseif #account_opioid_codes == 0 and (#methadone_medication_links > 0 or methadone_abstraction_link or suboxone_medication_link or suboxone_abstraction_link or methadone_clinic_abstraction_link) then
+        -- Trigger alert if it has no opioid code, but has a methadone medication, or a methadone abstraction, or a suboxone medication, or a suboxone abstraction, or a methadone clinic abstraction
+        Result.subtitle = opioid_dependence_subtitle
         Result.passed = true
     end
 
@@ -234,64 +234,64 @@ if not existingAlert or not existingAlert.validated then
         --- Additional Link Collection (Get___Links with target table)
         --------------------------------------------------------------------------------
         if not Result.validated then
-            GetCodeLinks {
+            GetCodeLink {
                 codes = {
                     "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
                     "F10.259", "F10.26", "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"
                 },
                 text = "Alcohol Dependence",
                 sequence = 1,
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
             }
-            local r4182CodeLink = GetCodeLinks { code = "R41.82", text = "Altered Level of Consciousness", seq = 2, target = clinicalEvidenceLinks }
-            local alteredAbs = GetAbstractionLinks { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 3, target = clinicalEvidenceLinks }
-            if r4182CodeLink then
-                alteredAbs.hidden = true
+            local r4182_code_link = GetCodeLink { code = "R41.82", text = "Altered Level of Consciousness", seq = 2, target = clinical_evidence_links }
+            local altered_abs = GetAbstractionLink { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 3, target = clinical_evidence_links }
+            if r4182_code_link then
+                altered_abs.hidden = true
             end
-            GetCodeLinks { code = "R44.8", text = "Auditory Hallucinations", seq = 4, target = clinicalEvidenceLinks }
+            GetCodeLinks { code = "R44.8", text = "Auditory Hallucinations", seq = 4, target = clinical_evidence_links }
 
-            table.insert(clinicalEvidenceLinks, ciwaScoreDvLink)
-            table.insert(clinicalEvidenceLinks, ciwaScoreAbstractionLink)
-            table.insert(clinicalEvidenceLinks, ciwaProtocolAbstractionLink)
+            table.insert(clinical_evidence_links, ciwa_score_dv_link)
+            table.insert(clinical_evidence_links, ciwa_score_abstraction_link)
+            table.insert(clinical_evidence_links, ciwa_protocol_abstraction_link)
 
-            GetAbstractionLinks { code = "COMBATIVE", text = "Combative", seq = 8, target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "DELIRIUM", text = "Delirium", seq = 9, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R44.3", text = "Hallucinations", seq = 10, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R51.9", text = "Headache", seq = 11, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R45.4", text = "Irritability and Anger", seq = 12, target = clinicalEvidenceLinks }
+            GetAbstractionLinks { code = "COMBATIVE", text = "Combative", seq = 8, target = clinical_evidence_links }
+            GetAbstractionLinks { code = "DELIRIUM", text = "Delirium", seq = 9, target = clinical_evidence_links }
+            GetCodeLinks { code = "R44.3", text = "Hallucinations", seq = 10, target = clinical_evidence_links }
+            GetCodeLinks { code = "R51.9", text = "Headache", seq = 11, target = clinical_evidence_links }
+            GetCodeLinks { code = "R45.4", text = "Irritability and Anger", seq = 12, target = clinical_evidence_links }
 
-            table.insert(clinicalEvidenceLinks, methadoneClinicAbstractionLink)
+            table.insert(clinical_evidence_links, methadone_clinic_abstraction_link)
 
-            GetCodeLinks { code = "R11.0", text = "Nausea", seq = 14, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R45.0", text = "Nervousness", seq = 15, target = clinicalEvidenceLinks }
-            GetAbstractionLinks { code = "ONE_TO_ONE_SUPERVISION", text = "One to One Supervision", seq = 16, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.12", text = "Projectile Vomiting", seq = 17, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R45.1", text = "Restlessness and Agitation", seq = 18, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R61", text = "Sweating", seq = 19, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R25.1", text = "Tremor", seq = 20, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R44.1", text = "Visual Hallucinations", seq = 21, target = clinicalEvidenceLinks }
-            GetCodeLinks { code = "R11.10", text = "Vomiting", seq = 22, target = clinicalEvidenceLinks }
+            GetCodeLinks { code = "R11.0", text = "Nausea", seq = 14, target = clinical_evidence_links }
+            GetCodeLinks { code = "R45.0", text = "Nervousness", seq = 15, target = clinical_evidence_links }
+            GetAbstractionLinks { code = "ONE_TO_ONE_SUPERVISION", text = "One to One Supervision", seq = 16, target = clinical_evidence_links }
+            GetCodeLinks { code = "R11.12", text = "Projectile Vomiting", seq = 17, target = clinical_evidence_links }
+            GetCodeLinks { code = "R45.1", text = "Restlessness and Agitation", seq = 18, target = clinical_evidence_links }
+            GetCodeLinks { code = "R61", text = "Sweating", seq = 19, target = clinical_evidence_links }
+            GetCodeLinks { code = "R25.1", text = "Tremor", seq = 20, target = clinical_evidence_links }
+            GetCodeLinks { code = "R44.1", text = "Visual Hallucinations", seq = 21, target = clinical_evidence_links }
+            GetCodeLinks { code = "R11.10", text = "Vomiting", seq = 22, target = clinical_evidence_links }
 
-            GetMedicationLinks { cat = benzodiazepineMedicationName, text = "Benzodiazepine", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
-            GetAbstractionLinks { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2, target = treatmentAndMonitoringLinks }
-            GetMedicationLinks { cat = dexmedetomidineMedicationName, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
-            GetAbstractionLinks { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4, target = treatmentAndMonitoringLinks }
-            GetMedicationLinks { cat = lithiumMedicationName, text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
-            GetAbstractionLinks { code = "LITHIUM", text = "Lithium", seq = 6, target = treatmentAndMonitoringLinks }
-            for _, link in ipairs(methadoneMedicationLinks) do
-                table.insert(treatmentAndMonitoringLinks, link)
+            GetMedicationLinks { cat = benzodiazepine_medication_name, text = "Benzodiazepine", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
+            GetAbstractionLinks { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2, target = treatment_and_monitoring_links }
+            GetMedicationLinks { cat = dexmedetomidine_medication_name, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
+            GetAbstractionLinks { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4, target = treatment_and_monitoring_links }
+            GetMedicationLinks { cat = lithium_medication_name, text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
+            GetAbstractionLinks { code = "LITHIUM", text = "Lithium", seq = 6, target = treatment_and_monitoring_links }
+            for _, link in ipairs(methadone_medication_links) do
+                table.insert(treatment_and_monitoring_links, link)
             end
 
-            table.insert(treatmentAndMonitoringLinks, methadoneAbstractionLink)
+            table.insert(treatment_and_monitoring_links, methadone_abstraction_link)
 
-            GetMedicationLinks { cat = propofolMedicationName, text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true, target = treatmentAndMonitoringLinks }
-            GetAbstractionLinks { code = "PROPOFOL", text = "Propofol", seq = 11, target = treatmentAndMonitoringLinks }
+            GetMedicationLinks { cat = propofol_medication_name, text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
+            GetAbstractionLinks { code = "PROPOFOL", text = "Propofol", seq = 11, target = treatment_and_monitoring_links }
 
-            table.insert(treatmentAndMonitoringLinks, suboxoneMedicationLink)
-            table.insert(treatmentAndMonitoringLinks, suboxoneAbstractionLink)
+            table.insert(treatment_and_monitoring_links, suboxone_medication_link)
+            table.insert(treatment_and_monitoring_links, suboxone_abstraction_link)
 
-            for i, docType in ipairs(painDocumentTypes) do
-                GetDocumentLinks { documentType = docType, text = docType, seq = i, target = painTeamConsultLinks }
+            for i, doc_type in ipairs(pain_document_types) do
+                GetDocumentLinks { documentType = doc_type, text = doc_type, seq = i, target = pain_team_consult_links }
             end
         end
 
@@ -301,28 +301,28 @@ if not existingAlert or not existingAlert.validated then
         --- Result Finalization 
         --------------------------------------------------------------------------------
         -- Build the link heirarchy
-        if #documentedDxLinks > 0 then
-            documentedDxHeader.links = documentedDxLinks
-            table.insert(resultLinks, documentedDxHeader)
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
         end
-        if #clinicalEvidenceLinks > 0 then
-            clinicalEvidenceHeader.links = clinicalEvidenceLinks
-            table.insert(resultLinks, clinicalEvidenceHeader)
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
         end
-        if #treatmentAndMonitoringLinks > 0 then
-            treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
-            table.insert(resultLinks, treatmentAndMonitoringHeader)
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
         end
-        if #painTeamConsultLinks > 0 then
-            painTeamConsultHeader.links = painTeamConsultLinks
-            table.insert(resultLinks, painTeamConsultHeader)
+        if #pain_team_consult_links > 0 then
+            pain_team_consult_header.links = pain_team_consult_links
+            table.insert(result_links, pain_team_consult_header)
         end
 
         -- Merge links if we need to
-        if existingAlert then
-            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        if existing_alert then
+            result_links = MergeLinks(existing_alert.links, result_links)
         end
-        Result.links = resultLinks
+        Result.links = result_links
     end
 end
 
