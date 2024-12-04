@@ -2,4 +2,22 @@
     "runtime": {
         "version": "LuaJIT",
     }
+    "diagnostics.groupFileStatus": {
+        "ambiguity": "Any",
+        "await": "Any",
+        "codestyle": "Any",
+        "duplicate": "Any",
+        "global": "Any",
+        "luadoc": "Any",
+        "redefined": "Any",
+        "strict": "Any",
+        "strong": "Any",
+        "type-check": "Any",
+        "unbalanced": "Any",
+        "unused": "Any"
+    },
+    "diagnostics.neededFileStatus": {
+        "spell-check": "None!"
+    }
+}
 }
