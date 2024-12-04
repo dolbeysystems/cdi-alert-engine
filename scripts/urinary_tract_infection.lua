@@ -20,38 +20,38 @@ require("libs.common")
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local alertSubtitle = "Urinary Tract Infection"
+local alert_subtitle = "Urinary Tract Infection"
 
-local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
-local subtitle = existingAlert and existingAlert.subtitle or nil
+local existing_alert = GetExistingCdiAlert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
 
-local function numeric_result_predicate(discreteValue)
-    return discreteValue.name ~= nil and string.find(discreteValue.name, "%d+") ~= nil
+local function numeric_result_predicate(discrete_value)
+    return discrete_value.name ~= nil and string.find(discrete_value.name, "%d+") ~= nil
 end
 
-if not existingAlert or not existingAlert.validated then
-    local resultLinks = {}
-    local documentedDxHeader = MakeHeaderLink("Documented Dx")
-    local documentedDxLinks = {}
-    local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-    local clinicalEvidenceLinks = {}
-    local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
-    local treatmentAndMonitoringLinks = {}
-    local urinaryDevicesHeader = MakeHeaderLink("Treatment and Monitoring")
-    local urinaryDevicesLinks = {}
-    local laboratoryStudiesHeader = MakeHeaderLink("Treatment and Monitoring")
-    local laboratoryStudiesLinks = {}
-    local vitalSignsHeader = MakeHeaderLink("Treatment and Monitoring")
-    local vitalSignsLinks = {}
-    local otherHeader = MakeHeaderLink("Treatment and Monitoring")
-    local otherLinks = {}
-    local urineAnalysisHeader = MakeHeaderLink("Treatment and Monitoring")
-    local urineAnalysisLinks = {}
+if not existing_alert or not existing_alert.validated then
+    local result_links = {}
+    local documented_dx_header = MakeHeaderLink("Documented Dx")
+    local documented_dx_links = {}
+    local clinical_evidence_header = MakeHeaderLink("Clinical Evidence")
+    local clinical_evidence_links = {}
+    local treatment_and_monitoring_header = MakeHeaderLink("Treatment and Monitoring")
+    local treatment_and_monitoring_links = {}
+    local urinary_devices_header = MakeHeaderLink("Treatment and Monitoring")
+    local urinary_devices_links = {}
+    local laboratory_studies_header = MakeHeaderLink("Treatment and Monitoring")
+    local laboratory_studies_links = {}
+    local vital_signs_header = MakeHeaderLink("Treatment and Monitoring")
+    local vitals_sign_links = {}
+    local other_header = MakeHeaderLink("Treatment and Monitoring")
+    local other_links = {}
+    local urine_analysis_header = MakeHeaderLink("Treatment and Monitoring")
+    local urine_analysis_links = {}
 
     --------------------------------------------------------------------------------
     --- Alert Variables
     --------------------------------------------------------------------------------
-    local alertCodeDictionary = {
+    local alert_code_dictionary = {
         ["T83.510A"] = "Infection And Inflammatory Reaction Due To Cystostomy Catheter",
         ["T83.510D"] = "Infection And Inflammatory Reaction Due To Cystostomy Catheter",
         ["T83.510S"] = "Infection And Inflammatory Reaction Due To Cystostomy Catheter",
@@ -65,93 +65,93 @@ if not existingAlert or not existingAlert.validated then
         ["T83.518D"] = "Infection And Inflammatory Reaction Due To Other Urinary Catheter",
         ["T83.518S"] = "Infection And Inflammatory Reaction Due To Other Urinary Catheter"
     }
-    local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+    local account_alert_codes = GetAccountCodesInDictionary(Account, alert_code_dictionary)
 
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local utiCode = GetCodeLinks {
+    local uti_code = GetCodeLinks {
         codes = { "T83.510A", "T83.511A", "T83.512A", "T83.518" },
         text = "UTI with Device Link Codes",
         sequence = 1,
     }
-    local n390Code = GetCodeLink { code = "N39.0", text = "Urinary Tract Infection" }
-    local r8271Code = GetCodeLink { code = "R82.71", text = "Bacteriuria", sequence = 1 }
-    local r8279Code = GetCodeLink { code = "R82.79", text = "Positive Urine Culture", sequence = 7 }
-    local r8281Code = GetCodeLink { code = "R82.81", text = "Pyuria", sequence = 8 }
+    local n390 = GetCodeLink { code = "N39.0", text = "Urinary Tract Infection" }
+    local r8271 = GetCodeLink { code = "R82.71", text = "Bacteriuria", sequence = 1 }
+    local r8279 = GetCodeLink { code = "R82.79", text = "Positive Urine Culture", sequence = 7 }
+    local r8281 = GetCodeLink { code = "R82.81", text = "Pyuria", sequence = 8 }
 
-    local urineCulture = GetDiscreteValueLink {
+    local urine_culture = GetDiscreteValueLink {
         discreteValueName = "BACTERIA (/HPF)",
         linkText = "Urine Culture",
         sequence = 4,
-        predicate = function(discreteValue)
-            return discreteValue.result ~= nil and
-                (string.find(discreteValue.result, "positive") ~= nil or string.find(discreteValue.result, "negative") ~= nil)
+        predicate = function(discrete_value)
+            return discrete_value.result ~= nil and
+                (string.find(discrete_value.result, "positive") ~= nil or string.find(discrete_value.result, "negative") ~= nil)
         end,
     }
-    local urineBacteria = GetDiscreteValueLink {
+    local urine_bacteria = GetDiscreteValueLink {
         discreteValueName = "BACTERIA (/HPF)",
         linkText = "UA Bacteria",
         sequence = 1,
         predicate = numeric_result_predicate,
     }
 
-    local chronicCystostomyCatheterAbstractionLink = GetAbstractionValueLinks {
+    local chronic_cystostomy_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "CHRONIC_CYSTOSTOMY_CATHETER",
         text = "Cystostomy Catheter",
         seq = 1
     }
-    local cystostomyCatheterAbstractionLink = GetAbstractionValueLinks {
+    local cystostomy_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "CYSTOSTOMY_CATHETER",
         text = "Cystostomy Catheter",
         seq = 2
     }
-    local chronicIndwellingUrethralCatheterAbstractionLink = GetAbstractionValueLinks {
+    local chronic_indwelling_urethral_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "CHRONIC_INDWELLING_URETHRAL_CATHETER",
         text = "Indwelling Urethral Catheter",
         seq = 3
     }
-    local indwellingUrethralCatheterAbstractionLink = GetAbstractionValueLinks {
+    local indwelling_urethral_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "INDWELLING_URETHRAL_CATHETER",
         text = "Indwelling Urethral Catheter",
         seq = 4
     }
-    local chronicNephrostomyCatheterAbstractionLink = GetAbstractionValueLinks {
+    local chronic_nephrostomy_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "CHRONIC_NEPHROSTOMY_CATHETER",
         text = "Nephrostomy Catheter",
         seq = 5
     }
-    local nephrostomyCatheterAbstractionLink = GetAbstractionValueLinks {
+    local nephrostomy_catheter_abstraction_link = GetAbstractionValueLinks {
         code = "NEPHROSTOMY_CATHETER",
         text = "Nephrostomy Catheter",
         seq = 6
     }
-    local selfCatheterizationAbstractionLink = GetAbstractionValueLinks {
+    local self_catheterization_abstraction_link = GetAbstractionValueLinks {
         code = "SELF_CATHETERIZATION",
         text = "Self Catheterization",
         seq = 7
     }
-    local straightCatheterizationAbstractionLink = GetAbstractionValueLinks {
+    local straight_catheterization_abstraction_link = GetAbstractionValueLinks {
         code = "STRAIGHT_CATHETERIZATION",
         text = "Straight Catheterization",
         seq = 8
     }
-    local chronicUrinaryDrainageDeviceAbstractionLink = GetAbstractionValueLinks {
+    local chronic_urinary_drainage_device_abstraction_link = GetAbstractionValueLinks {
         code = "CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE",
         text = "Urinary Drainage Device",
         seq = 9
     }
-    local urinaryDrainageDeviceAbstractionLink = GetAbstractionValueLinks {
+    local urinary_drainage_device_abstraction_link = GetAbstractionValueLinks {
         code = "OTHER_URINARY_DRAINAGE_DEVICE",
         text = "Urinary Drainage Device",
         seq = 10
     }
-    local chronicUreteralStentAbstractionLink = GetAbstractionValueLinks {
+    local chronic_ureteral_stent_abstraction_link = GetAbstractionValueLinks {
         code = "CHRONIC_URETERAL_STENT",
         text = "Ureteral Stent",
         seq = 11
     }
-    local ureteralStentAbstractionLink = GetAbstractionValueLinks {
+    local ureteral_stent_abstraction_link = GetAbstractionValueLinks {
         code = "URETERAL_STENT",
         text = "Ureteral Stent",
         seq = 12
@@ -165,85 +165,85 @@ if not existingAlert or not existingAlert.validated then
     --- in order to make it usable as a condition.
     ---@param ... CdiAlertLink[]?
     ---@return boolean
-    local function addLinks(...)
-        local hadNonNil = false
+    local function add_links(...)
+        local had_non_nil = false
         for _, links in pairs { ... } do
             if links ~= nil then
                 for _, link in ipairs(links) do
-                    table.insert(documentedDxLinks, link)
+                    table.insert(documented_dx_links, link)
                 end
-                hadNonNil = true
+                had_non_nil = true
             end
         end
-        return hadNonNil
+        return had_non_nil
     end
 
-    if #accountAlertCodes > 0 then
-        local code = accountAlertCodes[1]
-        local codeDesc = alertCodeDictionary[code]
-        local autoResolvedCodeLink = GetCodeLink { code = code, text = "Autoresolved Specified Code - " .. codeDesc, seq = 1 }
-        table.insert(documentedDxLinks, autoResolvedCodeLink)
+    if #account_alert_codes > 0 then
+        local code = account_alert_codes[1]
+        local code_desc = alert_code_dictionary[code]
+        local auto_resolved_code_link = GetCodeLink { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
+        table.insert(documented_dx_links, auto_resolved_code_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-    elseif utiCode == nil and n390Code ~= nil then
-        if addLinks(chronicCystostomyCatheterAbstractionLink, cystostomyCatheterAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+    elseif uti_code == nil and n390 ~= nil then
+        if add_links(chronic_cystostomy_catheter_abstraction_link, cystostomy_catheter_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
             Result.passed = true
-        elseif addLinks(chronicIndwellingUrethralCatheterAbstractionLink, indwellingUrethralCatheterAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+        elseif add_links(chronic_indwelling_urethral_catheter_abstraction_link, indwelling_urethral_catheter_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Indwelling Urethral Catheter"
             Result.passed = true
-        elseif addLinks(chronicNephrostomyCatheterAbstractionLink, nephrostomyCatheterAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+        elseif add_links(chronic_nephrostomy_catheter_abstraction_link, nephrostomy_catheter_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
             Result.passed = true
             -- #5
-        elseif addLinks(chronicUrinaryDrainageDeviceAbstractionLink, urinaryDrainageDeviceAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+        elseif add_links(chronic_urinary_drainage_device_abstraction_link, urinary_drainage_device_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
             Result.passed = true
             -- #6
-        elseif addLinks(chronicUreteralStentAbstractionLink, ureteralStentAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+        elseif add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Ureteral Stent"
             Result.passed = true
             -- #7
-        elseif addLinks(selfCatheterizationAbstractionLink, straightCatheterizationAbstractionLink) then
-            table.insert(documentedDxLinks, n390Code)
+        elseif add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
+            table.insert(documented_dx_links, n390)
             Result.subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
             Result.passed = true
         end
-    elseif urineCulture or r8271Code or r8279Code or r8281Code or urineBacteria then
-        if n390Code == nil then
-            if addLinks(chronicCystostomyCatheterAbstractionLink) then
+    elseif urine_culture or r8271 or r8279 or r8281 or urine_bacteria then
+        if n390 == nil then
+            if add_links(chronic_cystostomy_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI with Possible Link to Cystostomy Catheter"
                 Result.passed = true
-            elseif addLinks(chronicIndwellingUrethralCatheterAbstractionLink) then
+            elseif add_links(chronic_indwelling_urethral_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Indwelling Urethral Catheter"
                 Result.passed = true
-            elseif addLinks(chronicNephrostomyCatheterAbstractionLink) then
+            elseif add_links(chronic_nephrostomy_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Nephrostomy Catheter"
                 Result.passed = true
-            elseif addLinks(chronicUrinaryDrainageDeviceAbstractionLink) then
+            elseif add_links(chronic_urinary_drainage_device_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Other Urinary Drainage Device"
                 Result.passed = true
             end
-        elseif addLinks(chronicUreteralStentAbstractionLink, ureteralStentAbstractionLink) then
-            addLinks(urineBacteria)
-            addLinks(r8271Code)
+        elseif add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
+            add_links(urine_bacteria)
+            add_links(r8271)
             Result.subtitle = "Possible UTI with Possible Link to Ureteral Stent"
             Result.passed = true
-        elseif addLinks(selfCatheterizationAbstractionLink, straightCatheterizationAbstractionLink) then
-            addLinks(urineBacteria)
-            addLinks(r8271Code)
+        elseif add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
+            add_links(urine_bacteria)
+            add_links(r8271)
             Result.subtitle = "Possible UTI with Possible Link to Intermittent Catheterization"
             Result.passed = true
         end
-    elseif #accountAlertCodes == 0 and n390Code == nil and (urineCulture or urineBacteria) then --TODO
+    elseif #account_alert_codes == 0 and n390 == nil and (urine_culture or urine_bacteria) then --TODO
         Result.subtitle = "Possible UTI"
         Result.passed = true
     end
@@ -252,7 +252,7 @@ if not existingAlert or not existingAlert.validated then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        local resultLinks = {}
+        local result_links = {}
 
         if Result.validated then
             -- Autoclose
@@ -265,9 +265,9 @@ if not existingAlert or not existingAlert.validated then
         ----------------------------------------
         --- Result Finalization
         ----------------------------------------
-        if existingAlert then
-            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        if existing_alert then
+            result_links = MergeLinks(existing_alert.links, result_links)
         end
-        Result.links = resultLinks
+        Result.links = result_links
     end
 end
