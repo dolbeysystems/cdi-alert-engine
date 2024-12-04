@@ -118,7 +118,7 @@ not for it making multiple links)
 #### mprefixCodeValue(prefix, link_text, sequence, category, abstract)
 
 ```lua
-GetFirstCodePrefixLink {
+GetCodePrefixLink {
     prefix = prefix,
     text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     seq = sequence,

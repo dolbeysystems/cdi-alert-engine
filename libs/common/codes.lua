@@ -27,7 +27,7 @@ end
 ---
 --- @return CdiAlertLink? - the link to the first code or nil if not found
 --------------------------------------------------------------------------------
-function GetFirstCodePrefixLink(arguments)
+function GetCodePrefixLink(arguments)
     local codes = GetAccountCodesByPrefix(arguments.prefix)
     if #codes == 0 then
         return nil
@@ -48,7 +48,7 @@ end
 ---
 --- @return CdiAlertLink[]? - a list of links to the codes or nil if not found
 --------------------------------------------------------------------------------
-function GetAllCodePrefixLinks(arguments)
+function GetCodePrefixLinks(arguments)
     local codes = GetAccountCodesByPrefix(arguments.prefix)
     if #codes == 0 then
         return nil

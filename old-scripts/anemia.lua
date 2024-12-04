@@ -13,15 +13,15 @@
 --------------------------------------------------------------------------------
 --- Lua type definitions
 --------------------------------------------------------------------------------
---- @class HemoglobinHematocritDiscreteValuePair
---- @field hemoglobin DiscreteValue
---- @field hematocrit DiscreteValue
+-- @class HemoglobinHematocritDiscreteValuePair
+-- @field hemoglobin DiscreteValue
+-- @field hematocrit DiscreteValue
 ---
---- @class HemoglobinHematocritPeakDropLinks
---- @field hemoglobinPeakLink CdiAlertLink
---- @field hemoglobinDropLink CdiAlertLink
---- @field hematocritPeakLink CdiAlertLink
---- @field hematocritDropLink CdiAlertLink
+-- @class HemoglobinHematocritPeakDropLinks
+-- @field hemoglobinPeakLink CdiAlertLink
+-- @field hemoglobinDropLink CdiAlertLink
+-- @field hematocritPeakLink CdiAlertLink
+-- @field hematocritDropLink CdiAlertLink
 
 
 
@@ -538,7 +538,7 @@ if not ExistingAlert or not ExistingAlert.validated then
     k922Code = GetCodeLinks { code="K92.2", text="GI Hemorrhage", seq=20 }
     hematomaAbs = GetAbstractionLinks { code="HEMATOMA", text="Hematoma", seq=21 }
     k920Code = GetCodeLinks { code="K92.0", text="Hematemesis", seq=22 }
-    r310Code = GetFirstCodePrefixLink { prefix = "R31.", text="Hematuria", seq=23 }
+    r310Code = GetCodePrefixLink { prefix = "R31.", text="Hematuria", seq=23 }
     r195Code = GetCodeLinks { code="R19.5", text="Heme-Positive Stool", seq=24 }
     k661Code = GetCodeLinks { code="K66.1", text="Hemoperitoneum", seq=25 }
     n3091Code = GetCodeLinks { code="N30.91", text="Hemorrhagic Cystitis", seq=26 }
@@ -552,9 +552,9 @@ if not ExistingAlert or not ExistingAlert.validated then
     j956Codes = GetCodeLinks { codes={"J95.61", "J95.62"}, text="Intraoperative Hemorrhage/Hematoma of Respiratory System", seq=34 }
     k921Code = GetCodeLinks { code="K92.1", text="Melena", seq=35 }
     n920Code = GetCodeLinks { code="N92.0", text="Menorrhagia", seq=36 }
-    i61Codes = GetAllCodePrefixLinks { prefix="I61.", text="Nontraumatic Intracerebral Hemorrhage", seq=37 }
-    i62Codes = GetAllCodePrefixLinks { prefix="I62.", text="Nontraumatic Intracerebral Hemorrhage", seq=38 }
-    i60Codes = GetAllCodePrefixLinks { prefix="I60.", text="Nontraumatic Subarachnoid Hemorrhage", seq=39 }
+    i61Codes = GetCodePrefixLinks { prefix="I61.", text="Nontraumatic Intracerebral Hemorrhage", seq=37 }
+    i62Codes = GetCodePrefixLinks { prefix="I62.", text="Nontraumatic Intracerebral Hemorrhage", seq=38 }
+    i60Codes = GetCodePrefixLinks { prefix="I60.", text="Nontraumatic Subarachnoid Hemorrhage", seq=39 }
     l7632Code = GetCodeLinks { code="L76.32", text="Postoperative Hematoma", seq=40 }
     k918Codes = GetCodeLinks { codes={"K91.840", "K91.841", "K91.870", "K91.871"}, text="Postoperative Hemorrhage/Hematoma of Digestive System Organ", seq=41 }
     i976Codes = GetCodeLinks { codes={"I97.610", "I97.611", "I97.618", "I97.620"}, text="Postoperative Hemorrhage/Hematoma of Circulatory System Organ", seq=42 }
@@ -722,8 +722,8 @@ end
 if AlertMatched then
     -- Abstractions
     AddEvidenceCode("T45.1X5A", "Adverse Effect of Antineoplastic and Immunosuppressive Drug", 1)
-    GetFirstCodePrefixLink{ target = ClinicalEvidenceLinks, prefix="F10.1", text="Alcohol Abuse", seq=2 }
-    GetFirstCodePrefixLink { target = ClinicalEvidenceLinks, prefix="F10.2", text="Alcohol Dependence", seq=3 }
+    GetCodePrefixLink{ target = ClinicalEvidenceLinks, prefix="F10.1", text="Alcohol Abuse", seq=2 }
+    GetCodePrefixLink { target = ClinicalEvidenceLinks, prefix="F10.2", text="Alcohol Dependence", seq=3 }
     AddEvidenceCode("K70.31", "Alcoholic Liver Cirrhosis", 4)
     AddEvidenceCode("T45.7X1A", "Anticoagulant-Induced Bleeding", 5)
     AddEvidenceCode("Z51.11", "Chemotherapy", 6)
@@ -737,40 +737,40 @@ if AlertMatched then
     AddEvidenceAbs("DYSPNEA_ON_EXERTION", "Dyspnea on Exertion", 11)
     AddEvidenceCode("N18.6", "End-Stage Renal Disease", 12)
     AddEvidenceCode("R53.83", "Fatigue", 13)
-    GetFirstCodePrefixLink { prefix="C82.", target=ClinicalEvidenceLinks, text="Follicular Lymphoma", seq=14 }
+    GetCodePrefixLink { prefix="C82.", target=ClinicalEvidenceLinks, text="Follicular Lymphoma", seq=14 }
 
     GetCodeLinks { target = ClinicalEvidenceLinks, text = "Heart Failure", seq = 15, codes = {
         "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
     }}
     AddEvidenceCode("D58.0", "Hereditary Spherocytosis", 16)
     AddEvidenceCode("B20", "HIV", 17)
-    GetFirstCodePrefixLink { prefix="C81.", target=ClinicalEvidenceLinks, text="Hodgkin Lymphoma", seq=18 }
+    GetCodePrefixLink { prefix="C81.", target=ClinicalEvidenceLinks, text="Hodgkin Lymphoma", seq=18 }
     AddEvidenceCode("E61.1", "Iron Deficiency", 19)
-    GetFirstCodePrefixLink { prefix="C95.", target=ClinicalEvidenceLinks, text="Leukemia of Unspecified Cell Type", seq=20 }
-    GetFirstCodePrefixLink { prefix="C91.", target=ClinicalEvidenceLinks, text="Lymphoid Leukemia", seq=21 }
+    GetCodePrefixLink { prefix="C95.", target=ClinicalEvidenceLinks, text="Leukemia of Unspecified Cell Type", seq=20 }
+    GetCodePrefixLink { prefix="C91.", target=ClinicalEvidenceLinks, text="Lymphoid Leukemia", seq=21 }
     AddEvidenceCode("K22.6", "Mallory-Weiss Tear", 22)
     GetCodeLinks { target = ClinicalEvidenceLinks, text = "Malnutrition", seq = 23, codes = {
         "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45"
     }}
-    GetFirstCodePrefixLink { prefix="C84.", target=ClinicalEvidenceLinks, text="Mature T/NK-Cell Lymphoma", seq=24 }
-    GetFirstCodePrefixLink { prefix="C90.", target=ClinicalEvidenceLinks, text="Multiple Myeloma", seq=25 }
-    GetFirstCodePrefixLink { prefix="C93.", target=ClinicalEvidenceLinks, text="Monocytic Leukemia", seq=26 }
+    GetCodePrefixLink { prefix="C84.", target=ClinicalEvidenceLinks, text="Mature T/NK-Cell Lymphoma", seq=24 }
+    GetCodePrefixLink { prefix="C90.", target=ClinicalEvidenceLinks, text="Multiple Myeloma", seq=25 }
+    GetCodePrefixLink { prefix="C93.", target=ClinicalEvidenceLinks, text="Monocytic Leukemia", seq=26 }
     AddEvidenceCode("D46.9", "Myelodysplastic Syndrome", 27)
-    GetFirstCodePrefixLink { prefix="C92.", target=ClinicalEvidenceLinks, text="Myeloid Leukemia", seq=28 }
-    GetFirstCodePrefixLink { prefix="C83.", target=ClinicalEvidenceLinks, text="Non-Follicular Lymphoma", seq=29 }
-    GetFirstCodePrefixLink { prefix="C94.", target=ClinicalEvidenceLinks, text="Other Leukemias", seq=30 }
-    GetFirstCodePrefixLink { prefix="C86.", target=ClinicalEvidenceLinks, text="Other Types of T/NK-Cell Lymphoma", seq=31 }
+    GetCodePrefixLink { prefix="C92.", target=ClinicalEvidenceLinks, text="Myeloid Leukemia", seq=28 }
+    GetCodePrefixLink { prefix="C83.", target=ClinicalEvidenceLinks, text="Non-Follicular Lymphoma", seq=29 }
+    GetCodePrefixLink { prefix="C94.", target=ClinicalEvidenceLinks, text="Other Leukemias", seq=30 }
+    GetCodePrefixLink { prefix="C86.", target=ClinicalEvidenceLinks, text="Other Types of T/NK-Cell Lymphoma", seq=31 }
     AddEvidenceCode("R23.1", "Pale", 32)
     AddEvidenceCode("K27.9", "Peptic Ulcer", 33)
     AddEvidenceCode("F19.10", "Psychoactive Substance Abuse", 34)
     AddEvidenceCode("Z51.0", "Radiation Therapy", 35)
-    GetFirstCodePrefixLink { prefix="M05.", target=ClinicalEvidenceLinks, text="Rheumatoid Arthritis", seq=36 }
-    GetFirstCodePrefixLink { prefix="D86.", target=ClinicalEvidenceLinks, text="Sarcoidosis", seq=37 }
+    GetCodePrefixLink { prefix="M05.", target=ClinicalEvidenceLinks, text="Rheumatoid Arthritis", seq=36 }
+    GetCodePrefixLink { prefix="D86.", target=ClinicalEvidenceLinks, text="Sarcoidosis", seq=37 }
     AddEvidenceAbs("SHORTNESS_OF_BREATH", "Shortness of Breath", 38)
-    GetFirstCodePrefixLink { prefix="D57.", target=ClinicalEvidenceLinks, text="Sickle Cell Disorder", seq=39 }
+    GetCodePrefixLink { prefix="D57.", target=ClinicalEvidenceLinks, text="Sickle Cell Disorder", seq=39 }
     AddEvidenceCode("R16.1", "Splenomegaly", 40)
-    GetFirstCodePrefixLink { prefix="M32.", target=ClinicalEvidenceLinks, text="Systemic Lupus Erythematosus (SLE)", seq=41 }
-    GetFirstCodePrefixLink { prefix="C85.", target=ClinicalEvidenceLinks, text="Unspecified Non-Hodgkin Lymphoma", seq=42 }
+    GetCodePrefixLink { prefix="M32.", target=ClinicalEvidenceLinks, text="Systemic Lupus Erythematosus (SLE)", seq=41 }
+    GetCodePrefixLink { prefix="C85.", target=ClinicalEvidenceLinks, text="Unspecified Non-Hodgkin Lymphoma", seq=42 }
     AddEvidenceAbs("WEAKNESS", "Weakness", 43)
 
     -- Labs

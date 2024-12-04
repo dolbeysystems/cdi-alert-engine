@@ -555,6 +555,7 @@ end
 function MakeHeaderLink(headerText)
     local link = cdi_alert_link()
     link.link_text = headerText
+    link.is_validated = true
     return link
 end
 
