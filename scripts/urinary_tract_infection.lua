@@ -26,7 +26,7 @@ local existing_alert = GetExistingCdiAlert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
 local function numeric_result_predicate(discrete_value)
-    return discrete_value.name ~= nil and string.find(discrete_value.name, "%d+") ~= nil
+    return discrete_value.result ~= nil and string.find(discrete_value.name, "%d+") ~= nil
 end
 
 if not existing_alert or not existing_alert.validated then
@@ -37,15 +37,15 @@ if not existing_alert or not existing_alert.validated then
     local clinical_evidence_links = {}
     local treatment_and_monitoring_header = MakeHeaderLink("Treatment and Monitoring")
     local treatment_and_monitoring_links = {}
-    local urinary_devices_header = MakeHeaderLink("Treatment and Monitoring")
+    local urinary_devices_header = MakeHeaderLink("Urinary Device(s)")
     local urinary_devices_links = {}
-    local laboratory_studies_header = MakeHeaderLink("Treatment and Monitoring")
+    local laboratory_studies_header = MakeHeaderLink("Laboratory Studies")
     local laboratory_studies_links = {}
-    local vital_signs_header = MakeHeaderLink("Treatment and Monitoring")
-    local vitals_sign_links = {}
-    local other_header = MakeHeaderLink("Treatment and Monitoring")
+    local vital_signs_header = MakeHeaderLink("Vital Signs/Intake and Output Data")
+    local vital_signs_links = {}
+    local other_header = MakeHeaderLink("Other")
     local other_links = {}
-    local urine_analysis_header = MakeHeaderLink("Treatment and Monitoring")
+    local urine_analysis_header = MakeHeaderLink("Urine Analysis")
     local urine_analysis_links = {}
 
     --------------------------------------------------------------------------------
@@ -84,9 +84,9 @@ if not existing_alert or not existing_alert.validated then
         discreteValueName = "BACTERIA (/HPF)",
         linkText = "Urine Culture",
         sequence = 4,
-        predicate = function(discrete_value)
-            return discrete_value.result ~= nil and
-                (string.find(discrete_value.result, "positive") ~= nil or string.find(discrete_value.result, "negative") ~= nil)
+        predicate = function(dv)
+            return dv.result ~= nil and
+                (string.find(dv.result, "positive") ~= nil or string.find(dv.result, "negative") ~= nil)
         end,
     }
     local urine_bacteria = GetDiscreteValueLink {
@@ -252,14 +252,175 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        local result_links = {}
-
-        if Result.validated then
-            -- Autoclose
-        else
-            -- Normal Alert
+        table.insert(clinical_evidence_links, r8271)
+        table.insert(clinical_evidence_links,
+            GetCodeLink { code = "R41.0", text = "Disorientation", sequence = 2 })
+        table.insert(clinical_evidence_links,
+            GetCodeLink { code = "R31.0", text = "Hematuria", sequence = 3 })
+        table.insert(clinical_evidence_links,
+            GetAbstractionLink { code = "INCREASED_URINARY_FREQUENCY", text = "Increased Urinary Frequency", sequence = 4 })
+        table.insert(clinical_evidence_links,
+            GetCodeLink { code = "R82.998", text = "Positive Urine Analysis", sequence = 5 })
+        table.insert(clinical_evidence_links,
+            GetCodeLink { code = "R82.89", text = "Positive Urine Culture", sequence = 6 })
+        table.insert(clinical_evidence_links, r8279)
+        table.insert(clinical_evidence_links, r8281)
+        table.insert(clinical_evidence_links,
+            GetAbstractionValueLink { code = "URINARY_PAIN", text = "Urinary Pain", sequence = 9 })
+        table.insert(clinical_evidence_links,
+            GetAbstractionValueLink { code = "UTI_CAUSATIVE_AGENT", text = "UTI Causative Agent", sequence = 0 })
+        table.insert(clinical_evidence_links,
+            GetDiscreteValueLink {
+                discreteValueName = "BLOOD",
+                text = "Blood in Urine",
+                predicate = function(discrete_value)
+                    return GetDvValueNumber(discrete_value) > 0
+                end,
+                sequence = 1
+            }
+        )
+        -- Why is this discrete value name empty?
+        table.insert(laboratory_studies_links,
+            GetDiscreteValueLink {
+                discreteValueName = "",
+                text = "Pus in Urine",
+                predicate = function(discrete_value)
+                    return GetDvValueNumber(discrete_value) > 0
+                end,
+                sequence = 2
+            }
+        )
+        table.insert(laboratory_studies_links, urine_culture)
+        table.insert(laboratory_studies_links,
+            GetDiscreteValueLink {
+                discreteValueName = "WBC (10x3/ul)",
+                text = "WBC",
+                predicate = function(discrete_value)
+                    return GetDvValueNumber(discrete_value) > 11
+                end,
+                sequence = 4
+            }
+        )
+        table.insert(treatment_and_monitoring_links,
+            GetMedicationLink { code = "Antibiotic", text = "Antibiotic", sequence = 1 })
+        table.insert(treatment_and_monitoring_links,
+            GetMedicationLink { code = "Antibiotic2", text = "Antibiotic", sequence = 2 })
+        table.insert(treatment_and_monitoring_links,
+            GetAbstractionValueLink { code = "ANTIBIOTIC", text = "Antibiotic", sequence = 3 })
+        table.insert(treatment_and_monitoring_links,
+            GetAbstractionValueLink { code = "ANTIBIOTIC_2", text = "Antibiotic", sequence = 4 })
+        table.insert(urinary_devices_links,
+            GetCodeLink { code = "0T25X0Z", text = "Nephrostomy Tube Exchange", sequence = 5 })
+        table.insert(urinary_devices_links,
+            GetCodeLink { code = "0T2BX0Z", text = "Suprapubic/Foley Catheter Exchange", sequence = 6 })
+        local r4182 = GetCodeLink { code = "R41.82", text = "Altered Level Of Consciousness", sequence = 1 }
+        local altered_level_of_consciousness = GetAbstractionValueLink { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness", sequence = 2 }
+        if r4182 ~= nil then
+            table.insert(vital_signs_links, r4182)
+            if altered_level_of_consciousness ~= nil then
+                altered_level_of_consciousness.hidden = true
+            end
         end
+        table.insert(vital_signs_links, altered_level_of_consciousness)
+        table.insert(vital_signs_links,
+            GetDiscreteValueLink {
+                discreteValueName = "3.5 Neuro Glasgow Score",
+                text = "Glasgow Coma Score",
+                predicate = function(discrete_value)
+                    return GetDvValueNumber(discrete_value) < 15
+                end,
+                sequence = 3
+            }
+        )
+        table.insert(vital_signs_links,
+            GetDiscreteValueLink {
+                discreteValueName = "Temperature Degrees C 3.5 (degrees C)",
+                text = "Temperature",
+                predicate = function(discrete_value)
+                    return GetDvValueNumber(discrete_value) > 38.3
+                end,
+                sequence = 4
+            }
+        )
+        table.insert(urinary_devices_links, urine_bacteria)
 
+        -- dvUrineCheckTwo(dict(maindiscreteDic), dvUARBC, 3, gt, "UA RBC", 7, urine, True)
+        -- dvUrineCheckTwo(dict(maindiscreteDic), dvUAWBC, 5, gt, "UA WBC", 9, urine, True)
+        -- dvUrineCheckFour(dict(maindiscreteDic), dvUASquamousEpithelias, "UA Squamous Epithelias", 8, urine, True)
+        -- dvUrineCheckFive(dict(maindiscreteDic), dvUAHyalineCast, "UA Hyaline Casts", 4, urine, True)
+        -- dvUrineCheckFive(dict(maindiscreteDic), dvUALeakEsterase, "UA Leak Esterase", 5, urine, True)
+        -- dvUABacteria = ["BACTERIA (/HPF)"]
+        -- dvUARBC = ["RBC/HPF (/HPF)"]
+        -- dvUASquamousEpithelias = [""]
+        -- dvUALeakEsterase = ["LEUK ESTERASE"]
+        -- dvUAWBC = ["WBC/HPF (/HPF)"]
+        -- dvUAHyalineCast = ["HYALINE CASTS (/LPF)"]
+
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "BLOOD",
+            linkText = "UA Blood",
+            sequence = 2,
+            predicate = numeric_result_predicate,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "",
+            linkText = "UA Gran Cast",
+            sequence = 3,
+            predicate = numeric_result_predicate,
+        })
+        table.insert(urine_analysis_links, GetDiscreteValueLink {
+            discreteValueName = "PROTEIN (mg/dL)",
+            linkText = "UA Protien",
+            sequence = 6,
+            predicate = numeric_result_predicate,
+        })
+        -- FOR: UA RBC, UA WBC
+        -- def dvUrineCheckTwo(dvDic, discreteValueName, value, sign, linkText, sequence=0, category=None, abstract=False):
+        --     abstraction = None
+        --     for dv in dvDic or []:
+        --         dvr = cleanNumbers(dvDic[dv]['Result'])
+        --         if dvDic[dv]['Name'] in discreteValueName and dvDic[dv]['Result'] is not None and dvr is not None and sign(float(dvr), float(value)):
+        --             if abstract:
+        --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
+        --                 return True
+        --             else:
+        --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
+        --                 return abstraction
+        --     return abstraction
+        -- FOR: UA Squamous Epithelias
+        -- def dvUrineCheckFour(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
+        --     abstraction = None
+        --     for dv in dvDic or []:
+        --         if dvDic[dv]['Name'] in discreteValueName and dvDic[dv]['Result'] is not None:
+        --             list = []
+        --             list = dvDic[dv]['Result'].split('-')
+        --             list[0]
+        --             if list[0] > 20 or list[1] > 20:
+        --                 if abstract:
+        --                     dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
+        --                     return True
+        --                 else:
+        --                     abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, abstract)
+        --                     return abstraction
+        --     return abstraction
+        -- FOR: UA Hyaline Casts, Leak Esterase
+        -- def dvUrineCheckFive(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
+        --     abstraction = None
+        --     for dv in dvDic or []:
+        --         if (
+        --             dvDic[dv]['Name'] in discreteValueName and
+        --             dvDic[dv]['Result'] is not None and
+        --             not re.search(r'\bNegative\b', dvDic[dv]['Result'], re.IGNORECASE) and
+        --             not re.search(r'\bTrace\b', dvDic[dv]['Result'], re.IGNORECASE) and
+        --             not re.search(r'\bNot Seen\b', dvDic[dv]['Result'], re.IGNORECASE)
+        --         ):
+        --             if abstract:
+        --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
+        --                 return True
+        --             else:
+        --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
+        --                 return abstraction
+        --     return abstraction
 
 
         ----------------------------------------
