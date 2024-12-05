@@ -1,4 +1,4 @@
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Acidosis
 ---
 --- Date: 11/22/2024
@@ -100,7 +100,7 @@
 ---         - Albumin (Medication) [multiple]
 ---         - Fluid Bolus (Medication) [multiple]
 ---         - Sodium Bicarbonate (Medication) [multiple]
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -146,7 +146,13 @@ if not existing_alert or not existing_alert.validated then
     local hco3_dv_name = { "HCO3 VENOUS (meq/L)" }
     local hco31_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
     local hco32_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
-    local heart_rate_dv_name = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
+    local heart_rate_dv_name = {
+        "Heart Rate cc (bpm)",
+        "3.5 Heart Rate (Apical) (bpm)",
+        "3.5 Heart Rate (Other) (bpm)",
+        "3.5 Heart Rate (Radial) (bpm)",
+        "SCC Monitor Pulse (bpm)"
+    }
     local heart_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
     local map_dv_name = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
     local map1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
@@ -175,7 +181,9 @@ if not existing_alert or not existing_alert.validated then
     local serum_creatinine1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 1.3 end
     local serum_lactate_dv_name = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
     local serum_lactate1_predicate = function(dv) return discrete.get_dv_value_number(dv) >= 4 end
-    local serum_lactate2_predicate = function(dv) return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4 end
+    local serum_lactate2_predicate = function(dv)
+        return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4
+    end
 
     local spo2_dv_name = { "Pulse Oximetry(Num) (%)" }
     local spo21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
@@ -186,7 +194,9 @@ if not existing_alert or not existing_alert.validated then
     local urine_ketones_dv_name = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
     local possible_acute_respiratory_acidosis_subtitle = "Possible Acute Respiratory Acidosis"
-    local respiratory_acidosis_lacking_evidence_subtitle = "Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence"
+    local respiratory_acidosis_lacking_evidence_subtitle = (
+        "Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence"
+    )
     local possible_lactic_acidosis_subtitle = "Possible Lactic Acidosis"
     local possible_acidosis_subtitle = "Possible Acidosis"
 
@@ -219,9 +229,15 @@ if not existing_alert or not existing_alert.validated then
     local acidosis_med_predicate = function(med)
         --- @type number[]
         local med_dv_dates = {}
-        for _, date in ipairs(discrete.get_dv_dates(Account, arterial_blood_ph_dv_name)) do table.insert(med_dv_dates, date) end
-        for _, date in ipairs(discrete.get_dv_dates(Account, ph_dv_name)) do table.insert(med_dv_dates, date) end
-        for _, date in ipairs(discrete.get_dv_dates(Account, blood_co2_dv_name)) do table.insert(med_dv_dates, date) end
+        for _, date in ipairs(discrete.get_dv_dates(Account, arterial_blood_ph_dv_name)) do
+            table.insert(med_dv_dates, date)
+        end
+        for _, date in ipairs(discrete.get_dv_dates(Account, ph_dv_name)) do
+            table.insert(med_dv_dates, date)
+        end
+        for _, date in ipairs(discrete.get_dv_dates(Account, blood_co2_dv_name)) do
+            table.insert(med_dv_dates, date)
+        end
 
         local med_date = dates.date_string_to_int(med.start_date)
 
@@ -280,17 +296,27 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local chronic_repiratory_acidosis_abstraction_link = links.get_abstraction_link { code = "CHRONIC_RESPIRATORY_ACIDOSIS", text = "Chronic Respiratory Acidosis" }
-    local meta_acidosis_abstraction_link = links.get_abstraction_link { code = "METABOLIC_ACIDOSIS", text = "Metabolic Acidosis" }
-    local acute_acidosis_abstraction_link = links.get_abstraction_link { code = "ACUTE_ACIDOSIS", text = "Acute Acidosis" }
-    local chronic_acidosis_abstraction_link = links.get_abstraction_link { code = "CHRONIC_ACIDOSIS", text = "Chronic Acidosis" }
-    local lactic_acidosis_abstraction_link = links.get_abstraction_link { code = "LACTIC_ACIDOSIS", text = "Lactic Acidosis" }
-    local e8720_code_link = links.get_code_link { code = "E87.20", text = "Acidosis Unspecified" }
-    local e8729_code_link = links.get_code_link { code = "E87.29", text = "Other Acidosis" }
+    local chronic_repiratory_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "CHRONIC_RESPIRATORY_ACIDOSIS", text = "Chronic Respiratory Acidosis" }
+    local meta_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "METABOLIC_ACIDOSIS", text = "Metabolic Acidosis" }
+    local acute_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "ACUTE_ACIDOSIS", text = "Acute Acidosis" }
+    local chronic_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "CHRONIC_ACIDOSIS", text = "Chronic Acidosis" }
+    local lactic_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "LACTIC_ACIDOSIS", text = "Lactic Acidosis" }
+    local e8720_code_link =
+        links.get_code_link { code = "E87.20", text = "Acidosis Unspecified" }
+    local e8729_code_link =
+        links.get_code_link { code = "E87.29", text = "Other Acidosis" }
 
     -- Documented Dx
-    local acute_respiratory_acidosis_abstraction_link = links.get_abstraction_link { code = "ACUTE_RESPIRATORY_ACIDOSIS", text = "Acute Respiratory Acidosis" }
-    local j9602_code_link = links.get_code_link { code = "J96.02", text = "Acute Respiratory Failure with Hypercapnia" }
+    local acute_respiratory_acidosis_abstraction_link =
+        links.get_abstraction_link { code = "ACUTE_RESPIRATORY_ACIDOSIS", text = "Acute Respiratory Acidosis" }
+    local j9602_code_link =
+        links.get_code_link { code = "J96.02", text = "Acute Respiratory Failure with Hypercapnia" }
+
     -- Labs Subheading
     local blood_co2_dv_links = links.get_discrete_value_links {
         dvNames = blood_co2_dv_name,
@@ -382,7 +408,10 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    if subtitle == possible_acute_respiratory_acidosis_subtitle and (acute_respiratory_acidosis_abstraction_link or j9602_code_link) then
+    if
+        subtitle == possible_acute_respiratory_acidosis_subtitle and
+        (acute_respiratory_acidosis_abstraction_link or j9602_code_link)
+    then
         -- Auto resolve alert if it currently triggered for acute respiratory acidosis
         for _, code in pairs(account_alert_codes) do
             local code_link = links.get_code_link {
@@ -400,7 +429,8 @@ if not existing_alert or not existing_alert.validated then
             table.insert(documented_dx_links, j9602_code_link)
         end
         if acute_respiratory_acidosis_abstraction_link then
-            acute_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. acute_respiratory_acidosis_abstraction_link.link_text
+            acute_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. acute_respiratory_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, acute_respiratory_acidosis_abstraction_link)
         end
 
@@ -414,13 +444,16 @@ if not existing_alert or not existing_alert.validated then
         (#venous_co2_dv_links > 0 or #ph_dv_links > 0) and
         (#low_arterial_blood_ph_multi_dv_links > 1 or #ph_dv_links > 1)
     then
-        -- Auto resolve alert if it currently triggered for Acute Respiratory Acidosis Possibly Lacking Supporting Evidence
+        -- Auto resolve alert if triggered for Acute Respiratory Acidosis Possibly Lacking Supporting Evidence
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    elseif (subtitle == possible_lactic_acidosis_subtitle or subtitle == possible_acidosis_subtitle) and (unspecified_exist or full_specified_exist) then
+    elseif
+        (subtitle == possible_lactic_acidosis_subtitle or subtitle == possible_acidosis_subtitle) and
+        (unspecified_exist or full_specified_exist)
+    then
         -- Auto resolve alert if it currently triggered for Possible Lactic Acidosis or Possible Acidosis
         if #account_alert_codes > 0 then
             for _, code in pairs(account_alert_codes) do
@@ -435,31 +468,38 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         if lactic_acidosis_abstraction_link then
-            lactic_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. lactic_acidosis_abstraction_link.link_text
+            lactic_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. lactic_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, lactic_acidosis_abstraction_link)
         end
         if chronic_repiratory_acidosis_abstraction_link then
-            chronic_repiratory_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. chronic_repiratory_acidosis_abstraction_link.link_text
+            chronic_repiratory_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. chronic_repiratory_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, chronic_repiratory_acidosis_abstraction_link)
         end
         if meta_acidosis_abstraction_link then
-            meta_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. meta_acidosis_abstraction_link.link_text
+            meta_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. meta_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, meta_acidosis_abstraction_link)
         end
         if e8720_code_link then
-            e8720_code_link.link_text = "Autoresolved Evidence - " .. e8720_code_link.link_text
+            e8720_code_link.link_text =
+                "Autoresolved Evidence - " .. e8720_code_link.link_text
             table.insert(documented_dx_links, e8720_code_link)
         end
         if e8729_code_link then
-            e8729_code_link.link_text = "Autoresolved Evidence - " .. e8729_code_link.link_text
+            e8729_code_link.link_text =
+                "Autoresolved Evidence - " .. e8729_code_link.link_text
             table.insert(documented_dx_links, e8729_code_link)
         end
         if acute_acidosis_abstraction_link then
-            acute_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. acute_acidosis_abstraction_link.link_text
+            acute_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. acute_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, acute_acidosis_abstraction_link)
         end
         if chronic_acidosis_abstraction_link then
-            chronic_acidosis_abstraction_link.link_text = "Autoresolved Evidence - " .. chronic_acidosis_abstraction_link.link_text
+            chronic_acidosis_abstraction_link.link_text =
+                "Autoresolved Evidence - " .. chronic_acidosis_abstraction_link.link_text
             table.insert(documented_dx_links, chronic_acidosis_abstraction_link)
         end
 
@@ -516,12 +556,24 @@ if not existing_alert or not existing_alert.validated then
         )
     then
         -- Trigger alert for Possible Acidosis
-        if fluid_bolus_abstraction_link then table.insert(treatment_and_monitoring_links, fluid_bolus_abstraction_link) end
-        if fluid_resuscitation_abstraction_link then table.insert(treatment_and_monitoring_links, fluid_resuscitation_abstraction_link) end
-        if sodium_bicarbonate_abstraction_links then table.insert(treatment_and_monitoring_links, sodium_bicarbonate_abstraction_links) end
-        for _, item in ipairs(albumin_medication_links or {}) do table.insert(treatment_and_monitoring_links, item) end
-        for _, item in ipairs(fluid_bolus_medication_links or {}) do table.insert(treatment_and_monitoring_links, item) end
-        for _, item in ipairs(sodium_bicarbonate_med_links or {}) do table.insert(treatment_and_monitoring_links, item) end
+        if fluid_bolus_abstraction_link then
+            table.insert(treatment_and_monitoring_links, fluid_bolus_abstraction_link)
+        end
+        if fluid_resuscitation_abstraction_link then
+            table.insert(treatment_and_monitoring_links, fluid_resuscitation_abstraction_link)
+        end
+        if sodium_bicarbonate_abstraction_links then
+            table.insert(treatment_and_monitoring_links, sodium_bicarbonate_abstraction_links)
+        end
+        for _, item in ipairs(albumin_medication_links or {}) do
+            table.insert(treatment_and_monitoring_links, item)
+        end
+        for _, item in ipairs(fluid_bolus_medication_links or {}) do
+            table.insert(treatment_and_monitoring_links, item)
+        end
+        for _, item in ipairs(sodium_bicarbonate_med_links or {}) do
+            table.insert(treatment_and_monitoring_links, item)
+        end
 
         Result.subtitle = possible_acidosis_subtitle
         Result.passed = true
@@ -538,13 +590,21 @@ if not existing_alert or not existing_alert.validated then
             local r4182_code_link = links.get_code_links { code = "R41.82", text = "Altered Level Of Consciousness" }
             if r4182_code_link then
                 table.insert(clinical_evidence_links, r4182_code_link)
-                local altered_abs_link = links.get_abstraction_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
+                local altered_abs_link =
+                    links.get_abstraction_link {
+                        code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                        text = "Altered Level Of Consciousness"
+                    }
                 if altered_abs_link then
                     altered_abs_link.hidden = true
                     table.insert(clinical_evidence_links, altered_abs_link)
                 end
             else
-                local altered_abs_link = links.get_abstraction_links { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
+                local altered_abs_link =
+                    links.get_abstraction_links {
+                        code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                        text = "Altered Level Of Consciousness"
+                    }
                 table.insert(clinical_evidence_links, altered_abs_link)
             end
             table.insert(clinical_evidence_links, links.get_abstraction_link { code = "AZOTEMIA", text = "Azotemia" })
@@ -552,31 +612,105 @@ if not existing_alert or not existing_alert.validated then
             table.insert(clinical_evidence_links, links.get_code_link { code = "R11.15", text = "Cyclical Vomiting" })
             table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea" })
             table.insert(clinical_evidence_links, links.get_code_link { code = "R41.0", text = "Disorientation" })
-            table.insert(clinical_evidence_links, links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "Fi02" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue" })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "OPIOID_OVERDOSE", text = "Opioid Overdose" })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.10", text = "Vomiting" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea" })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Weakness" })
+            table.insert(
+                clinical_evidence_links,
+                links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "Fi02" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R53.83", text = "Fatigue" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "OPIOID_OVERDOSE", text = "Opioid Overdose" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.10", text = "Vomiting" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea" }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "WEAKNESS", text = "Weakness" }
+            )
 
             -- Labs
-            table.insert(labs_links, links.get_discrete_value_link { dvNames = anion_gap_dv_name, predicate = anion_gap1_predicate, text = "Anion Gap" })
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = anion_gap_dv_name,
+                    predicate = anion_gap1_predicate,
+                    text = "Anion Gap"
+                }
+            )
 
-            local blood_glucose_dv_link = links.get_discrete_value_link { dvNames = blood_glucose_dv_name, predicate = blood_glucose1_predicate, text = "Blood Glucose" }
+            local blood_glucose_dv_link =
+                links.get_discrete_value_link {
+                    dvNames = blood_glucose_dv_name,
+                    predicate = blood_glucose1_predicate,
+                    text = "Blood Glucose"
+                }
 
             if blood_glucose_dv_link then
                 table.insert(labs_links, blood_glucose_dv_link)
             else
-                table.insert(labs_links, links.get_discrete_value_link { dvNames = blood_glucose_poc_dv_name, predicate = blood_glucose_poc1_predicate, text = "Blood Glucose POC" })
+                table.insert(
+                    labs_links,
+                    links.get_discrete_value_link {
+                        dvNames = blood_glucose_poc_dv_name,
+                        predicate = blood_glucose_poc1_predicate,
+                        text = "Blood Glucose POC"
+                    }
+                )
             end
 
-            table.insert(labs_links, links.get_abstraction_link { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine" })
-            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_blood_urea_nitrogen_dv_name, predicate = serum_blood_urea_nitrogen1_predicate, text = "Serum Blood Urea Nitrogen" })
-            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_chloride_dv_name, predicate = serum_chloride1_predicate, text = "Serum Chloride" })
-            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_creatinine_dv_name, predicate = serum_creatinine1_predicate, text = "Serum Creatinine" })
-            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_ketone_dv_name, predicate = serum_ketone1_predicate, text = "Serum Ketones" })
+            table.insert(
+                labs_links,
+                links.get_abstraction_link { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine" }
+            )
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = serum_blood_urea_nitrogen_dv_name,
+                    predicate = serum_blood_urea_nitrogen1_predicate,
+                    text = "Serum Blood Urea Nitrogen"
+                }
+            )
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = serum_chloride_dv_name,
+                    predicate = serum_chloride1_predicate,
+                    text = "Serum Chloride"
+                }
+            )
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = serum_creatinine_dv_name,
+                    predicate = serum_creatinine1_predicate,
+                    text = "Serum Creatinine"
+                }
+            )
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = serum_ketone_dv_name,
+                    predicate = serum_ketone1_predicate,
+                    text = "Serum Ketones"
+                }
+            )
             table.insert(
                 labs_links,
                 links.get_discrete_value_link {

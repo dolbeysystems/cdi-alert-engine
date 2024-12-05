@@ -1,4 +1,4 @@
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Abnormal Serum Sodium
 ---
 --- Date: 11/22/2024
@@ -69,7 +69,7 @@
 ---         - Dextrose (Abstraction)
 ---     - Serum Sodium
 ---        - Serum Sodium (Discrete Values) [Multiple]
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -160,13 +160,20 @@ if not existing_alert or not existing_alert.validated then
     local high_sodium_links = get_sodium_dv_links(sodium_high_predicate)
     local very_high_sodium_links = get_sodium_dv_links(sodium_very_high_predicate)
 
-    local dextrose_medication_link = links.get_medication_link { cat = dextrose_medication_name, text = "Dextrose", seq = 1 }
-    local dextrose_abstract_link = links.get_abstraction_link { code = "DEXTROSE_5_IN_WATER", text = "Dextrose", seq = 2 }
-    local fluid_restriction_abstraction_link = links.get_abstraction_link { code = "FLUID_RESTRICTION", text = "Fluid Restriction", seq = 3 }
-    local hypertonic_saline_medication_link = links.get_medication_link { cat = hypertonic_saline_medication_name, text = "Hypertonic Saline", seq = 4 }
-    local hypertonic_saline_abstract_link = links.get_abstraction_link { code = "HYPERTONIC_SALINE", text = "Hypertonic Saline", seq = 5 }
-    local hypotonic_solution_medication_link = links.get_medication_link { cat = hypotonic_solution_medication_name, text = "Hypotonic Solution", seq = 6 }
-    local hypotonic_solution_abstract_link = links.get_abstraction_link { code = "HYPOTONIC_SOLUTION", text = "Hypotonic Solution", seq = 7 }
+    local dextrose_medication_link =
+        links.get_medication_link { cat = dextrose_medication_name, text = "Dextrose", seq = 1 }
+    local dextrose_abstract_link =
+        links.get_abstraction_link { code = "DEXTROSE_5_IN_WATER", text = "Dextrose", seq = 2 }
+    local fluid_restriction_abstraction_link =
+        links.get_abstraction_link { code = "FLUID_RESTRICTION", text = "Fluid Restriction", seq = 3 }
+    local hypertonic_saline_medication_link =
+        links.get_medication_link { cat = hypertonic_saline_medication_name, text = "Hypertonic Saline", seq = 4 }
+    local hypertonic_saline_abstract_link =
+        links.get_abstraction_link { code = "HYPERTONIC_SALINE", text = "Hypertonic Saline", seq = 5 }
+    local hypotonic_solution_medication_link =
+        links.get_medication_link { cat = hypotonic_solution_medication_name, text = "Hypotonic Solution", seq = 6 }
+    local hypotonic_solution_abstract_link =
+        links.get_abstraction_link { code = "HYPOTONIC_SOLUTION", text = "Hypotonic Solution", seq = 7 }
 
 
 
@@ -203,7 +210,11 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
         Result.validated = true
 
-    elseif subtitle == hypernatremia_lacking_supporting_evidence_subtitle and #high_sodium_links > 0 and e870_code_link then
+    elseif
+        subtitle == hypernatremia_lacking_supporting_evidence_subtitle and
+        #high_sodium_links > 0 and
+        e870_code_link
+    then
         -- Auto resolve Hypernatremeia Lacking Supporting Evidence
         e870_code_link.link_text = "Autoresolved Code - " .. e870_code_link.link_text
         table.insert(clinical_evidence_header, e870_code_link)
@@ -219,7 +230,10 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
         Result.validated = true
 
-    elseif subtitle == hyponatremia_lacking_supporting_evidence_subtitle and #low_sodium_links > 0 and e871_code_link then
+    elseif
+        subtitle == hyponatremia_lacking_supporting_evidence_subtitle and
+        #low_sodium_links > 0 and e871_code_link
+    then
         -- Auto resolve Hyponatremia Lacking Supporting Evidence
         e871_code_link.link_text = "Autoresolved Code - " .. e871_code_link.link_text
         table.insert(clinical_evidence_header, e871_code_link)
@@ -235,7 +249,10 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
         Result.validated = true
 
-    elseif Account:is_diagnosis_code_in_working_history("E22.2") and Account:is_diagnosis_code_in_working_history("E87.1") then
+    elseif
+        Account:is_diagnosis_code_in_working_history("E22.2") and
+        Account:is_diagnosis_code_in_working_history("E87.1")
+    then
         -- Alert if both SIADH (E22.2) and Hyponatermia (E87.1) are cdi assigned (in working history)
         Result.subtitle = both_codes_assigned_subtitle
         Result.passed = true
@@ -287,8 +304,14 @@ if not existing_alert or not existing_alert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            local r4182_code_link = links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 1 }
-            local altered_abs_link = links.get_abstraction_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 2 }
+            local r4182_code_link =
+                links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 1 }
+            local altered_abs_link =
+                links.get_abstraction_link {
+                    code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                    text = "Altered Level of Consciousness",
+                    seq = 2
+                }
 
             if r4182_code_link then
                 table.insert(clinical_evidence_links, r4182_code_link)
@@ -300,8 +323,14 @@ if not existing_alert or not existing_alert.validated then
                 table.insert(clinical_evidence_links, altered_abs_link)
             end
 
-            table.insert(clinical_evidence_links, links.get_code_link { code = "F10.230", text = "Beer Potomania", seq = 3 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.14", text = "Bilious Vomiting", seq = 4 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "F10.230", text = "Beer Potomania", seq = 3 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.14", text = "Bilious Vomiting", seq = 4 }
+            )
             table.insert(
                 clinical_evidence_links,
                 links.get_code_link {
@@ -313,27 +342,65 @@ if not existing_alert or not existing_alert.validated then
                     seq = 5,
                 }
             )
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", seq = 6 })
-            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7 })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", seq = 8 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R41.0", text = "Disorientation", seq = 9 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.0", text = "Dehydration", seq = 10 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11 })
-            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME", text = "Hyperosmolar Hyperglycemic Syndrome", seq = 13 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.1", text = "Hypovolemia", seq = 15 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", seq = 6 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_value_link { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", seq = 8 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R41.0", text = "Disorientation", seq = 9 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "E86.0", text = "Dehydration", seq = 10 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_value_link {
+                    code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME",
+                    text = "Hyperosmolar Hyperglycemic Syndrome",
+                    seq = 13
+                }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "E86.1", text = "Hypovolemia", seq = 15 }
+            )
             table.insert(
                 clinical_evidence_links,
                 links.get_code_link {
                     codes = {
-                        "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
+                        "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30",
+                        "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
                     },
                     text = "Kidney Failure",
                     seq = 16,
                 }
             )
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R63.1", text = "Polydipsia", seq = 18 })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "SEIZURE", text = "Seizure", seq = 19 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R63.1", text = "Polydipsia", seq = 18 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "SEIZURE", text = "Seizure", seq = 19 }
+            )
             table.insert(
                 clinical_evidence_links,
                 links.get_code_link {
@@ -342,11 +409,26 @@ if not existing_alert or not existing_alert.validated then
                     seq = 21,
                 }
             )
-            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.9", text = "Volume Depletion", seq = 22 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.10", text = "Vomiting", seq = 23 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24 })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", seq = 25 })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", seq = 26 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "E86.9", text = "Volume Depletion", seq = 22 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.10", text = "Vomiting", seq = 23 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", seq = 25 }
+            )
+            table.insert(
+                clinical_evidence_links,
+                links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", seq = 26 }
+            )
 
             local blood_glucose_links = links.get_discrete_value_links {
                 dvNames = blood_glucose_dv_names,
