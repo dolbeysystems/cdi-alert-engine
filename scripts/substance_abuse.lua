@@ -1,75 +1,17 @@
 ---------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Substance Abuse
---- 
---- Date: 11/22/2024
---- Version: 1.0
---- Site: Sarasota County Health District
 ---
 --- This script checks an account to see if it matches the criteria for a substance abuse alert.
 ---
---- Alerts:
----     - Possible Alcohol Withdrawal: 
----         Triggered if the account has no alcohol codes, but has a CIWA score DV of 10 or greater, 
----         or a CIWA score abstraction, or a CIWA protocol abstraction.
---- 
----         Autoresolved if the account gets an alcohol code.
---- 
----    - Possible Opioid Dependence:
----         Triggered if the account has no opioid codes, but has a methadone medication, or a methadone abstraction,
----         or a suboxone medication, or a suboxone abstraction, or a methadone clinic abstraction.
---- 
----         Autoresolved if the account gets an opioid code.
---- 
---- Possible Links:
----     - Documented Dx (Only if auto-resolved):
----         - Autoresolved Specified Code (Code)
----     - Clinical Evidence:
----         - Alcohol Dependence (Code)
----         - Altered Level of Consciousness (Code)
----         - Altered Level of Consciousness (Abstraction)
----         - Auditory Hallucinations (Code)
----         - CIWA Score (Discrete Value)
----         - CIWA Score (Abstraction)
----         - CIWA Protocol (Abstraction)
----         - Combative (Abstraction)
----         - Delirium (Abstraction)
----         - Hallucinations (Code)
----         - Headache (Code)
----         - Irritability and Anger (Code)
----         - Methadone Clinic (Abstraction)
----         - Nausea (Code)
----         - Nervousness (Code)
----         - One to One Supervision (Abstraction)
----         - Projectile Vomiting (Code)
----         - Restlessness and Agitation (Code)
----         - Sweating (Code)
----         - Tremor (Code)
----         - Visual Hallucinations (Code)
----         - Vomiting (Code)
----    - Treatment and Monitoring:
----         - Benzodiazepine (Medication)
----         - Benzodiazepine (Abstraction)
----         - Dexmedetomidine (Medication)
----         - Dexmedetomidine (Abstraction)
----         - Lithium (Medication)
----         - Lithium (Abstraction)
----         - Methadone (Medication) [Multiple]
----         - Methadone (Abstraction)
----         - Propofol (Medication)
----         - Propofol (Abstraction)
----         - Suboxone (Medication)
----         - Suboxone (Abstraction)
----    - Pain Team Consult:
----         - Pain Team Consultation Note
----         - zzPain Team Consultation Note
----         - Pain Team Progress Note
----         
+--- Date: 11/22/2024
+--- Version: 1.0
+--- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
 
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")

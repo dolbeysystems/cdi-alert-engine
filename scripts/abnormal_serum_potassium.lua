@@ -1,72 +1,11 @@
 -----------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Abnormal Serum Potassium
 ---
+--- This script checks an account to see if it matches the criteria for an abnormal serum potassium alert.
+---
 --- Date: 11/22/2024
 --- Version: 1.0
 --- Site: Sarasota County Health District
----
---- This script checks an account to see if it matches the criteria for an abnormal serum potassium alert.
----
---- Alerts:
----     - Possible Hyperkalemia Dx
----         Triggered if there are no hyperkalemia codes on the account and there is account potassium value
----         greater than 5.4 mmol/L within the last 7 days and there is evidence of kayexalate or insulin and dextrose
----         or hemodialysis
----
----         Autoresolved if there is a hyperkalemia code on the account
---- 
----     - Possible Hypokalemia Dx
----         Triggered if there are no hypokalemia codes on the account and there is account potassium value
----         less than 3.1 mmol/L within the last 7 days and there is evidence of potassium replacement or potassium
----         chloride absorption or potassium phosphate absorption or potassium bicarbonate absorption
---- 
----        Autoresolved if there is a hypokalemia code on the account
---- 
----     - Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence
----         Triggered if there is a hyperkalemia code on the account and there are no account potassium values greater
----         than 5.1 mmol/L within the last 7 days
---- 
----         Autoresolved if there is a hyperkalemia code on the account and there is at least one account potassium
----         value greater than 5.1 mmol/L within the last 7 days
---- 
----     - Hypokalemia Dx Documented Possibly Lacking Supporting Evidence
----         Triggered if there is a hypokalemia code on the account and there are no account potassium values less than
----         3.4 mmol/L within the last 7 days
---- 
----         Autoresolved if there is a hypokalemia code on the account and there is at least one account potassium
----         value less than 3.4 mmol/L within the last 7 days
---- 
---- Possible Links:
----     - Documented Dx 
----         - Autoresolved Specified Code - Hyperkalemia Fully Specified Code (Code)
----         - Autoresolved Specified Code - Hypokalemia Fully Specified Code (Code)
----         - Hyperkalemia Fully Specified Code (Code)
----         - Hypokalemia Fully Specified Code (Code)
----    - Laboratory Studies
----         - Review High Serum Potassium Levels (Discrete Value)
----         - Review Low Serum Potassium Levels (Discrete Value)
----     - Clinical Evidence
----         - Addison's Disease (Code)
----         - Cushing's Syndrome (Code)
----         - Diarrhea (Abstraction)
----         - EKG Changes (Abstraction)
----         - Fatigue (Code)
----         - Heart Palpitations (Abstraction)
----         - Kidney Failure (Code)
----         - Muscle Cramps (Abstraction)
----         - Muscle Weakness (Abstraction)
----         - Vomiting (Abstraction)
----    - Treatment and Monitoring
----         - Dextrose (Medication)
----         - Hemodialysis (Code)
----         - Insulin (Medication)
----         - Kayexalate (Medication)
----         - Potassium Replacement (Medication)
----         - Potassium Chloride Absorption (Abstraction)
----         - Potassium Phosphate Absorption (Abstraction)
----         - Potassium Bicarbonate Absorption (Abstraction)
----   - Serum Potassium
----         - Serum Potassium (Discrete Value) [Multiple]
 -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -83,7 +22,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local potassium_dv_names = { "POTASSIUM (mmol/L)" }
 local potassium_very_low_predicate = function(dv)
@@ -116,7 +55,7 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables and Helper Functions
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
     local documented_dx_header = links.make_header_link("Documented Dx")
