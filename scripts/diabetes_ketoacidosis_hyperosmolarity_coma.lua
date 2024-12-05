@@ -14,26 +14,36 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-require("libs.common")
-
+local alerts = require("libs.common.alerts")
+local links = require("libs.common.basic_links")
+local codes = require("libs.common.codes")
+local dates = require("libs.common.dates")
+local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
-local subtitle = existingAlert and existingAlert.subtitle or nil
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 
-if not existingAlert or not existingAlert.validated then
+if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
-    local alertCodeDictionary = {
+    local alert_code_dictionary = {
 
     }
-    local accountAlertCodes = GetAccountCodesInDictionary(Account, alertCodeDictionary)
+    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
+
+
+
+    --------------------------------------------------------------------------------
+    --- Top-Level Link Header Variables
+    --------------------------------------------------------------------------------
+    local result_links = {}
 
 
 
@@ -53,11 +63,7 @@ if not existingAlert or not existingAlert.validated then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        local resultLinks = {}
-
-        if Result.validated then
-            -- Autoclose
-        else
+        if not Result.validated then
             -- Normal Alert
         end
 
@@ -66,10 +72,10 @@ if not existingAlert or not existingAlert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if existingAlert then
-            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
         end
-        Result.links = resultLinks
+        Result.links = result_links
     end
 end
 

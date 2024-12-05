@@ -13,49 +13,52 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-require("libs.common")
+local alerts = require("libs.common.alerts")
+local links = require("libs.common.basic_links")
+local codes = require("libs.common.codes")
+local discrete = require("libs.common.discrete_values")
 
 
 
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local heartRateDvNames = {
+local heart_rate_dv_names = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
     "3.5 Heart Rate (Other) (bpm)",
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local highHeartRatePredicate = function(dv) return GetDvValueNumber(dv) > 90 end
-local lowHeartRatePredicate = function(dv) return GetDvValueNumber(dv) < 60 end
-local hematocritDvNames = { "HEMATOCRIT (%)", "HEMATOCRIT" }
-local femaleLowHematocritPredicate = function(dv) return GetDvValueNumber(dv) < 34 end
-local maleLowHematocritPredicate = function(dv) return GetDvValueNumber(dv) < 40 end
-local hemogloblinDvNames = { "HEMOGLOBIN (g/dL)", "HEMOGLOBIN" }
-local maleLowHemoglobinPredicate = function(dv) return GetDvValueNumber(dv) < 13.5 end
-local femaleLowHemoglobinPredicate = function(dv) return GetDvValueNumber(dv) < 11.6 end
-local mapDvNames = { "MAP Non-Invasive (Calculated) (mmHg)", "MPA Invasive (mmHg)" }
-local lowMapPredicate = function(dv) return GetDvValueNumber(dv) < 70 end
-local oxygenDvNames = { "DELIVERY" }
-local paO2DvNames = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local lowPaO21Predicate = function(dv) return GetDvValueNumber(dv) < 80 end
-local sbpDvNames = { "SBP 3.5 (No Calculation) (mmHg)" }
-local lowSbpPredicate = function(dv) return GetDvValueNumber(dv) < 90 end
-local highSbpPredicate = function(dv) return GetDvValueNumber(dv) > 180 end
-local spO2DvNames = { "Pulse Oximetry(Num) (%)" }
-local lowSpO21Predicate = function(dv) return GetDvValueNumber(dv) < 90 end
-local dvTroponinNames = { "TROPONIN, HIGH SENSITIVITY (ng/L)" }
-local highTroponinPredicate = function(dv) return GetDvValueNumber(dv) > 59 end
+local high_heart_rate_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
+local low_heart_rate_predicate = function(dv) return discrete.get_dv_value_number(dv) < 60 end
+local hematocrit_dv_names = { "HEMATOCRIT (%)", "HEMATOCRIT" }
+local female_low_hematocrit_predicate = function(dv) return discrete.get_dv_value_number(dv) < 34 end
+local male_low_hematocrit_predicate = function(dv) return discrete.get_dv_value_number(dv) < 40 end
+local hemogloblin_dv_names = { "HEMOGLOBIN (g/dL)", "HEMOGLOBIN" }
+local male_low_hemoglobin_predicate = function(dv) return discrete.get_dv_value_number(dv) < 13.5 end
+local female_low_hemoglobin_predicate = function(dv) return discrete.get_dv_value_number(dv) < 11.6 end
+local map_dv_names = { "MAP Non-Invasive (Calculated) (mmHg)", "MPA Invasive (mmHg)" }
+local low_map_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
+local oxygen_dv_names = { "DELIVERY" }
+local pao2_dv_names = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
+local low_pao21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 80 end
+local sbp_dv_names = { "SBP 3.5 (No Calculation) (mmHg)" }
+local low_sbp_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local high_sbp_predicate = function(dv) return discrete.get_dv_value_number(dv) > 180 end
+local spo2_dv_names = { "Pulse Oximetry(Num) (%)" }
+local low_spo21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local troponin_dv_names = { "TROPONIN, HIGH SENSITIVITY (ng/L)" }
+local high_troponin_predicate = function(dv) return discrete.get_dv_value_number(dv) > 59 end
 
-local existingAlert = GetExistingCdiAlert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
 
 
 --------------------------------------------------------------------------------
 --- Additional Pre-conditions
 --------------------------------------------------------------------------------
-local stemicodeDictionary = {
+local stemicode_dictionary = {
     ["I21.01"] = "ST Elevation (STEMI) Myocardial Infarction Involving Left Main Coronary Artery",
     ["I21.02"] = "ST Elevation (STEMI) Myocardial Infarction Involving Left Anterior Descending Coronary Artery",
     ["I21.09"] = "ST Elevation (STEMI) Myocardial Infarction Involving Other Coronary Artery Of Anterior Wall",
@@ -65,60 +68,60 @@ local stemicodeDictionary = {
     ["I21.29"] = "ST Elevation (STEMI) Myocardial Infarction Involving Other Sites",
     ["I21.3"] = "ST Elevation (STEMI) Myocardial Infarction of Unspecified Site"
 }
-local othercodeDictionary = {
+local other_code_dictionary = {
     ["I21.A1"] = "Myocardial Infarction Type 2",
     ["I21.A9"] = "Other Myocardial Infarction Type",
     ["I21.B"] = "Myocardial Infarction with Coronary Microvascular Dysfunction",
     ["I5A"] = "Non-Ischemic Myocardial Injury (Non-Traumatic)",
 }
-local accountStemiCodes = GetAccountCodesInDictionary(stemicodeDictionary, Account)
-local accountOtherCodes = GetAccountCodesInDictionary(othercodeDictionary, Account)
+local account_stemi_codes = codes.get_account_codes_in_dictionary(stemicode_dictionary, Account)
+local account_other_codes = codes.get_account_codes_in_dictionary(other_code_dictionary, Account)
 
-local i214Code = GetCodeLinks { code = "I21.4", text = "Non-ST Elevation (NSTEMI) Myocardial Infarction" }
-local codeCount = 0
-if #accountStemiCodes > 0 then
-    codeCount = codeCount + 1
+local i214_code_link = links.get_code_links { code = "I21.4", text = "Non-ST Elevation (NSTEMI) Myocardial Infarction" }
+local code_count = 0
+if #account_stemi_codes > 0 then
+    code_count = code_count + 1
 end
-if #accountOtherCodes > 0 then
-    codeCount = codeCount + 1
+if #account_other_codes > 0 then
+    code_count = code_count + 1
 end
-if i214Code then
-    codeCount = codeCount + 1
+if i214_code_link then
+    code_count = code_count + 1
 end
-local triggerAlert = not existingAlert or (existingAlert.outcome ~= "AUTORESOLVED" and existingAlert.reason ~= "Previously Autoresolved")
+local trigger_alert = not existing_alert or (existing_alert.outcome ~= "AUTORESOLVED" and existing_alert.reason ~= "Previously Autoresolved")
 
 
 
 if
-    (not existingAlert or not existingAlert.validated) or
-    (not existingAlert and existingAlert.outcome == "AUTORESOLVED" and existingAlert.validated and codeCount > 0)
+    (not existing_alert or not existing_alert.validated) or
+    (not existing_alert and existing_alert.outcome == "AUTORESOLVED" and existing_alert.validated and code_count > 0)
 then
     --------------------------------------------------------------------------------
     --- Top-Level Link Header Variables
     --------------------------------------------------------------------------------
-    local resultLinks = {}
-    local documentedDxHeader = MakeHeaderLink("Documented Dx")
-    local documentedDxLinks= {}
-    local laboratoryStudiesHeader = MakeHeaderLink("Laboratory Studies")
-    local laboratoryStudiesLinks = {}
-    local vitalSignsIntakeHeader = MakeHeaderLink("Vital Signs/Intake and Output Data")
-    local vitalSignsIntakeLinks = {}
-    local clinicalEvidenceHeader = MakeHeaderLink("Clinical Evidence")
-    local clinicalEvidenceLinks = {}
-    local oxygenationVentilationHeader = MakeHeaderLink("Oxygenation/Ventilation")
-    local oxygenationVentilationLinks = {}
-    local treatmentAndMonitoringHeader = MakeHeaderLink("Treatment and Monitoring")
-    local treatmentAndMonitoringLinks = {}
-    local ekgHeader = MakeHeaderLink("EKG")
-    local ekgLinks = {}
-    local echoHeader = MakeHeaderLink("Echo")
-    local echoLinks = {}
-    local ctHeader = MakeHeaderLink("CT")
-    local ctLinks = {}
-    local heartCathHeader = MakeHeaderLink("Heart Cath")
-    local heartCathLinks = {}
-    local troponinHeader = MakeHeaderLink("Troponin")
-    local troponinLinks = {}
+    local result_links = {}
+    local documented_dx_header = links.make_header_link("Documented Dx")
+    local documented_dx_links = {}
+    local laboratory_studies_header = links.make_header_link("Laboratory Studies")
+    local laboratory_studies_links = {}
+    local vital_signs_intake_header = links.make_header_link("Vital Signs/Intake and Output Data")
+    local vital_signs_intake_links = {}
+    local clinical_evidence_header = links.make_header_link("Clinical Evidence")
+    local clinical_evidence_links = {}
+    local oxygenation_ventillation_header = links.make_header_link("Oxygenation/Ventilation")
+    local oxygenation_ventillation_links = {}
+    local treatment_and_monitoring_header = links.make_header_link("Treatment and Monitoring")
+    local treatment_and_monitoring_links = {}
+    local ekg_header = links.make_header_link("EKG")
+    local ekg_links = {}
+    local echo_header = links.make_header_link("Echo")
+    local echo_links = {}
+    local ct_header = links.make_header_link("CT")
+    local ct_links = {}
+    local heart_cath_header = links.make_header_link("Heart Cath")
+    local heart_cath_links = {}
+    local troponin_header = links.make_header_link("Troponin")
+    local troponin_links = {}
 
 
 
@@ -126,81 +129,83 @@ then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Documented Dx
-    local i219CodeLink = GetCodeLink { code = "I21.9", text = "Acute Myocardial Infarction Unspecified" }
-    local r778CodeLink = GetCodeLink { code = "R77.8", text = "Other Specified Abnormalities of Plasma Proteins" }
-    local i21A1CodeLink = GetCodeLink { code = "I21.A1", text = "Myocardial Infarction Type 2" }
+    local i219_code_link = links.get_code_link { code = "I21.9", text = "Acute Myocardial Infarction Unspecified" }
+    local i21a1_code_link = links.get_code_link { code = "I21.A1", text = "Myocardial Infarction Type 2" }
+
     -- Clinical Evidence (Abstractions)
-    local r07CodeLink = GetCodeLink { codes = { "R07.89", "R07.9" }, text = "Chest Pain" } or {}
-    local i2489CodeLink = GetCodeLink { code = "I24.89", text = "Demand Ischemia" }
-    local irregularEKGFindingsAbstractionLink = GetAbstractionLink { code = "IRREGULAR_EKG_FINDINGS_MI", text = "Irregular EKG Finding" }
+    local r07_code_link = links.get_code_link { codes = { "R07.89", "R07.9" }, text = "Chest Pain" } or {}
+    local i2489_code_link = links.get_code_link { code = "I24.89", text = "Demand Ischemia" }
+    local irregular_ekg_findings_abstraction_link = links.get_abstraction_link { code = "IRREGULAR_EKG_FINDINGS_MI", text = "Irregular EKG Finding" }
+
     -- Medications
-    local antiplatlet2MedicationLink = GetMedicationLink { cat = "Antiplatelet 2" }
-    local aspirinMedicationLink = GetMedicationLink { cat = "Aspirin" }
-    local heparinMedicationLink = GetMedicationLink { cat = "Heparin" }
-    local morphineMedicationLink = GetMedicationLink { cat = "Morphine" }
-    local nitroglycerinMedicationLink = GetMedicationLink { cat = "Nitroglycerin" }
+    local antiplatlet2_medication_link = links.get_medication_link { cat = "Antiplatelet 2" }
+    local aspirin_medication_link = links.get_medication_link { cat = "Aspirin" }
+    local heparin_medication_link = links.get_medication_link { cat = "Heparin" }
+    local morphine_medication_link = links.get_medication_link { cat = "Morphine" }
+    local nitroglycerin_medication_link = links.get_medication_link { cat = "Nitroglycerin" }
+
     -- Laboratory Studies
-    GetDvValuesAsSingleLink {
+    links.GetDvValuesAsSingleLink {
         account = Account,
-        dvNames = dvTroponinNames,
+        dvNames = troponin_dv_names,
         linkText = "Troponin T High Sensitivity: (DATE1, DATE2) - ",
-        target = troponinLinks
+        target = troponin_links
     }
-    local highTroponinDiscreteValueLinks = GetDiscreteValueLinks { dvNames = dvTroponinNames, predicate = highTroponinPredicate, maxPerValue = 10 }
+    local high_troponin_discrete_value_links = links.get_discrete_value_links { dvNames = troponin_dv_names, predicate = high_troponin_predicate, maxPerValue = 10 }
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    -- Autresolve
-    if codeCount == 1 and not i2489CodeLink and Result.passed then
-        if #accountStemiCodes > 0 then
-            local desc = stemicodeDictionary[accountStemiCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountStemiCodes[1],
+    if code_count == 1 and not i2489_code_link and Result.passed then
+        -- Autresolve
+        if #account_stemi_codes > 0 then
+            local desc = stemicode_dictionary[account_stemi_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_stemi_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        if #accountOtherCodes > 0 then
-            local desc = othercodeDictionary[accountOtherCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountOtherCodes[1],
+        if #account_other_codes > 0 then
+            local desc = other_code_dictionary[account_other_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_other_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        if i214Code then
-            table.insert(documentedDxLinks, i214Code)
+        if i214_code_link then
+            table.insert(documented_dx_links, i214_code_link)
         end
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
 
-    -- Alert Acute MI Conflicting Dx
-    elseif codeCount > 1 then
-        if #accountStemiCodes > 0 then
-            local desc = stemicodeDictionary[accountStemiCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountStemiCodes[1],
+    elseif code_count > 1 then
+        -- Alert Acute MI Conflicting Dx
+        if #account_stemi_codes > 0 then
+            local desc = stemicode_dictionary[account_stemi_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_stemi_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        if #accountOtherCodes > 0 then
-            local desc = othercodeDictionary[accountOtherCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountOtherCodes[1],
+        if #account_other_codes > 0 then
+            local desc = other_code_dictionary[account_other_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_other_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        if i214Code then
-            table.insert(documentedDxLinks, i214Code)
+        if i214_code_link then
+            table.insert(documented_dx_links, i214_code_link)
         end
-        if existingAlert and existingAlert.validated then
+        if existing_alert and existing_alert.validated then
             Result.validated = false
             Result.outcome = ""
             Result.reason = "Previously Autoresolved"
@@ -208,77 +213,77 @@ then
         Result.subtitle = "Acute MI Conflicting Dx"
         Result.passed = true
 
-    -- Alert Acute MI Type 2 and Demand Ischemia Documented Seek Clarification
-    elseif triggerAlert and i21A1CodeLink and i2489CodeLink then
-        table.insert(documentedDxLinks, i21A1CodeLink)
-        table.insert(documentedDxLinks, i2489CodeLink)
+    elseif trigger_alert and i21a1_code_link and i2489_code_link then
+        -- Alert Acute MI Type 2 and Demand Ischemia Documented Seek Clarification
+        table.insert(documented_dx_links, i21a1_code_link)
+        table.insert(documented_dx_links, i2489_code_link)
         Result.subtitle = "Acute MI Type 2 and Demand Ischemia Documented Seek Clarification"
         Result.passed = true
 
-    -- Alert Possible Acute MI Type 2
     elseif
-        triggerAlert and
-        codeCount == 0 and
+        trigger_alert and
+        code_count == 0 and
         (
-            (#highTroponinDiscreteValueLinks > 0) or
-            i219CodeLink
+            (#high_troponin_discrete_value_links > 0) or
+            i219_code_link
         ) and
-        i2489CodeLink
+        i2489_code_link
     then
-        table.insert(documentedDxLinks, i2489CodeLink)
-        table.insert(documentedDxLinks, i219CodeLink)
+        -- Alert Possible Acute MI Type 2
+        table.insert(documented_dx_links, i2489_code_link)
+        table.insert(documented_dx_links, i219_code_link)
         Result.subtitle = "Possible Acute MI Type 2"
         Result.passed = true
 
-    -- Alert Acute MI Type Needs Clarification
-    elseif triggerAlert and codeCount > 0 and i2489CodeLink then
-        table.insert(documentedDxLinks, i2489CodeLink)
-        if #accountStemiCodes > 0 then
-            local desc = stemicodeDictionary[accountStemiCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountStemiCodes[1],
+    elseif trigger_alert and code_count > 0 and i2489_code_link then
+        -- Alert Acute MI Type Needs Clarification
+        table.insert(documented_dx_links, i2489_code_link)
+        if #account_stemi_codes > 0 then
+            local desc = stemicode_dictionary[account_stemi_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_stemi_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        if #accountOtherCodes > 0 then
-            local desc = othercodeDictionary[accountOtherCodes[1]]
-            local codeLink = GetCodeLink {
-                code = accountOtherCodes[1],
+        if #account_other_codes > 0 then
+            local desc = other_code_dictionary[account_other_codes[1]]
+            local code_link = links.get_code_link {
+                code = account_other_codes[1],
                 text = "Autoresolved Specified Code - " .. desc
             }
-            table.insert(documentedDxLinks, codeLink)
+            table.insert(documented_dx_links, code_link)
         end
-        table.insert(documentedDxLinks, i214Code)
+        table.insert(documented_dx_links, i214_code_link)
         Result.subtitle = "Acute MI Type Needs Clarification"
         Result.passed = true
 
-    -- Alert Acute MI Unspecified Present Confirm if Further Specification of Type Needed
-    elseif triggerAlert and i219CodeLink then
-        table.insert(documentedDxLinks, i219CodeLink)
+    elseif trigger_alert and i219_code_link then
+        -- Alert Acute MI Unspecified Present Confirm if Further Specification of Type Needed
+        table.insert(documented_dx_links, i219_code_link)
         Result.subtitle = "Acute MI Unspecified Present Confirm if Further Specification of Type Needed"
         Result.passed = true
 
-    -- Alert Possible Acute MI
-    elseif triggerAlert and #highTroponinDiscreteValueLinks > 0 and irregularEKGFindingsAbstractionLink then
+    elseif trigger_alert and #high_troponin_discrete_value_links > 0 and irregular_ekg_findings_abstraction_link then
+        -- Alert Possible Acute MI
         Result.subtitle = "Possible Acute MI"
         Result.passed = true
 
-    -- Alert Possible Acute MI
     elseif
-        triggerAlert and
-        (r07CodeLink or #highTroponinDiscreteValueLinks > 0) and
-        heparinMedicationLink and
-        (morphineMedicationLink or nitroglycerinMedicationLink) and
-        aspirinMedicationLink and
-        antiplatlet2MedicationLink
+        trigger_alert and
+        (r07_code_link or #high_troponin_discrete_value_links > 0) and
+        heparin_medication_link and
+        (morphine_medication_link or nitroglycerin_medication_link) and
+        aspirin_medication_link and
+        antiplatlet2_medication_link
     then
-        table.insert(treatmentAndMonitoringLinks, heparinMedicationLink)
+        -- Alert Possible Acute MI
+        table.insert(treatment_and_monitoring_links, heparin_medication_link)
         Result.subtitle = "Possible Acute MI"
         Result.passed = true
 
-    -- Alert Elevanted Tropins Present
-    elseif triggerAlert and #highTroponinDiscreteValueLinks > 0 then
+    elseif trigger_alert and #high_troponin_discrete_value_links > 0 then
+        -- Alert Elevanted Tropins Present
         Result.subtitle = "Elevanted Tropins Present"
         Result.passed = true
     end
@@ -291,100 +296,100 @@ then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Clinical Evidence
-            GetCodeLink { code = "R94.39", text = "Abnormal Cardiovascular Function Study", target = clinicalEvidenceLinks, seq = 1 }
-            GetCodeLink { code = "D62", text = "Acute Blood Loss Anemia", target = clinicalEvidenceLinks, seq = 2 }
-            GetCodeLink { code = "I24.81", text = "Acute Coronary microvascular Dysfunction", target = clinicalEvidenceLinks, seq = 3 }
-            GetCodeLink {
+            links.get_code_link { code = "R94.39", text = "Abnormal Cardiovascular Function Study", target = clinical_evidence_links, seq = 1 }
+            links.get_code_link { code = "D62", text = "Acute Blood Loss Anemia", target = clinical_evidence_links, seq = 2 }
+            links.get_code_link { code = "I24.81", text = "Acute Coronary microvascular Dysfunction", target = clinical_evidence_links, seq = 3 }
+            links.get_code_link {
                 codes = { "N17.0", "N17.1", "N17.2", "K76.7", "K91.83" },
                 text = "Acute Kidney Failure",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 4
             }
-            GetCodeLink { code = "I20.9", text = "Angina", target = clinicalEvidenceLinks, seq = 5 }
-            GetCodeLink { code = "I20.81", text = "Angina Pectoris with Coronary Microvascular Dysfunction", target = clinicalEvidenceLinks, seq = 6 }
-            GetCodeLink { code = "I20.1", text = "Angina Pectoris with Documented Spasm/with Coronary Vasospasm", target = clinicalEvidenceLinks, seq = 7 }
-            GetAbstractionLink { code = "ATRIAL_FIBRILLATION_WITH_RVR", text = "Atrial Fibrillation with RVR", target = clinicalEvidenceLinks, seq = 8 }
-            GetCodeLink { code = "I46.9", text = "Cardiac Arrest, Cause Unspecified", target = clinicalEvidenceLinks, seq = 9 }
-            GetCodeLink { code = "I46.8", text = "Cardiac Arrest Due to Other Underlying Condition", target = clinicalEvidenceLinks, seq = 10 }
-            GetCodeLink { code = "I46.2", text = "Cardiac Arrest due to Underlying Cardiac Condition", target = clinicalEvidenceLinks, seq = 11 }
-            GetCodePrefixLink { prefix = "I42%.", text = "Cardiomyopathy Dx", target = clinicalEvidenceLinks, seq = 12 }
-            GetCodePrefixLink { prefix = "I43%.", text = "Cardiomyopathy Dx", target = clinicalEvidenceLinks, seq = 13 }
-            table.insert(clinicalEvidenceLinks, r07CodeLink)
-            GetCodeLink { code = "I25.85", text = "Chronic Coronary Microvascular Dysfunction", target = clinicalEvidenceLinks, seq = 15 }
-            GetCodeLink {
+            links.get_code_link { code = "I20.9", text = "Angina", target = clinical_evidence_links, seq = 5 }
+            links.get_code_link { code = "I20.81", text = "Angina Pectoris with Coronary Microvascular Dysfunction", target = clinical_evidence_links, seq = 6 }
+            links.get_code_link { code = "I20.1", text = "Angina Pectoris with Documented Spasm/with Coronary Vasospasm", target = clinical_evidence_links, seq = 7 }
+            links.get_abstraction_link { code = "ATRIAL_FIBRILLATION_WITH_RVR", text = "Atrial Fibrillation with RVR", target = clinical_evidence_links, seq = 8 }
+            links.get_code_link { code = "I46.9", text = "Cardiac Arrest, Cause Unspecified", target = clinical_evidence_links, seq = 9 }
+            links.get_code_link { code = "I46.8", text = "Cardiac Arrest Due to Other Underlying Condition", target = clinical_evidence_links, seq = 10 }
+            links.get_code_link { code = "I46.2", text = "Cardiac Arrest due to Underlying Cardiac Condition", target = clinical_evidence_links, seq = 11 }
+            codes.get_code_prefix_link { prefix = "I42%.", text = "Cardiomyopathy Dx", target = clinical_evidence_links, seq = 12 }
+            codes.get_code_prefix_link { prefix = "I43%.", text = "Cardiomyopathy Dx", target = clinical_evidence_links, seq = 13 }
+            table.insert(clinical_evidence_links, r07_code_link)
+            links.get_code_link { code = "I25.85", text = "Chronic Coronary Microvascular Dysfunction", target = clinical_evidence_links, seq = 15 }
+            links.get_code_link {
                 codes = { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5" },
                 text = "Chronic Kidney Failure",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 16
             }
-            GetCodeLink { code = "I44.2", text = "Complete Heart Block", target = clinicalEvidenceLinks, seq = 17 }
-            GetCodeLink { code = "J44.1", text = "COPD Exacerbation", target = clinicalEvidenceLinks, seq = 18 }
-            GetCodeLink { code = "Z98.61", text = "Coronary Angioplasty Hx", target = clinicalEvidenceLinks, seq = 19 }
-            GetCodeLink { code = "Z95.5", text = "Coronary Angioplasty Implant and Graft Hx", target = clinicalEvidenceLinks, seq = 20 }
-            GetCodeLink { code = "I25.10", text = "Coronary Artery Disease", target = clinicalEvidenceLinks, seq = 21 }
-            GetCodeLink { code = "I25.119", text = "Coronary Artery Disease with Angina", target = clinicalEvidenceLinks, seq = 22 }
+            links.get_code_link { code = "I44.2", text = "Complete Heart Block", target = clinical_evidence_links, seq = 17 }
+            links.get_code_link { code = "J44.1", text = "COPD Exacerbation", target = clinical_evidence_links, seq = 18 }
+            links.get_code_link { code = "Z98.61", text = "Coronary Angioplasty Hx", target = clinical_evidence_links, seq = 19 }
+            links.get_code_link { code = "Z95.5", text = "Coronary Angioplasty Implant and Graft Hx", target = clinical_evidence_links, seq = 20 }
+            links.get_code_link { code = "I25.10", text = "Coronary Artery Disease", target = clinical_evidence_links, seq = 21 }
+            links.get_code_link { code = "I25.119", text = "Coronary Artery Disease with Angina", target = clinical_evidence_links, seq = 22 }
 
-            GetCodeLink {
+            links.get_code_link {
                 codes = {
                     "270046", "027004Z", "0270056", "027005Z", "0270066", "027006Z", "0270076", "027007Z", "02700D6", "02700DZ", "02700E6", "02700EZ",
                     "02700F6", "02700FZ", "02700G6", "02700GZ", "02700T6", "02700TZ", "02700Z6", "02700ZZ", "0271046", "027104Z", "0271056", "027105Z",
                     "0271066", "027106Z", "0271076", "027107Z", "02710D6", "02710DZ", "02710E6", "02710EZ", "02710F6", "02710FZ", "02710G6", "02710GZ",
                     "02710T6", "02710TZ", "02710Z6", "02710ZZ", "0272046", "027204Z", "0272056", "027205Z", "0272066", "027206Z", "0272076", "027207Z",
                     "02720D6", "02720DZ", "02720E6", "02720EZ", "02720F6", "02720FZ", "02720G6", "02720GZ", "02720T6", "02720TZ", "02720Z6", "02720ZZ",
-                    "0273046", "027304Z", "0273056", "027305Z", "0273066", "027306Z", "0273076", "027307Z", "02730D6", "02730DZ", "02730E6", "02730EZ", 
+                    "0273046", "027304Z", "0273056", "027305Z", "0273066", "027306Z", "0273076", "027307Z", "02730D6", "02730DZ", "02730E6", "02730EZ",
                     "02730F6", "02730FZ", "02730G6", "02730GZ", "02730T6", "02730TZ", "02730Z6", "02730ZZ"
                 },
                 text = "Dilation of Coronary Artery",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 24
             }
-            GetAbstractionLink { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea On Exertion", target = clinicalEvidenceLinks, seq = 25 }
-            GetAbstractionLink { code = "PRESERVED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinicalEvidenceLinks, seq = 26 }
-            GetAbstractionLink { code = "PRESERVED_EJECTION_FRACTION_2", text = "Ejection Fraction", target = clinicalEvidenceLinks, seq = 27 }
-            GetAbstractionLink { code = "REDUCED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinicalEvidenceLinks, seq = 28 }
-            GetAbstractionLink { code = "MODERATELY_REDUCED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinicalEvidenceLinks, seq = 29 }
-            GetAbstractionLink { code = "ELEVATED_TROPONINS", text = "Elevated Tropinins", target = clinicalEvidenceLinks, seq = 30 }
-            GetCodeLink { code = "N18.6", text = "End-Stage Renal Disease", target = clinicalEvidenceLinks, seq = 31 }
-            GetCodePrefixLink { prefix = "I38%.", text = "Endocarditis Dx", target = clinicalEvidenceLinks, seq = 32 }
-            GetCodePrefixLink { prefix = "I39%.", text = "Endocarditis Dx", target = clinicalEvidenceLinks, seq = 33 }
-            GetCodeLink {
+            links.get_abstraction_link { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea On Exertion", target = clinical_evidence_links, seq = 25 }
+            links.get_abstraction_link { code = "PRESERVED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinical_evidence_links, seq = 26 }
+            links.get_abstraction_link { code = "PRESERVED_EJECTION_FRACTION_2", text = "Ejection Fraction", target = clinical_evidence_links, seq = 27 }
+            links.get_abstraction_link { code = "REDUCED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinical_evidence_links, seq = 28 }
+            links.get_abstraction_link { code = "MODERATELY_REDUCED_EJECTION_FRACTION", text = "Ejection Fraction", target = clinical_evidence_links, seq = 29 }
+            links.get_abstraction_link { code = "ELEVATED_TROPONINS", text = "Elevated Tropinins", target = clinical_evidence_links, seq = 30 }
+            links.get_code_link { code = "N18.6", text = "End-Stage Renal Disease", target = clinical_evidence_links, seq = 31 }
+            codes.get_code_prefix_link { prefix = "I38%.", text = "Endocarditis Dx", target = clinical_evidence_links, seq = 32 }
+            codes.get_code_prefix_link { prefix = "I39%.", text = "Endocarditis Dx", target = clinical_evidence_links, seq = 33 }
+            links.get_code_link {
                 codes = {
                     "I50.1", "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I50.42", "I50.43",
                     "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
                 },
                 text = "Heart Failure",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 34
             }
-            GetCodeLink { code = "Z95.1", text = "History of CABG", target = clinicalEvidenceLinks, seq = 35 }
-            GetCodeLink { code = "I16.1", text = "Hypertensive Emergency", target = clinicalEvidenceLinks, seq = 36 }
-            GetCodeLink { code = "I16.0", text = "Hypertensive Urgency", target = clinicalEvidenceLinks, seq = 37 }
-            GetCodeLink { code = "E86.1", text = "Hypovolemia", target = clinicalEvidenceLinks, seq = 38 }
-            GetCodeLink { code = "R09.02", text = "Hypoxemia", target = clinicalEvidenceLinks, seq = 39 }
-            GetCodeLink { code = "I47.11", text = "Inappropriate Sinus Tachycardia, So Stated", target = clinicalEvidenceLinks, seq = 40 }
-            GetAbstractionLink { code = "IRREGULAR_ECHO_FINDING", text = "Irregular Echo Finding", target = clinicalEvidenceLinks, seq = 41 }
-            GetCodeLink { code = "R94.31", text = "Irregular Echo Finding", target = clinicalEvidenceLinks, seq = 42 }
-            table.insert(clinicalEvidenceLinks, irregularEKGFindingsAbstractionLink)
-            GetCodeLink { codes = { "44A023N7", "44A023N8" }, text = "Left Heart Cath", target = clinicalEvidenceLinks, seq = 44 }
-            GetCodePrefixLink { prefix = "I40%.", text = "Myocarditis Dx", target = clinicalEvidenceLinks, seq = 45 }
-            GetCodeLink { code = "I35.0", text = "Non-Rheumatic Aortic Valve Stenosis", target = clinicalEvidenceLinks, seq = 46 }
-            GetCodeLink { code = "I35.1", text = "Non-Rheumatic Aortic Valve Insufficiency", target = clinicalEvidenceLinks, seq = 47 }
-            GetCodeLink { code = "I35.2", text = "Non-Rheumatic Aortic Valve Stenosis with Insufficiency", target = clinicalEvidenceLinks, seq = 48 }
-            GetCodeLink { code = "I25.2", text = "Old MI", target = clinicalEvidenceLinks, seq = 49 }
-            GetCodeLink { code = "I20.8", text = "Other Angina Pectoris", target = clinicalEvidenceLinks, seq = 50 }
-            GetCodeLink { code = "I47.19", text = "Other Supraventricular Tachycardia", target = clinicalEvidenceLinks, seq = 51 }
-            GetCodePrefixLink { prefix = "I47%.", text = "Paroxysmal Tachycardia Dx", target = clinicalEvidenceLinks, seq = 52 }
-            GetCodePrefixLink { prefix = "I30%.", text = "Pericarditis Dx", target = clinicalEvidenceLinks, seq = 53 }
-            GetCodePrefixLink { prefix = "I26%.", text = "Pulmonary Embolism Dx", target = clinicalEvidenceLinks, seq = 54 }
-            GetCodeLink {
+            links.get_code_link { code = "Z95.1", text = "History of CABG", target = clinical_evidence_links, seq = 35 }
+            links.get_code_link { code = "I16.1", text = "Hypertensive Emergency", target = clinical_evidence_links, seq = 36 }
+            links.get_code_link { code = "I16.0", text = "Hypertensive Urgency", target = clinical_evidence_links, seq = 37 }
+            links.get_code_link { code = "E86.1", text = "Hypovolemia", target = clinical_evidence_links, seq = 38 }
+            links.get_code_link { code = "R09.02", text = "Hypoxemia", target = clinical_evidence_links, seq = 39 }
+            links.get_code_link { code = "I47.11", text = "Inappropriate Sinus Tachycardia, So Stated", target = clinical_evidence_links, seq = 40 }
+            links.get_abstraction_link { code = "IRREGULAR_ECHO_FINDING", text = "Irregular Echo Finding", target = clinical_evidence_links, seq = 41 }
+            links.get_code_link { code = "R94.31", text = "Irregular Echo Finding", target = clinical_evidence_links, seq = 42 }
+            table.insert(clinical_evidence_links, irregular_ekg_findings_abstraction_link)
+            links.get_code_link { codes = { "44A023N7", "44A023N8" }, text = "Left Heart Cath", target = clinical_evidence_links, seq = 44 }
+            codes.get_code_prefix_link { prefix = "I40%.", text = "Myocarditis Dx", target = clinical_evidence_links, seq = 45 }
+            links.get_code_link { code = "I35.0", text = "Non-Rheumatic Aortic Valve Stenosis", target = clinical_evidence_links, seq = 46 }
+            links.get_code_link { code = "I35.1", text = "Non-Rheumatic Aortic Valve Insufficiency", target = clinical_evidence_links, seq = 47 }
+            links.get_code_link { code = "I35.2", text = "Non-Rheumatic Aortic Valve Stenosis with Insufficiency", target = clinical_evidence_links, seq = 48 }
+            links.get_code_link { code = "I25.2", text = "Old MI", target = clinical_evidence_links, seq = 49 }
+            links.get_code_link { code = "I20.8", text = "Other Angina Pectoris", target = clinical_evidence_links, seq = 50 }
+            links.get_code_link { code = "I47.19", text = "Other Supraventricular Tachycardia", target = clinical_evidence_links, seq = 51 }
+            codes.get_code_prefix_link { prefix = "I47%.", text = "Paroxysmal Tachycardia Dx", target = clinical_evidence_links, seq = 52 }
+            codes.get_code_prefix_link { prefix = "I30%.", text = "Pericarditis Dx", target = clinical_evidence_links, seq = 53 }
+            codes.get_code_prefix_link { prefix = "I26%.", text = "Pulmonary Embolism Dx", target = clinical_evidence_links, seq = 54 }
+            links.get_code_link {
                 codes = {
                     "I27.0", "I27.20", "I27.21", "I27.22", "I27.23", "I27.24", "I27.29"
                 },
                 text = "Pulmonary Hypertension",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 55
             }
-            GetCodeLink {
+            links.get_code_link {
                 codes = {
                     "0270346", "027034Z", "0270356", "027035Z", "0270366", "027036Z", "02730376", "027037Z", "02703D6", "02703DZ", "02703E6", "02703EZ",
                     "02703F6", "02703FZ", "02703G6", "02703GZ", "02703T6", "02703TZ", "02703Z6", "02703ZZ", "0271346", "027134Z", "0271356", "027135Z",
@@ -395,112 +400,112 @@ then
                     "02733F6", "02733FZ", "02733G6", "02733GZ", "02733T6", "02733TZ", "02733Z6", "02733ZZ"
                 },
                 text = "Percutaneous Coronary Intervention",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 56
             }
-            GetCodeLink { codes = { "M62.82", "T79.6XXA", "T79.6XXD", "T79.6XXS" }, text = "Rhabdomyolysis", target = clinicalEvidenceLinks, seq = 57 }
-            GetCodeLink { code = "4A023N6", text = "Right Heart Cath", target = clinicalEvidenceLinks, seq = 58 }
-            GetCodeLink { code = "I20.2", text = "Refractory Angina Pectoris", target = clinicalEvidenceLinks, seq = 59 }
-            GetAbstractionLink { code = "RESOLVING_TROPONINS", text = "Resolving Troponins", target = clinicalEvidenceLinks, seq = 60 }
-            GetCodePrefixLink { prefix = "A40%.", text = "Sepsis Dx", target = clinicalEvidenceLinks, seq = 61 }
-            GetCodePrefixLink { prefix = "A41%.", text = "Sepsis Dx", target = clinicalEvidenceLinks, seq = 62 }
-            GetCodeLink {
+            links.get_code_link { codes = { "M62.82", "T79.6XXA", "T79.6XXD", "T79.6XXS" }, text = "Rhabdomyolysis", target = clinical_evidence_links, seq = 57 }
+            links.get_code_link { code = "4A023N6", text = "Right Heart Cath", target = clinical_evidence_links, seq = 58 }
+            links.get_code_link { code = "I20.2", text = "Refractory Angina Pectoris", target = clinical_evidence_links, seq = 59 }
+            links.get_abstraction_link { code = "RESOLVING_TROPONINS", text = "Resolving Troponins", target = clinical_evidence_links, seq = 60 }
+            codes.get_code_prefix_link { prefix = "A40%.", text = "Sepsis Dx", target = clinical_evidence_links, seq = 61 }
+            codes.get_code_prefix_link { prefix = "A41%.", text = "Sepsis Dx", target = clinical_evidence_links, seq = 62 }
+            codes.GetCodeLink {
                 codes = {
-                    "A42.7", "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "R65.20", "R65.21", 
+                    "A42.7", "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "R65.20", "R65.21",
                     "T81.44XA", "T81.44XD", "T81.44XS"
                 },
                 text = "Sepsis Dx",
-                target = clinicalEvidenceLinks,
+                target = clinical_evidence_links,
                 seq = 63
             }
-            GetAbstractionLink { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinicalEvidenceLinks, seq = 64 }
-            GetCodeLink { code = "I47.10", text = "Supraventricular Tachycardia, Unspecified", target = clinicalEvidenceLinks, seq = 65 }
-            GetCodeLink { code = "I51.81", text = "Takotsubo Syndrome", target = clinicalEvidenceLinks, seq = 66 }
-            GetCodeLink { code = "I25.82", text = "Total Occlusion of Coronary Artery", target = clinicalEvidenceLinks, seq = 67 }
-            GetCodeLink { codes = { "I35.8", "I35.9" }, text = "Unspecified Non-Rheumatic Aortic Valve Disorders", target = clinicalEvidenceLinks, seq = 68 }
-            GetCodeLink { code = "I20.0", text = "Unstable Angina", target = clinicalEvidenceLinks, seq = 69 }
-            GetCodeLink { code = "I49.01", text = "Ventricular Fibrillation", target = clinicalEvidenceLinks, seq = 70 }
-            GetCodeLink { code = "I49.02", text = "Ventricular Flutter", target = clinicalEvidenceLinks, seq = 71 }
-            GetAbstractionLink { code = "WALL_MOTION_ABNORMALITIES", text = "Wall Motion Abnormalities", target = clinicalEvidenceLinks, seq = 72 }
+            links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinical_evidence_links, seq = 64 }
+            links.get_code_link { code = "I47.10", text = "Supraventricular Tachycardia, Unspecified", target = clinical_evidence_links, seq = 65 }
+            links.get_code_link { code = "I51.81", text = "Takotsubo Syndrome", target = clinical_evidence_links, seq = 66 }
+            links.get_code_link { code = "I25.82", text = "Total Occlusion of Coronary Artery", target = clinical_evidence_links, seq = 67 }
+            links.get_code_link { codes = { "I35.8", "I35.9" }, text = "Unspecified Non-Rheumatic Aortic Valve Disorders", target = clinical_evidence_links, seq = 68 }
+            links.get_code_link { code = "I20.0", text = "Unstable Angina", target = clinical_evidence_links, seq = 69 }
+            links.get_code_link { code = "I49.01", text = "Ventricular Fibrillation", target = clinical_evidence_links, seq = 70 }
+            links.get_code_link { code = "I49.02", text = "Ventricular Flutter", target = clinical_evidence_links, seq = 71 }
+            links.get_abstraction_link { code = "WALL_MOTION_ABNORMALITIES", text = "Wall Motion Abnormalities", target = clinical_evidence_links, seq = 72 }
 
             -- EKG/Echo/HeartCath/CT Document Links
-            GetDocumentLink { documentType = "ECG", text = "ECG", target = ekgLinks }
-            GetDocumentLink { documentType = "Electrocardiogram Adult   ECGR", text = "Electrocardiogram Adult   ECGR", target = ekgLinks }
-            GetDocumentLink { documentType = "ECG Adult", text = "ECG Adult", target = ekgLinks }
-            GetDocumentLink { documentType = "RestingECG", text = "RestingECG", target = ekgLinks }
-            GetDocumentLink { documentType = "EKG", text = "EKG", target = ekgLinks }
-            GetDocumentLink { documentType = "ECHOTE  CVSECHOTE", text = "ECHOTE  CVSECHOTE", target = echoLinks }
-            GetDocumentLink { documentType = "ECHO 2D Comp Adult CVSECH2DECHO", text = "ECHO 2D Comp Adult CVSECH2DECHO", target = echoLinks }
-            GetDocumentLink { documentType = "Echo Complete Adult 2D", text = "Echo Complete Adult 2D", target = echoLinks }
-            GetDocumentLink { documentType = "Echo Comp W or WO Contrast", text = "Echo Comp W or WO Contrast", target = echoLinks }
-            GetDocumentLink { documentType = "ECHO Stress ECHO  CVSECHSTR", text = "ECHO Stress ECHO  CVSECHSTR", target = echoLinks }
-            GetDocumentLink { documentType = "Stress Echocardiogram CVS", text = "Stress Echocardiogram CVS", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECH2DECHO", text = "CVSECH2DECHO", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECHOTE", text = "CVSECHOTE", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECHORECHO", text = "CVSECHORECHO", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECH2DECHOLIMITED", text = "CVSECH2DECHOLIMITED", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECHOPC", text = "CVSECHOPC", target = echoLinks }
-            GetDocumentLink { documentType = "CVSECHSTRAINECHO", text = "CVSECHSTRAINECHO", target = echoLinks }
-            GetDocumentLink { documentType = "Heart Cath", text = "Heart Cath", target = heartCathLinks }
-            GetDocumentLink { documentType = "Cath Report", text = "Cath Report", target = heartCathLinks }
-            GetDocumentLink { documentType = "Cardiac Cath, PTCA, EP findings", text = "Cardiac Cath, PTCA, EP findings", target = heartCathLinks }
-            GetDocumentLink { documentType = "CATHEOC", text = "CATHEOC", target = heartCathLinks }
-            GetDocumentLink { documentType = "Cath Lab Procedures", text = "Cath Lab Procedures", target = heartCathLinks }
-            GetDocumentLink { documentType = "CT Thorax W", text = "CT Thorax W", target = ctLinks }
-            GetDocumentLink { documentType = "CTA Thorax Aorta", text = "CTA Thorax Aorta", target = ctLinks }
-            GetDocumentLink { documentType = "CT Thorax WO-Abd WO-Pel WO", text = "CT Thorax WO-Abd WO-Pel WO", target = ctLinks }
-            GetDocumentLink { documentType = "CT Thorax WO", text = "CT Thorax WO", target = ctLinks }
-            
+            links.get_document_link { documentType = "ECG", text = "ECG", target = ekg_links }
+            links.get_document_link { documentType = "Electrocardiogram Adult   ECGR", text = "Electrocardiogram Adult   ECGR", target = ekg_links }
+            links.get_document_link { documentType = "ECG Adult", text = "ECG Adult", target = ekg_links }
+            links.get_document_link { documentType = "RestingECG", text = "RestingECG", target = ekg_links }
+            links.get_document_link { documentType = "EKG", text = "EKG", target = ekg_links }
+            links.get_document_link { documentType = "ECHOTE  CVSECHOTE", text = "ECHOTE  CVSECHOTE", target = echo_links }
+            links.get_document_link { documentType = "ECHO 2D Comp Adult CVSECH2DECHO", text = "ECHO 2D Comp Adult CVSECH2DECHO", target = echo_links }
+            links.get_document_link { documentType = "Echo Complete Adult 2D", text = "Echo Complete Adult 2D", target = echo_links }
+            links.get_document_link { documentType = "Echo Comp W or WO Contrast", text = "Echo Comp W or WO Contrast", target = echo_links }
+            links.get_document_link { documentType = "ECHO Stress ECHO  CVSECHSTR", text = "ECHO Stress ECHO  CVSECHSTR", target = echo_links }
+            links.get_document_link { documentType = "Stress Echocardiogram CVS", text = "Stress Echocardiogram CVS", target = echo_links }
+            links.get_document_link { documentType = "CVSECH2DECHO", text = "CVSECH2DECHO", target = echo_links }
+            links.get_document_link { documentType = "CVSECHOTE", text = "CVSECHOTE", target = echo_links }
+            links.get_document_link { documentType = "CVSECHORECHO", text = "CVSECHORECHO", target = echo_links }
+            links.get_document_link { documentType = "CVSECH2DECHOLIMITED", text = "CVSECH2DECHOLIMITED", target = echo_links }
+            links.get_document_link { documentType = "CVSECHOPC", text = "CVSECHOPC", target = echo_links }
+            links.get_document_link { documentType = "CVSECHSTRAINECHO", text = "CVSECHSTRAINECHO", target = echo_links }
+            links.get_document_link { documentType = "Heart Cath", text = "Heart Cath", target = heart_cath_links }
+            links.get_document_link { documentType = "Cath Report", text = "Cath Report", target = heart_cath_links }
+            links.get_document_link { documentType = "Cardiac Cath, PTCA, EP findings", text = "Cardiac Cath, PTCA, EP findings", target = heart_cath_links }
+            links.get_document_link { documentType = "CATHEOC", text = "CATHEOC", target = heart_cath_links }
+            links.get_document_link { documentType = "Cath Lab Procedures", text = "Cath Lab Procedures", target = heart_cath_links }
+            links.get_document_link { documentType = "CT Thorax W", text = "CT Thorax W", target = ct_links }
+            links.get_document_link { documentType = "CTA Thorax Aorta", text = "CTA Thorax Aorta", target = ct_links }
+            links.get_document_link { documentType = "CT Thorax WO-Abd WO-Pel WO", text = "CT Thorax WO-Abd WO-Pel WO", target = ct_links }
+            links.get_document_link { documentType = "CT Thorax WO", text = "CT Thorax WO", target = ct_links }
+
             -- Labs
-            GetDiscreteValueLink {
-                discreteValueNames = hemogloblinDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = hemogloblin_dv_names,
                 text = "Hemoglobin",
-                target = laboratoryStudiesLinks,
+                target = laboratory_studies_links,
                 predicate =
                     (not Account.patient or Account.patient.gender == "F") and
-                    femaleLowHemoglobinPredicate or
-                    maleLowHemoglobinPredicate
+                    female_low_hemoglobin_predicate or
+                    male_low_hemoglobin_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = hematocritDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = hematocrit_dv_names,
                 text = "Hematocrit",
-                target = laboratoryStudiesLinks,
+                target = laboratory_studies_links,
                 predicate =
                     (not Account.patient or Account.patient.gender == "F") and
-                    femaleLowHematocritPredicate or
-                    maleLowHematocritPredicate
+                    female_low_hematocrit_predicate or
+                    male_low_hematocrit_predicate
             }
 
             -- Lab Subheadings
-            for _, link in ipairs(highTroponinDiscreteValueLinks) do
-                table.insert(troponinLinks, link)
+            for _, link in ipairs(high_troponin_discrete_value_links) do
+                table.insert(troponin_links, link)
             end
 
             -- Medications
-            GetMedicationLink { cat = "Ace Inhibitor", text = "", target = treatmentAndMonitoringLinks, seq = 1 }
-            GetMedicationLink { cat = "Antianginal Medication", text = "", target = treatmentAndMonitoringLinks, seq = 2 }
-            GetAbstractionLink { code = "ANTIANGINAL_MEDICATION", text = "", target = treatmentAndMonitoringLinks, seq = 3 }
-            GetMedicationLink { cat = "Anticoagulant", text = "", target = treatmentAndMonitoringLinks, seq = 4 }
-            GetAbstractionLink { code = "ANTICOAGULANT", text = "", target = treatmentAndMonitoringLinks, seq = 5 }
-            GetMedicationLink { cat = "Antiplatelet", text = "", target = treatmentAndMonitoringLinks, seq = 6 }
-            table.insert(treatmentAndMonitoringLinks, antiplatlet2MedicationLink)
-            GetAbstractionLink { code = "ANTIPLATELET", text = "", target = treatmentAndMonitoringLinks, seq = 8 }
-            table.insert(treatmentAndMonitoringLinks, aspirinMedicationLink)
-            GetMedicationLink { cat = "Beta Blocker", text = "", target = treatmentAndMonitoringLinks, seq = 10 }
-            GetAbstractionLink { code = "BETA_BLOCKER", text = "", target = treatmentAndMonitoringLinks, seq = 11 }
-            GetMedicationLink { cat = "Calcium Channel Blockers", text = "", target = treatmentAndMonitoringLinks, seq = 12 }
-            GetAbstractionLink { code = "CALCIUM_CHANNEL_BLOCKER", text = "", target = treatmentAndMonitoringLinks, seq = 13 }
-            table.insert(treatmentAndMonitoringLinks, morphineMedicationLink)
-            table.insert(treatmentAndMonitoringLinks, nitroglycerinMedicationLink)
-            GetAbstractionLink { code = "NITROGLYCERIN", text = "", target = treatmentAndMonitoringLinks, seq = 19 }
-            GetMedicationLink { cat = "Statin", text = "", target = treatmentAndMonitoringLinks, seq = 20 }
-            GetAbstractionLink { code = "STATIN", text = "", target = treatmentAndMonitoringLinks, seq = 21 }
+            links.get_medication_link { cat = "Ace Inhibitor", text = "", target = treatment_and_monitoring_links, seq = 1 }
+            links.get_medication_link { cat = "Antianginal Medication", text = "", target = treatment_and_monitoring_links, seq = 2 }
+            links.get_abstraction_link { code = "ANTIANGINAL_MEDICATION", text = "", target = treatment_and_monitoring_links, seq = 3 }
+            links.get_medication_link { cat = "Anticoagulant", text = "", target = treatment_and_monitoring_links, seq = 4 }
+            links.get_abstraction_link { code = "ANTICOAGULANT", text = "", target = treatment_and_monitoring_links, seq = 5 }
+            links.get_medication_link { cat = "Antiplatelet", text = "", target = treatment_and_monitoring_links, seq = 6 }
+            table.insert(treatment_and_monitoring_links, antiplatlet2_medication_link)
+            links.get_abstraction_link { code = "ANTIPLATELET", text = "", target = treatment_and_monitoring_links, seq = 8 }
+            table.insert(treatment_and_monitoring_links, aspirin_medication_link)
+            links.get_medication_link { cat = "Beta Blocker", text = "", target = treatment_and_monitoring_links, seq = 10 }
+            links.get_abstraction_link { code = "BETA_BLOCKER", text = "", target = treatment_and_monitoring_links, seq = 11 }
+            links.get_medication_link { cat = "Calcium Channel Blockers", text = "", target = treatment_and_monitoring_links, seq = 12 }
+            links.get_abstraction_link { code = "CALCIUM_CHANNEL_BLOCKER", text = "", target = treatment_and_monitoring_links, seq = 13 }
+            table.insert(treatment_and_monitoring_links, morphine_medication_link)
+            table.insert(treatment_and_monitoring_links, nitroglycerin_medication_link)
+            links.get_abstraction_link { code = "NITROGLYCERIN", text = "", target = treatment_and_monitoring_links, seq = 19 }
+            links.get_medication_link { cat = "Statin", text = "", target = treatment_and_monitoring_links, seq = 20 }
+            links.get_abstraction_link { code = "STATIN", text = "", target = treatment_and_monitoring_links, seq = 21 }
 
             -- Oxygen
-            GetDiscreteValueLink {
-                discreteValueNames = oxygenDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = oxygen_dv_names,
                 text = "Oxygen Therapy",
-                target = oxygenationVentilationLinks,
+                target = oxygenation_ventillation_links,
                 seq = 1,
                 predicate = function(dv)
                     -- Return true if dv.result contains the pattern "%bRoom Air%b"
@@ -509,57 +514,57 @@ then
                         dv.result:find("%bRA%b") == nil
                 end
             }
-            GetAbstractionLink { code = "OXYGEN_THERAPY", text = "Oxygen Therapy", target = oxygenationVentilationLinks, seq = 2 }
+            links.get_abstraction_link { code = "OXYGEN_THERAPY", text = "Oxygen Therapy", target = oxygenation_ventillation_links, seq = 2 }
 
             -- Vitals
-            GetDiscreteValueLink {
-                discreteValueNames = paO2DvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = pao2_dv_names,
                 text = "Arterial P02",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 1,
-                predicate = lowPaO21Predicate
+                predicate = low_pao21_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = heartRateDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = heart_rate_dv_names,
                 text = "Heart Rate",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 2,
-                predicate = highHeartRatePredicate
+                predicate = high_heart_rate_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = heartRateDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = heart_rate_dv_names,
                 text = "Heart Rate",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 3,
-                predicate = lowHeartRatePredicate
+                predicate = low_heart_rate_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = mapDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = map_dv_names,
                 text = "MAP",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 4,
-                predicate = lowMapPredicate
+                predicate = low_map_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = spO2DvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = spo2_dv_names,
                 text = "Sp02",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 5,
-                predicate = lowSpO21Predicate
+                predicate = low_spo21_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = sbpDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = sbp_dv_names,
                 text = "SBP",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 6,
-                predicate = lowSbpPredicate
+                predicate = low_sbp_predicate
             }
-            GetDiscreteValueLink {
-                discreteValueNames = sbpDvNames,
+            links.get_discrete_value_link {
+                discreteValueNames = sbp_dv_names,
                 text = "SBP",
-                target = vitalSignsIntakeLinks,
+                target = vital_signs_intake_links,
                 seq = 7,
-                predicate = highSbpPredicate
+                predicate = high_sbp_predicate
             }
         end
 
@@ -568,54 +573,54 @@ then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #troponinLinks > 0 then
-            troponinHeader.links = troponinLinks
-            table.insert(laboratoryStudiesLinks, troponinHeader)
+        if #troponin_links > 0 then
+            troponin_header.links = troponin_links
+            table.insert(laboratory_studies_links, troponin_header)
         end
-        if #documentedDxLinks > 0 then
-            documentedDxHeader.links = documentedDxLinks
-            table.insert(resultLinks, documentedDxHeader)
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
         end
-        if #clinicalEvidenceLinks > 0 then
-            clinicalEvidenceHeader.links = clinicalEvidenceLinks
-            table.insert(resultLinks, clinicalEvidenceHeader)
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
         end
-        if #laboratoryStudiesLinks > 0 then
-            laboratoryStudiesHeader.links = laboratoryStudiesLinks
-            table.insert(resultLinks, laboratoryStudiesHeader)
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
         end
-        if #vitalSignsIntakeLinks > 0 then
-            vitalSignsIntakeHeader.links = vitalSignsIntakeLinks
-            table.insert(resultLinks, vitalSignsIntakeHeader)
+        if #vital_signs_intake_links > 0 then
+            vital_signs_intake_header.links = vital_signs_intake_links
+            table.insert(result_links, vital_signs_intake_header)
         end
-        if #treatmentAndMonitoringLinks > 0 then
-            treatmentAndMonitoringHeader.links = treatmentAndMonitoringLinks
-            table.insert(resultLinks, treatmentAndMonitoringHeader)
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
         end
-        if #oxygenationVentilationLinks > 0 then
-            oxygenationVentilationHeader.links = oxygenationVentilationLinks
-            table.insert(resultLinks, oxygenationVentilationHeader)
+        if #oxygenation_ventillation_links > 0 then
+            oxygenation_ventillation_header.links = oxygenation_ventillation_links
+            table.insert(result_links, oxygenation_ventillation_header)
         end
-        if #ekgLinks > 0 then
-            ekgHeader.links = ekgLinks
-            table.insert(resultLinks, ekgHeader)
+        if #ekg_links > 0 then
+            ekg_header.links = ekg_links
+            table.insert(result_links, ekg_header)
         end
-        if #echoLinks > 0 then
-            echoHeader.links = echoLinks
-            table.insert(resultLinks, echoHeader)
+        if #echo_links > 0 then
+            echo_header.links = echo_links
+            table.insert(result_links, echo_header)
         end
-        if #ctLinks > 0 then
-            ctHeader.links = ctLinks
-            table.insert(resultLinks, ctHeader)
+        if #ct_links > 0 then
+            ct_header.links = ct_links
+            table.insert(result_links, ct_header)
         end
-        if #heartCathLinks > 0 then
-            heartCathHeader.links = heartCathLinks
-            table.insert(resultLinks, heartCathHeader)
+        if #heart_cath_links > 0 then
+            heart_cath_header.links = heart_cath_links
+            table.insert(result_links, heart_cath_header)
         end
 
-        if existingAlert then
-            resultLinks = MergeLinks(existingAlert.links, resultLinks)
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
         end
-        Result.links = resultLinks
+        Result.links = result_links
     end
 end

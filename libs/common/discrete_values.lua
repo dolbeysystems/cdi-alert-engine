@@ -1,25 +1,26 @@
-require("libs.common.dates")
-require("libs.common.basic_links")
+local module = {}
+local dates = require("libs.common.dates")
+local links = require("libs.common.basic_links")
 local cdi_alert_link = require "cdi.link"
 
 --------------------------------------------------------------------------------
 --- Make a CDI alert link from a DiscreteValue instance
 ---
---- @param discreteValue DiscreteValue The discrete value to create a link for
---- @param linkTemplate string The template for the link
+--- @param discrete_value DiscreteValue The discrete value to create a link for
+--- @param link_template string The template for the link
 --- @param sequence number The sequence number for the link
---- @param includeStandardSuffix boolean? If true, the standard suffix will be appended to the link text
+--- @param include_standard_suffix boolean? If true, the standard suffix will be appended to the link text
 ---
 --- @return CdiAlertLink - the link to the discrete value
 --------------------------------------------------------------------------------
-function GetLinkForDiscreteValue(discreteValue, linkTemplate, sequence, includeStandardSuffix)
-    if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+function module.get_link_for_discrete_value(discrete_value, link_template, sequence, include_standard_suffix)
+    if include_standard_suffix == nil or include_standard_suffix then
+        link_template = link_template .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
     end
 
     local link = cdi_alert_link()
-    link.discrete_value_name = discreteValue.name
-    link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discreteValue, nil)
+    link.discrete_value_name = discrete_value.name
+    link.link_text = links.replace_link_place_holders(link_template, nil, nil, discrete_value, nil)
     link.sequence = sequence
     return link
 end
@@ -27,12 +28,12 @@ end
 --------------------------------------------------------------------------------
 --- Get the value of a discrete value as a number
 ---
---- @param discreteValue DiscreteValue The discrete value to get the value from
+--- @param discrete_value DiscreteValue The discrete value to get the value from
 ---
 --- @return number? - the value of the discrete value as a number or nil if not found
 --------------------------------------------------------------------------------
-function GetDvValueNumber(discreteValue)
-    local number = discreteValue.result
+function module.get_dv_value_number(discrete_value)
+    local number = discrete_value.result
     if number == nil then
         return nil
     end
@@ -43,13 +44,13 @@ end
 --------------------------------------------------------------------------------
 --- Check if a discrete value matches a predicate
 ---
---- @param discreteValue DiscreteValue The discrete value to check
+--- @param discrete_value DiscreteValue The discrete value to check
 --- @param predicate fun(number):boolean The predicate to check the result against
 ---
 --- @return boolean - true if the date is less than the number of hours ago, false otherwise
 --------------------------------------------------------------------------------
-function CheckDvResultNumber(discreteValue, predicate)
-    local result = GetDvValueNumber(discreteValue)
+function module.check_dv_result_number(discrete_value, predicate)
+    local result = module.get_dv_value_number(discrete_value)
     if result == nil then
         return false
     else
@@ -70,25 +71,25 @@ end
 ---
 --- @return DiscreteValue[] - a list of DiscreteValue objects
 --------------------------------------------------------------------------------
-function GetOrderedDiscreteValues(args)
+function module.get_ordered_discrete_values(args)
     local account = args.account or Account
-    local discreteValueName = args.discreteValueName
-    local daysBack = args.daysBack or 7
+    local discrete_value_name = args.discreteValueName
+    local days_back = args.daysBack or 7
     local predicate = args.predicate
-    -- @type DiscreteValue[]
-    local discreteValues = {}
+    --- @type DiscreteValue[]
+    local discrete_values = {}
 
-    local discreteValuesForName = account:find_discrete_values(discreteValueName)
-    for i = 1, #discreteValuesForName do
-        if DateIsLessThanXDaysAgo(discreteValuesForName[i].result_date, daysBack) and (predicate == nil or predicate(discreteValuesForName[i])) then
-            table.insert(discreteValues, discreteValuesForName[i])
+    local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
+    for i = 1, #discrete_values_for_name do
+        if module.DateIsLessThanXDaysAgo(discrete_values_for_name[i].result_date, days_back) and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            table.insert(discrete_values, discrete_values_for_name[i])
         end
     end
 
-    table.sort(discreteValues, function(a, b)
+    table.sort(discrete_values, function(a, b)
         return a.result_date < b.result_date
     end)
-    return discreteValues
+    return discrete_values
 end
 
 --------------------------------------------------------------------------------
@@ -98,17 +99,17 @@ end
 ---
 --- @return DiscreteValue? - The highest discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetHighestDiscreteValue(args)
-    local discreteValues = GetOrderedDiscreteValues(args)
-    if #discreteValues == 0 then
+function module.get_highest_discrete_value(args)
+    local discrete_values = module.get_ordered_discrete_values(args)
+    if #discrete_values == 0 then
         return nil
     end
-    local highest = discreteValues[1]
-    local highestValue = GetDvValueNumber(highest)
-    for i = 2, #discreteValues do
-        if CheckDvResultNumber(discreteValues[i], function(v) return v > highestValue end) then
-            highest = discreteValues[i]
-            highestValue = GetDvValueNumber(highest)
+    local highest = discrete_values[1]
+    local highest_value = module.get_dv_value_number(highest)
+    for i = 2, #discrete_values do
+        if module.check_dv_result_number(discrete_values[i], function(v) return v > highest_value end) then
+            highest = discrete_values[i]
+            highest_value = module.get_dv_value_number(highest)
         end
     end
     return highest
@@ -121,17 +122,17 @@ end
 ---
 --- @return DiscreteValue? - The lowest discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetLowestDiscreteValue(args)
-    local discreteValues = GetOrderedDiscreteValues(args)
-    if #discreteValues == 0 then
+function module.get_lowest_discrete_value(args)
+    local discrete_values = module.get_ordered_discrete_values(args)
+    if #discrete_values == 0 then
         return nil
     end
-    local lowest = discreteValues[1]
-    local lowestValue = GetDvValueNumber(lowest)
-    for i = 2, #discreteValues do
-        if CheckDvResultNumber(discreteValues[i], function(v) return v < lowestValue end) then
-            lowest = discreteValues[i]
-            lowestValue = GetDvValueNumber(lowest)
+    local lowest = discrete_values[1]
+    local lowest_value = module.get_dv_value_number(lowest)
+    for i = 2, #discrete_values do
+        if module.check_dv_result_number(discrete_values[i], function(v) return v < lowest_value end) then
+            lowest = discrete_values[i]
+            lowest_value = module.get_dv_value_number(lowest)
         end
     end
     return lowest
@@ -151,31 +152,32 @@ end
 ---
 --- @return DiscreteValue? - the nearest discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetDiscreteValueNearestToDate(args)
+function module.get_discrete_value_nearest_to_date(args)
     --- @type Account
     local account = args.account or Account
-    local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
-    local dateString = args.date
+    local discrete_value_names = args.discreteValueNames or { args.discreteValueName }
+    local date_string = args.date
     local predicate = args.predicate
 
-    local date = DateStringToInt(dateString)
-    local discreteValuesForName = {}
-    for _, dvName in ipairs(discreteValueNames) do
-        for _, dv in ipairs(account:find_discrete_values(dvName)) do
-            table.insert(discreteValuesForName, dv)
+    local date = dates.date_string_to_int(date_string)
+    --- @type DiscreteValue[]
+    local discrete_values_for_name = {}
+    for _, dv_name in ipairs(discrete_value_names) do
+        for _, dv in ipairs(account:find_discrete_values(dv_name)) do
+            table.insert(discrete_values_for_name, dv)
         end
     end
 
     --- @type DiscreteValue?
     local nearest = nil
-    local nearestDiff = math.huge
-    for i = 1, #discreteValuesForName do
-        local discreteValueDate = DateStringToInt(discreteValuesForName[i].result_date)
+    local nearest_diff = math.huge
+    for i = 1, #discrete_values_for_name do
+        local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
 
-        local diff = math.abs(os.difftime(date, discreteValueDate))
-        if diff < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
-            nearest = discreteValuesForName[i]
-            nearestDiff = diff
+        local diff = math.abs(os.difftime(date, discrete_value_date))
+        if diff < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            nearest = discrete_values_for_name[i]
+            nearest_diff = diff
         end
     end
     return nearest
@@ -194,25 +196,25 @@ end
 ---
 --- @return DiscreteValue? - the nearest discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetDiscreteValueNearestAfterDate(args)
+function module.get_discrete_value_nearest_after_date(args)
     --- @type Account
     local account = args.account or Account
-    local discreteValueName = args.discreteValueName
-    local dateString = args.date
+    local discrete_value_name = args.discreteValueName
+    local date_string = args.date
     local predicate = args.predicate
 
-    local date = DateStringToInt(dateString)
+    local date = dates.date_string_to_int(date_string)
 
-    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
     --- @type DiscreteValue?
     local nearest = nil
-    local nearestDiff = math.huge
-    for i = 1, #discreteValuesForName do
-        local discreteValueDate = DateStringToInt(discreteValuesForName[i].result_date)
+    local nearest_diff = math.huge
+    for i = 1, #discrete_values_for_name do
+        local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
 
-        if discreteValueDate > date and discreteValueDate - date < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
-            nearest = discreteValuesForName[i]
-            nearestDiff = discreteValueDate - date
+        if discrete_value_date > date and discrete_value_date - date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            nearest = discrete_values_for_name[i]
+            nearest_diff = discrete_value_date - date
         end
     end
     return nearest
@@ -231,25 +233,25 @@ end
 ---
 --- @return DiscreteValue? # the nearest discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetDiscreteValueNearestBeforeDate(args)
+function module.get_discrete_value_nearest_before_date(args)
     --- @type Account
     local account = args.account or Account
-    local discreteValueName = args.discreteValueName
-    local dateString = args.date
+    local discrete_value_name = args.discreteValueName
+    local date_string = args.date
     local predicate = args.predicate
 
-    local date = DateStringToInt(dateString)
+    local date = dates.date_string_to_int(date_string)
 
-    local discreteValuesForName = account:find_discrete_values(discreteValueName)
+    local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
     --- @type DiscreteValue?
     local nearest = nil
-    local nearestDiff = math.huge
-    for i = 1, #discreteValuesForName do
-        local discreteValueDate = DateStringToInt(discreteValuesForName[i].result_date)
+    local nearest_diff = math.huge
+    for i = 1, #discrete_values_for_name do
+        local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
 
-        if discreteValueDate < date and date - discreteValueDate < nearestDiff and (predicate == nil or predicate(discreteValuesForName[i])) then
-            nearest = discreteValuesForName[i]
-            nearestDiff = date - discreteValueDate
+        if discrete_value_date < date and date - discrete_value_date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            nearest = discrete_values_for_name[i]
+            nearest_diff = date - discrete_value_date
         end
     end
     return nearest
@@ -259,28 +261,29 @@ end
 --- Get all dates where any of a list of discrete values is present on an account
 ---
 --- @param account Account The account to get the codes from
---- @param dvNames string[] The names of the discrete values to check against
+--- @param dv_names string[] The names of the discrete values to check against
 ---
 --- @return number[] # List of dates in discrete values that are present on the account
 --------------------------------------------------------------------------------
-function GetDvDates(account, dvNames)
-    local dvDates = {}
-    for _, dvName in ipairs(dvNames) do
-        for _, dv in ipairs(account:find_discrete_values(dvName)) do
-            local dvDate = DateStringToInt(dv.result_date)
+function module.get_dv_dates(account, dv_names)
+    --- @type number[]
+    local dv_dates = {}
+    for _, dv_name in ipairs(dv_names) do
+        for _, dv in ipairs(account:find_discrete_values(dv_name)) do
+            local dv_date = dates.date_string_to_int(dv.result_date)
             -- check if table already contains the date
             local found = false
-            for _, date in ipairs(dvDates) do
-                if date == dvDate then
+            for _, date in ipairs(dv_dates) do
+                if date == dv_date then
                     found = true
                     break
                 end
             end
-            if not found then table.insert(dvDates, dvDate) end
+            if not found then table.insert(dv_dates, dv_date) end
         end
     end
 
-    return dvDates
+    return dv_dates
 end
 
 ---@class GetDiscreteValuesAsSingleLinkArgs
@@ -297,69 +300,71 @@ end
 --- 
 --- @return CdiAlertLink? # The link to the discrete values or nil if not found
 --------------------------------------------------------------------------------
-function GetDvValuesAsSingleLink(params)
+function module.get_dv_values_as_single_link(params)
     local account = params.account or Account
-    local dvNames = params.dvNames or  { params.dvName }
-    local linkText = params.linkText or ""
-    local targetTable = params.target
-    local discreteValues = {}
+    local dv_names = params.dvNames or { params.dvName }
+    local link_text = params.linkText or ""
+    local target_table = params.target
+    --- @type DiscreteValue[]
+    local discrete_values = {}
 
     --- @type string
-    local firstDate = nil
+    local first_date = nil
     --- @type string
-    local lastDate = nil
+    local last_date = nil
     --- @type string
-    local concatValues = ""
+    local concat_values = ""
     --- @type string
     local id = nil
 
-    for _, dvName in dvNames do
-        local discreteValuesForName = account:find_discrete_values(dvName)
-        for _, dv in discreteValuesForName do
-            table.insert(discreteValues, dv) 
+    for _, dv_name in ipairs(dv_names) do
+        local discrete_values_for_name = account:find_discrete_values(dv_name)
+        for _, dv in ipairs(discrete_values_for_name) do
+            table.insert(discrete_values, dv)
         end
     end
-    table.sort(discreteValues, function(a, b)
-        return DateStringToInt(a.result_date) > DateStringToInt(b.result_date)
+    table.sort(discrete_values, function(a, b)
+        return dates.date_string_to_int(a.result_date) > dates.date_string_to_int(b.result_date)
     end)
 
-    if #discreteValues == 0 then
+    if #discrete_values == 0 then
         return nil
     end
 
-    for _, dv in ipairs(discreteValues) do
-        if firstDate == nil and dv.result_date then
-            firstDate = dv.result_date
+    for _, dv in ipairs(discrete_values) do
+        if first_date == nil and dv.result_date then
+            first_date = dv.result_date
         end
         if dv.result_date then
-            lastDate = dv.result_date
+            last_date = dv.result_date
         end
         if id == nil and dv.unique_id then
             id = dv.unique_id
         end
 
-        local cleanedValue = dv.result:gsub("[\\>\\>]", "")
-        if tonumber(cleanedValue) then
-            concatValues = concatValues .. cleanedValue .. ", "
+        local cleaned_value = dv.result:gsub("[\\>\\>]", "")
+        if tonumber(cleaned_value) then
+            concat_values = concat_values .. cleaned_value .. ", "
         end
     end
 
     -- Remove final trailing , 
-    if concatValues ~= "" then
-        concatValues = concatValues:sub(1, -3)
+    if concat_values ~= "" then
+        --- @type string
+        concat_values = concat_values:sub(1, -3)
     end
 
-    if firstDate and lastDate then
-        linkText = linkText:gsub("%[DATE1%]", firstDate)
-        linkText = linkText:gsub("%[DATE2%]", lastDate)
-        linkText = linkText .. concatValues
+    if first_date and last_date then
+        link_text = link_text:gsub("%[DATE1%]", first_date)
+        link_text = link_text:gsub("%[DATE2%]", last_date)
+        link_text = link_text .. concat_values
         local link = cdi_alert_link()
-        link.discrete_value_name = dvNames[1]
-        link.link_text = linkText
+        link.discrete_value_name = dv_names[1]
+        link.link_text = link_text
         link.discrete_value_id = id
 
-        if targetTable then
-            table.insert(targetTable, link)
+        if target_table then
+            table.insert(target_table, link)
         end
         return link
     end
@@ -394,46 +399,47 @@ end
 --- 
 --- @return DiscreteValuePair[] # The pairs of discrete values that are closest to each other in time
 --------------------------------------------------------------------------------
-function GetDiscreteValuePairs(args)
+function module.get_discrete_value_pairs(args)
     local account = args.account or Account
-    local discreteValueNames1 = args.discreteValueNames1 or { args.discreteValueName1 }
-    local discreteValueNames2 = args.discreteValueNames2 or { args.discreteValueName2 }
-    local maxDiff = args.maxDiff or 0
+    local discrete_value_names1 = args.discreteValueNames1 or { args.discreteValueName1 }
+    local discrete_value_names2 = args.discreteValueNames2 or { args.discreteValueName2 }
+    local max_diff = args.maxDiff or 0
     local predicate1 = args.predicate1 or function() return true end
     local predicate2 = args.predicate2 or function() return true end
-    local joinPredicate = args.joinPredicate or function() return true end
+    local join_predicate = args.joinPredicate or function() return true end
     local max = args.max
 
-    local firstValuesUnfiltered = {}
-    for _, dvName in ipairs(discreteValueNames1) do
-        for _, dv in ipairs(account:find_discrete_values(dvName)) do
-            table.insert(firstValuesUnfiltered, dv)
+    --- @type DiscreteValue[]
+    local first_values_unfiltered = {}
+    for _, dv_name in ipairs(discrete_value_names1) do
+        for _, dv in ipairs(account:find_discrete_values(dv_name)) do
+            table.insert(first_values_unfiltered, dv)
         end
     end
 
-    --filter first values by predicate1
-    local firstValues = {}
-    for _, dv in ipairs(firstValuesUnfiltered) do
+    --- @type DiscreteValue[]
+    local first_values = {}
+    for _, dv in ipairs(first_values_unfiltered) do
         if predicate1(dv) then
-            table.insert(firstValues, dv)
+            table.insert(first_values, dv)
         end
     end
 
     local pairs = {}
 
-    for _, firstValue in ipairs(firstValues) do
-        local secondValue = GetDiscreteValueNearestToDate {
+    for _, first_value in ipairs(first_values) do
+        local second_value = module.get_discrete_value_nearest_to_date {
             account = account,
-            discreteValueNames = discreteValueNames2,
-            date = firstValue.result_date,
-            predicate = function(secondValue)
+            discreteValueNames = discrete_value_names2,
+            date = first_value.result_date,
+            predicate = function(second_value)
                 return (
-                    math.abs(DateStringToInt(firstValue.result_date) - DateStringToInt(secondValue.result_date)) <= maxDiff 
-                ) and predicate2(secondValue) and joinPredicate(firstValue, secondValue)
+                    math.abs(dates.date_string_to_int(first_value.result_date) - dates.date_string_to_int(second_value.result_date)) <= max_diff
+                ) and predicate2(second_value) and join_predicate(first_value, second_value)
             end
         }
-        if secondValue then
-            table.insert(pairs, { firstValue, secondValue })
+        if second_value then
+            table.insert(pairs, { first_value, second_value })
             if #pairs == max then break end
         end
     end
@@ -449,9 +455,9 @@ end
 --- 
 --- @return DiscreteValuePair? # The pair of discrete values that are closest to each other in time
 --------------------------------------------------------------------------------
-function GetDiscreteValuePair(args)
+function module.get_discrete_value_pair(args)
     args.max = 1
-    local pairs = GetDiscreteValuePairs(args)
+    local pairs = module.get_discrete_value_pairs(args)
     if #pairs > 0 then
         return pairs[1]
     end
@@ -461,25 +467,25 @@ end
 --------------------------------------------------------------------------------
 --- Get a pair of links for a pair of discrete values
 --- 
---- @param dvPair DiscreteValuePair The pair of discrete values
---- @param linkTemplate1 string The template for the first link text
---- @param linkTemplate2 string The template for the second link text
+--- @param dv_pair DiscreteValuePair The pair of discrete values
+--- @param link_template1 string The template for the first link text
+--- @param link_template2 string The template for the second link text
 --- 
 --- @return CdiAlertLinkPair # The links to the pair of discrete values
 --------------------------------------------------------------------------------
-function DiscreteValuePairToLinkPair(dvPair, linkTemplate1, linkTemplate2)
-    local firstValue = dvPair.first
-    local secondValue = dvPair.second
+function module.discrete_value_pair_to_link_pair(dv_pair, link_template1, link_template2)
+    local first_value = dv_pair.first
+    local second_value = dv_pair.second
 
     local link1 = cdi_alert_link()
-    link1.discrete_value_name = firstValue.name
-    link1.discrete_value_id = firstValue.unique_id
-    link1.link_text = ReplaceLinkPlaceHolders(linkTemplate1, nil, nil, firstValue, nil)
+    link1.discrete_value_name = first_value.name
+    link1.discrete_value_id = first_value.unique_id
+    link1.link_text = links.replace_link_place_holders(link_template1, nil, nil, first_value, nil)
 
     local link2 = cdi_alert_link()
-    link2.discrete_value_name = secondValue.name
-    link2.discrete_value_id = secondValue.unique_id
-    link2.link_text = ReplaceLinkPlaceHolders(linkTemplate2, nil, nil, secondValue, nil)
+    link2.discrete_value_name = second_value.name
+    link2.discrete_value_id = second_value.unique_id
+    link2.link_text = links.replace_link_place_holders(link_template2, nil, nil, second_value, nil)
 
     return { first = link1, second = link2 }
 end
@@ -496,16 +502,16 @@ end
 ---
 --- @return CdiAlertLinkPair[] # The links to the pairs of discrete values
 --------------------------------------------------------------------------------
-function GetDiscreteValuePairsAsLinkPairs(args)
-    local dvPairs = GetDiscreteValuePairs(args)
-    local links = {}
-    for _, dvPair in ipairs(dvPairs) do
-        table.insert(links, DiscreteValuePairToLinkPair(dvPair, args.linkTemplate1, args.linkTemplate2))
+function module.get_discrete_value_pairs_as_link_pairs(args)
+    local dv_pairs = module.get_discrete_value_pairs(args)
+    local link_pairs = {}
+    for _, dv_pair in ipairs(dv_pairs) do
+        table.insert(link_pairs, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
         if args.target then
-            table.insert(args.target, DiscreteValuePairToLinkPair(dvPair, args.linkTemplate1, args.linkTemplate2))
+            table.insert(args.target, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
         end
     end
-    return links
+    return link_pairs
 end
 
 --------------------------------------------------------------------------------
@@ -515,13 +521,13 @@ end
 --- 
 --- @return CdiAlertLinkPair? # The links to the pair of discrete values or nil if not found
 --------------------------------------------------------------------------------
-function GetFirstDiscreteValuePairAsLinkPair(args)
-    local dvPair = GetDiscreteValuePair(args)
-    if dvPair then
+function module.get_first_discrete_value_pair_as_link_pair(args)
+    local dv_pair = module.get_discrete_value_pair(args)
+    if dv_pair then
         if args.target then
-            table.insert(args.target, DiscreteValuePairToLinkPair(dvPair, args.linkTemplate1, args.linkTemplate2))
+            table.insert(args.target, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
         end
-        return DiscreteValuePairToLinkPair(dvPair, args.linkTemplate1, args.linkTemplate2)
+        return module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2)
     end
     return nil
 end
@@ -529,21 +535,21 @@ end
 --------------------------------------------------------------------------------
 --- Get a single link for a pair of discrete values
 --- 
---- @param dvPair DiscreteValuePair The pair of discrete values
---- @param linkTemplate string The template for the link text
+--- @param dv_pair DiscreteValuePair The pair of discrete values
+--- @param link_template string The template for the link text
 --- 
 --- @return CdiAlertLink # The link to the pair of discrete values
 --------------------------------------------------------------------------------
-function DiscreteValuePairToSingleLineLink(dvPair, linkTemplate)
-    local firstValue = dvPair.first
-    local secondValue = dvPair.second
+function module.discrete_value_pair_to_single_line_link(dv_pair, link_template)
+    local first_value = dv_pair.first
+    local second_value = dv_pair.second
 
     local link = cdi_alert_link()
-    link.discrete_value_name = firstValue.name
-    link.discrete_value_id = firstValue.unique_id
-    link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, firstValue, nil)
-    link.link_text = link.link_text:gsub("%[DATE1%]", firstValue.result_date)
-    link.link_text = link.link_text:gsub("%[DATE2%]", secondValue.result_date)
+    link.discrete_value_name = first_value.name
+    link.discrete_value_id = first_value.unique_id
+    link.link_text = links.replace_link_place_holders(link_template, nil, nil, first_value, nil)
+    link.link_text = link.link_text:gsub("%[DATE1%]", first_value.result_date)
+    link.link_text = link.link_text:gsub("%[DATE2%]", second_value.result_date)
     return link
 end
 
@@ -558,16 +564,16 @@ end
 --- 
 --- @return CdiAlertLink[] # The links to the pairs of discrete values
 --------------------------------------------------------------------------------
-function GetDiscreteValuePairsAsSingleLineLinks(args)
-    local dvPairs = GetDiscreteValuePairs(args)
-    local links = {}
-    for _, dvPair in ipairs(dvPairs) do
-        table.insert(links, DiscreteValuePairToSingleLineLink(dvPair, args.linkTemplate))
+function module.get_discrete_value_pairs_as_single_line_links(args)
+    local dv_pairs = module.get_discrete_value_pairs(args)
+    local link_pairs = {}
+    for _, dv_pair in ipairs(dv_pairs) do
+        table.insert(link_pairs, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
         if args.target then
-            table.insert(args.target, DiscreteValuePairToSingleLineLink(dvPair, args.linkTemplate))
+            table.insert(args.target, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
         end
     end
-    return links
+    return link_pairs
 end
 
 --------------------------------------------------------------------------------
@@ -577,13 +583,13 @@ end
 --- 
 --- @return CdiAlertLink? # The link to the pair of discrete values or nil if not found
 --------------------------------------------------------------------------------
-function GetFirstDiscreteValuePairAsSingleLineLink(args)
-    local dvPair = GetDiscreteValuePair(args)
-    if dvPair then
+function module.get_first_discrete_value_pair_as_single_line_link(args)
+    local dv_pair = module.get_discrete_value_pair(args)
+    if dv_pair then
         if args.target then
-            table.insert(args.target, DiscreteValuePairToSingleLineLink(dvPair, args.linkTemplate))
+            table.insert(args.target, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
         end
-        return DiscreteValuePairToSingleLineLink(dvPair, args.linkTemplate)
+        return module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate)
     end
     return nil
 end
@@ -599,33 +605,35 @@ end
 --- 
 --- @return CdiAlertLink? # The link to the pairs of discrete values
 --------------------------------------------------------------------------------
-function GetDiscreteValuePairsAsCombinedSingleLineLink(args)
-    local dvPairs = GetDiscreteValuePairs(args)
-    local valuesText = ""
+function module.get_discrete_value_pairs_as_combined_single_line_link(args)
+    local dv_pairs = module.get_discrete_value_pairs(args)
+    local values_text = ""
 
-    if #dvPairs == 0 then
+    if #dv_pairs == 0 then
         return nil
     end
 
-    local firstDate = dvPairs[1].first.result_date or ""
-    local lastDate = dvPairs[#dvPairs].first.result_date or ""
+    local first_date = dv_pairs[1].first.result_date or ""
+    local last_date = dv_pairs[#dv_pairs].first.result_date or ""
 
-    for _, dvPair in ipairs(dvPairs) do
-        valuesText = valuesText .. dvPair.first.result .. "/" .. dvPair.second.result .. ", "
+    for _, dv_pair in ipairs(dv_pairs) do
+        values_text = values_text .. dv_pair.first.result .. "/" .. dv_pair.second.result .. ", "
     end
-    valuesText = valuesText:sub(1, -3)
+    values_text = values_text:sub(1, -3)
 
     local link = cdi_alert_link()
-    link.discrete_value_id = dvPairs[1].first.unique_id
-    link.discrete_value_name = dvPairs[1].first.name
-    link.link_text = ReplaceLinkPlaceHolders(args.linkTemplate, nil, nil, dvPairs[1].first, nil)
-    link.link_text = link.link_text:gsub("%[VALUE_PAIRS%]", valuesText)
-    link.link_text = link.link_text:gsub("%[DATE1%]", firstDate)
-    link.link_text = link.link_text:gsub("%[DATE2%]", lastDate)
+    link.discrete_value_id = dv_pairs[1].first.unique_id
+    link.discrete_value_name = dv_pairs[1].first.name
+    link.link_text = links.replace_link_place_holders(args.linkTemplate, nil, nil, dv_pairs[1].first, nil)
+    link.link_text = link.link_text:gsub("%[VALUE_PAIRS%]", values_text)
+    link.link_text = link.link_text:gsub("%[DATE1%]", first_date)
+    link.link_text = link.link_text:gsub("%[DATE2%]", last_date)
 
     if args.target then
         table.insert(args.target, link)
     end
     return link
 end
+
+return module
 

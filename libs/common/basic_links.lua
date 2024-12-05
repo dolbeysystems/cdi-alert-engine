@@ -1,4 +1,5 @@
-require("libs.common.dates")
+local module = {}
+local dates = require("libs.common.dates")
 local cdi_alert_link = require "cdi.link"
 
 ---------------------------------------------------------------------------------------------
@@ -7,16 +8,16 @@ local cdi_alert_link = require "cdi.link"
 --- @class (exact) LinkArgs
 --- @field account Account? Account object (uses global account if not provided)
 --- @field text string Link template
---- @field maxPerValue number? The maximum number of links to create for each matched value (default 1)
+--- @field max_per_value number? The maximum number of links to create for each matched value (default 1)
 --- @field seq number? Starting sequence number to use for the links
 --- @field fixed_seq boolean? If true, the sequence number will not be incremented for each link
 --- @field target CdiAlertLink[]? The table to add the link to
---- @field includeStandardSuffix boolean? If true, the standard suffix will be appended to the link text
+--- @field include_standard_suffix boolean? If true, the standard suffix will be appended to the link text
 
 --- @class (exact) GetCodeLinksArgs : LinkArgs
 --- @field codes string[]? List of codes to search for
 --- @field code string? Single code to search for
---- @field documentTypes string[]? List of document types that the code must be found in
+--- @field document_types string[]? List of document types that the code must be found in
 --- @field predicate (fun(code_reference: CodeReferenceWithDocument): boolean)? Predicate function to filter code references
 --- @field sort(fun(l: CodeReferenceWithDocument, r: CodeReferenceWithDocument): boolean)? Sort function to sort the matched values before creating links
 
@@ -27,23 +28,23 @@ local cdi_alert_link = require "cdi.link"
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetCodeLinks(args)
+function module.get_code_links(args)
     local account = args.account or Account
     local codes = args.codes or { args.code }
-    local linkTemplate = args.text or ""
-    local documentTypes = args.documentTypes or {}
+    local link_template = args.text or ""
+    local document_types = args.document_types or {}
     local predicate = args.predicate
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
-    local maxPerValue = args.maxPerValue or 9999
-    local targetTable = args.target
-    local includeStandardSuffix = args.includeStandardSuffix
+    local max_per_value = args.max_per_value or 9999
+    local target_table = args.target
+    local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
         return a.code_reference.code > b.code_reference.code
     end
 
-    if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    if include_standard_suffix == nil or include_standard_suffix then
+        link_template = link_template .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
 
     --- @type CdiAlertLink[]
@@ -55,11 +56,11 @@ function GetCodeLinks(args)
         local code = codes[i]
         local code_reference_pairs_for_code = account:find_code_references(code)
         for j = 1, #code_reference_pairs_for_code do
-            local refPair = code_reference_pairs_for_code[j]
+            local ref_pair = code_reference_pairs_for_code[j]
 
-            if predicate == nil or predicate(refPair) then
-                table.insert(code_reference_pairs, refPair)
-                if maxPerValue and #code_reference_pairs >= maxPerValue then
+            if predicate == nil or predicate(ref_pair) then
+                table.insert(code_reference_pairs, ref_pair)
+                if max_per_value and #code_reference_pairs >= max_per_value then
                     break
                 end
             end
@@ -73,27 +74,27 @@ function GetCodeLinks(args)
         local code_reference = ref.code_reference
         local document = ref.document
 
-        if documentTypes == nil or #documentTypes == 0 then
+        if document_types == nil or #document_types == 0 then
             --- @type CdiAlertLink
             local link = cdi_alert_link()
             link.code = code_reference.code
             link.document_id = document.document_id
-            link.link_text = ReplaceLinkPlaceHolders(linkTemplate or "", code_reference, document, nil, nil)
+            link.link_text = module.replace_link_place_holders(link_template or "", code_reference, document, nil, nil)
             link.sequence = sequence
             table.insert(links, link)
             if not fixed_sequence then
                 sequence = sequence + 1
             end
         else
-            for j = 1, #documentTypes do
-                if documentTypes[j] == document.document_type then
+            for j = 1, #document_types do
+                if document_types[j] == document.document_type then
                     local link = cdi_alert_link()
                     link.code = code_reference.code
                     link.document_id = document.document_id
-                    link.link_text = ReplaceLinkPlaceHolders(linkTemplate, code_reference, document, nil, nil)
+                    link.link_text = module.replace_link_place_holders(link_template, code_reference, document, nil, nil)
                     link.sequence = sequence
                     table.insert(links, link)
-                    if maxPerValue and #links >= maxPerValue then
+                    if max_per_value and #links >= max_per_value then
                         break
                     end
                     if not fixed_sequence then
@@ -104,9 +105,9 @@ function GetCodeLinks(args)
         end
     end
 
-    if targetTable then
+    if target_table then
         for i = 1, #links do
-            table.insert(targetTable, links[i])
+            table.insert(target_table, links[i])
         end
     end
 
@@ -120,9 +121,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first code or nil if not found
 -------------------------------------------------------------------------------- 
-function GetCodeLink(args)
-    args.maxPerValue = 1
-    local links = GetCodeLinks(args)
+function module.get_code_link(args)
+    args.max_per_value = 1
+    local links = module.get_code_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -138,12 +139,12 @@ end
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetAbstractionLinks(args)
-    if args.includeStandardSuffix == nil or args.includeStandardSuffix then
-        args.includeStandardSuffix = false
+function module.get_abstraction_links(args)
+    if args.include_standard_suffix == nil or args.include_standard_suffix then
+        args.include_standard_suffix = false
         args.text = args.text .. " '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
-    return GetCodeLinks(args)
+    return module.get_code_links(args)
 end
 
 --------------------------------------------------------------------------------
@@ -154,9 +155,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first abstraction or nil if not found
 -----------------------------------------------------------------------------
-function GetAbstractionLink(args)
-    args.maxPerValue = 1
-    local links = GetAbstractionLinks(args)
+function module.get_abstraction_link(args)
+    args.max_per_value = 1
+    local links = module.get_abstraction_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -172,12 +173,12 @@ end
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetAbstractionValueLinks(args)
-    if args.includeStandardSuffix == nil or args.includeStandardSuffix then
-        args.includeStandardSuffix = false
+function module.get_abstraction_value_links(args)
+    if args.include_standard_suffix == nil or args.include_standard_suffix then
+        args.include_standard_suffix = false
         args.text = args.text .. ": [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
-    return GetCodeLinks(args)
+    return module.get_code_links(args)
 end
 
 --------------------------------------------------------------------------------
@@ -188,9 +189,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first abstraction or nil if not found
 --------------------------------------------------------------------------------
-function GetAbstractionValueLink(args)
-    args.maxPerValue = 1
-    local links = GetAbstractionValueLinks(args)
+function module.get_abstraction_value_link(args)
+    args.max_per_value = 1
+    local links = module.get_abstraction_value_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -211,22 +212,22 @@ end
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetDocumentLinks(args)
+function module.get_document_links(args)
     local account = args.account or Account
-    local documentTypes = args.documentTypes or { args.documentType }
-    local linkTemplate = args.text or ""
+    local document_types = args.documentTypes or { args.documentType }
+    local link_template = args.text or ""
     local predicate = args.predicate
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
-    local maxPerValue = args.maxPerValue or 9999
-    local targetTable = args.target
-    local includeStandardSuffix = args.includeStandardSuffix
+    local max_per_value = args.max_per_value or 9999
+    local target_table = args.target
+    local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
-        return DateStringToInt(a.document_date) > DateStringToInt(b.document_date)
+        return dates.date_string_to_int(a.document_date) > dates.date_string_to_int(b.document_date)
     end
 
-    if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate .. " ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    if include_standard_suffix == nil or include_standard_suffix then
+        link_template = link_template .. " ([DOCUMENTTYPE], [DOCUMENTDATE])"
     end
 
     --- @type CdiAlertLink[]
@@ -234,13 +235,13 @@ function GetDocumentLinks(args)
     --- @type CACDocument[]
     local documents = {}
 
-    for i = 1, #documentTypes do
-        local documentType = documentTypes[i]
-        local documentsForType = account:find_documents(documentType)
-        for j = 1, #documentsForType do
+    for i = 1, #document_types do
+        local document_type = document_types[i]
+        local documents_for_type = account:find_documents(document_type)
+        for j = 1, #documents_for_type do
             if predicate == nil or predicate(documents[i]) then
-                table.insert(documents, documentsForType[j])
-                if maxPerValue and #documents >= maxPerValue then
+                table.insert(documents, documents_for_type[j])
+                if max_per_value and #documents >= max_per_value then
                     break
                 end
             end
@@ -253,16 +254,16 @@ function GetDocumentLinks(args)
         local document = documents[i]
         local link = cdi_alert_link()
         link.document_id = document.document_id
-        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, document, nil, nil)
+        link.link_text = module.replace_link_place_holders(link_template, nil, document, nil, nil)
         link.sequence = sequence
         table.insert(links, link)
         if not fixed_sequence then
             sequence = sequence + 1
         end
     end
-    if targetTable then
+    if target_table then
         for i = 1, #links do
-            table.insert(targetTable, links[i])
+            table.insert(target_table, links[i])
         end
     end
     return links
@@ -275,9 +276,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first document or nil if not found
 --------------------------------------------------------------------------------
-function GetDocumentLink(args)
-    args.maxPerValue = 1
-    local links = GetDocumentLinks(args)
+function module.get_document_link(args)
+    args.max_per_value = 1
+    local links = module.get_document_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -300,24 +301,24 @@ end
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetMedicationLinks(args)
+function module.get_medication_links(args)
     local account = args.account or Account
-    local medicationCategories = args.cats or { args.cat }
-    local linkTemplate = args.text or ""
+    local medication_categories = args.cats or { args.cat }
+    local link_template = args.text or ""
     local predicate = args.predicate
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
-    local maxPerValue = args.maxPerValue or 9999
-    local targetTable = args.target
-    local includeStandardSuffix = args.includeStandardSuffix
-    local useCdiAlertCategoryField = args.useCdiAlertCategoryField or false
-    local onePerDate = args.onePerDate or false
+    local max_per_value = args.max_per_value or 9999
+    local target_table = args.target
+    local include_standard_suffix = args.include_standard_suffix
+    local use_cdi_alert_category_field = args.useCdiAlertCategoryField or false
+    local one_per_date = args.onePerDate or false
     local sort = args.sort or function(a, b)
-        return DateStringToInt(a.start_date) > DateStringToInt(b.start_date)
+        return dates.date_string_to_int(a.start_date) > dates.date_string_to_int(b.start_date)
     end
 
-    if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+    if include_standard_suffix == nil or include_standard_suffix then
+        link_template = link_template .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
     end
 
     --- @type CdiAlertLink[]
@@ -325,37 +326,38 @@ function GetMedicationLinks(args)
     --- @type Medication[]
     local medications = {}
 
-    for i = 1, #medicationCategories do
-        local medicationCategory = medicationCategories[i]
-        local medicationsForCategory = {}
+    for i = 1, #medication_categories do
+        local medication_category = medication_categories[i]
+        local medications_for_category = {}
 
-        if useCdiAlertCategoryField then
+        if use_cdi_alert_category_field then
             for _, med in ipairs(account.medications) do
-                if med.cdi_alert_category == medicationCategory then
+                if med.cdi_alert_category == medication_category then
                     table.insert(medications, med)
                 end
             end
         else
-            medicationsForCategory = account:find_medications(medicationCategory)
+            medications_for_category = account:find_medications(medication_category)
         end
 
-        if onePerDate then
-            local uniqueDates = {}
-            local uniqueMedications = {}
-            for j = 1, #medicationsForCategory do
-                local medication = medicationsForCategory[j]
-                if not uniqueDates[medication.start_date] then
-                    uniqueDates[medication.start_date] = true
-                    table.insert(uniqueMedications, medication)
+        if one_per_date then
+            local unique_dates = {}
+            local unique_medications = {}
+            for j = 1, #medications_for_category do
+                local medication = medications_for_category[j]
+                if not unique_dates[medication.start_date] then
+                    ---@diagnostic disable-next-line: no-unknown
+                    unique_dates[medication.start_date] = true
+                    table.insert(unique_medications, medication)
                 end
             end
-            medicationsForCategory = uniqueMedications
+            medications_for_category = unique_medications
         end
 
-        for j = 1, #medicationsForCategory do
-            if predicate == nil or predicate(medicationsForCategory[j]) then
-                table.insert(medications, medicationsForCategory[j])
-                if maxPerValue and #medications >= maxPerValue then
+        for j = 1, #medications_for_category do
+            if predicate == nil or predicate(medications_for_category[j]) then
+                table.insert(medications, medications_for_category[j])
+                if max_per_value and #medications >= max_per_value then
                     break
                 end
             end
@@ -367,16 +369,16 @@ function GetMedicationLinks(args)
         local medication   = medications[i]
         local link         = cdi_alert_link()
         link.medication_id = medication.external_id
-        link.link_text     = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, nil, medication)
+        link.link_text     = module.replace_link_place_holders(link_template, nil, nil, nil, medication)
         link.sequence      = sequence
         table.insert(links, link)
         if not fixed_sequence then
             sequence = sequence + 1
         end
     end
-    if targetTable then
+    if target_table then
         for i = 1, #links do
-            table.insert(targetTable, links[i])
+            table.insert(target_table, links[i])
         end
     end
     return links
@@ -389,9 +391,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first medication or nil if not found
 --------------------------------------------------------------------------------
-function GetMedicationLink(args)
-    args.maxPerValue = 1
-    local links = GetMedicationLinks(args)
+function module.get_medication_link(args)
+    args.max_per_value = 1
+    local links = module.get_medication_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -412,22 +414,22 @@ end
 ---
 --- @return CdiAlertLink[] # a list of CdiAlertLink objects or a single CdiAlertLink object
 --------------------------------------------------------------------------------
-function GetDiscreteValueLinks(args)
+function module.get_discrete_value_links(args)
     local account = args.account or Account
-    local discreteValueNames = args.discreteValueNames or { args.discreteValueName }
-    local linkTemplate = args.text or ""
+    local discrete_value_names = args.discreteValueNames or { args.discreteValueName }
+    local link_template = args.text or ""
     local predicate = args.predicate
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
-    local maxPerValue = args.maxPerValue or 9999
-    local targetTable = args.target
-    local includeStandardSuffix = args.includeStandardSuffix
+    local max_per_value = args.max_per_value or 9999
+    local target_table = args.target
+    local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
-        return DateStringToInt(a.result_date) > DateStringToInt(b.result_date)
+        return dates.date_string_to_int(a.result_date) > dates.date_string_to_int(b.result_date)
     end
 
-    if includeStandardSuffix == nil or includeStandardSuffix then
-        linkTemplate = linkTemplate .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+    if include_standard_suffix == nil or include_standard_suffix then
+        link_template = link_template .. ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
     end
 
     --- @type CdiAlertLink[]
@@ -435,14 +437,14 @@ function GetDiscreteValueLinks(args)
     --- @type DiscreteValue[]
     local discrete_values = {}
 
-    for i = 1, #discreteValueNames do
-        local discreteValueName = discreteValueNames[i]
-        local discreteValuesForName = account:find_discrete_values(discreteValueName)
-        for j = 1, #discreteValuesForName do
-            if predicate == nil or predicate(discreteValuesForName[j]) then
-                table.insert(discrete_values, discreteValuesForName[j])
+    for i = 1, #discrete_value_names do
+        local discrete_value_name = discrete_value_names[i]
+        local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
+        for j = 1, #discrete_values_for_name do
+            if predicate == nil or predicate(discrete_values_for_name[j]) then
+                table.insert(discrete_values, discrete_values_for_name[j])
 
-                if maxPerValue and #discrete_values >= maxPerValue then
+                if max_per_value and #discrete_values >= max_per_value then
                     break
                 end
             end
@@ -455,17 +457,17 @@ function GetDiscreteValueLinks(args)
         local discrete_value = discrete_values[i]
         local link = cdi_alert_link()
         link.discrete_value_name = discrete_value.name
-        link.discrete_value_id = discrete_value.id
-        link.link_text = ReplaceLinkPlaceHolders(linkTemplate, nil, nil, discrete_value, nil)
+        link.discrete_value_id = discrete_value.unique_id
+        link.link_text = module.replace_link_place_holders(link_template, nil, nil, discrete_value, nil)
         link.sequence = sequence
         table.insert(links, link)
         if not fixed_sequence then
             sequence = sequence + 1
         end
     end
-    if targetTable then
+    if target_table then
         for i = 1, #links do
-            table.insert(targetTable, links[i])
+            table.insert(target_table, links[i])
         end
     end
     return links
@@ -478,9 +480,9 @@ end
 --- 
 --- @return CdiAlertLink? # the link to the first discrete value or nil if not found
 --------------------------------------------------------------------------------
-function GetDiscreteValueLink(args)
-    args.maxPerValue = 1
-    local links = GetDiscreteValueLinks(args)
+function module.get_discrete_value_link(args)
+    args.max_per_value = 1
+    local links = module.get_discrete_value_links(args)
     if #links > 0 then
         return links[1]
     else
@@ -492,21 +494,21 @@ end
 --- Replace placeholders in a link template with values from the code reference,
 --- document, discrete value, or medication
 ---
---- @param linkTemplate string the template for the link
---- @param codeReference CodeReference? the code reference to use for the link
+--- @param link_template string the template for the link
+--- @param code_reference CodeReference? the code reference to use for the link
 --- @param document CACDocument? the document to use for the link
---- @param discreteValue DiscreteValue? the discrete value to use for the link
+--- @param discrete_value DiscreteValue? the discrete value to use for the link
 --- @param medication Medication? the medication to use for the link
 ---
 --- @return string # the link with placeholders replaced
 --------------------------------------------------------------------------------
-function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discreteValue, medication)
-    local link = linkTemplate
+function module.replace_link_place_holders(link_template, code_reference, document, discrete_value, medication)
+    local link = link_template
 
-    if codeReference ~= nil then
-        link = string.gsub(link, "%[CODE%]", codeReference.code or "")
-        link = string.gsub(link, "%[ABSTRACTVALUE%]", codeReference.value or "")
-        link = string.gsub(link, "%[PHRASE%]", codeReference.phrase or "")
+    if code_reference ~= nil then
+        link = string.gsub(link, "%[CODE%]", code_reference.code or "")
+        link = string.gsub(link, "%[ABSTRACTVALUE%]", code_reference.value or "")
+        link = string.gsub(link, "%[PHRASE%]", code_reference.phrase or "")
     end
 
     if document ~= nil then
@@ -516,11 +518,11 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
     end
 
 
-    if discreteValue ~= nil then
-        link = string.gsub(link, "%[DISCRETEVALUENAME%]", discreteValue.name or "")
-        link = string.gsub(link, "%[DISCRETEVALUE%]", discreteValue.result or "")
-        if discreteValue.result_date ~= nil then
-            link = string.gsub(link, "%[RESULTDATE%]", discreteValue.result_date or "")
+    if discrete_value ~= nil then
+        link = string.gsub(link, "%[DISCRETEVALUENAME%]", discrete_value.name or "")
+        link = string.gsub(link, "%[DISCRETEVALUE%]", discrete_value.result or "")
+        if discrete_value.result_date ~= nil then
+            link = string.gsub(link, "%[RESULTDATE%]", discrete_value.result_date or "")
         end
     end
 
@@ -536,10 +538,10 @@ function ReplaceLinkPlaceHolders(linkTemplate, codeReference, document, discrete
         link = string.gsub(link, "%[CATEGORY%]", medication.category or "")
     end
 
-    if discreteValue ~= nil and discreteValue.result ~= nil then
-        link = string.gsub(link, "%[VALUE%]", discreteValue.result or "")
-    elseif codeReference ~= nil and codeReference.value ~= nil then
-        link = string.gsub(link, "%[VALUE%]", codeReference.value or "")
+    if discrete_value ~= nil and discrete_value.result ~= nil then
+        link = string.gsub(link, "%[VALUE%]", discrete_value.result or "")
+    elseif code_reference ~= nil and code_reference.value ~= nil then
+        link = string.gsub(link, "%[VALUE%]", code_reference.value or "")
     end
 
     return link
@@ -548,13 +550,13 @@ end
 --------------------------------------------------------------------------------
 --- Create a link to a header
 ---
---- @param headerText string The text of the header
+--- @param header_text string The text of the header
 ---
 --- @return CdiAlertLink - the link to the header
 --------------------------------------------------------------------------------
-function MakeHeaderLink(headerText)
+function module.make_header_link(header_text)
     local link = cdi_alert_link()
-    link.link_text = headerText
+    link.link_text = header_text
     link.is_validated = true
     return link
 end
@@ -562,47 +564,51 @@ end
 --------------------------------------------------------------------------------
 --- Merge links with old links
 ---
---- @param oldLinks CdiAlertLink[] The existing alert
---- @param newLinks CdiAlertLink[] The links to merge
+--- @param old_links CdiAlertLink[] The existing alert
+--- @param new_links CdiAlertLink[] The links to merge
 ---
 --- @return CdiAlertLink[] - The merged links
 --------------------------------------------------------------------------------
-function MergeLinks(oldLinks, newLinks)
+function module.merge_links(old_links, new_links)
     --- @type CdiAlertLink[]
-    local mergedLinks = {}
+    local merged_links = {}
 
     --- @type fun(a: CdiAlertLink, b: CdiAlertLink): boolean
-    local comparison_fn = function(_, _) return false end
+    --- @diagnostic disable-next-line: unused-local
+    local comparison_fn = function(a, b) return false end
 
-    if #oldLinks == 0 then
-        return newLinks
-    elseif #newLinks == 0 then
-        return oldLinks
+    if #old_links == 0 then
+        return new_links
+    elseif #new_links == 0 then
+        return old_links
     else
-        for _, oldLink in ipairs(oldLinks) do
-            if oldLink.code then
+        for _, old_link in ipairs(old_links) do
+            if old_link.code then
                 comparison_fn = function(a, b) return a.code == b.code end
-            elseif oldLink.medication_name then
+            elseif old_link.medication_name then
                 comparison_fn = function(a, b) return a.medication_name == b.medication_name end
-            elseif oldLink.discrete_value_name then
+            elseif old_link.discrete_value_name then
                 comparison_fn = function(a, b) return a.discrete_value_name == b.discrete_value_name end
-            elseif oldLink.discrete_value_id then
+            elseif old_link.discrete_value_id then
                 comparison_fn = function(a, b) return a.discrete_value_id == b.discrete_value_id end
             else
                 comparison_fn = function(a, b) return a.link_text == b.link_text end
             end
 
-            for _, newLink in ipairs(newLinks) do
-                if comparison_fn(oldLink, newLink) then
-                    oldLink.is_validated = newLink.is_validated
-                    oldLink.sequence = newLink.sequence
-                    oldLink.hidden = newLink.hidden
-                    oldLink.link_text = newLink.link_text
-                    oldLink.links = MergeLinks(oldLink.links, newLink.links)
-                    table.insert(mergedLinks, newLink)
+            for _, new_link in ipairs(new_links) do
+                if comparison_fn(old_link, new_link) then
+                    old_link.is_validated = new_link.is_validated
+                    old_link.sequence = new_link.sequence
+                    old_link.hidden = new_link.hidden
+                    old_link.link_text = new_link.link_text
+                    old_link.links = module.merge_links(old_link.links, new_link.links)
+                    table.insert(merged_links, new_link)
                 end
             end
         end
-        return mergedLinks
+        return merged_links
     end
 end
+
+return module
+

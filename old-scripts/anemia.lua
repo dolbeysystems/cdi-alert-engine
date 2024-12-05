@@ -55,7 +55,7 @@ local function GetLowHemoglobinValuePairs()
     local lowHemoglobinValues = GetOrderedDiscreteValues({
         discreteValueName = "Hemoglobin",
         predicate = function(dv)
-            return GetDvValueNumber(dv) <= lowHemoglobinValue
+            return get_dv_value_number(dv) <= lowHemoglobinValue
         end,
         daysBack = 31
     })
@@ -93,7 +93,7 @@ local function GetLowHematocritDiscreteValuePairs()
     local lowHematomocritValues = GetOrderedDiscreteValues({
         discreteValueName = "Hematocrit",
         predicate = function(dv)
-            return GetDvValueNumber(dv) <= lowHematocritValue
+            return get_dv_value_number(dv) <= lowHematocritValue
         end,
         daysBack = 31
     })
@@ -137,7 +137,7 @@ local function GetHemoglobinDropPairs()
     local hemoglobinDelta = 0
 
     if highestHemoglobinInPastWeek and lowestHemoglobinInPastWeekAfterHighest then
-        hemoglobinDelta = GetDvValueNumber(highestHemoglobinInPastWeek) - GetDvValueNumber(lowestHemoglobinInPastWeekAfterHighest)
+        hemoglobinDelta = get_dv_value_number(highestHemoglobinInPastWeek) - get_dv_value_number(lowestHemoglobinInPastWeekAfterHighest)
         if hemoglobinDelta >= 2 then
             hemoglobinPeakLink = GetLinkForDiscreteValue(highestHemoglobinInPastWeek, "Peak Hemoglobin", 1, true)
             hemoglobinDropLink = GetLinkForDiscreteValue(lowestHemoglobinInPastWeekAfterHighest, "Dropped Hemoglobin", 2, true)
@@ -196,7 +196,7 @@ local function GetHematocritDropPairs()
     local hematocritDelta = 0
 
     if highestHematocritInPastWeek and lowestHematocritInPastWeekAfterHighest then
-        hematocritDelta = GetDvValueNumber(highestHematocritInPastWeek) - GetDvValueNumber(lowestHematocritInPastWeekAfterHighest)
+        hematocritDelta = get_dv_value_number(highestHematocritInPastWeek) - get_dv_value_number(lowestHematocritInPastWeekAfterHighest)
         if hematocritDelta >= 6 then
             hematocritPeakLink = GetLinkForDiscreteValue(highestHematocritInPastWeek, "Peak Hematocrit", 5, true)
             hematocritDropLink = GetLinkForDiscreteValue(lowestHematocritInPastWeekAfterHighest, "Dropped Hematocrit", 6, true)
