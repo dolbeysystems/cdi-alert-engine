@@ -291,7 +291,6 @@ end
 ---@field dvNames string[]? The names of the discrete values to check against
 ---@field dvName string? The name of the discrete value
 ---@field linkText string? The text of the link_text
----@field target table? The target table to insert the link into
 --------------------------------------------------------------------------------
 --- Get discrete values on an account and return a single link containing all
 --- numeric values as one link 
@@ -304,7 +303,6 @@ function module.get_dv_values_as_single_link(params)
     local account = params.account or Account
     local dv_names = params.dvNames or { params.dvName }
     local link_text = params.linkText or ""
-    local target_table = params.target
     --- @type DiscreteValue[]
     local discrete_values = {}
 
@@ -363,9 +361,6 @@ function module.get_dv_values_as_single_link(params)
         link.link_text = link_text
         link.discrete_value_id = id
 
-        if target_table then
-            table.insert(target_table, link)
-        end
         return link
     end
 end
@@ -493,7 +488,6 @@ end
 --- @class (exact) GetDiscreteValuePairsAsLinkPairsArgs: GetDiscreteValuePairsArgs
 --- @field linkTemplate1 string The template for the first link text
 --- @field linkTemplate2 string The template for the second link text
---- @field target table? The target table to insert the links into
 
 --------------------------------------------------------------------------------
 --- Get all links for pairs of discrete values
@@ -507,9 +501,6 @@ function module.get_discrete_value_pairs_as_link_pairs(args)
     local link_pairs = {}
     for _, dv_pair in ipairs(dv_pairs) do
         table.insert(link_pairs, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
-        if args.target then
-            table.insert(args.target, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
-        end
     end
     return link_pairs
 end
@@ -524,9 +515,6 @@ end
 function module.get_first_discrete_value_pair_as_link_pair(args)
     local dv_pair = module.get_discrete_value_pair(args)
     if dv_pair then
-        if args.target then
-            table.insert(args.target, module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2))
-        end
         return module.discrete_value_pair_to_link_pair(dv_pair, args.linkTemplate1, args.linkTemplate2)
     end
     return nil
@@ -555,7 +543,6 @@ end
 
 --- @class (exact) GetDiscreteValuePairsAsSingleLineLinksArgs : GetDiscreteValuePairsArgs
 --- @field linkTemplate string The template for the link text
---- @field target table? The target table to insert the links into
 
 --------------------------------------------------------------------------------
 --- Get all links for pairs of discrete values
@@ -569,9 +556,6 @@ function module.get_discrete_value_pairs_as_single_line_links(args)
     local link_pairs = {}
     for _, dv_pair in ipairs(dv_pairs) do
         table.insert(link_pairs, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
-        if args.target then
-            table.insert(args.target, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
-        end
     end
     return link_pairs
 end
@@ -586,9 +570,6 @@ end
 function module.get_first_discrete_value_pair_as_single_line_link(args)
     local dv_pair = module.get_discrete_value_pair(args)
     if dv_pair then
-        if args.target then
-            table.insert(args.target, module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate))
-        end
         return module.discrete_value_pair_to_single_line_link(dv_pair, args.linkTemplate)
     end
     return nil
@@ -596,7 +577,6 @@ end
 
 --- @class (exact) GetDiscreteValuePairsAsCombinedSingleLineLinkArgs : GetDiscreteValuePairsArgs
 --- @field linkTemplate string The template for the link text
---- @field target table? The target table to insert the links into
 
 --------------------------------------------------------------------------------
 --- Get a single link for all pairs of discrete values
@@ -629,9 +609,6 @@ function module.get_discrete_value_pairs_as_combined_single_line_link(args)
     link.link_text = link.link_text:gsub("%[DATE1%]", first_date)
     link.link_text = link.link_text:gsub("%[DATE2%]", last_date)
 
-    if args.target then
-        table.insert(args.target, link)
-    end
     return link
 end
 

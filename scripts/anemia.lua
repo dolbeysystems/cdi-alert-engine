@@ -279,12 +279,14 @@ if not existing_alert or not existing_alert.validated then
 
     -- Labs
     local gender = Account.patient and Account.patient.gender or ""
-    discrete.get_discrete_value_pairs_as_combined_single_line_link {
-        discreteValueNames1 = dv_hemoglobin,
-        discreteValueNames2 = dv_hematocrit,
-        linkTemplate = "Hemoglobin/Hematocrit: ([DATE1] - [DATE2]) - [VALUE_PAIRS]",
-        target = labs_links,
-    }
+    table.insert(
+        labs_links,
+        discrete.get_discrete_value_pairs_as_combined_single_line_link {
+            discreteValueNames1 = dv_hemoglobin,
+            discreteValueNames2 = dv_hematocrit,
+            linkTemplate = "Hemoglobin/Hematocrit: ([DATE1] - [DATE2]) - [VALUE_PAIRS]",
+        }
+    )
     local low_hemoglobin10_d_v_link = links.get_discrete_value_link { discreteValueNames = dv_hemoglobin, text = "Hemoglobin", predicate = calc_hemoglobin3 }
     local low_hematocrit30_d_v_link = links.get_discrete_value_link { discreteValueNames = dv_hematocrit, text = "Hematocrit", predicate = calc_hematocrit3 }
     local low_hemoglobin_d_v_link =
@@ -543,69 +545,106 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Abstractions
-            links.get_code_link { code = "T45.1X5A", text = "Adverse Effect of Antineoplastic and Immunosuppressive Drug", seq = 1, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "F10.1", text = "Alcohol Abuse", seq = 2, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "F10.2", text = "Alcohol Dependence", seq = 3, target = clinical_evidence_links }
-            links.get_code_link { code = "K70.31", text = "Alcoholic Liver Cirrhosis", seq = 4, target = clinical_evidence_links }
-            links.get_code_link { code = "Z51.11", text = "Chemotherapy", seq = 5, target = clinical_evidence_links }
-            links.get_code_link { codes = { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9" }, text = "Chronic Kidney Disease", seq = 6, target = clinical_evidence_links }
-            links.get_code_link { code = "K27.4", text = "Chronic Peptic Ulcer with Hemorrhage", seq = 7, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "CURRENT_CHEMOTHERAPY", text = "Current Chemotherapy", seq = 8, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea on Exertion", seq = 9, target = clinical_evidence_links }
-            links.get_code_link { code = "N18.6", text = "End-Stage Renal Disease", seq = 10, target = clinical_evidence_links }
-            links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C82.", text = "Follicular Lymphoma", seq = 12, target = clinical_evidence_links }
-            links.get_code_link { codes = { "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9" }, text = "Heart Failure", seq = 13, target = clinical_evidence_links }
-            links.get_code_link { code = "D58.0", text = "Hereditary Spherocytosis", seq = 14, target = clinical_evidence_links }
-            links.get_code_link { code = "B20", text = "HIV", seq = 15, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C81.", text = "Hodgkin Lymphoma", seq = 16, target = clinical_evidence_links }
-            links.get_code_link { code = "Z51.12", text = "Immunotherapy", seq = 17, target = clinical_evidence_links }
-            links.get_code_link { code = "E61.1", text = "Iron Deficiency", seq = 18, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C95.", text = "Leukemia of Unspecified Cell Type", seq = 19, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C91.", text = "Lymphoid Leukemia", seq = 20, target = clinical_evidence_links }
-            links.get_code_link { code = "K22.6", text = "Mallory-Weiss Tear", seq = 21, target = clinical_evidence_links }
-            links.get_code_link { codes = { "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45" }, text = "Malnutrition", seq = 22, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C84.", text = "Mature T/NK-Cell Lymphoma", seq = 23, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C90.", text = "Multiple Myeloma", seq = 24, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C93.", text = "Monocytic Leukemia", seq = 25, target = clinical_evidence_links }
-            links.get_code_link { code = "D46.9", text = "Myelodysplastic Syndrome", seq = 26, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C92.", text = "Myeloid Leukemia", seq = 27, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C83.", text = "Non-Follicular Lymphoma", seq = 28, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C94.", text = "Other Leukemias", seq = 29, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C86.", text = "Other Types of T/NK-Cell Lymphoma", seq = 30, target = clinical_evidence_links }
-            links.get_code_link { code = "R23.1", text = "Pale", seq = 31, target = clinical_evidence_links }
-            links.get_code_link { code = "K27.9", text = "Peptic Ulcer", seq = 32, target = clinical_evidence_links }
-            links.get_code_link { code = "F19.10", text = "Psychoactive Substance Abuse", seq = 33, target = clinical_evidence_links }
-            links.get_code_link { code = "Z51.0", text = "Radiation Therapy", seq = 34, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "M05.", text = "Rheumatoid Arthritis", seq = 35, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "D86.", text = "Sarcoidosis", seq = 36, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", seq = 37, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "D57.", text = "Sickle Cell Disorder", seq = 38, target = clinical_evidence_links }
-            links.get_code_link { code = "R16.1", text = "Splenomegaly", seq = 39, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "M32.", text = "Systemic Lupus Erthematosus (SLE)", seq = 40, target = clinical_evidence_links }
-            codes.get_code_prefix_link { prefix = "C85.", text = "Unspecified Non-Hodgkin Lymphoma", seq = 41, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "WEAKNESS", text = "Weakness", seq = 42, target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, links.get_code_link { code = "T45.1X5A", text = "Adverse Effect of Antineoplastic and Immunosuppressive Drug", seq = 1 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "F10.1", text = "Alcohol Abuse", seq = 2 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "F10.2", text = "Alcohol Dependence", seq = 3 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "K70.31", text = "Alcoholic Liver Cirrhosis", seq = 4 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "Z51.11", text = "Chemotherapy", seq = 5 })
+            table.insert(clinical_evidence_links, links.get_code_link { codes = { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9" }, text = "Chronic Kidney Disease", seq = 6 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "K27.4", text = "Chronic Peptic Ulcer with Hemorrhage", seq = 7 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "CURRENT_CHEMOTHERAPY", text = "Current Chemotherapy", seq = 8 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea on Exertion", seq = 9 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "N18.6", text = "End-Stage Renal Disease", seq = 10 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C82.", text = "Follicular Lymphoma", seq = 12 })
+            table.insert(clinical_evidence_links, links.get_code_link { codes = { "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9" }, text = "Heart Failure", seq = 13 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "D58.0", text = "Hereditary Spherocytosis", seq = 14 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "B20", text = "HIV", seq = 15 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C81.", text = "Hodgkin Lymphoma", seq = 16 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "Z51.12", text = "Immunotherapy", seq = 17 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E61.1", text = "Iron Deficiency", seq = 18 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C95.", text = "Leukemia of Unspecified Cell Type", seq = 19 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C91.", text = "Lymphoid Leukemia", seq = 20 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "K22.6", text = "Mallory-Weiss Tear", seq = 21 })
+            table.insert(clinical_evidence_links, links.get_code_link { codes = { "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45" }, text = "Malnutrition", seq = 22 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C84.", text = "Mature T/NK-Cell Lymphoma", seq = 23 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C90.", text = "Multiple Myeloma", seq = 24 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C93.", text = "Monocytic Leukemia", seq = 25 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "D46.9", text = "Myelodysplastic Syndrome", seq = 26 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C92.", text = "Myeloid Leukemia", seq = 27 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C83.", text = "Non-Follicular Lymphoma", seq = 28 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C94.", text = "Other Leukemias", seq = 29 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C86.", text = "Other Types of T/NK-Cell Lymphoma", seq = 30 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R23.1", text = "Pale", seq = 31 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "K27.9", text = "Peptic Ulcer", seq = 32 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "F19.10", text = "Psychoactive Substance Abuse", seq = 33 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "Z51.0", text = "Radiation Therapy", seq = 34 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "M05.", text = "Rheumatoid Arthritis", seq = 35 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "D86.", text = "Sarcoidosis", seq = 36 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", seq = 37 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "D57.", text = "Sickle Cell Disorder", seq = 38 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R16.1", text = "Splenomegaly", seq = 39 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "M32.", text = "Systemic Lupus Erthematosus (SLE)", seq = 40 })
+            table.insert(clinical_evidence_links, codes.get_code_prefix_link { prefix = "C85.", text = "Unspecified Non-Hodgkin Lymphoma", seq = 41 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Weakness", seq = 42 })
 
             -- Labs
-            links.get_discrete_value_link { discreteValueNames = dv_mch, text = "MCH", predicate = calc_mch1, seq = 1, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_mchc, text = "MCHC", predicate = calc_mchc1, seq = 2, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_mcv, text = "MCV", predicate = calc_mcv1, seq = 3, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_rbc, text = "RBC", predicate = calc_rbc1, seq = 4, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_rdw, text = "RDW", predicate = calc_rdw1, seq = 5, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_reticulocyte_count, text = "Reticulocyte Count", predicate = calc_reticulocyte_count1, seq = 6, target = labs_links }
-            if not links.get_discrete_value_link { discreteValueNames = dv_serum_ferritin, text = "Serum Ferritin", predicate = calc_serum_ferritin1, seq = 7, target = labs_links } then
-                links.get_discrete_value_link { discreteValueNames = dv_serum_ferritin, text = "Serum Ferritin", seq = 8, target = labs_links }
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_mch, text = "MCH", predicate = calc_mch1, seq = 1 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_mchc, text = "MCHC", predicate = calc_mchc1, seq = 2 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_mcv, text = "MCV", predicate = calc_mcv1, seq = 3 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_rbc, text = "RBC", predicate = calc_rbc1, seq = 4 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_rdw, text = "RDW", predicate = calc_rdw1, seq = 5 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_reticulocyte_count, text = "Reticulocyte Count", predicate = calc_reticulocyte_count1, seq = 6 })
+
+            local ferritin_args = {
+                discreteValueNames = dv_serum_ferritin,
+                text = "Serum Ferritin",
+                seq = 7,
+                predicate = calc_serum_ferritin1,
+            }
+            local constrained_ferritin = links.get_discrete_value_link(ferritin_args)
+            if constrained_ferritin then
+                table.insert(labs_links, constrained_ferritin)
+            else
+                ferritin_args.predicate = nil
+                local all_ferritin  = links.get_discrete_value_link(ferritin_args)
+                table.insert(labs_links, all_ferritin)
             end
-            if not links.get_discrete_value_link { discreteValueNames = dv_folate, text = "Serum Folate", predicate = calc_folate1, seq = 9, target = labs_links } then
-                links.get_discrete_value_link { discreteValueNames = dv_folate, text = "Serum Folate", seq = 10, target = labs_links }
+
+            local folate_args = {
+                discreteValueNames = dv_folate,
+                text = "Serum Folate",
+                seq = 9,
+                predicate = calc_folate1,
+            }
+            local constrained_folate = links.get_discrete_value_link(folate_args)
+            if constrained_folate then
+                table.insert(labs_links, constrained_folate)
+            else
+                folate_args.predicate = nil
+                local all_folate = links.get_discrete_value_link(folate_args)
+                table.insert(labs_links, all_folate)
             end
-            if not links.get_discrete_value_link { discreteValueNames = dv_serum_iron, text = "Serum Iron", predicate = calc_serum_iron1, seq = 11, target = labs_links } then
-                links.get_discrete_value_link { discreteValueNames = dv_serum_iron, text = "Serum Iron", seq = 12, target = labs_links }
+
+            local iron_args = {
+                discreteValueNames = dv_serum_iron,
+                text = "Serum Iron",
+                seq = 11,
+                predicate = calc_serum_iron1,
+            }
+            local constrained_iron = links.get_discrete_value_link(iron_args)
+            if constrained_iron then
+                table.insert(labs_links, constrained_iron)
+            else
+                iron_args.predicate = nil
+                local all_iron = links.get_discrete_value_link(iron_args)
+                table.insert(labs_links, all_iron)
             end
-            links.get_discrete_value_link { discreteValueNames = dv_total_iron_binding_capacity, text = "Total Iron Binding Capacity", predicate = calc_total_iron_binding_capacity1, seq = 13, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_transferrin, text = "Transferrin", predicate = calc_transferrin1, seq = 14, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_vitamin_b12, text = "Vitamin B12", predicate = calc_vitamin_b12_1, seq = 15, target = labs_links }
-            links.get_discrete_value_link { discreteValueNames = dv_wbc, text = "WBC", predicate = calc_wbc1, seq = 16, target = labs_links }
+
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_total_iron_binding_capacity, text = "Total Iron Binding Capacity", predicate = calc_total_iron_binding_capacity1, seq = 13 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_transferrin, text = "Transferrin", predicate = calc_transferrin1, seq = 14 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_vitamin_b12, text = "Vitamin B12", predicate = calc_vitamin_b12_1, seq = 15 })
+            table.insert(labs_links, links.get_discrete_value_link { discreteValueNames = dv_wbc, text = "WBC", predicate = calc_wbc1, seq = 16 })
 
             -- Meds
             table.insert(treatment_and_monitoring_links, anemia_meds_abstraction_link)
@@ -668,9 +707,9 @@ if not existing_alert or not existing_alert.validated then
             end
 
             -- Vitals
-            links.get_abstraction_link { code = "LOW_BLOOD_PRESSURE", text = "Blood Pressure", seq = 1, target = vitals_links }
-            links.get_discrete_value_link { discreteValueNames = dv_map, text = "Mean Arterial Pressure", predicate = calc_map1, seq = 2, target = vitals_links }
-            links.get_discrete_value_link { discreteValueNames = dv_sbp, text = "Systolic Blood Pressure", predicate = calc_sbp1, seq = 3, target = vitals_links }
+            table.insert(vitals_links, links.get_abstraction_link { code = "LOW_BLOOD_PRESSURE", text = "Blood Pressure", seq = 1 })
+            table.insert(vitals_links, links.get_discrete_value_link { discreteValueNames = dv_map, text = "Mean Arterial Pressure", predicate = calc_map1, seq = 2 })
+            table.insert(vitals_links, links.get_discrete_value_link { discreteValueNames = dv_sbp, text = "Systolic Blood Pressure", predicate = calc_sbp1, seq = 3 })
 
             -- Hemoglobin/Hematocrit
             for _, link in ipairs(low_hematocrit_multi_d_v_link_pairs) do

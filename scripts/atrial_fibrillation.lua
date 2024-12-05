@@ -136,56 +136,56 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Clinical Evidence Links
-            links.get_abstraction_link { code = "ABLATION", text = "Ablation", target = clinical_evidence_links, seq = 1 }
-            links.get_code_link { code = "I35.1", text = "Aortic Regurgitation", target = clinical_evidence_links, seq = 2 }
-            links.get_code_link { code = "I35.0", text = "Aortic Stenosis", target = clinical_evidence_links, seq = 3 }
-            links.get_abstraction_link { code = "CARDIOVERSION", text = "Cardioversion", target = clinical_evidence_links, seq = 4 }
-            links.get_abstraction_value_link { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea On Exertion", target = clinical_evidence_links, seq = 5 }
-            links.get_code_link { code = "R53.83", text = "Fatigue", target = clinical_evidence_links, seq = 6 }
-            links.get_abstraction_link { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinical_evidence_links, seq = 7 }
-            links.get_abstraction_link { code = "IMPLANTABLE_CARDIAC_ASSIST_DEVICE", text = "Implantable Cardiac Assist Device", target = clinical_evidence_links, seq = 8 }
-            links.get_abstraction_link { code = "IRREGULAR_ECHO_FINDING", text = "Irregular Echo Findings", target = clinical_evidence_links, seq = 9 }
-            links.get_code_link { code = "R42", text = "Light Headed", target = clinical_evidence_links, seq = 10 }
-            links.get_abstraction_link { code = "MAZE_PROCEDURE", text = "Maze Procedure", target = clinical_evidence_links, seq = 11 }
-            links.get_code_link { code = "I34.0", text = "Mitral Regurgitation", target = clinical_evidence_links, seq = 12 }
-            links.get_code_link { code = "I34.2", text = "Mitral Stenosis", target = clinical_evidence_links, seq = 13 }
-            links.get_code_link { code = "I35.1", text = "Pulmonic Regurgitation", target = clinical_evidence_links, seq = 14 }
-            links.get_code_link { code = "I37.0", text = "Pulmonic Stenosis", target = clinical_evidence_links, seq = 15 }
-            links.get_abstraction_value_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinical_evidence_links, seq = 16 }
-            links.get_code_link { code = "R55", text = "Syncopal", target = clinical_evidence_links, seq = 17 }
-            links.get_code_link { code = "I36.1", text = "Tricuspid Regurgitation", target = clinical_evidence_links, seq = 18 }
-            links.get_code_link { code = "I36.0", text = "Tricuspid Stenosis", target = clinical_evidence_links, seq = 19 }
-            links.get_abstraction_link { code = "WATCHMAN_PROCEDURE", text = "Watchman Procedure", target = clinical_evidence_links, seq = 20 }
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "ABLATION", text = "Ablation", seq = 1 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I35.1", text = "Aortic Regurgitation", seq = 2 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I35.0", text = "Aortic Stenosis", seq = 3 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "CARDIOVERSION", text = "Cardioversion", seq = 4 })
+            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "DYSPNEA_ON_EXERTION", text = "Dyspnea On Exertion", seq = 5 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue", seq = 6 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "HEART_PALPITATIONS", text = "Heart Palpitations", seq = 7 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "IMPLANTABLE_CARDIAC_ASSIST_DEVICE", text = "Implantable Cardiac Assist Device", seq = 8 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "IRREGULAR_ECHO_FINDING", text = "Irregular Echo Findings", seq = 9 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R42", text = "Light Headed", seq = 10 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "MAZE_PROCEDURE", text = "Maze Procedure", seq = 11 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I34.0", text = "Mitral Regurgitation", seq = 12 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I34.2", text = "Mitral Stenosis", seq = 13 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I35.1", text = "Pulmonic Regurgitation", seq = 14 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I37.0", text = "Pulmonic Stenosis", seq = 15 })
+            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", seq = 16 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R55", text = "Syncopal", seq = 17 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I36.1", text = "Tricuspid Regurgitation", seq = 18 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "I36.0", text = "Tricuspid Stenosis", seq = 19 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WATCHMAN_PROCEDURE", text = "Watchman Procedure", seq = 20 })
 
             -- Document Links
-            links.get_document_link { documentType = "EKG", text = "EKG", target = ekg_links }
-            links.get_document_link { documentType = "Electrocardiogram Adult   ECGR", text = "Electrocardiogram Adult   ECGR", target = ekg_links }
-            links.get_document_link { documentType = "ECG Adult", text = "ECG Adult", target = ekg_links }
-            links.get_document_link { documentType = "RestingECG", text = "RestingECG", target = ekg_links }
-            links.get_document_link { documentType = "EKG", text = "EKG", target = ekg_links }
+            table.insert(ekg_links, links.get_document_link { documentType = "EKG", text = "EKG" })
+            table.insert(ekg_links, links.get_document_link { documentType = "Electrocardiogram Adult   ECGR", text = "Electrocardiogram Adult   ECGR" })
+            table.insert(ekg_links, links.get_document_link { documentType = "ECG Adult", text = "ECG Adult" })
+            table.insert(ekg_links, links.get_document_link { documentType = "RestingECG", text = "RestingECG" })
+            table.insert(ekg_links, links.get_document_link { documentType = "EKG", text = "EKG" })
 
             -- Treatment Links
-            links.get_medication_link { cat = "Adenosine", text = "", target = treatment_and_monitoring_links, seq = 1 }
-            links.get_abstraction_link { code = "ADENOSINE", text = "Adenosine", target = treatment_and_monitoring_links, seq = 2 }
-            links.get_medication_link { cat = "Antiarrhythmic", text = "", target = treatment_and_monitoring_links, seq = 3 }
-            links.get_abstraction_link { code = "ANTIARRHYTHMIC", text = "Antiarrhythmic", target = treatment_and_monitoring_links, seq = 4 }
-            links.get_medication_link { cat = "Anticoagulant", text = "", target = treatment_and_monitoring_links, seq = 5 }
-            links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant", target = treatment_and_monitoring_links, seq = 6 }
-            links.get_medication_link { cat = "Antiplatelet", text = "", target = treatment_and_monitoring_links, seq = 7 }
-            links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet", target = treatment_and_monitoring_links, seq = 8 }
-            links.get_medication_link { cat = "Beta Blocker", text = "", target = treatment_and_monitoring_links, seq = 9 }
-            links.get_abstraction_link { code = "BETA_BLOCKER", text = "Beta Blocker", target = treatment_and_monitoring_links, seq = 10 }
-            links.get_medication_link { cat = "Calcium Channel Blockers", text = "", target = treatment_and_monitoring_links, seq = 11 }
-            links.get_abstraction_link { code = "CALCIUM_CHANNEL_BLOCKER", text = "Calcium Channel Blocker", target = treatment_and_monitoring_links, seq = 12 }
-            links.get_medication_link { cat = "Digitalis", text = "", target = treatment_and_monitoring_links, seq = 13 }
-            links.get_abstraction_link { code = "DIGOXIN", text = "Digoxin", target = treatment_and_monitoring_links, seq = 14 }
-            links.get_code_link { code = "Z79.01", text = "Long Term Use of Z79.01", target = treatment_and_monitoring_links, seq = 15 }
-            links.get_code_link { code = "Z79.02", text = "Long Term Use of Antithrombotics/Z79.02", target = treatment_and_monitoring_links, seq = 16 }
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Adenosine", text = "", seq = 1 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "ADENOSINE", text = "Adenosine", seq = 2 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Antiarrhythmic", text = "", seq = 3 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "ANTIARRHYTHMIC", text = "Antiarrhythmic", seq = 4 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Anticoagulant", text = "", seq = 5 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant", seq = 6 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Antiplatelet", text = "", seq = 7 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet", seq = 8 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Beta Blocker", text = "", seq = 9 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "BETA_BLOCKER", text = "Beta Blocker", seq = 10 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Calcium Channel Blockers", text = "", seq = 11 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "CALCIUM_CHANNEL_BLOCKER", text = "Calcium Channel Blocker", seq = 12 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_link { cat = "Digitalis", text = "", seq = 13 })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_link { code = "DIGOXIN", text = "Digoxin", seq = 14 })
+            table.insert(treatment_and_monitoring_links, links.get_code_link { code = "Z79.01", text = "Long Term Use of Z79.01", seq = 15 })
+            table.insert(treatment_and_monitoring_links, links.get_code_link { code = "Z79.02", text = "Long Term Use of Antithrombotics/Z79.02", seq = 16 })
 
             -- Vital Links
-            links.get_discrete_value_link { discreteValueNames = dv_heart_rate, text = "Heart Rate", target = vital_signs_intake_links, seq = 1, calc = high_heart_rate_predicate }
-            links.get_discrete_value_link { discreteValueNames = map_dv_names, text = "Mean Arterial Pressure", target = vital_signs_intake_links, seq = 2, calc = low_map_predicate }
-            links.get_discrete_value_link { discreteValueNames = systolic_blood_pressure_dv_names, text = "Systolic Blood Pressure", target = vital_signs_intake_links, seq = 3, calc = low_systolic_blood_pressure_predicate }
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { discreteValueNames = dv_heart_rate, text = "Heart Rate", calc = high_heart_rate_predicate, seq = 1 })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { discreteValueNames = map_dv_names, text = "Mean Arterial Pressure", calc = low_map_predicate, seq = 2 })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { discreteValueNames = systolic_blood_pressure_dv_names, text = "Systolic Blood Pressure", calc = low_systolic_blood_pressure_predicate, seq = 3 })
         end
 
 

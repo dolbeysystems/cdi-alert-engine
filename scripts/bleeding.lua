@@ -217,9 +217,25 @@ if not existing_alert or not existing_alert.validated then
                 table.insert(hemoglobin_links, pair.hemoglobinLink)
                 table.insert(hematocrit_links, pair.hematocritLink)
             end
-            links.get_discrete_value_links { discreteValueNames = inr_dv_names, predicate = high_inr_predicate, text = "INR", target = inr_links, maxPerValue = 10 }
-            links.get_discrete_value_links { discreteValueNames = pt_dv_names, predicate = high_pt_predicate, text = "PT", target = pt_links, maxPerValue = 10 }
-            links.get_discrete_value_links { discreteValueNames = ptt_dv_names, predicate = high_ptt_predicate, text = "PTT", target = ptt_links, maxPerValue = 10 }
+
+            inr_links = links.get_discrete_value_links {
+                discreteValueNames = inr_dv_names,
+                predicate = high_inr_predicate,
+                text = "INR",
+                maxPerValue = 10
+            }
+            pt_links = links.get_discrete_value_links {
+                discreteValueNames = pt_dv_names,
+                predicate = high_pt_predicate,
+                text = "PT",
+                maxPerValue = 10,
+            }
+            ptt_links = links.get_discrete_value_links {
+                discreteValueNames = ptt_dv_names,
+                predicate = high_ptt_predicate,
+                text = "PTT",
+                maxPerValue = 10,
+            }
 
             -- Meds
             table.insert(medications_links, anticoagulant_med_link)

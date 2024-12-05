@@ -300,63 +300,72 @@ if not existing_alert or not existing_alert.validated then
                 table.insert(clinical_evidence_links, altered_abs_link)
             end
 
-            links.get_code_link { code = "F10.230", text = "Beer Potomania", seq = 3, target = clinical_evidence_links }
-            links.get_code_link { code = "R11.14", text = "Bilious Vomiting", seq = 4, target = clinical_evidence_links }
-            links.get_code_link {
-                codes = {
-                    "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
-                    "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
-                },
-                text = "Congestive Heart Failure (CHF)",
-                seq = 5,
-                target = clinical_evidence_links
-            }
-            links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", seq = 6, target = clinical_evidence_links }
-            links.get_abstraction_value_link { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", seq = 8, target = clinical_evidence_links }
-            links.get_code_link { code = "R41.0", text = "Disorientation", seq = 9, target = clinical_evidence_links }
-            links.get_code_link { code = "E86.0", text = "Dehydration", seq = 10, target = clinical_evidence_links }
-            links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11, target = clinical_evidence_links }
-            links.get_abstraction_value_link { code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME", text = "Hyperosmolar Hyperglycemic Syndrome", seq = 13, target = clinical_evidence_links }
-            links.get_code_link { code = "E86.1", text = "Hypovolemia", seq = 15, target = clinical_evidence_links }
-            links.get_code_link {
-                codes = {
-                    "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
-                },
-                text = "Kidney Failure",
-                seq = 16,
-                target = clinical_evidence_links
-            }
-            links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17, target = clinical_evidence_links }
-            links.get_code_link { code = "R63.1", text = "Polydipsia", seq = 18, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "SEIZURE", text = "Seizure", seq = 19, target = clinical_evidence_links }
-            links.get_code_link {
-                codes = { "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91" },
-                text = "Thyrotoxic Crisis Storm Code",
-                seq = 21,
-                target = clinical_evidence_links
-            }
-            links.get_code_link { code = "E86.9", text = "Volume Depletion", seq = 22, target = clinical_evidence_links }
-            links.get_code_link { code = "R11.10", text = "Vomiting", seq = 23, target = clinical_evidence_links }
-            links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24, target = clinical_evidence_links }
-            links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", seq = 25, target = clinical_evidence_links }
-            links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", seq = 26, target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, links.get_code_link { code = "F10.230", text = "Beer Potomania", seq = 3 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.14", text = "Bilious Vomiting", seq = 4 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link {
+                    codes = {
+                        "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
+                        "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
+                    },
+                    text = "Congestive Heart Failure (CHF)",
+                    seq = 5,
+                }
+            )
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", seq = 6 })
+            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", seq = 8 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R41.0", text = "Disorientation", seq = 9 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.0", text = "Dehydration", seq = 10 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11 })
+            table.insert(clinical_evidence_links, links.get_abstraction_value_link { code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME", text = "Hyperosmolar Hyperglycemic Syndrome", seq = 13 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.1", text = "Hypovolemia", seq = 15 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link {
+                    codes = {
+                        "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
+                    },
+                    text = "Kidney Failure",
+                    seq = 16,
+                }
+            )
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R63.1", text = "Polydipsia", seq = 18 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "SEIZURE", text = "Seizure", seq = 19 })
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link {
+                    codes = { "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91" },
+                    text = "Thyrotoxic Crisis Storm Code",
+                    seq = 21,
+                }
+            )
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E86.9", text = "Volume Depletion", seq = 22 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.10", text = "Vomiting", seq = 23 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24 })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", seq = 25 })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", seq = 26 })
 
-            local blood_glucose_links = links.get_discrete_value_link {
+            local blood_glucose_links = links.get_discrete_value_links {
                 dvNames = blood_glucose_dv_names,
                 predicate = blood_glucose_predicate,
                 text = "Blood Glucose",
                 maxPerValue = 1,
-                target = labs_links
-            } or {}
+            }
+            table.insert(labs_links, blood_glucose_links)
+
             if #blood_glucose_links == 0 then
-                links.get_discrete_value_link {
-                    dvNames = blood_glucose_poc_dv_names,
-                    predicate = blood_glucose_poc_predicate,
-                    text = "Blood Glucose POC",
-                    maxPerValue = 1,
-                    target = labs_links
-                }
+                table.insert(
+                    labs_links,
+                    links.get_discrete_value_link {
+                        dvNames = blood_glucose_poc_dv_names,
+                        predicate = blood_glucose_poc_predicate,
+                        text = "Blood Glucose POC",
+                        maxPerValue = 1,
+                    }
+                )
             end
         end
 

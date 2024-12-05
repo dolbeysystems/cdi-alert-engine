@@ -11,7 +11,6 @@ local cdi_alert_link = require "cdi.link"
 --- @field max_per_value number? The maximum number of links to create for each matched value (default 1)
 --- @field seq number? Starting sequence number to use for the links
 --- @field fixed_seq boolean? If true, the sequence number will not be incremented for each link
---- @field target CdiAlertLink[]? The table to add the link to
 --- @field include_standard_suffix boolean? If true, the standard suffix will be appended to the link text
 
 --- @class (exact) GetCodeLinksArgs : LinkArgs
@@ -37,7 +36,6 @@ function module.get_code_links(args)
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
     local max_per_value = args.max_per_value or 9999
-    local target_table = args.target
     local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
         return a.code_reference.code > b.code_reference.code
@@ -102,12 +100,6 @@ function module.get_code_links(args)
                     end
                 end
             end
-        end
-    end
-
-    if target_table then
-        for i = 1, #links do
-            table.insert(target_table, links[i])
         end
     end
 
@@ -220,7 +212,6 @@ function module.get_document_links(args)
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
     local max_per_value = args.max_per_value or 9999
-    local target_table = args.target
     local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
         return dates.date_string_to_int(a.document_date) > dates.date_string_to_int(b.document_date)
@@ -259,11 +250,6 @@ function module.get_document_links(args)
         table.insert(links, link)
         if not fixed_sequence then
             sequence = sequence + 1
-        end
-    end
-    if target_table then
-        for i = 1, #links do
-            table.insert(target_table, links[i])
         end
     end
     return links
@@ -309,7 +295,6 @@ function module.get_medication_links(args)
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
     local max_per_value = args.max_per_value or 9999
-    local target_table = args.target
     local include_standard_suffix = args.include_standard_suffix
     local use_cdi_alert_category_field = args.useCdiAlertCategoryField or false
     local one_per_date = args.onePerDate or false
@@ -376,11 +361,6 @@ function module.get_medication_links(args)
             sequence = sequence + 1
         end
     end
-    if target_table then
-        for i = 1, #links do
-            table.insert(target_table, links[i])
-        end
-    end
     return links
 end
 
@@ -422,7 +402,6 @@ function module.get_discrete_value_links(args)
     local sequence = args.seq or 0
     local fixed_sequence = args.fixed_seq or false
     local max_per_value = args.max_per_value or 9999
-    local target_table = args.target
     local include_standard_suffix = args.include_standard_suffix
     local sort = args.sort or function(a, b)
         return dates.date_string_to_int(a.result_date) > dates.date_string_to_int(b.result_date)
@@ -463,11 +442,6 @@ function module.get_discrete_value_links(args)
         table.insert(links, link)
         if not fixed_sequence then
             sequence = sequence + 1
-        end
-    end
-    if target_table then
-        for i = 1, #links do
-            table.insert(target_table, links[i])
         end
     end
     return links

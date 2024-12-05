@@ -296,13 +296,11 @@ if not existing_alert or not existing_alert.validated then
         dvNames = blood_co2_dv_name,
         predicate = blood_co21_predicate,
         text = "Blood CO2",
-        target = blood_co2_links
     }
     local high_serum_lactate_level_dv_links = links.get_discrete_value_links {
         dvNames = serum_lactate_dv_name,
         predicate = serum_lactate1_predicate,
         text = "Serum Lactate",
-        target = lactate_links
     }
 
     -- ABG Subheading
@@ -549,41 +547,49 @@ if not existing_alert or not existing_alert.validated then
                 local altered_abs_link = links.get_abstraction_links { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
                 table.insert(clinical_evidence_links, altered_abs_link)
             end
-            links.get_abstraction_link { code = "AZOTEMIA", text = "Azotemia", target = clinical_evidence_links }
-            links.get_code_link { code = "R11.14", text = "Bilious Vomiting", target = clinical_evidence_links }
-            links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", target = clinical_evidence_links }
-            links.get_code_link { code = "R41.0", text = "Disorientation", target = clinical_evidence_links }
-            links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "Fi02", target = clinical_evidence_links }
-            links.get_code_link { code = "R53.83", text = "Fatigue", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "OPIOID_OVERDOSE", text = "Opioid Overdose", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath", target = clinical_evidence_links }
-            links.get_code_link { code = "R11.10", text = "Vomiting", target = clinical_evidence_links }
-            links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", target = clinical_evidence_links }
-            links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "WEAKNESS", text = "Weakness", target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "AZOTEMIA", text = "Azotemia" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.14", text = "Bilious Vomiting" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.15", text = "Cyclical Vomiting" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R41.0", text = "Disorientation" })
+            table.insert(clinical_evidence_links, links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "Fi02" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "OPIOID_OVERDOSE", text = "Opioid Overdose" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.10", text = "Vomiting" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Weakness" })
 
             -- Labs
-            links.get_discrete_value_link { dvNames = anion_gap_dv_name, predicate = anion_gap1_predicate, text = "Anion Gap", target = labs_links }
-            if not links.get_discrete_value_link { dvNames = blood_glucose_dv_name, predicate = blood_glucose1_predicate, text = "Blood Glucose", target = labs_links } then
-                links.get_discrete_value_link { dvNames = blood_glucose_poc_dv_name, predicate = blood_glucose_poc1_predicate, text = "Blood Glucose POC", target = labs_links }
+            table.insert(labs_links, links.get_discrete_value_link { dvNames = anion_gap_dv_name, predicate = anion_gap1_predicate, text = "Anion Gap" })
+
+            local blood_glucose_dv_link = links.get_discrete_value_link { dvNames = blood_glucose_dv_name, predicate = blood_glucose1_predicate, text = "Blood Glucose" }
+
+            if blood_glucose_dv_link then
+                table.insert(labs_links, blood_glucose_dv_link)
+            else
+                table.insert(labs_links, links.get_discrete_value_link { dvNames = blood_glucose_poc_dv_name, predicate = blood_glucose_poc1_predicate, text = "Blood Glucose POC" })
             end
-            links.get_abstraction_link { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine", target = labs_links }
-            links.get_discrete_value_link { dvNames = serum_blood_urea_nitrogen_dv_name, predicate = serum_blood_urea_nitrogen1_predicate, text = "Serum Blood Urea Nitrogen", target = labs_links }
-            links.get_discrete_value_link { dvNames = serum_chloride_dv_name, predicate = serum_chloride1_predicate, text = "Serum Chloride", target = labs_links }
-            links.get_discrete_value_link { dvNames = serum_creatinine_dv_name, predicate = serum_creatinine1_predicate, text = "Serum Creatinine", target = labs_links }
-            links.get_discrete_value_link { dvNames = serum_ketone_dv_name, predicate = serum_ketone1_predicate, text = "Serum Ketones", target = labs_links }
-            links.get_discrete_value_link {
-                dvNames = urine_ketones_dv_name,
-                predicate = function(dv)
-                    return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
-                end,
-                text = "Urine Ketones",
-                target = labs_links
-            }
+
+            table.insert(labs_links, links.get_abstraction_link { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine" })
+            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_blood_urea_nitrogen_dv_name, predicate = serum_blood_urea_nitrogen1_predicate, text = "Serum Blood Urea Nitrogen" })
+            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_chloride_dv_name, predicate = serum_chloride1_predicate, text = "Serum Chloride" })
+            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_creatinine_dv_name, predicate = serum_creatinine1_predicate, text = "Serum Creatinine" })
+            table.insert(labs_links, links.get_discrete_value_link { dvNames = serum_ketone_dv_name, predicate = serum_ketone1_predicate, text = "Serum Ketones" })
+            table.insert(
+                labs_links,
+                links.get_discrete_value_link {
+                    dvNames = urine_ketones_dv_name,
+                    predicate = function(dv)
+                        return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
+                    end,
+                    text = "Urine Ketones"
+                }
+            )
 
             -- Lactate, ph, and blood links
-            links.get_discrete_value_link { dvNames = serum_lactate_dv_name, predicate = serum_lactate2_predicate, text = "Serum Lactate", target = lactate_links }
+            table.insert(lactate_links, links.get_discrete_value_link { dvNames = serum_lactate_dv_name, predicate = serum_lactate2_predicate, text = "Serum Lactate" })
             for _, entry in ipairs(high_serum_lactate_level_dv_links or {}) do
                 table.insert(lactate_links, entry)
             end
@@ -593,45 +599,54 @@ if not existing_alert or not existing_alert.validated then
             for _, entry in ipairs(ph_dv_links or {}) do
                 table.insert(ph_links, entry)
             end
-            links.get_discrete_value_link { dvNames = blood_co2_dv_name, predicate = blood_co22_predicate, text = "Blood CO2", target = blood_co2_links }
+            table.insert(blood_co2_links, links.get_discrete_value_link { dvNames = blood_co2_dv_name, predicate = blood_co22_predicate, text = "Blood CO2" })
             for _, entry in ipairs(blood_co2_dv_links or {}) do
                 table.insert(blood_co2_links, entry)
             end
 
             -- Vitals
-            links.get_discrete_value_link { dvNames = glasgow_coma_scale_dv_name, predicate = glasgow_coma_scale1_predicate, text = "Glasgow Coma Scale", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = heart_rate_dv_name, predicate = heart_rate1_predicate, text = "Heart Rate", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = map_dv_name, predicate = map1_predicate, text = "Mean Arterial Pressure", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate1_predicate, text = "Respiratory Rate", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate2_predicate, text = "Respiratory Rate", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = spo2_dv_name, predicate = spo21_predicate, text = "SpO2", target = vital_signs_intake_links }
-            links.get_discrete_value_link { dvNames = sbp_dv_name, predicate = sbp1_predicate, text = "Systolic Blood Pressure", target = vital_signs_intake_links }
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = glasgow_coma_scale_dv_name, predicate = glasgow_coma_scale1_predicate, text = "Glasgow Coma Scale" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = heart_rate_dv_name, predicate = heart_rate1_predicate, text = "Heart Rate" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = map_dv_name, predicate = map1_predicate, text = "Mean Arterial Pressure" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate1_predicate, text = "Respiratory Rate" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate2_predicate, text = "Respiratory Rate" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = spo2_dv_name, predicate = spo21_predicate, text = "SpO2" })
+            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = sbp_dv_name, predicate = sbp1_predicate, text = "Systolic Blood Pressure" })
 
             -- ABG
-            links.get_discrete_value_link { dvNames = base_excess_dv_name, predicate = base_excess1_predicate, text = "Base Excess", target = abg_links }
-            links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "FiO2", target = abg_links }
-            links.get_discrete_value_link { dvNames = po2_dv_name, predicate = po21_predicate, text = "pO2", target = abg_links }
+            table.insert(abg_links, links.get_discrete_value_link { dvNames = base_excess_dv_name, predicate = base_excess1_predicate, text = "Base Excess" })
+            table.insert(abg_links, links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "FiO2" })
+            table.insert(abg_links, links.get_discrete_value_link { dvNames = po2_dv_name, predicate = po21_predicate, text = "pO2" })
             if paco2_dv_links and #paco2_dv_links > 0 then
                 for _, entry in ipairs(paco2_dv_links or {}) do
                     table.insert(pa_co2_links, entry)
                 end
             else
-                links.get_discrete_value_link { dvNames = pco2_dv_name, predicate = pco22_predicate, text = "paC02", target = pa_co2_links }
+                table.insert(pa_co2_links, links.get_discrete_value_link { dvNames = pco2_dv_name, predicate = pco22_predicate, text = "paC02" })
             end
             if high_serum_bicarbonate_dv_links and #high_serum_bicarbonate_dv_links > 0 then
                 for _, entry in ipairs(high_serum_bicarbonate_dv_links or {}) do
                     table.insert(abg_hco3_links, entry)
                 end
             else
-                links.get_discrete_value_link { dvNames = serum_bicarbonate_dv_name, predicate = serum_bicarbonate3_predicate, text = "HC03", target = abg_hco3_links }
+                table.insert(abg_hco3_links, links.get_discrete_value_link { dvNames = serum_bicarbonate_dv_name, predicate = serum_bicarbonate3_predicate, text = "HC03" })
             end
 
             -- ABG
-            links.get_discrete_value_links { dvNames = pao2_dv_name, predicate = pao21_predicate, text = "Pa02", target = pao2_links, maxPerValue = 10 }
+            table.insert(
+                pao2_links,
+                links.get_discrete_value_links { dvNames = pao2_dv_name, predicate = pao21_predicate, text = "Pa02", maxPerValue = 10 }
+            )
 
             -- VBG
-            links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco31_predicate, text = "HC03", target = vbh_co3_links, maxPerValue = 10 }
-            links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco32_predicate, text = "HC03", target = vbh_co3_links, maxPerValue = 10 }
+            table.insert(
+                vbh_co3_links,
+                links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco31_predicate, text = "HC03", maxPerValue = 10 }
+            )
+            table.insert(
+                vbh_co3_links,
+                links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco32_predicate, text = "HC03", maxPerValue = 10 }
+            )
             for _, entry in ipairs(venous_co2_dv_links or {}) do
                 table.insert(venous_co2_links, entry)
             end

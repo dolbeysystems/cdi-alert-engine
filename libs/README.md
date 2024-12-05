@@ -38,52 +38,60 @@ Look at the suffix of link_text, it will be one of these two:
 If it's the first one (without the ABSTRACTVALUE):
 
 ```lua
-GetAbstractionLink {
-    code = abstraction_name,
-    text = link_text,           -- ommit the suffix when passing this
-    seq = sequence,
-    target = category,
-    predicate = calculation
-}
+table.insert(
+    category, 
+    GetAbstractionLink {
+        code = abstraction_name,
+        text = link_text,           -- ommit the suffix when passing this
+        seq = sequence,
+        predicate = calculation
+    }
+)
 ```
 
 If it's the second one (with the ABSTRACTVALUE) 
 
 ```lua
-GetAbstractionValueLink {
-    code = abstraction_name,
-    text = link_text,           -- ommit the suffix when passing this
-    seq = sequence,
-    target = category,
-    predicate = calculation
-}
+table.insert(
+    category, 
+    GetAbstractionValueLink {
+        code = abstraction_name,
+        text = link_text,           -- ommit the suffix when passing this
+        seq = sequence,
+        predicate = calculation
+    }
+)
 ```
 
 #### dvValue(dv_name, link_text, calculation, sequence, category, abstract)
 
 ```lua
-GetDiscreteValueLink {
-    discreteValueName = dv_name,
-    text = link_text,           -- ommit the suffix ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
-    seq = sequence,
-    target = category,
-    predicate = calculation
-}
+table.insert(
+    category, 
+    GetDiscreteValueLink {
+        discreteValueName = dv_name,
+        text = link_text,           -- ommit the suffix ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+        seq = sequence,
+        predicate = calculation
+    }
+)
 ```
 
 #### dvValueMulti(dvDic, DV1, linkText, value, sign, sequence, category, abstract, needed)
 
 ```lua
-GetDiscreteValueLinks {
-    discreteValueNames = DV1,
-    text = linkText,           -- ommit the suffix ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
-    seq = sequence,
-    target = category,
-    predicate = function(dv)
-        GetDvValueNumber(dv) > value  -- if sign is gt. adjust operator according to sign function
-    end
-    maxPerValue = needed
-}
+table.insert(
+    category, 
+    GetDiscreteValueLinks {
+        discreteValueNames = DV1,
+        text = linkText,           -- ommit the suffix ": [DISCRETEVALUE] (Result Date: [RESULTDATE])"
+        seq = sequence,
+        predicate = function(dv)
+            GetDvValueNumber(dv) > value  -- if sign is gt. adjust operator according to sign function
+        end
+        maxPerValue = needed
+    }
+)
 ```
 
 #### compareValuesMulti(dvDic, DV1, value, value1, linkText, sign, sign1, sequence=0, category=None, abstract=False, needed=2)
@@ -93,23 +101,27 @@ GetDiscreteValueLinks {
 #### codeValue(code_name, link_text, sequence, category, abstract)
 
 ```lua
-GetCodeLink {
-    code = code_name,
-    text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    seq = sequence,
-    target = category
-}
+table.insert(
+    category, 
+    GetCodeLink {
+        code = code_name,
+        text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+        seq = sequence,
+    }
+)
 ```
 
 #### multiCodeValue(code_list, link_text, sequence, category, abstract)
 
 ```lua
-GetCodeLink {
-    codes = code_list,
-    text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    seq = sequence,
-    target = category
-}
+table.insert(
+    category, 
+    GetCodeLink {
+        codes = code_list,
+        text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+        seq = sequence,
+    }
+)
 ```
 
 (The "multi" in this case only refers to it looking for one of many codes,
@@ -118,23 +130,27 @@ not for it making multiple links)
 #### mprefixCodeValue(prefix, link_text, sequence, category, abstract)
 
 ```lua
-GetCodePrefixLink {
-    prefix = prefix,
-    text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-    seq = sequence,
-    target = category
-}
+table.insert(
+    category, 
+    GetCodePrefixLink {
+        prefix = prefix,
+        text = link_text,           -- ommit the suffix ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+        seq = sequence,
+    }
+)
 ```
 
 #### medValue(med_name, link_text, sequence, category, abstract)
 
 ```lua
-GetMedicationLink {
-    cat = med_name,
-    text = link_text,           -- ommit the suffix ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
-    seq = sequence,
-    target = category
-}
+table.insert(
+    category, 
+    GetMedicationLink {
+        cat = med_name,
+        text = link_text,           -- ommit the suffix ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+        seq = sequence,
+    }
+)
 ```
 
 #### updateLinkText(value, replacement_text)
@@ -148,10 +164,13 @@ value.link_text = replacement_text ... value.link_text
 ### documentLink(DocumentType, LinkText, sequence, category, abstract)
 
 ```lua
-GetDocumentLink {
-    documentType = DocumentType,
-    text = linkText,            -- ommit the suffix " ([DOCUMENTTYPE], [DOCUMENTDATE])"
-}
+table.insert(
+    category, 
+    GetDocumentLink {
+        documentType = DocumentType,
+        text = linkText,            -- ommit the suffix " ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    }
+)
 ```
 
 ### Notes For Script Specific Functions

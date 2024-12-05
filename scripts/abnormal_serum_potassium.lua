@@ -308,31 +308,30 @@ if not existing_alert or not existing_alert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            links.get_code_link { code = "E27.1", text = "Addison's Disease", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.0", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.1", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.2", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.3", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.4", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.8", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_code_link { code = "E24.9", text = "Cushing's Syndrome", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes", target = clinical_evidence_links }
-            links.get_code_link { code = "R53.83", text = "Fatigue", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "HEART_PALPITATIONS", text = "Heart Palpitations", target = clinical_evidence_links }
-            links.get_code_links {
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E27.1", text = "Addison's Disease" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.0", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.1", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.2", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.3", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.4", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.8", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "E24.9", text = "Cushing's Syndrome" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "HYPERKALEMIA_EKG_CHANGES", text = "EKG Changes" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "HYPOKALEMIA_EKG_CHANGES", text = "EKG Changes" })
+            table.insert(clinical_evidence_links, links.get_code_link { code = "R53.83", text = "Fatigue" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "HEART_PALPITATIONS", text = "Heart Palpitations" })
+            table.insert(clinical_evidence_links, links.get_code_links {
                 codes = {
                     "N17.0", "N17.1", "N17.2", "N18.30", "N18.31", "N18.32",
                     "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4",
                     "N18.5", "N18.6"
                 },
                 text = "Kidney Failure",
-                target = clinical_evidence_links
-            }
-            links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", target = clinical_evidence_links }
-            links.get_abstraction_link { code = "VOMITING", text = "Vomiting", target = clinical_evidence_links }
+            })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness" })
+            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "VOMITING", text = "Vomiting" })
 
             table.insert(treatment_and_monitoring_links, dextrose_medication_link)
             table.insert(treatment_and_monitoring_links, hemodialysis_codes_links)

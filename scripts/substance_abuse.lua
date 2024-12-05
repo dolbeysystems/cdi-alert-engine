@@ -233,67 +233,72 @@ if not existing_alert or not existing_alert.validated then
 
     if Result.passed then
         --------------------------------------------------------------------------------
-        --- Additional Link Collection (Get___Links with target table)
+        --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            links.get_code_link {
-                codes = {
-                    "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
-                    "F10.259", "F10.26", "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"
-                },
-                text = "Alcohol Dependence",
-                sequence = 1,
-                target = clinical_evidence_links,
-            }
-            local r4182_code_link = links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 2, target = clinical_evidence_links }
-            local altered_abs = links.get_abstraction_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 3, target = clinical_evidence_links }
+            table.insert(
+                clinical_evidence_links,
+                links.get_code_link {
+                    codes = {
+                        "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
+                        "F10.259", "F10.26", "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"
+                    },
+                    text = "Alcohol Dependence",
+                    sequence = 1,
+                }
+            )
+            local r4182_code_link = links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 2 }
+            local altered_abs = links.get_abstraction_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 3 }
             if r4182_code_link then
                 altered_abs.hidden = true
             end
-            links.get_code_links { code = "R44.8", text = "Auditory Hallucinations", seq = 4, target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, r4182_code_link)
+            table.insert(clinical_evidence_links, altered_abs)
+
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R44.8", text = "Auditory Hallucinations", seq = 4 })
 
             table.insert(clinical_evidence_links, ciwa_score_dv_link)
             table.insert(clinical_evidence_links, ciwa_score_abstraction_link)
             table.insert(clinical_evidence_links, ciwa_protocol_abstraction_link)
 
-            links.get_abstraction_links { code = "COMBATIVE", text = "Combative", seq = 8, target = clinical_evidence_links }
-            links.get_abstraction_links { code = "DELIRIUM", text = "Delirium", seq = 9, target = clinical_evidence_links }
-            links.get_code_links { code = "R44.3", text = "Hallucinations", seq = 10, target = clinical_evidence_links }
-            links.get_code_links { code = "R51.9", text = "Headache", seq = 11, target = clinical_evidence_links }
-            links.get_code_links { code = "R45.4", text = "Irritability and Anger", seq = 12, target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, links.get_abstraction_links { code = "COMBATIVE", text = "Combative", seq = 8 })
+            table.insert(clinical_evidence_links, links.get_abstraction_links { code = "DELIRIUM", text = "Delirium", seq = 9 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R44.3", text = "Hallucinations", seq = 10 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R51.9", text = "Headache", seq = 11 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R45.4", text = "Irritability and Anger", seq = 12 })
 
             table.insert(clinical_evidence_links, methadone_clinic_abstraction_link)
 
-            links.get_code_links { code = "R11.0", text = "Nausea", seq = 14, target = clinical_evidence_links }
-            links.get_code_links { code = "R45.0", text = "Nervousness", seq = 15, target = clinical_evidence_links }
-            links.get_abstraction_links { code = "ONE_TO_ONE_SUPERVISION", text = "One to One Supervision", seq = 16, target = clinical_evidence_links }
-            links.get_code_links { code = "R11.12", text = "Projectile Vomiting", seq = 17, target = clinical_evidence_links }
-            links.get_code_links { code = "R45.1", text = "Restlessness and Agitation", seq = 18, target = clinical_evidence_links }
-            links.get_code_links { code = "R61", text = "Sweating", seq = 19, target = clinical_evidence_links }
-            links.get_code_links { code = "R25.1", text = "Tremor", seq = 20, target = clinical_evidence_links }
-            links.get_code_links { code = "R44.1", text = "Visual Hallucinations", seq = 21, target = clinical_evidence_links }
-            links.get_code_links { code = "R11.10", text = "Vomiting", seq = 22, target = clinical_evidence_links }
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R11.0", text = "Nausea", seq = 14 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R45.0", text = "Nervousness", seq = 15 })
+            table.insert(clinical_evidence_links, links.get_abstraction_links { code = "ONE_TO_ONE_SUPERVISION", text = "One to One Supervision", seq = 16 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R11.12", text = "Projectile Vomiting", seq = 17 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R45.1", text = "Restlessness and Agitation", seq = 18 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R61", text = "Sweating", seq = 19 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R25.1", text = "Tremor", seq = 20 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R44.1", text = "Visual Hallucinations", seq = 21 })
+            table.insert(clinical_evidence_links, links.get_code_links { code = "R11.10", text = "Vomiting", seq = 22 })
 
-            links.get_medication_links { cat = benzodiazepine_medication_name, text = "Benzodiazepine", seq = 1, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
-            links.get_abstraction_links { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2, target = treatment_and_monitoring_links }
-            links.get_medication_links { cat = dexmedetomidine_medication_name, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
-            links.get_abstraction_links { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4, target = treatment_and_monitoring_links }
-            links.get_medication_links { cat = lithium_medication_name, text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
-            links.get_abstraction_links { code = "LITHIUM", text = "Lithium", seq = 6, target = treatment_and_monitoring_links }
+            table.insert(treatment_and_monitoring_links, links.get_medication_links { cat = benzodiazepine_medication_name, text = "Benzodiazepine", seq = 1, useCdiAlertCategoryField = true, onlyOne = true })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_links { code = "BENZODIAZEPINE", text = "Benzodiazepine", seq = 2 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_links { cat = dexmedetomidine_medication_name, text = "Dexmedetomidine", seq = 3, useCdiAlertCategoryField = true, onlyOne = true })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_links { code = "DEXMEDETOMIDINE", text = "Dexmedetomidine", seq = 4 })
+            table.insert(treatment_and_monitoring_links, links.get_medication_links { cat = lithium_medication_name, text = "Lithium", seq = 5, useCdiAlertCategoryField = true, onlyOne = true })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_links { code = "LITHIUM", text = "Lithium", seq = 6 })
             for _, link in ipairs(methadone_medication_links) do
                 table.insert(treatment_and_monitoring_links, link)
             end
 
             table.insert(treatment_and_monitoring_links, methadone_abstraction_link)
 
-            links.get_medication_links { cat = propofol_medication_name, text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true, target = treatment_and_monitoring_links }
-            links.get_abstraction_links { code = "PROPOFOL", text = "Propofol", seq = 11, target = treatment_and_monitoring_links }
+            table.insert(treatment_and_monitoring_links, links.get_medication_links { cat = propofol_medication_name, text = "Propofol", seq = 10, useCdiAlertCategoryField = true, onlyOne = true })
+            table.insert(treatment_and_monitoring_links, links.get_abstraction_links { code = "PROPOFOL", text = "Propofol", seq = 11 })
 
             table.insert(treatment_and_monitoring_links, suboxone_medication_link)
             table.insert(treatment_and_monitoring_links, suboxone_abstraction_link)
 
             for i, doc_type in ipairs(pain_document_types) do
-                links.get_document_links { documentType = doc_type, text = doc_type, seq = i, target = pain_team_consult_links }
+                table.insert(pain_team_consult_links, links.get_document_links { documentType = doc_type, text = doc_type, seq = i })
             end
         end
 
