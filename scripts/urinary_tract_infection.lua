@@ -425,6 +425,34 @@ if not existing_alert or not existing_alert.validated then
         --         str(result.Validated) + "; Links: Documented Dx- " + str(dcLinks) + ", Abs- " + str(absLinks) + ", labs- " + str(labsLinks) + ", vitals- " + str(vitalsLinks) + ", meds- " + str(medsLinks) + ", Uti- " + str(utiLinks) + ", Urine- "
         --         + str(urineLinks) + "; Acct: " + str(account._id), scriptName, scriptInstance, "Debug")
         --     result.Passed = True
+        if #urine_analysis_links > 0 then
+            urine_analysis_header.links = urine_analysis_links
+            table.insert(laboratory_studies_links, urine_analysis_header)
+        end
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
+        end
+        if #vital_signs_links > 0 then
+            vital_signs_header.links = vital_signs_links
+            table.insert(result_links, vital_signs_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #urinary_devices_links > 0 then
+            urinary_devices_header.links = urinary_devices_links
+            table.insert(result_links, urinary_devices_header)
+        end
         if existing_alert then
             result_links = links.merge_links(existing_alert.links, result_links)
         end
