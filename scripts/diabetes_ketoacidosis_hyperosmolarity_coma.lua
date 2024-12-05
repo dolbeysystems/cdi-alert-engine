@@ -8,6 +8,7 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
+---@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
