@@ -1,3 +1,4 @@
+---@diagnostic disable: lowercase-global, codestyle-check
 polling_seconds = 5
 script_engine_workflow_rest_url = "http://dockermain:5195/api/ProcessWorkflow/"
 

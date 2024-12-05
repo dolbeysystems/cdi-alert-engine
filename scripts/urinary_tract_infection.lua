@@ -173,9 +173,9 @@ if not existing_alert or not existing_alert.validated then
     ---@return boolean
     local function add_links(...)
         local had_non_nil = false
-        for _, links in pairs { ... } do
-            if links ~= nil then
-                for _, link in ipairs(links) do
+        for _, lnks in pairs { ... } do
+            if lnks ~= nil then
+                for _, link in ipairs(lnks) do
                     table.insert(documented_dx_links, link)
                 end
                 had_non_nil = true

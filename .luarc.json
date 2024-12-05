@@ -18,5 +18,10 @@
     },
     "diagnostics.neededFileStatus": {
         "spell-check": "None!"
+    },
+    "workspace": {
+        "ignoreDir": [
+            "old-scripts"
+        ]
     }
 }
