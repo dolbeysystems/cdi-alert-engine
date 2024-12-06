@@ -236,7 +236,8 @@ if not existing_alert or not existing_alert.validated then
     ---@return boolean
     local function add_links(...)
         local had_non_nil = false
-        for _, lnks in ipairs { ... } do
+        ---@diagnostic disable-next-line: no-unknown
+        for _, lnks in pairs { ... } do
             if lnks ~= nil then
                 for _, link in ipairs(lnks) do
                     table.insert(documented_dx_links, link)

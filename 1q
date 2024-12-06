@@ -1,0 +1,51 @@
+  ~/projects/cdi-alert-engine
+    ca
+    doc
+    examples
+    libs                                                                                                                                                                                                           
+    old-scripts
+    scripts
+   │  python
+   │  abnormal_serum_potassium.lua                                                                                                                                                                             [+] W
+   │  abnormal_serum_sodium.lua
+   │  acidosis.lua                                                                                                                                                                                                 H
+   │  acute_mi_troponemia.lua                                                                                                                                                                                      H
+   │  anemia.lua                                                                                                                                                                                                   H
+   │  atrial_fibrillation.lua                                                                                                                                                                                      H
+   │  bleeding.lua
+   │  cerebral_edema_and_brain_compression.lua
+   │  coagulopathy.lua                                                                                                                                                                                             H
+   │  copd.lua                                                                                                                                                                                                     H
+   │  diabetes_ketoacidosis_hyperosmolarity_coma.lua                                                                                                                                                               H
+   │  encephalopathy.lua                                                                                                                                                                                           H
+   │  functional_quadriplegia.lua                                                                                                                                                                                  H
+   │  heart_failure.lua                                                                                                                                                                                            H
+   │  hypertensive_crisis.lua                                                                                                                                                                                      H
+   │  immunocompromised.lua                                                                                                                                                                                        H
+   │  kidney_failure.lua                                                                                                                                                                                           H
+   │  malnutrition.lua                                                                                                                                                                                             H
+   │  morbid_obesity.lua                                                                                                                                                                                           H
+   │  nicotine_dependence_with_withdrawal.lua                                                                                                                                                                      H
+   │  pancytopenia.lua                                                                                                                                                                                             H
+   │  pneumonia.lua                                                                                                                                                                                                H
+   │  pressure_ulcer.lua                                                                                                                                                                                           H
+   │  pulmonary_edema.lua                                                                                                                                                                                          H
+   │  pulmonary_embolism.lua                                                                                                                                                                                       H
+   │  respiratory_failure.lua                                                                                                                                                                                      H
+   │  rhabdomyolysis.lua                                                                                                                                                                                           H
+   │  sepsis_sirs.lua                                                                                                                                                                                              H
+   │  severe_sepsis.lua                                                                                                                                                                                            H
+   │  shock.lua                                                                                                                                                                                                    H
+   │  stroke.lua
+   │  substance_abuse.lua                                                                                                                                                                                          H
+   └  urinary_tract_infection.lua                                                                                                                                                                                  H
+    src
+    wix
+    Cargo.lock
+    Cargo.toml
+   󰡨 Dockerfile
+   * Jenkinsfile
+    README.md
+    config.lua
+   * license.rtf
+   (5 hidden items)
