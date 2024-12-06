@@ -18,6 +18,7 @@ local links = require("libs.common.basic_links")
 local codes = require("libs.common.codes")
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")
+local headers = require("libs.common.headers")
 
 
 
@@ -112,146 +113,46 @@ if not existing_alert or not existing_alert.validated then
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
+    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 2)
+    local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake", 3)
+    local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 4)
+    local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 5)
+    local abg_header = headers.make_header_builder("ABG", 6)
+    local vbg_header = headers.make_header_builder("VBG", 7)
+    local blood_co2_header = headers.make_header_builder("Blood CO2", 8)
+    local ph_header = headers.make_header_builder("PH", 9)
+    local lactate_header = headers.make_header_builder("Lactate", 10)
+    local venous_co2_header = headers.make_header_builder("pCO2", 11)
+    local vbh_co3_header = headers.make_header_builder("HCO3", 12)
+    local pao2_header = headers.make_header_builder("paO2", 13)
+    local abg_hco3_header = headers.make_header_builder("HCO3", 14)
+    local pco2_header = headers.make_header_builder("PCO2", 15)
+    local pa_co2_header = headers.make_header_builder("paCO2", 16)
 
-    local documented_dx_header = links.make_header_link("Documented Dx")
-    local documented_dx_links = {}
-    local labs_header = links.make_header_link("Laboratory Studies")
-    local labs_links = {}
-    local vital_signs_intake_header = links.make_header_link("Vital Signs/Intake")
-    local vital_signs_intake_links = {}
-    local clinical_evidence_header = links.make_header_link("Clinical Evidence")
-    local clinical_evidence_links = {}
-    local treatment_and_monitoring_header = links.make_header_link("Treatment and Monitoring")
-    local treatment_and_monitoring_links = {}
-    local abg_header = links.make_header_link("ABG")
-    local abg_links = {}
-    local vbg_header = links.make_header_link("VBG")
-    local vbg_links = {}
-    local blood_co2_header = links.make_header_link("Blood CO2")
-    local blood_co2_links = {}
-    local ph_header = links.make_header_link("PH")
-    local ph_links = {}
-    local lactate_header = links.make_header_link("Lactate")
-    local lactate_links = {}
-    local venous_co2_header = links.make_header_link("pCO2")
-    local venous_co2_links = {}
-    local vbh_co3_header = links.make_header_link("HCO3")
-    local vbh_co3_links = {}
-    local pao2_header = links.make_header_link("paO2")
-    local pao2_links = {}
-    local abg_hco3_header = links.make_header_link("HCO3")
-    local abg_hco3_links = {}
-    local pco2_header = links.make_header_link("PCO2")
-    local pco2_links = {}
-    local pa_co2_header = links.make_header_link("paCO2")
-    local pa_co2_links = {}
-
-    --- @param link CdiAlertLink?
-    local function add_documented_dx_link(link)
-        table.insert(documented_dx_links, link)
-    end
-    --- @param link CdiAlertLink?
-    local function add_clinical_evidence_link(link)
-        table.insert(clinical_evidence_links, link)
-    end
-    --- @param code string
-    --- @param text string
-    local function add_clinical_evidence_code(code, text)
-        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
-    end
-    --- @param prefix string
-    --- @param text string
-    local function add_clinical_evidence_code_prefix(prefix, text)
-        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
-    end
-    --- @param code_set string[]
-    --- @param text string
-    local function add_clinical_evidence_any_code(code_set, text)
-        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
-    end
-    --- @param code string
-    --- @param text string
-    local function add_clinical_evidence_abstraction(code, text)
-        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
-    end
-    --- @param link CdiAlertLink?
-    local function add_treatment_and_monitoring_link(link)
-        table.insert(treatment_and_monitoring_links, link)
-    end
-    --- @param lnks CdiAlertLink[]
-    local function add_treatment_and_monitoring_links(lnks)
-        for _, lnk in ipairs(lnks) do
-            table.insert(treatment_and_monitoring_links, lnk)
-        end
-    end
     local function compile_links()
-        if #pa_co2_links > 0 then
-            pa_co2_header.links = pa_co2_links
-            table.insert(abg_links, pa_co2_header)
-        end
-        if #pco2_links > 0 then
-            pco2_header.links = pco2_links
-            table.insert(abg_links, pco2_header)
-        end
-        if #pao2_links > 0 then
-            pao2_header.links = pao2_links
-            table.insert(abg_links, pao2_header)
-        end
-        if #abg_hco3_header > 0 then
-            abg_hco3_header.links = abg_hco3_links
-            table.insert(abg_links, abg_hco3_header)
-        end
-        if #abg_links > 0 then
-            abg_header.links = abg_links
-            table.insert(labs_links, abg_header)
-        end
+        table.insert(result_links, documented_dx_header:build(true))
+        table.insert(result_links, clinical_evidence_header:build(true))
 
-        if #vbh_co3_links > 0 then
-            vbh_co3_header.links = vbh_co3_links
-            table.insert(vbg_links, vbh_co3_header)
-        end
-        if #venous_co2_links > 0 then
-            venous_co2_header.links = venous_co2_links
-            table.insert(vbg_links, venous_co2_header)
-        end
-        if #vbg_links > 0 then
-            vbg_header.links = vbg_links
-            table.insert(labs_links, vbg_header)
-        end
+        abg_header:add_link(pa_co2_header:build(true))
+        abg_header:add_link(pco2_header:build(true))
+        abg_header:add_link(pao2_header:build(true))
+        abg_header:add_link(abg_hco3_header:build(true))
 
-        if #blood_co2_links > 0 then
-            blood_co2_header.links = blood_co2_links
-            table.insert(labs_links, blood_co2_header)
-        end
-        if #ph_links > 0 then
-            ph_header.links = ph_links
-            table.insert(labs_links, ph_header)
-        end
-        if #lactate_links > 0 then
-            lactate_header.links = lactate_links
-            table.insert(labs_links, lactate_header)
-        end
+        vbg_header:add_link(venous_co2_header:build(true))
+        vbg_header:add_link(vbh_co3_header:build(true))
 
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #labs_links > 0 then
-            labs_header.links = labs_links
-            table.insert(result_links, labs_header)
-        end
-        if #vital_signs_intake_links > 0 then
-            vital_signs_intake_header.links = vital_signs_intake_links
-            table.insert(result_links, vital_signs_intake_header)
-        end
+        laboratory_studies_header:add_link(abg_header:build(true))
+        laboratory_studies_header:add_link(vbg_header:build(true))
+        laboratory_studies_header:add_link(blood_co2_header:build(true))
+        laboratory_studies_header:add_link(ph_header:build(true))
+        laboratory_studies_header:add_link(lactate_header:build(true))
 
-        treatment_and_monitoring_header.links = treatment_and_monitoring_links
-        table.insert(result_links, treatment_and_monitoring_header)
+        table.insert(result_links, laboratory_studies_header:build(true))
+        table.insert(result_links, vital_signs_intake_header:build(true))
+        table.insert(result_links, treatment_and_monitoring_header:build(true))
 
+        Result.links = result_links
         if existing_alert then
             result_links = links.merge_links(existing_alert.links, result_links)
         end
@@ -442,19 +343,19 @@ if not existing_alert or not existing_alert.validated then
                 text = "Autoresolved Specified Code - " .. alert_code_dictionary[code]
             }
             if code_link then
-                add_documented_dx_link(code_link)
+                documented_dx_header:add_link(code_link)
                 break
             end
         end
 
         if j9602_code_link then
             j9602_code_link.link_text = "Autoresolved Evidence - " .. j9602_code_link.link_text
-            add_documented_dx_link(j9602_code_link)
+            documented_dx_header:add_link(j9602_code_link)
         end
         if acute_respiratory_acidosis_abstraction_link then
             acute_respiratory_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. acute_respiratory_acidosis_abstraction_link.link_text
-            add_documented_dx_link(acute_respiratory_acidosis_abstraction_link)
+            documented_dx_header:add_link(acute_respiratory_acidosis_abstraction_link)
         end
 
         Result.outcome = "AUTORESOLVED"
@@ -485,7 +386,7 @@ if not existing_alert or not existing_alert.validated then
                     text = "Autoresolved Specified Code - " .. alert_code_dictionary[code]
                 }
                 if code_link then
-                    add_documented_dx_link(code_link)
+                    documented_dx_header:add_link(code_link)
                     break
                 end
             end
@@ -493,37 +394,38 @@ if not existing_alert or not existing_alert.validated then
         if lactic_acidosis_abstraction_link then
             lactic_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. lactic_acidosis_abstraction_link.link_text
-            add_documented_dx_link(lactic_acidosis_abstraction_link)
+            --add_documented_dx_link(lactic_acidosis_abstraction_link)
+            documented_dx_header:add_link(lactic_acidosis_abstraction_link)
         end
         if chronic_repiratory_acidosis_abstraction_link then
             chronic_repiratory_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. chronic_repiratory_acidosis_abstraction_link.link_text
-            add_documented_dx_link(chronic_repiratory_acidosis_abstraction_link)
+            documented_dx_header:add_link(chronic_repiratory_acidosis_abstraction_link)
         end
         if meta_acidosis_abstraction_link then
             meta_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. meta_acidosis_abstraction_link.link_text
-            add_documented_dx_link(meta_acidosis_abstraction_link)
+            documented_dx_header:add_link(meta_acidosis_abstraction_link)
         end
         if e8720_code_link then
             e8720_code_link.link_text =
                 "Autoresolved Evidence - " .. e8720_code_link.link_text
-            add_documented_dx_link(e8720_code_link)
+            documented_dx_header:add_link(e8720_code_link)
         end
         if e8729_code_link then
             e8729_code_link.link_text =
                 "Autoresolved Evidence - " .. e8729_code_link.link_text
-            add_documented_dx_link(e8729_code_link)
+            documented_dx_header:add_link(e8729_code_link)
         end
         if acute_acidosis_abstraction_link then
             acute_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. acute_acidosis_abstraction_link.link_text
-            add_documented_dx_link(acute_acidosis_abstraction_link)
+            documented_dx_header:add_link(acute_acidosis_abstraction_link)
         end
         if chronic_acidosis_abstraction_link then
             chronic_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. chronic_acidosis_abstraction_link.link_text
-            add_documented_dx_link(chronic_acidosis_abstraction_link)
+            documented_dx_header:add_link(chronic_acidosis_abstraction_link)
         end
 
         Result.outcome = "AUTORESOLVED"
@@ -538,10 +440,11 @@ if not existing_alert or not existing_alert.validated then
         (#low_arterial_blood_ph_multi_dv_links > 0 or #ph_dv_links > 0)
     then
         -- Trigger alert for Possible Acute Respiratory Acidosis
-        add_documented_dx_link(e8720_code_link)
-        add_documented_dx_link(e8729_code_link)
-        add_documented_dx_link(acute_acidosis_abstraction_link)
-        add_documented_dx_link(chronic_acidosis_abstraction_link)
+        documented_dx_header:add_link(e8720_code_link)
+        documented_dx_header:add_link(e8729_code_link)
+        documented_dx_header:add_link(acute_acidosis_abstraction_link)
+        documented_dx_header:add_link(chronic_acidosis_abstraction_link)
+
 
         Result.subtitle = possible_acute_respiratory_acidosis_subtitle
         Result.passed = true
@@ -555,7 +458,7 @@ if not existing_alert or not existing_alert.validated then
         #ph_dv_links == 0
     then
         -- Trigger alert for Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence
-        add_documented_dx_link(acute_respiratory_acidosis_abstraction_link)
+        documented_dx_header:add_link(acute_respiratory_acidosis_abstraction_link)
         Result.subtitle = respiratory_acidosis_lacking_evidence_subtitle
         Result.passed = true
 
@@ -580,13 +483,13 @@ if not existing_alert or not existing_alert.validated then
         )
     then
         -- Trigger alert for Possible Acidosis
-        add_treatment_and_monitoring_link(fluid_bolus_abstraction_link)
-        add_treatment_and_monitoring_link(fluid_resuscitation_abstraction_link)
-        add_treatment_and_monitoring_links(sodium_bicarbonate_abstraction_links)
-        add_treatment_and_monitoring_links(sodium_bicarbonate_med_links)
-        add_treatment_and_monitoring_links(albumin_medication_links)
-        add_treatment_and_monitoring_links(fluid_bolus_medication_links)
-        add_treatment_and_monitoring_links(sodium_bicarbonate_med_links)
+        treatment_and_monitoring_header:add_link(fluid_bolus_abstraction_link)
+        treatment_and_monitoring_header:add_link(fluid_resuscitation_abstraction_link)
+        treatment_and_monitoring_header:add_link(sodium_bicarbonate_abstraction_links)
+        treatment_and_monitoring_header:add_link(sodium_bicarbonate_med_links)
+        treatment_and_monitoring_header:add_link(albumin_medication_links)
+        treatment_and_monitoring_header:add_link(fluid_bolus_medication_links)
+        treatment_and_monitoring_header:add_link(sodium_bicarbonate_med_links)
 
         Result.subtitle = possible_acidosis_subtitle
         Result.passed = true
@@ -602,7 +505,7 @@ if not existing_alert or not existing_alert.validated then
             -- Clinical Evidence
             local r4182_code_link = links.get_code_links { code = "R41.82", text = "Altered Level Of Consciousness" }
             if r4182_code_link then
-                table.insert(clinical_evidence_links, r4182_code_link)
+                clinical_evidence_header:add_link(r4182_code_link) 
                 local altered_abs_link =
                     links.get_abstraction_link {
                         code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
@@ -610,7 +513,7 @@ if not existing_alert or not existing_alert.validated then
                     }
                 if altered_abs_link then
                     altered_abs_link.hidden = true
-                    table.insert(clinical_evidence_links, altered_abs_link)
+                    clinical_evidence_header:add_link(altered_abs_link)
                 end
             else
                 local altered_abs_link =
@@ -618,45 +521,23 @@ if not existing_alert or not existing_alert.validated then
                         code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
                         text = "Altered Level Of Consciousness"
                     }
-                table.insert(clinical_evidence_links, altered_abs_link)
+                clinical_evidence_header:add_link(altered_abs_link)
             end
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "AZOTEMIA", text = "Azotemia" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.14", text = "Bilious Vomiting" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R11.15", text = "Cyclical Vomiting" })
-            table.insert(clinical_evidence_links, links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea" })
-            table.insert(clinical_evidence_links, links.get_code_link { code = "R41.0", text = "Disorientation" })
-            table.insert(
-                clinical_evidence_links,
-                links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "Fi02" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R53.83", text = "Fatigue" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "OPIOID_OVERDOSE", text = "Opioid Overdose" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.10", text = "Vomiting" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea" }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "WEAKNESS", text = "Weakness" }
-            )
+
+            clinical_evidence_header:add_abstraction_link("AZOTEMIA", "Azotemia")
+            clinical_evidence_header:add_code_link("R11.14", "Bilious Vomiting")
+            clinical_evidence_header:add_code_link("R11.15", "Cyclical Vomiting")
+            clinical_evidence_header:add_abstraction_link("DIARRHEA", "Diarrhea")
+            clinical_evidence_header:add_code_link("R41.0", "Disorientation")
+
+            clinical_evidence_header:add_discrete_value_one_of_link(fio2_dv_name, "Fi02", fio21_predicate)
+            clinical_evidence_header:add_code_link("R53.83", "Fatigue")
+            clinical_evidence_header:add_abstraction_link("OPIOID_OVERDOSE", "Opioid Overdose")
+            clinical_evidence_header:add_abstraction_link("SHORTNESS_OF_BREATH", "Shortness of Breath")
+            clinical_evidence_header:add_code_link("R11.10", "Vomiting")
+            clinical_evidence_header:add_code_link("R11.13", "Vomiting Fecal Matter")
+            clinical_evidence_header:add_code_link("R11.11", "Vomiting Without Nausea")
+            clinical_evidence_header:add_abstraction_link("WEAKNESS", "Weakness")
 
             -- Labs
             table.insert(
@@ -676,8 +557,9 @@ if not existing_alert or not existing_alert.validated then
                 }
 
             if blood_glucose_dv_link then
-                table.insert(labs_links, blood_glucose_dv_link)
+                laboratory_studies_header:add_link(blood_glucose_dv_link)
             else
+                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_dv_name, "Blood Glucose", blood_glucose1_predicate)
                 table.insert(
                     labs_links,
                     links.get_discrete_value_link {
