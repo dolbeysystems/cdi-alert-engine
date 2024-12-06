@@ -21,7 +21,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local heart_rate_dv_names = {
     "Heart Rate cc (bpm)",
@@ -51,6 +51,11 @@ local low_spo21_predicate = function(dv) return discrete.get_dv_value_number(dv)
 local troponin_dv_names = { "TROPONIN, HIGH SENSITIVITY (ng/L)" }
 local high_troponin_predicate = function(dv) return discrete.get_dv_value_number(dv) > 59 end
 
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
 
@@ -97,7 +102,7 @@ if
     (not existing_alert and existing_alert.outcome == "AUTORESOLVED" and existing_alert.validated and code_count > 0)
 then
     --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
     local documented_dx_header = links.make_header_link("Documented Dx")
@@ -122,6 +127,81 @@ then
     local heart_cath_links = {}
     local troponin_header = links.make_header_link("Troponin")
     local troponin_links = {}
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    local function compile_links()
+        if #troponin_links > 0 then
+            troponin_header.links = troponin_links
+            table.insert(laboratory_studies_links, troponin_header)
+        end
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
+        end
+        if #vital_signs_intake_links > 0 then
+            vital_signs_intake_header.links = vital_signs_intake_links
+            table.insert(result_links, vital_signs_intake_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #oxygenation_ventillation_links > 0 then
+            oxygenation_ventillation_header.links = oxygenation_ventillation_links
+            table.insert(result_links, oxygenation_ventillation_header)
+        end
+        if #ekg_links > 0 then
+            ekg_header.links = ekg_links
+            table.insert(result_links, ekg_header)
+        end
+        if #echo_links > 0 then
+            echo_header.links = echo_links
+            table.insert(result_links, echo_header)
+        end
+        if #ct_links > 0 then
+            ct_header.links = ct_links
+            table.insert(result_links, ct_header)
+        end
+        if #heart_cath_links > 0 then
+            heart_cath_header.links = heart_cath_links
+            table.insert(result_links, heart_cath_header)
+        end
+
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
 
 
 
@@ -618,54 +698,6 @@ then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #troponin_links > 0 then
-            troponin_header.links = troponin_links
-            table.insert(laboratory_studies_links, troponin_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #laboratory_studies_links > 0 then
-            laboratory_studies_header.links = laboratory_studies_links
-            table.insert(result_links, laboratory_studies_header)
-        end
-        if #vital_signs_intake_links > 0 then
-            vital_signs_intake_header.links = vital_signs_intake_links
-            table.insert(result_links, vital_signs_intake_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #oxygenation_ventillation_links > 0 then
-            oxygenation_ventillation_header.links = oxygenation_ventillation_links
-            table.insert(result_links, oxygenation_ventillation_header)
-        end
-        if #ekg_links > 0 then
-            ekg_header.links = ekg_links
-            table.insert(result_links, ekg_header)
-        end
-        if #echo_links > 0 then
-            echo_header.links = echo_links
-            table.insert(result_links, echo_header)
-        end
-        if #ct_links > 0 then
-            ct_header.links = ct_links
-            table.insert(result_links, ct_header)
-        end
-        if #heart_cath_links > 0 then
-            heart_cath_header.links = heart_cath_links
-            table.insert(result_links, heart_cath_header)
-        end
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end

@@ -22,7 +22,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local dv_blood_loss = { "" }
 local calc_blood_loss1 = function(dv) return discrete.get_dv_value_number(dv) > 300 end
@@ -65,9 +65,6 @@ local dv_wbc = { "WBC (10x3/ul)" }
 local calc_wbc1 = function(dv) return discrete.get_dv_value_number(dv) < 4.5 end
 local calc_gt_zero = function(dv) return discrete.get_dv_value_number(dv) > 0 end
 
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
-
 local link_text_possible_no_lows = "Possible No Low Hemoglobin, Low Hematocrit or Anemia Treatment"
 local link_text_possible_no_signs_of_bleeding = "Possible No Sign of Bleeding Please Review"
 local link_text_possible_no_matching_hemoglobin = "Possible No Hemoglobin Values Meeting Criteria Please Review"
@@ -77,6 +74,14 @@ local link_text_possible_no_lows_present = false
 local link_text_possible_no_signs_of_bleeding_present = false
 local link_text_possible_no_matching_hemoglobin_present = false
 local link_text_possible_no_anemia_treatment_present = false
+
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if existing_alert and existing_alert.links then
     for _, link in ipairs(existing_alert.links) do
@@ -94,10 +99,9 @@ end
 
 
 
-
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
     local documented_dx_header = links.make_header_link("Documented Dx")
@@ -122,6 +126,82 @@ if not existing_alert or not existing_alert.validated then
     local hematocrit_links = {}
     local blood_loss_header = links.make_header_link("Blood Loss")
     local blood_loss_links = {}
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    local function compile_links()
+        if #blood_loss_links > 0 then
+            blood_loss_header.links = blood_loss_links
+            table.insert(sign_of_bleeding_links, blood_loss_header)
+        end
+        if #hemoglobin_links > 0 then
+            hemoglobin_header.links = hemoglobin_links
+            table.insert(labs_links, hemoglobin_header)
+        end
+        if #hematocrit_links > 0 then
+            hematocrit_header.links = hematocrit_links
+            table.insert(labs_links, hematocrit_header)
+        end
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #alert_trigger_links > 0 then
+            alert_trigger_header.links = alert_trigger_links
+            table.insert(result_links, alert_trigger_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #labs_links > 0 then
+            labs_header.links = labs_links
+            table.insert(result_links, labs_header)
+        end
+        if #vitals_links > 0 then
+            vitals_header.links = vitals_links
+            table.insert(result_links, vitals_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #sign_of_bleeding_links > 0 then
+            sign_of_bleeding_header.links = sign_of_bleeding_links
+            table.insert(result_links, sign_of_bleeding_header)
+        end
+        if #other_links > 0 then
+            other_header.links = other_links
+            table.insert(result_links, other_header)
+        end
+
+
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
 
 
 
@@ -727,55 +807,6 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #blood_loss_links > 0 then
-            blood_loss_header.links = blood_loss_links
-            table.insert(sign_of_bleeding_links, blood_loss_header)
-        end
-        if #hemoglobin_links > 0 then
-            hemoglobin_header.links = hemoglobin_links
-            table.insert(labs_links, hemoglobin_header)
-        end
-        if #hematocrit_links > 0 then
-            hematocrit_header.links = hematocrit_links
-            table.insert(labs_links, hematocrit_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #alert_trigger_links > 0 then
-            alert_trigger_header.links = alert_trigger_links
-            table.insert(result_links, alert_trigger_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #labs_links > 0 then
-            labs_header.links = labs_links
-            table.insert(result_links, labs_header)
-        end
-        if #vitals_links > 0 then
-            vitals_header.links = vitals_links
-            table.insert(result_links, vitals_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #sign_of_bleeding_links > 0 then
-            sign_of_bleeding_header.links = sign_of_bleeding_links
-            table.insert(result_links, sign_of_bleeding_header)
-        end
-        if #other_links > 0 then
-            other_header.links = other_links
-            table.insert(result_links, other_header)
-        end
-
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end

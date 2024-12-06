@@ -22,7 +22,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local blood_loss_dv_names = { "" }
 local high_blood_loss_predicate = function(dv) return discrete.get_dv_value_number(dv) > 300 end
@@ -34,30 +34,19 @@ local ptt_dv_names = { "PTT (SEC)" }
 local high_ptt_predicate = function(dv) return discrete.get_dv_value_number(dv) > 30.5 end
 
 
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
 
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Alert Variables 
-    --------------------------------------------------------------------------------
-    local alert_code_dictionary = {
-        ["I48.0"] = "Paroxysmal Atrial Fibrillation",
-        ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
-        ["I48.19"] = "Other Persistent Atrial Fibrillation",
-        ["I48.21"] = "Permanent Atrial Fibrillation",
-        ["I48.20"] = "Chronic Atrial Fibrillation"
-    }
-    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
-
-
-
-    --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
-
     local documented_dx_header = links.make_header_link("Documented Dx")
     local documented_dx_links = {}
     local laboratory_studies_header = links.make_header_link("Laboratory Studies")
@@ -77,6 +66,63 @@ if not existing_alert or not existing_alert.validated then
     local ptt_header = links.make_header_link("PTT")
     local ptt_links = {}
 
+    local function compile_links()
+        if #inr_links > 0 then
+            inr_header.links = inr_links
+            table.insert(laboratory_studies_links, inr_header)
+        end
+        if #pt_links > 0 then
+            pt_header.links = pt_links
+            table.insert(laboratory_studies_links, pt_header)
+        end
+        if #ptt_links > 0 then
+            ptt_header.links = ptt_links
+            table.insert(laboratory_studies_links, ptt_header)
+        end
+        if #hemoglobin_links > 0 then
+            hemoglobin_header.links = hemoglobin_links
+            table.insert(laboratory_studies_links, hemoglobin_header)
+        end
+        if #hematocrit_links > 0 then
+            hematocrit_header.links = hematocrit_links
+            table.insert(laboratory_studies_links, hematocrit_header)
+        end
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #signs_of_bleeding_links > 0 then
+            signs_of_bleeding_header.links = signs_of_bleeding_links
+            table.insert(result_links, signs_of_bleeding_header)
+        end
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
+        end
+        if #medications_links > 0 then
+            medications_header.links = medications_links
+            table.insert(result_links, medications_header)
+        end
+
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
+
+
+
+    --------------------------------------------------------------------------------
+    --- Alert Variables 
+    --------------------------------------------------------------------------------
+    local alert_code_dictionary = {
+        ["I48.0"] = "Paroxysmal Atrial Fibrillation",
+        ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
+        ["I48.19"] = "Other Persistent Atrial Fibrillation",
+        ["I48.21"] = "Permanent Atrial Fibrillation",
+        ["I48.20"] = "Chronic Atrial Fibrillation"
+    }
+    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
 
 
@@ -293,47 +339,7 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #inr_links > 0 then
-            inr_header.links = inr_links
-            table.insert(laboratory_studies_links, inr_header)
-        end
-        if #pt_links > 0 then
-            pt_header.links = pt_links
-            table.insert(laboratory_studies_links, pt_header)
-        end
-        if #ptt_links > 0 then
-            ptt_header.links = ptt_links
-            table.insert(laboratory_studies_links, ptt_header)
-        end
-        if #hemoglobin_links > 0 then
-            hemoglobin_header.links = hemoglobin_links
-            table.insert(laboratory_studies_links, hemoglobin_header)
-        end
-        if #hematocrit_links > 0 then
-            hematocrit_header.links = hematocrit_links
-            table.insert(laboratory_studies_links, hematocrit_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #signs_of_bleeding_links > 0 then
-            signs_of_bleeding_header.links = signs_of_bleeding_links
-            table.insert(result_links, signs_of_bleeding_header)
-        end
-        if #laboratory_studies_links > 0 then
-            laboratory_studies_header.links = laboratory_studies_links
-            table.insert(result_links, laboratory_studies_header)
-        end
-        if #medications_links > 0 then
-            medications_header.links = medications_links
-            table.insert(result_links, medications_header)
-        end
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end
 

@@ -95,10 +95,10 @@ if not existing_alert or not existing_alert.validated then
     local function add_clinical_evidence_code_prefix(prefix, text)
         add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
     end
-    --- @param codes string[]
+    --- @param code_set string[]
     --- @param text string
-    local function add_clinical_evidence_any_code(codes, text)
-        add_clinical_evidence_link(links.get_code_link { codes = codes, text = text })
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
     end
     --- @param code string
     --- @param text string

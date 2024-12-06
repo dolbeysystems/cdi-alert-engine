@@ -20,8 +20,87 @@ local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")
 
 
+
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
+--------------------------------------------------------------------------------
+local anion_gap_dv_name = { "" }
+local anion_gap1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 14 end
+local arterial_blood_ph_dv_name = { "pH" }
+local arterial_blood_ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.32 end
+local base_excess_dv_name = { "BASE EXCESS (mmol/L)" }
+local base_excess1_predicate = function(dv) return discrete.get_dv_value_number(dv) < -2 end
+local blood_co2_dv_name = { "CO2 (mmol/L)" }
+local blood_co21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 21 end
+local blood_co22_predicate = function(dv) return discrete.get_dv_value_number(dv) > 32 end
+local blood_glucose_dv_name = { "GLUCOSE (mg/dL)", "GLUCOSE" }
+local blood_glucose1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
+local blood_glucose_poc_dv_name = { "GLUCOSE ACCUCHECK (mg/dL)" }
+local blood_glucose_poc1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
+local fio2_dv_name = { "FIO2" }
+local fio21_predicate = function(dv) return discrete.get_dv_value_number(dv) <= 100 end
+local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
+local glasgow_coma_scale1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 15 end
+local hco3_dv_name = { "HCO3 VENOUS (meq/L)" }
+local hco31_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
+local hco32_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
+local heart_rate_dv_name = {
+    "Heart Rate cc (bpm)",
+    "3.5 Heart Rate (Apical) (bpm)",
+    "3.5 Heart Rate (Other) (bpm)",
+    "3.5 Heart Rate (Radial) (bpm)",
+    "SCC Monitor Pulse (bpm)"
+}
+local heart_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
+local map_dv_name = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
+local map1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
+local pao2_dv_name = { "BLD GAS O2 (mmHg)" }
+local pao21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 60 end
+local po2_dv_name = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
+local po21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 80 end
+local pco2_dv_name = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
+local pco21_predicate = function(dv) return discrete.get_dv_value_number(dv) > 50 end
+local pco22_predicate = function(dv) return discrete.get_dv_value_number(dv) < 30 end
+local ph_dv_name = { "pH (VENOUS)", "pH VENOUS" }
+local ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.30 end
+local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
+local respiratory_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 20 end
+local respiratory_rate2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 12 end
+local sbp_dv_name = { "SBP 3.5 (No Calculation) (mm Hg)" }
+local sbp1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local serum_blood_urea_nitrogen_dv_name = { "BUN (mg/dL)" }
+local serum_blood_urea_nitrogen1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 23 end
+local serum_bicarbonate_dv_name = { "HCO3 (meq/L)", "HCO3 (mmol/L)" }
+local serum_bicarbonate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
+local serum_bicarbonate3_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
+local serum_chloride_dv_name = { "CHLORIDE (mmol/L)" }
+local serum_chloride1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 107 end
+local serum_creatinine_dv_name = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
+local serum_creatinine1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 1.3 end
+local serum_lactate_dv_name = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
+local serum_lactate1_predicate = function(dv) return discrete.get_dv_value_number(dv) >= 4 end
+local serum_lactate2_predicate = function(dv)
+    return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4
+end
+local spo2_dv_name = { "Pulse Oximetry(Num) (%)" }
+local spo21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local venous_blood_co2_dv_name = { "BLD GAS CO2 VEN (mmHg)" }
+local venous_blood_co2_predicate = function(dv) return discrete.get_dv_value_number(dv) > 55 end
+local serum_ketone_dv_name = { "KETONES (mg/dL)" }
+local serum_ketone1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 0 end
+local urine_ketones_dv_name = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
+
+local possible_acute_respiratory_acidosis_subtitle = "Possible Acute Respiratory Acidosis"
+local respiratory_acidosis_lacking_evidence_subtitle = (
+    "Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence"
+)
+local possible_lactic_acidosis_subtitle = "Possible Lactic Acidosis"
+local possible_acidosis_subtitle = "Possible Acidosis"
+
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
@@ -30,82 +109,160 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
-    local anion_gap_dv_name = { "" }
-    local anion_gap1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 14 end
-    local arterial_blood_ph_dv_name = { "pH" }
-    local arterial_blood_ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.32 end
-    local base_excess_dv_name = { "BASE EXCESS (mmol/L)" }
-    local base_excess1_predicate = function(dv) return discrete.get_dv_value_number(dv) < -2 end
-    local blood_co2_dv_name = { "CO2 (mmol/L)" }
-    local blood_co21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 21 end
-    local blood_co22_predicate = function(dv) return discrete.get_dv_value_number(dv) > 32 end
-    local blood_glucose_dv_name = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-    local blood_glucose1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
-    local blood_glucose_poc_dv_name = { "GLUCOSE ACCUCHECK (mg/dL)" }
-    local blood_glucose_poc1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
-    local fio2_dv_name = { "FIO2" }
-    local fio21_predicate = function(dv) return discrete.get_dv_value_number(dv) <= 100 end
-    local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
-    local glasgow_coma_scale1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 15 end
-    local hco3_dv_name = { "HCO3 VENOUS (meq/L)" }
-    local hco31_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
-    local hco32_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
-    local heart_rate_dv_name = {
-        "Heart Rate cc (bpm)",
-        "3.5 Heart Rate (Apical) (bpm)",
-        "3.5 Heart Rate (Other) (bpm)",
-        "3.5 Heart Rate (Radial) (bpm)",
-        "SCC Monitor Pulse (bpm)"
-    }
-    local heart_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
-    local map_dv_name = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-    local map1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
-    local pao2_dv_name = { "BLD GAS O2 (mmHg)" }
-    local pao21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 60 end
-    local po2_dv_name = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-    local po21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 80 end
-    local pco2_dv_name = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
-    local pco21_predicate = function(dv) return discrete.get_dv_value_number(dv) > 50 end
-    local pco22_predicate = function(dv) return discrete.get_dv_value_number(dv) < 30 end
-    local ph_dv_name = { "pH (VENOUS)", "pH VENOUS" }
-    local ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.30 end
-    local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-    local respiratory_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 20 end
-    local respiratory_rate2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 12 end
-    local sbp_dv_name = { "SBP 3.5 (No Calculation) (mm Hg)" }
-    local sbp1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
-    local serum_blood_urea_nitrogen_dv_name = { "BUN (mg/dL)" }
-    local serum_blood_urea_nitrogen1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 23 end
-    local serum_bicarbonate_dv_name = { "HCO3 (meq/L)", "HCO3 (mmol/L)" }
-    local serum_bicarbonate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
-    local serum_bicarbonate3_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
-    local serum_chloride_dv_name = { "CHLORIDE (mmol/L)" }
-    local serum_chloride1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 107 end
-    local serum_creatinine_dv_name = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
-    local serum_creatinine1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 1.3 end
-    local serum_lactate_dv_name = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
-    local serum_lactate1_predicate = function(dv) return discrete.get_dv_value_number(dv) >= 4 end
-    local serum_lactate2_predicate = function(dv)
-        return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4
+    local result_links = {}
+
+    local documented_dx_header = links.make_header_link("Documented Dx")
+    local documented_dx_links = {}
+    local labs_header = links.make_header_link("Laboratory Studies")
+    local labs_links = {}
+    local vital_signs_intake_header = links.make_header_link("Vital Signs/Intake")
+    local vital_signs_intake_links = {}
+    local clinical_evidence_header = links.make_header_link("Clinical Evidence")
+    local clinical_evidence_links = {}
+    local treatment_and_monitoring_header = links.make_header_link("Treatment and Monitoring")
+    local treatment_and_monitoring_links = {}
+    local abg_header = links.make_header_link("ABG")
+    local abg_links = {}
+    local vbg_header = links.make_header_link("VBG")
+    local vbg_links = {}
+    local blood_co2_header = links.make_header_link("Blood CO2")
+    local blood_co2_links = {}
+    local ph_header = links.make_header_link("PH")
+    local ph_links = {}
+    local lactate_header = links.make_header_link("Lactate")
+    local lactate_links = {}
+    local venous_co2_header = links.make_header_link("pCO2")
+    local venous_co2_links = {}
+    local vbh_co3_header = links.make_header_link("HCO3")
+    local vbh_co3_links = {}
+    local pao2_header = links.make_header_link("paO2")
+    local pao2_links = {}
+    local abg_hco3_header = links.make_header_link("HCO3")
+    local abg_hco3_links = {}
+    local pco2_header = links.make_header_link("PCO2")
+    local pco2_links = {}
+    local pa_co2_header = links.make_header_link("paCO2")
+    local pa_co2_links = {}
+
+    --- @param link CdiAlertLink?
+    local function add_documented_dx_link(link)
+        table.insert(documented_dx_links, link)
+    end
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    --- @param link CdiAlertLink?
+    local function add_treatment_and_monitoring_link(link)
+        table.insert(treatment_and_monitoring_links, link)
+    end
+    --- @param lnks CdiAlertLink[]
+    local function add_treatment_and_monitoring_links(lnks)
+        for _, lnk in ipairs(lnks) do
+            table.insert(treatment_and_monitoring_links, lnk)
+        end
+    end
+    local function compile_links()
+        if #pa_co2_links > 0 then
+            pa_co2_header.links = pa_co2_links
+            table.insert(abg_links, pa_co2_header)
+        end
+        if #pco2_links > 0 then
+            pco2_header.links = pco2_links
+            table.insert(abg_links, pco2_header)
+        end
+        if #pao2_links > 0 then
+            pao2_header.links = pao2_links
+            table.insert(abg_links, pao2_header)
+        end
+        if #abg_hco3_header > 0 then
+            abg_hco3_header.links = abg_hco3_links
+            table.insert(abg_links, abg_hco3_header)
+        end
+        if #abg_links > 0 then
+            abg_header.links = abg_links
+            table.insert(labs_links, abg_header)
+        end
+
+        if #vbh_co3_links > 0 then
+            vbh_co3_header.links = vbh_co3_links
+            table.insert(vbg_links, vbh_co3_header)
+        end
+        if #venous_co2_links > 0 then
+            venous_co2_header.links = venous_co2_links
+            table.insert(vbg_links, venous_co2_header)
+        end
+        if #vbg_links > 0 then
+            vbg_header.links = vbg_links
+            table.insert(labs_links, vbg_header)
+        end
+
+        if #blood_co2_links > 0 then
+            blood_co2_header.links = blood_co2_links
+            table.insert(labs_links, blood_co2_header)
+        end
+        if #ph_links > 0 then
+            ph_header.links = ph_links
+            table.insert(labs_links, ph_header)
+        end
+        if #lactate_links > 0 then
+            lactate_header.links = lactate_links
+            table.insert(labs_links, lactate_header)
+        end
+
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #labs_links > 0 then
+            labs_header.links = labs_links
+            table.insert(result_links, labs_header)
+        end
+        if #vital_signs_intake_links > 0 then
+            vital_signs_intake_header.links = vital_signs_intake_links
+            table.insert(result_links, vital_signs_intake_header)
+        end
+
+        treatment_and_monitoring_header.links = treatment_and_monitoring_links
+        table.insert(result_links, treatment_and_monitoring_header)
+
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
     end
 
-    local spo2_dv_name = { "Pulse Oximetry(Num) (%)" }
-    local spo21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
-    local venous_blood_co2_dv_name = { "BLD GAS CO2 VEN (mmHg)" }
-    local venous_blood_co2_predicate = function(dv) return discrete.get_dv_value_number(dv) > 55 end
-    local serum_ketone_dv_name = { "KETONES (mg/dL)" }
-    local serum_ketone1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 0 end
-    local urine_ketones_dv_name = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
-    local possible_acute_respiratory_acidosis_subtitle = "Possible Acute Respiratory Acidosis"
-    local respiratory_acidosis_lacking_evidence_subtitle = (
-        "Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence"
-    )
-    local possible_lactic_acidosis_subtitle = "Possible Lactic Acidosis"
-    local possible_acidosis_subtitle = "Possible Acidosis"
 
+    --------------------------------------------------------------------------------
+    --- Alert Variables 
+    --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["E08.10"] = "Diabetes mellitus due to underlying condition with ketoacidosis without coma",
         ["E08.11"] = "Diabetes mellitus due to underlying condition with ketoacidosis with coma",
@@ -156,46 +313,6 @@ if not existing_alert or not existing_alert.validated then
         end
         return false
     end
-
-
-
-    --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
-    --------------------------------------------------------------------------------
-    local result_links = {}
-
-    local documented_dx_header = links.make_header_link("Documented Dx")
-    local documented_dx_links = {}
-    local labs_header = links.make_header_link("Laboratory Studies")
-    local labs_links = {}
-    local vital_signs_intake_header = links.make_header_link("Vital Signs/Intake")
-    local vital_signs_intake_links = {}
-    local clinical_evidence_header = links.make_header_link("Clinical Evidence")
-    local clinical_evidence_links = {}
-    local treatment_and_monitoring_header = links.make_header_link("Treatment and Monitoring")
-    local treatment_and_monitoring_links = {}
-    local abg_header = links.make_header_link("ABG")
-    local abg_links = {}
-    local vbg_header = links.make_header_link("VBG")
-    local vbg_links = {}
-    local blood_co2_header = links.make_header_link("Blood CO2")
-    local blood_co2_links = {}
-    local ph_header = links.make_header_link("PH")
-    local ph_links = {}
-    local lactate_header = links.make_header_link("Lactate")
-    local lactate_links = {}
-    local venous_co2_header = links.make_header_link("pCO2")
-    local venous_co2_links = {}
-    local vbh_co3_header = links.make_header_link("HCO3")
-    local vbh_co3_links = {}
-    local pao2_header = links.make_header_link("paO2")
-    local pao2_links = {}
-    local abg_hco3_header = links.make_header_link("HCO3")
-    local abg_hco3_links = {}
-    local pco2_header = links.make_header_link("PCO2")
-    local pco2_links = {}
-    local pa_co2_header = links.make_header_link("paCO2")
-    local pa_co2_links = {}
 
 
 
@@ -325,19 +442,19 @@ if not existing_alert or not existing_alert.validated then
                 text = "Autoresolved Specified Code - " .. alert_code_dictionary[code]
             }
             if code_link then
-                table.insert(documented_dx_links, code_link)
+                add_documented_dx_link(code_link)
                 break
             end
         end
 
         if j9602_code_link then
             j9602_code_link.link_text = "Autoresolved Evidence - " .. j9602_code_link.link_text
-            table.insert(documented_dx_links, j9602_code_link)
+            add_documented_dx_link(j9602_code_link)
         end
         if acute_respiratory_acidosis_abstraction_link then
-            acute_acidosis_abstraction_link.link_text =
+            acute_respiratory_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. acute_respiratory_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, acute_respiratory_acidosis_abstraction_link)
+            add_documented_dx_link(acute_respiratory_acidosis_abstraction_link)
         end
 
         Result.outcome = "AUTORESOLVED"
@@ -368,7 +485,7 @@ if not existing_alert or not existing_alert.validated then
                     text = "Autoresolved Specified Code - " .. alert_code_dictionary[code]
                 }
                 if code_link then
-                    table.insert(documented_dx_links, code_link)
+                    add_documented_dx_link(code_link)
                     break
                 end
             end
@@ -376,37 +493,37 @@ if not existing_alert or not existing_alert.validated then
         if lactic_acidosis_abstraction_link then
             lactic_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. lactic_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, lactic_acidosis_abstraction_link)
+            add_documented_dx_link(lactic_acidosis_abstraction_link)
         end
         if chronic_repiratory_acidosis_abstraction_link then
             chronic_repiratory_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. chronic_repiratory_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, chronic_repiratory_acidosis_abstraction_link)
+            add_documented_dx_link(chronic_repiratory_acidosis_abstraction_link)
         end
         if meta_acidosis_abstraction_link then
             meta_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. meta_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, meta_acidosis_abstraction_link)
+            add_documented_dx_link(meta_acidosis_abstraction_link)
         end
         if e8720_code_link then
             e8720_code_link.link_text =
                 "Autoresolved Evidence - " .. e8720_code_link.link_text
-            table.insert(documented_dx_links, e8720_code_link)
+            add_documented_dx_link(e8720_code_link)
         end
         if e8729_code_link then
             e8729_code_link.link_text =
                 "Autoresolved Evidence - " .. e8729_code_link.link_text
-            table.insert(documented_dx_links, e8729_code_link)
+            add_documented_dx_link(e8729_code_link)
         end
         if acute_acidosis_abstraction_link then
             acute_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. acute_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, acute_acidosis_abstraction_link)
+            add_documented_dx_link(acute_acidosis_abstraction_link)
         end
         if chronic_acidosis_abstraction_link then
             chronic_acidosis_abstraction_link.link_text =
                 "Autoresolved Evidence - " .. chronic_acidosis_abstraction_link.link_text
-            table.insert(documented_dx_links, chronic_acidosis_abstraction_link)
+            add_documented_dx_link(chronic_acidosis_abstraction_link)
         end
 
         Result.outcome = "AUTORESOLVED"
@@ -421,10 +538,11 @@ if not existing_alert or not existing_alert.validated then
         (#low_arterial_blood_ph_multi_dv_links > 0 or #ph_dv_links > 0)
     then
         -- Trigger alert for Possible Acute Respiratory Acidosis
-        table.insert(documented_dx_links, e8720_code_link)
-        table.insert(documented_dx_links, e8729_code_link)
-        table.insert(documented_dx_links, acute_acidosis_abstraction_link)
-        table.insert(documented_dx_links, chronic_acidosis_abstraction_link)
+        add_documented_dx_link(e8720_code_link)
+        add_documented_dx_link(e8729_code_link)
+        add_documented_dx_link(acute_acidosis_abstraction_link)
+        add_documented_dx_link(chronic_acidosis_abstraction_link)
+
         Result.subtitle = possible_acute_respiratory_acidosis_subtitle
         Result.passed = true
 
@@ -437,7 +555,7 @@ if not existing_alert or not existing_alert.validated then
         #ph_dv_links == 0
     then
         -- Trigger alert for Acute Respiratory Acidosis Documented Possibly Lacking Supporting Evidence
-        table.insert(documented_dx_links, acute_respiratory_acidosis_abstraction_link)
+        add_documented_dx_link(acute_respiratory_acidosis_abstraction_link)
         Result.subtitle = respiratory_acidosis_lacking_evidence_subtitle
         Result.passed = true
 
@@ -462,24 +580,13 @@ if not existing_alert or not existing_alert.validated then
         )
     then
         -- Trigger alert for Possible Acidosis
-        if fluid_bolus_abstraction_link then
-            table.insert(treatment_and_monitoring_links, fluid_bolus_abstraction_link)
-        end
-        if fluid_resuscitation_abstraction_link then
-            table.insert(treatment_and_monitoring_links, fluid_resuscitation_abstraction_link)
-        end
-        if sodium_bicarbonate_abstraction_links then
-            table.insert(treatment_and_monitoring_links, sodium_bicarbonate_abstraction_links)
-        end
-        for _, item in ipairs(albumin_medication_links or {}) do
-            table.insert(treatment_and_monitoring_links, item)
-        end
-        for _, item in ipairs(fluid_bolus_medication_links or {}) do
-            table.insert(treatment_and_monitoring_links, item)
-        end
-        for _, item in ipairs(sodium_bicarbonate_med_links or {}) do
-            table.insert(treatment_and_monitoring_links, item)
-        end
+        add_treatment_and_monitoring_link(fluid_bolus_abstraction_link)
+        add_treatment_and_monitoring_link(fluid_resuscitation_abstraction_link)
+        add_treatment_and_monitoring_links(sodium_bicarbonate_abstraction_links)
+        add_treatment_and_monitoring_links(sodium_bicarbonate_med_links)
+        add_treatment_and_monitoring_links(albumin_medication_links)
+        add_treatment_and_monitoring_links(fluid_bolus_medication_links)
+        add_treatment_and_monitoring_links(sodium_bicarbonate_med_links)
 
         Result.subtitle = possible_acidosis_subtitle
         Result.passed = true
@@ -695,76 +802,6 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #pa_co2_links > 0 then
-            pa_co2_header.links = pa_co2_links
-            table.insert(abg_links, pa_co2_header)
-        end
-        if #pco2_links > 0 then
-            pco2_header.links = pco2_links
-            table.insert(abg_links, pco2_header)
-        end
-        if #pao2_links > 0 then
-            pao2_header.links = pao2_links
-            table.insert(abg_links, pao2_header)
-        end
-        if #abg_hco3_header > 0 then
-            abg_hco3_header.links = abg_hco3_links
-            table.insert(abg_links, abg_hco3_header)
-        end
-        if #abg_links > 0 then
-            abg_header.links = abg_links
-            table.insert(labs_links, abg_header)
-        end
-
-        if #vbh_co3_links > 0 then
-            vbh_co3_header.links = vbh_co3_links
-            table.insert(vbg_links, vbh_co3_header)
-        end
-        if #venous_co2_links > 0 then
-            venous_co2_header.links = venous_co2_links
-            table.insert(vbg_links, venous_co2_header)
-        end
-        if #vbg_links > 0 then
-            vbg_header.links = vbg_links
-            table.insert(labs_links, vbg_header)
-        end
-
-        if #blood_co2_links > 0 then
-            blood_co2_header.links = blood_co2_links
-            table.insert(labs_links, blood_co2_header)
-        end
-        if #ph_links > 0 then
-            ph_header.links = ph_links
-            table.insert(labs_links, ph_header)
-        end
-        if #lactate_links > 0 then
-            lactate_header.links = lactate_links
-            table.insert(labs_links, lactate_header)
-        end
-
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #labs_links > 0 then
-            labs_header.links = labs_links
-            table.insert(result_links, labs_header)
-        end
-        if #vital_signs_intake_links > 0 then
-            vital_signs_intake_header.links = vital_signs_intake_links
-            table.insert(result_links, vital_signs_intake_header)
-        end
-
-        treatment_and_monitoring_header.links = treatment_and_monitoring_links
-        table.insert(result_links, treatment_and_monitoring_header)
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end

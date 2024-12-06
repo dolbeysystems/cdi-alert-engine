@@ -19,10 +19,10 @@ local codes = require("libs.common.codes")
 local discrete = require("libs.common.discrete_values")
 
 
+
 --------------------------------------------------------------------------------
 --- Setup
 -------------------------------------------------------------------------------- 
--- Site variables
 local ciwa_score_dv_name = "alcohol CIWA Calc score 1112"
 local ciwa_score_dv_predicate = function(dv) return discrete.get_dv_value_number(dv) > 9 end
 local methadone_medication_name = "Methadone"
@@ -35,7 +35,11 @@ local pain_document_types = { "Pain Team Consultation Note", "zzPain Team Consul
 local opioid_dependence_subtitle = "Possible Opioid Dependence"
 local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
 
--- Get the existing alert and its subtitle (if any)
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName, account = Account }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
@@ -43,7 +47,7 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
     local documented_dx_header = links.make_header_link("Documented Dx")
@@ -54,7 +58,54 @@ if not existing_alert or not existing_alert.validated then
     local treatment_and_monitoring_links = {}
     local pain_team_consult_header = links.make_header_link("Pain Team Consult")
     local pain_team_consult_links = {}
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    local function compile_links()
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #pain_team_consult_links > 0 then
+            pain_team_consult_header.links = pain_team_consult_links
+            table.insert(result_links, pain_team_consult_header)
+        end
 
+        -- Merge links if we need to
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
 
 
     --------------------------------------------------------------------------------
@@ -136,8 +187,8 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    -- Auto resolve alert if it currently triggered for alcohol but now has alcohol codes
     if subtitle == alcohol_withdrawal_subtitle and #account_alcohol_codes > 0 then
+        -- Auto resolve alert if it currently triggered for alcohol but now has alcohol codes
         local code = account_alcohol_codes[1]
         local code_desc = alcohol_code_dic[code]
         local auto_resolved_code_link = links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
@@ -249,29 +300,7 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         --- Result Finalization 
         --------------------------------------------------------------------------------
-        -- Build the link heirarchy
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #pain_team_consult_links > 0 then
-            pain_team_consult_header.links = pain_team_consult_links
-            table.insert(result_links, pain_team_consult_header)
-        end
-
-        -- Merge links if we need to
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end
 

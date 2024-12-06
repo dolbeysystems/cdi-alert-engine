@@ -19,10 +19,10 @@ local codes = require("libs.common.codes")
 local discrete = require("libs.common.discrete_values")
 
 
---------------------------------------------------------------------------------
---- Setup
---------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
 local function numeric_result_predicate(discrete_value)
@@ -38,6 +38,9 @@ local function presence_predicate(discrete_value)
 end
 
 if not existing_alert or not existing_alert.validated then
+    --------------------------------------------------------------------------------
+    --- Header Variables and Helper Functions
+    --------------------------------------------------------------------------------
     local result_links = {}
     local documented_dx_header = links.make_header_link("Documented Dx")
     local documented_dx_links = {}
@@ -53,6 +56,66 @@ if not existing_alert or not existing_alert.validated then
     local vital_signs_links = {}
     local urine_analysis_header = links.make_header_link("Urine Analysis")
     local urine_analysis_links = {}
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_sets string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_sets, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_sets, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    local function compile_links()
+        if #urine_analysis_links > 0 then
+            urine_analysis_header.links = urine_analysis_links
+            table.insert(laboratory_studies_links, urine_analysis_header)
+        end
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #laboratory_studies_links > 0 then
+            laboratory_studies_header.links = laboratory_studies_links
+            table.insert(result_links, laboratory_studies_header)
+        end
+        if #vital_signs_links > 0 then
+            vital_signs_header.links = vital_signs_links
+            table.insert(result_links, vital_signs_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #urinary_devices_links > 0 then
+            urinary_devices_header.links = urinary_devices_links
+            table.insert(result_links, urinary_devices_header)
+        end
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
+
+
 
     --------------------------------------------------------------------------------
     --- Alert Variables
@@ -173,7 +236,7 @@ if not existing_alert or not existing_alert.validated then
     ---@return boolean
     local function add_links(...)
         local had_non_nil = false
-        for _, lnks in pairs { ... } do
+        for _, lnks in ipairs { ... } do
             if lnks ~= nil then
                 for _, link in ipairs(lnks) do
                     table.insert(documented_dx_links, link)
@@ -410,52 +473,6 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization
         ----------------------------------------
-        -- #If alert passed or alert conditions was triggered add categories to result if they have links
-        -- if AlertPassed or AlertConditions:
-        --     if urine.Links: labs.Links.Add(urine); urineLinks = True
-        --     if dc.Links: result.Links.Add(dc); dcLinks = True
-        --     if abs.Links: result.Links.Add(abs); absLinks = True
-        --     if labs.Links: result.Links.Add(labs); labsLinks = True
-        --     if vitals.Links: result.Links.Add(vitals); vitalsLinks = True
-        --     result.Links.Add(meds)
-        --     if meds.Links: medsLinks = True
-        --     if uti.Links: result.Links.Add(uti); utiLinks = True
-        --     result.Links.Add(other)
-        --     db.LogEvaluationScriptMessage("Alert Passed Adding Links. Alert Triggered: " + str(result.Subtitle) + " Autoresolved: " + str(result.Outcome) + "; " +
-        --         str(result.Validated) + "; Links: Documented Dx- " + str(dcLinks) + ", Abs- " + str(absLinks) + ", labs- " + str(labsLinks) + ", vitals- " + str(vitalsLinks) + ", meds- " + str(medsLinks) + ", Uti- " + str(utiLinks) + ", Urine- "
-        --         + str(urineLinks) + "; Acct: " + str(account._id), scriptName, scriptInstance, "Debug")
-        --     result.Passed = True
-        if #urine_analysis_links > 0 then
-            urine_analysis_header.links = urine_analysis_links
-            table.insert(laboratory_studies_links, urine_analysis_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #laboratory_studies_links > 0 then
-            laboratory_studies_header.links = laboratory_studies_links
-            table.insert(result_links, laboratory_studies_header)
-        end
-        if #vital_signs_links > 0 then
-            vital_signs_header.links = vital_signs_links
-            table.insert(result_links, vital_signs_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #urinary_devices_links > 0 then
-            urinary_devices_header.links = urinary_devices_links
-            table.insert(result_links, urinary_devices_header)
-        end
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end

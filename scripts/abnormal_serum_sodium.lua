@@ -21,7 +21,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local blood_glucose_dv_names = { "GLUCOSE (mg/dL)", "GLUCOSE" }
 local blood_glucose_predicate = function(dv) return discrete.get_dv_value_number(dv) > 600 end
@@ -51,6 +51,11 @@ local hyponatremia_lacking_supporting_evidence_subtitle = "Hyponatremia Lacking 
 local review_high_sodium_link_text = "Possible No High Serum Sodium Levels Were Found Please Review"
 local review_low_sodium_link_text = "Possible No Low Serum Sodium Levels Were Found Please Review"
 
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
@@ -58,7 +63,7 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
     local labs_header = links.make_header_link("Laboratory Studies")
@@ -68,6 +73,79 @@ if not existing_alert or not existing_alert.validated then
     local serum_sodium_header = links.make_header_link("Serum Sodium")
     local serum_sodium_links = {}
 
+    --- @param link CdiAlertLink?
+    local function add_lab_link(link)
+        table.insert(labs_links, link)
+    end
+    --- @param text string
+    local function add_lab_text_link(text)
+        table.insert(labs_links, links.make_header_link(text))
+    end
+    --- @param dv_names string[]
+    --- @param predicate (fun (value: DiscreteValue):boolean))
+    --- @param text string
+    local function add_lab_dv(dv_names, predicate, text)
+        local dv = links.get_discrete_value_link {
+            dvNames = dv_names,
+            predicate = predicate,
+            text = text,
+            maxPerValue = 99999
+        }
+        add_lab_link(dv)
+    end
+    --- @param lnks CdiAlertLink[]
+    local function add_lab_links(lnks)
+        for _, link in ipairs(lnks) do
+            add_lab_link(link)
+        end
+    end
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction_with_value(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    --- @param link CdiAlertLink?
+    local function add_serum_sodium_link(link)
+        table.insert(serum_sodium_links, link)
+    end
+    local function compile_links()
+        if #labs_links > 0 then
+            labs_header.links = labs_links
+            table.insert(result_links, labs_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #serum_sodium_links > 0 then
+            serum_sodium_header.links = serum_sodium_links
+            table.insert(result_links, serum_sodium_header)
+        end
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
+
 
 
     --------------------------------------------------------------------------------
@@ -76,13 +154,8 @@ if not existing_alert or not existing_alert.validated then
     local e870_code_link = links.get_code_link { code = "E870", text = "Hyperosmolality and Hypernatremia", seq = 12 }
     local e871_code_link = links.get_code_link { code = "E871", text = "Hypoosmolality and Hyponatremia", seq = 14 }
 
-    --------------------------------------------------------------------------------
-    --- Get Serum Sodium Links
-    ---
     --- @param predicate function Filtering function
-    ---
     --- @return CdiAlertLink[] Serum Sodium Links
-    -------------------------------------------------------------------------------- 
     local function get_sodium_dv_links(predicate)
         return links.get_discrete_value_links {
             dvNames = sodium_dv_names,
@@ -132,7 +205,7 @@ if not existing_alert or not existing_alert.validated then
     elseif subtitle == possible_hypernatermia_subtitle and e870_code_link then
         -- Auto resolve Possible Hypernatremia Dx
         e870_code_link.link_text = "Autoresolved Code - " .. e870_code_link.link_text
-        table.insert(clinical_evidence_header, e870_code_link)
+        add_clinical_evidence_link(e870_code_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to code no longer being assigned"
         Result.passed = true
@@ -141,7 +214,7 @@ if not existing_alert or not existing_alert.validated then
     elseif subtitle == possible_hyponatermia_subtitle and e871_code_link then
         -- Auto resolve Possible Hyponatremia Dx
         e871_code_link.link_text = "Autoresolved Code - " .. e871_code_link.link_text
-        table.insert(clinical_evidence_header, e871_code_link)
+        add_clinical_evidence_link(e871_code_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to code no longer being assigned"
         Result.passed = true
@@ -154,14 +227,14 @@ if not existing_alert or not existing_alert.validated then
     then
         -- Auto resolve Hypernatremeia Lacking Supporting Evidence
         e870_code_link.link_text = "Autoresolved Code - " .. e870_code_link.link_text
-        table.insert(clinical_evidence_header, e870_code_link)
+        add_clinical_evidence_link(e870_code_link)
         for _, link in ipairs(high_sodium_links) do
             link.link_text = "Autoresolved Evidence - " .. link.link_text
-            table.insert(serum_sodium_links, link)
+            add_serum_sodium_link(link)
         end
         local review_high_sodium_link = links.make_header_link(review_high_sodium_link_text)
         review_high_sodium_link.is_validated = false
-        table.insert(labs_links, review_high_sodium_link)
+        add_lab_link(review_high_sodium_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.passed = true
@@ -173,14 +246,14 @@ if not existing_alert or not existing_alert.validated then
     then
         -- Auto resolve Hyponatremia Lacking Supporting Evidence
         e871_code_link.link_text = "Autoresolved Code - " .. e871_code_link.link_text
-        table.insert(clinical_evidence_header, e871_code_link)
+        add_clinical_evidence_link(e871_code_link)
         for _, link in ipairs(low_sodium_links) do
             link.link_text = "Autoresolved Evidence - " .. link.link_text
-            table.insert(serum_sodium_links, link)
+            add_serum_sodium_link(link)
         end
         local review_low_sodium_link = links.make_header_link(review_low_sodium_link_text)
         review_low_sodium_link.is_validated = false
-        table.insert(labs_links, review_low_sodium_link)
+        add_lab_link(review_low_sodium_link)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.passed = true
@@ -221,15 +294,13 @@ if not existing_alert or not existing_alert.validated then
 
     elseif e870_code_link and #high_sodium_links == 0 then
         -- Alert if hypernatremia is lacking supporting evidence
-        local review_high_sodium_link = links.make_header_link(review_high_sodium_link_text)
-        table.insert(labs_links, review_high_sodium_link)
+        add_lab_text_link(review_high_sodium_link_text)
         Result.subtitle = hypernatremia_lacking_supporting_evidence_subtitle
         Result.passed = true
 
     elseif e871_code_link and #low_sodium_links == 0 then
         -- Alert if hyponatremia is lacking supporting evidence
-        local review_low_sodium_link = links.make_header_link(review_low_sodium_link_text)
-        table.insert(labs_links, review_low_sodium_link)
+        add_lab_text_link(review_low_sodium_link_text)
         Result.subtitle = hyponatremia_lacking_supporting_evidence_subtitle
         Result.passed = true
     end
@@ -242,7 +313,11 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             local r4182_code_link =
-                links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 1 }
+                links.get_code_link {
+                    code = "R41.82",
+                    text = "Altered Level of Consciousness",
+                    seq = 1
+                }
             local altered_abs_link =
                 links.get_abstraction_link {
                     code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
@@ -251,121 +326,56 @@ if not existing_alert or not existing_alert.validated then
                 }
 
             if r4182_code_link then
-                table.insert(clinical_evidence_links, r4182_code_link)
+                add_clinical_evidence_link(r4182_code_link)
                 if altered_abs_link then
                     altered_abs_link.hidden = true
-                    table.insert(clinical_evidence_links, altered_abs_link)
+                    add_clinical_evidence_link(altered_abs_link)
                 end
             elseif altered_abs_link then
-                table.insert(clinical_evidence_links, altered_abs_link)
+                add_clinical_evidence_link(altered_abs_link)
             end
 
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "F10.230", text = "Beer Potomania", seq = 3 }
+            add_clinical_evidence_code("F10.230", "Beer Potomania")
+            add_clinical_evidence_code("R11.14", "Bilious Vomiting")
+            add_clinical_evidence_any_code(
+                {
+                    "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
+                    "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
+                },
+                "Congestive Heart Failure (CHF)"
             )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.14", text = "Bilious Vomiting", seq = 4 }
+            add_clinical_evidence_code("R11.15", "Cyclical Vomiting")
+            add_clinical_evidence_abstraction_with_value("DIABETES_INSIPIDUS", "Diabetes Insipidus")
+            add_clinical_evidence_abstraction("DIARRHEA", "Diarrhea")
+            add_clinical_evidence_code("R41.0", "Disorientation")
+            add_clinical_evidence_code("E86.0", "Dehydration")
+            add_clinical_evidence_code("R53.83", "Fatigue")
+            add_clinical_evidence_abstraction_with_value(
+                "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME",
+                "Hyperosmolar Hyperglycemic Syndrome"
             )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link {
-                    codes = {
-                        "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
-                        "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
-                    },
-                    text = "Congestive Heart Failure (CHF)",
-                    seq = 5,
-                }
+            add_clinical_evidence_code("E86.1", "Hypovolemia")
+            add_clinical_evidence_any_code(
+                {
+                    "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30",
+                    "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
+                },
+                "Kidney Failure"
             )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.15", text = "Cyclical Vomiting", seq = 6 }
+            add_clinical_evidence_abstraction("MUSCLE_CRAMPS", "Muscle Cramps")
+            add_clinical_evidence_code("R63.1", "Polydipsia")
+            add_clinical_evidence_abstraction("SEIZURE", "Seizure")
+            add_clinical_evidence_any_code(
+                {
+                    "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91"
+                },
+                "Thyrotoxic Crisis Storm Code"
             )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_value_link { code = "DIABETES_INSIPIDUS", text = "Diabetes Insipidus", seq = 7 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "DIARRHEA", text = "Diarrhea", seq = 8 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R41.0", text = "Disorientation", seq = 9 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "E86.0", text = "Dehydration", seq = 10 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R53.83", text = "Fatigue", seq = 11 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_value_link {
-                    code = "HYPEROSMOLAR_HYPERGLYCEMIA_SYNDROME",
-                    text = "Hyperosmolar Hyperglycemic Syndrome",
-                    seq = 13
-                }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "E86.1", text = "Hypovolemia", seq = 15 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link {
-                    codes = {
-                        "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30",
-                        "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
-                    },
-                    text = "Kidney Failure",
-                    seq = 16,
-                }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "MUSCLE_CRAMPS", text = "Muscle Cramps", seq = 17 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R63.1", text = "Polydipsia", seq = 18 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "SEIZURE", text = "Seizure", seq = 19 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link {
-                    codes = { "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91" },
-                    text = "Thyrotoxic Crisis Storm Code",
-                    seq = 21,
-                }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "E86.9", text = "Volume Depletion", seq = 22 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.10", text = "Vomiting", seq = 23 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.13", text = "Vomiting Fecal Matter", seq = 24 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_code_link { code = "R11.11", text = "Vomiting Without Nausea", seq = 25 }
-            )
-            table.insert(
-                clinical_evidence_links,
-                links.get_abstraction_link { code = "WEAKNESS", text = "Muscle Weakness", seq = 26 }
-            )
+            add_clinical_evidence_code("E86.9", "Volume Depletion")
+            add_clinical_evidence_code("R11.10", "Vomiting")
+            add_clinical_evidence_code("R11.13", "Vomiting Fecal Matter")
+            add_clinical_evidence_code("R11.11", "Vomiting Without Nausea")
+            add_clinical_evidence_abstraction("WEAKNESS", "Muscle Weakness")
 
             local blood_glucose_links = links.get_discrete_value_links {
                 dvNames = blood_glucose_dv_names,
@@ -373,18 +383,10 @@ if not existing_alert or not existing_alert.validated then
                 text = "Blood Glucose",
                 maxPerValue = 1,
             }
-            table.insert(labs_links, blood_glucose_links)
+            add_lab_links(blood_glucose_links)
 
             if #blood_glucose_links == 0 then
-                table.insert(
-                    labs_links,
-                    links.get_discrete_value_link {
-                        dvNames = blood_glucose_poc_dv_names,
-                        predicate = blood_glucose_poc_predicate,
-                        text = "Blood Glucose POC",
-                        maxPerValue = 1,
-                    }
-                )
+                add_lab_dv(blood_glucose_poc_dv_names, blood_glucose_poc_predicate, "Blood Glucose POC")
             end
         end
 
@@ -393,22 +395,7 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #labs_links > 0 then
-            labs_header.links = labs_links
-            table.insert(result_links, labs_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #serum_sodium_links > 0 then
-            serum_sodium_header.links = serum_sodium_links
-            table.insert(result_links, serum_sodium_header)
-        end
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end
 

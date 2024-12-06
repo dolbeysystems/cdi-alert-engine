@@ -22,7 +22,7 @@ local discrete = require("libs.common.discrete_values")
 
 
 --------------------------------------------------------------------------------
---- Setup
+--- Site Constants
 --------------------------------------------------------------------------------
 local dv_heart_rate = {
     "Heart Rate cc (bpm)",
@@ -37,6 +37,11 @@ local low_map_predicate = function(dv) return discrete.get_dv_value_number(dv) <
 local systolic_blood_pressure_dv_names = { "SBP 3.5 (No Calculation) (mm Hg)" }
 local low_systolic_blood_pressure_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
 
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
@@ -44,21 +49,7 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Alert Variables 
-    --------------------------------------------------------------------------------
-    local alert_code_dictionary = {
-        ["I48.0"] = "Paroxysmal Atrial Fibrillation",
-        ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
-        ["I48.19"] = "Other Persistent Atrial Fibrillation",
-        ["I48.21"] = "Permanent Atrial Fibrillation",
-        ["I48.20"] = "Chronic Atrial Fibrillation"
-    }
-    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
-
-
-
-    --------------------------------------------------------------------------------
-    --- Top-Level Link Header Variables
+    --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
 
@@ -72,7 +63,71 @@ if not existing_alert or not existing_alert.validated then
     local treatment_and_monitoring_links = {}
     local ekg_header = links.make_header_link("EKG")
     local ekg_links = {}
+    --- @param link CdiAlertLink?
+    local function add_clinical_evidence_link(link)
+        table.insert(clinical_evidence_links, link)
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_code(code, text)
+        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
+    end
+    --- @param prefix string
+    --- @param text string
+    local function add_clinical_evidence_code_prefix(prefix, text)
+        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
+    end
+    --- @param code_set string[]
+    --- @param text string
+    local function add_clinical_evidence_any_code(code_set, text)
+        add_clinical_evidence_link(links.get_code_link { codes = code_set, text = text })
+    end
+    --- @param code string
+    --- @param text string
+    local function add_clinical_evidence_abstraction(code, text)
+        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
+    end
+    local function compile_links()
+        if #documented_dx_links > 0 then
+            documented_dx_header.links = documented_dx_links
+            table.insert(result_links, documented_dx_header)
+        end
+        if #clinical_evidence_links > 0 then
+            clinical_evidence_header.links = clinical_evidence_links
+            table.insert(result_links, clinical_evidence_header)
+        end
+        if #vital_signs_intake_links > 0 then
+            vital_signs_intake_header.links = vital_signs_intake_links
+            table.insert(result_links, vital_signs_intake_header)
+        end
+        if #treatment_and_monitoring_links > 0 then
+            treatment_and_monitoring_header.links = treatment_and_monitoring_links
+            table.insert(result_links, treatment_and_monitoring_header)
+        end
+        if #ekg_links > 0 then
+            ekg_header.links = ekg_links
+            table.insert(result_links, ekg_header)
+        end
 
+        if existing_alert then
+            result_links = links.merge_links(existing_alert.links, result_links)
+        end
+        Result.links = result_links
+    end
+
+
+
+    --------------------------------------------------------------------------------
+    --- Alert Variables 
+    --------------------------------------------------------------------------------
+    local alert_code_dictionary = {
+        ["I48.0"] = "Paroxysmal Atrial Fibrillation",
+        ["I48.11"] = "Longstanding Persistent Atrial Fibrillation",
+        ["I48.19"] = "Other Persistent Atrial Fibrillation",
+        ["I48.21"] = "Permanent Atrial Fibrillation",
+        ["I48.20"] = "Chronic Atrial Fibrillation"
+    }
+    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
 
 
@@ -193,31 +248,7 @@ if not existing_alert or not existing_alert.validated then
         ----------------------------------------
         --- Result Finalization 
         ----------------------------------------
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #vital_signs_intake_links > 0 then
-            vital_signs_intake_header.links = vital_signs_intake_links
-            table.insert(result_links, vital_signs_intake_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #ekg_links > 0 then
-            ekg_header.links = ekg_links
-            table.insert(result_links, ekg_header)
-        end
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
+        compile_links()
     end
 end
 
