@@ -16,24 +16,30 @@
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
 local codes = require("libs.common.codes")
-local discrete = require("libs.common.discrete_values")
+local headers = require("libs.common.headers")
 
 
 
 --------------------------------------------------------------------------------
 --- Setup
 -------------------------------------------------------------------------------- 
+--- @diagnostic disable: unused-local
 local ciwa_score_dv_name = "alcohol CIWA Calc score 1112"
-local ciwa_score_dv_predicate = function(dv) return discrete.get_dv_value_number(dv) > 9 end
+local ciwa_score_dv_predicate = function(dv, num) return num > 9 end
 local methadone_medication_name = "Methadone"
 local suboxone_medication_name = "Suboxone"
 local benzodiazepine_medication_name = "Benzodiazepine"
 local dexmedetomidine_medication_name = "Dexmedetomidine"
 local lithium_medication_name = "Lithium"
 local propofol_medication_name = "Propofol"
-local pain_document_types = { "Pain Team Consultation Note", "zzPain Team Consultation Note", "Pain Team Progress Note" }
+local pain_document_types = {
+    "Pain Team Consultation Note",
+    "zzPain Team Consultation Note",
+    "Pain Team Progress Note"
+}
 local opioid_dependence_subtitle = "Possible Opioid Dependence"
 local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
+--- @diagnostic enable: unused-local
 
 
 

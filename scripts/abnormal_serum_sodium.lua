@@ -15,8 +15,6 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
 local headers = require("libs.common.headers")
 
 
@@ -24,23 +22,16 @@ local headers = require("libs.common.headers")
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+--- @diagnostic disable: unused-local
 local blood_glucose_dv_names = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-local blood_glucose_predicate = function(dv) return discrete.get_dv_value_number(dv) > 600 end
+local blood_glucose_predicate = function(dv, num) return num > 600 end
 local blood_glucose_poc_dv_names = { "GLUCOSE ACCUCHECK (mg/dL)" }
-local blood_glucose_poc_predicate = function(dv) return discrete.get_dv_value_number(dv) > 600 end
+local blood_glucose_poc_predicate = function(dv, num) return num > 600 end
 local sodium_dv_names = { "SODIUM (mmol/L)" }
-local sodium_very_low_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) < 131 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local sodium_low_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) < 132 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local sodium_high_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) > 144 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local sodium_very_high_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) > 145 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
+local sodium_very_low_predicate = function(dv, num) return num < 131 end
+local sodium_low_predicate = function(dv, num) return num < 132 end
+local sodium_high_predicate = function(dv, num) return num > 144 end
+local sodium_very_high_predicate = function(dv, num) return num > 145 end
 local dextrose_medication_name = "Dextrose 5% in Water"
 local hypertonic_saline_medication_name = "Hypertonic Saline"
 local hypotonic_solution_medication_name = "Hypotonic Solution"
@@ -51,6 +42,7 @@ local hypernatremia_lacking_supporting_evidence_subtitle = "Hypernatremia Lackin
 local hyponatremia_lacking_supporting_evidence_subtitle = "Hyponatremia Lacking Supporting Evidence"
 local review_high_sodium_link_text = "Possible No High Serum Sodium Levels Were Found Please Review"
 local review_low_sodium_link_text = "Possible No Low Serum Sodium Levels Were Found Please Review"
+--- @diagnostic enable: unused-local
 
 
 
@@ -90,7 +82,7 @@ if not existing_alert or not existing_alert.validated then
     local e870_code_link = links.get_code_link { code = "E870", text = "Hyperosmolality and Hypernatremia", seq = 12 }
     local e871_code_link = links.get_code_link { code = "E871", text = "Hypoosmolality and Hyponatremia", seq = 14 }
 
-    --- @param predicate function Filtering function
+    --- @param predicate (fun(dv:DiscreteValue, num:number?)) Filtering function
     --- @return CdiAlertLink[] Serum Sodium Links
     local function get_sodium_dv_links(predicate)
         return links.get_discrete_value_links {

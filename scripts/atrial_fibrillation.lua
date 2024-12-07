@@ -17,6 +17,7 @@ local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
 local codes = require("libs.common.codes")
 local discrete = require("libs.common.discrete_values")
+local headers = require("libs.common.headers")
 
 
 
@@ -24,6 +25,7 @@ local discrete = require("libs.common.discrete_values")
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+--- @diagnostic disable: unused-local
 local dv_heart_rate = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -31,11 +33,12 @@ local dv_heart_rate = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local high_heart_rate_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
+local high_heart_rate_predicate = function(dv, num) return num > 90 end
 local map_dv_names = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local low_map_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
+local low_map_predicate = function(dv, num) return num < 70 end
 local systolic_blood_pressure_dv_names = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local low_systolic_blood_pressure_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local low_systolic_blood_pressure_predicate = function(dv, num) return num < 90 end
+--- @diagnostic enable: unused-local
 
 
 

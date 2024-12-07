@@ -14,17 +14,18 @@ local module = {}
 --- @field add_link (fun (self: header_builder, link: CdiAlertLink?))
 --- @field add_links (fun (self: header_builder, lnks: CdiAlertLink[]))
 --- @field add_text_link (fun (self: header_builder, text: string))
+--- @field add_document_link (fun (self: header_builder, document_type: string, description: string))
 --- @field add_code_link (fun (self: header_builder, code: string, description: string))
 --- @field add_code_links (fun (self: header_builder, codes: string[], description: string))
 --- @field add_code_prefix_link (fun (self: header_builder, prefix: string, description: string))
 --- @field add_abstraction_link (fun (self: header_builder, abstraction: string, description: string))
 --- @field add_abstraction_link_with_value (fun (self: header_builder, abstraction: string, description: string))
---- @field add_discrete_value_link (fun (self: header_builder, dv_name: string, description: string, predicate: fun (self: CdiAlertLink): boolean))
---- @field add_discrete_value_one_of_link (fun (self: header_builder, dv_names: string[], description: string, predicate: fun (self: CdiAlertLink): boolean))
---- @field add_discrete_value_links (fun (self: header_builder, dv_name: string, description: string, predicate: fun (self: CdiAlertLink): boolean))
---- @field add_discrete_value_many_links (fun (self: header_builder, dv_names: string[], description: string, predicate: fun (self: CdiAlertLink): boolean))
---- @field add_medication_link (fun (self: header_builder, cat: string, description: string, predicate: fun (self: CdiAlertLink): boolean))
---- @field add_medication_links (fun (self: header_builder, cats: string[], description: string, predicate: fun (self: CdiAlertLink): boolean))
+--- @field add_discrete_value_link (fun (self: header_builder, dv_name: string, description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_discrete_value_one_of_link (fun (self: header_builder, dv_names: string[], description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_discrete_value_links (fun (self: header_builder, dv_name: string, description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_discrete_value_many_links (fun (self: header_builder, dv_names: string[], description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_medication_link (fun (self: header_builder, cat: string, description: string, predicate: (fun (med: Medication): boolean)?))
+--- @field add_medication_links (fun (self: header_builder, cats: string[], description: string, predicate: (fun (med: Medication): boolean)?))
 
 local header_builder_meta = {
     __index = {
@@ -64,6 +65,16 @@ local header_builder_meta = {
         --- @param text string
         add_text_link = function(self, text)
             local link = links_lib.make_header_link(text)
+            link.sequence = self.sequence_counter
+            self.sequence_counter = self.sequence_counter + 1
+            self:add_link(link)
+        end,
+
+        --- @param self header_builder
+        --- @param document_type string
+        --- @param description string
+        add_document_link = function(self, document_type, description)
+            local link = links_lib.get_document_link { documentType = document_type, text = description }
             link.sequence = self.sequence_counter
             self.sequence_counter = self.sequence_counter + 1
             self:add_link(link)
@@ -124,7 +135,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_name string
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
         add_discrete_value_link = function(self, dv_name, description, predicate)
             local link = links_lib.get_discrete_value_link { discreteValueName = dv_name, text = description, predicate = predicate }
             link.sequence = self.sequence_counter
@@ -135,7 +146,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_names string[]
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
         add_discrete_value_one_of_link = function(self, dv_names, description, predicate)
             local link = links_lib.get_discrete_value_link { discreteValueNames = dv_names, text = description, predicate = predicate }
             link.sequence = self.sequence_counter
@@ -146,7 +157,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_name string
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
         add_discrete_value_links = function(self, dv_name, description, predicate)
             local lnks = links_lib.get_discrete_value_links { discreteValueName = dv_name, text = description, predicate = predicate }
 
@@ -160,7 +171,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_names string[]
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
         add_discrete_value_many_links = function(self, dv_names, description, predicate)
             local lnks = links_lib.get_discrete_value_links { discreteValueNames = dv_names, text = description, predicate = predicate }
 
@@ -174,7 +185,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param cat string
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (med: Medication): boolean)?
         add_medication_link = function(self, cat, description, predicate)
             local link = links_lib.get_medication_link { cat = cat, text = description, predicate = predicate }
             link.sequence = self.sequence_counter
@@ -185,7 +196,7 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param cats string[]
         --- @param description string
-        --- @param predicate (fun (self: CdiAlertLink): boolean)
+        --- @param predicate (fun (med: Medication): boolean)?
         add_medication_links = function(self, cats, description, predicate)
             local lnks = links_lib.get_medication_links { cats = cats, text = description, predicate = predicate }
             for _, link in ipairs(lnks) do

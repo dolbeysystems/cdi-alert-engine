@@ -17,21 +17,23 @@ local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
 local blood = require("libs.common.blood")
 local codes = require("libs.common.codes")
-local discrete = require("libs.common.discrete_values")
+local headers = require("libs.common.headers")
 
 
 
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+--- @diagnostic disable: unused-local
 local blood_loss_dv_names = { "" }
-local high_blood_loss_predicate = function(dv) return discrete.get_dv_value_number(dv) > 300 end
+local high_blood_loss_predicate = function(dv, num) return num > 300 end
 local inr_dv_names = { "INR" }
-local high_inr_predicate = function(dv) return discrete.get_dv_value_number(dv) > 1.2 end
+local high_inr_predicate = function(dv, num) return num > 1.2 end
 local pt_dv_names = { "PROTIME (SEC)" }
-local high_pt_predicate = function(dv) return discrete.get_dv_value_number(dv) > 13 end
+local high_pt_predicate = function(dv, num) return num > 13 end
 local ptt_dv_names = { "PTT (SEC)" }
-local high_ptt_predicate = function(dv) return discrete.get_dv_value_number(dv) > 30.5 end
+local high_ptt_predicate = function(dv, num) return num > 30.5 end
+--- @diagnostic enable: unused-local
 
 
 

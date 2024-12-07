@@ -16,7 +16,6 @@
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
 local headers = require("libs.common.headers")
 
 
@@ -24,19 +23,12 @@ local headers = require("libs.common.headers")
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+--- @diagnostic disable: unused-local
 local potassium_dv_names = { "POTASSIUM (mmol/L)" }
-local potassium_very_low_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) < 3.1 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local potassium_low_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) < 3.4 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local potassium_high_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) > 5.1 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
-local potassium_very_high_predicate = function(dv)
-    return discrete.get_dv_value_number(dv) > 5.4 and dates.date_is_less_than_x_days_ago(dv.result_date, 7)
-end
+local potassium_very_low_predicate = function(dv, num) return num < 3.1 end
+local potassium_low_predicate = function(dv, num) return num < 3.4 end
+local potassium_high_predicate = function(dv, num) return num > 5.1 end
+local potassium_very_high_predicate = function(dv, num) return num > 5.4 end
 local dextrose_medication_name = "Dextrose 5% In Water"
 local insulin_medication_name = "Insulin"
 local kayexalate_medication_name = "Kayexalate"
@@ -47,6 +39,7 @@ local hyperkalemia_lacking_evidence_subtitle = "Hyperkalemia Dx Documented Possi
 local hypokalemia_lacking_evidence_subtitle = "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"
 local review_high_potassium_link_text = "Possible No High Serum Potassium Levels Were Found Please Review"
 local review_low_potassium_link_text = "Possible No Low Serum Potassium Levels Were Found Please Review"
+--- @diagnostic enable: unused-local
 
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil

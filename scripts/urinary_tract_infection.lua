@@ -16,7 +16,7 @@
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
 local codes = require("libs.common.codes")
-local discrete = require("libs.common.discrete_values")
+local headers = require("libs.common.headers")
 
 
 
@@ -25,17 +25,19 @@ local discrete = require("libs.common.discrete_values")
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
-local function numeric_result_predicate(discrete_value)
+--- @diagnostic disable: unused-local
+local function numeric_result_predicate(discrete_value, num)
     return discrete_value.result ~= nil and string.find(discrete_value.name, "%d+") ~= nil
 end
 
-local function presence_predicate(discrete_value)
+local function presence_predicate(discrete_value, num)
     local normalized_case = string.lower(discrete_value.name)
     return discrete_value.result ~= nil
         and string.find(normalized_case, "negative") == nil
         and string.find(normalized_case, "trace") == nil
         and string.find(normalized_case, "not found") == nil
 end
+--- @diagnostic enable: unused-local
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
@@ -56,30 +58,7 @@ if not existing_alert or not existing_alert.validated then
     local vital_signs_links = {}
     local urine_analysis_header = links.make_header_link("Urine Analysis")
     local urine_analysis_links = {}
-    --- @param link CdiAlertLink?
-    local function add_clinical_evidence_link(link)
-        table.insert(clinical_evidence_links, link)
-    end
-    --- @param code string
-    --- @param text string
-    local function add_clinical_evidence_code(code, text)
-        add_clinical_evidence_link(links.get_code_link { code = code, text = text })
-    end
-    --- @param prefix string
-    --- @param text string
-    local function add_clinical_evidence_code_prefix(prefix, text)
-        add_clinical_evidence_link(codes.get_code_prefix_link { prefix = prefix, text = text })
-    end
-    --- @param code_sets string[]
-    --- @param text string
-    local function add_clinical_evidence_any_code(code_sets, text)
-        add_clinical_evidence_link(links.get_code_link { codes = code_sets, text = text })
-    end
-    --- @param code string
-    --- @param text string
-    local function add_clinical_evidence_abstraction(code, text)
-        add_clinical_evidence_link(links.get_abstraction_link { code = code, text = text })
-    end
+
     local function compile_links()
         if #urine_analysis_links > 0 then
             urine_analysis_header.links = urine_analysis_links
@@ -153,7 +132,8 @@ if not existing_alert or not existing_alert.validated then
         discreteValueName = "BACTERIA (/HPF)",
         linkText = "Urine Culture",
         sequence = 4,
-        predicate = function(dv)
+        ---@diagnostic disable-next-line: unused-local
+        predicate = function(dv, num)
             return dv.result ~= nil and
                 (string.find(dv.result, "positive") ~= nil or string.find(dv.result, "negative") ~= nil)
         end,
@@ -343,9 +323,8 @@ if not existing_alert or not existing_alert.validated then
             links.get_discrete_value_link {
                 discreteValueName = "BLOOD",
                 text = "Blood in Urine",
-                predicate = function(discrete_value)
-                    return discrete.get_dv_value_number(discrete_value) > 0
-                end,
+                ---@diagnostic disable-next-line: unused-local
+                predicate = function(dv, num) return num > 0 end,
                 sequence = 1
             }
         )
@@ -354,9 +333,8 @@ if not existing_alert or not existing_alert.validated then
             links.get_discrete_value_link {
                 discreteValueName = "",
                 text = "Pus in Urine",
-                predicate = function(discrete_value)
-                    return discrete.get_dv_value_number(discrete_value) > 0
-                end,
+                ---@diagnostic disable-next-line: unused-local
+                predicate = function(dv, num) return num > 0 end,
                 sequence = 2
             }
         )
@@ -365,9 +343,8 @@ if not existing_alert or not existing_alert.validated then
             links.get_discrete_value_link {
                 discreteValueName = "WBC (10x3/ul)",
                 text = "WBC",
-                predicate = function(discrete_value)
-                    return discrete.get_dv_value_number(discrete_value) > 11
-                end,
+                ---@diagnostic disable-next-line: unused-local
+                predicate = function(dv, num) return num > 11 end,
                 sequence = 4
             }
         )
@@ -396,9 +373,8 @@ if not existing_alert or not existing_alert.validated then
             links.get_discrete_value_link {
                 discreteValueName = "3.5 Neuro Glasgow Score",
                 text = "Glasgow Coma Score",
-                predicate = function(discrete_value)
-                    return discrete.get_dv_value_number(discrete_value) < 15
-                end,
+                ---@diagnostic disable-next-line: unused-local
+                predicate = function(dv, num) return num < 15 end,
                 sequence = 3
             }
         )
@@ -406,9 +382,8 @@ if not existing_alert or not existing_alert.validated then
             links.get_discrete_value_link {
                 discreteValueName = "Temperature Degrees C 3.5 (degrees C)",
                 text = "Temperature",
-                predicate = function(discrete_value)
-                    return discrete.get_dv_value_number(discrete_value) > 38.3
-                end,
+                ---@diagnostic disable-next-line: unused-local
+                predicate = function(dv, num) return num > 38.3 end,
                 sequence = 4
             }
         )
@@ -436,25 +411,24 @@ if not existing_alert or not existing_alert.validated then
             discreteValueName = "RBC/HPF (/HPF)",
             linkText = "UA RBC",
             sequence = 7,
-            predicate = function(discrete_value)
-                return discrete.get_dv_value_number(discrete_value) > 3
-            end,
+            ---@diagnostic disable-next-line: unused-local
+            predicate = function(dv, num) return num > 3 end,
         })
         table.insert(urine_analysis_links, links.get_discrete_value_link {
             discreteValueName = "WBC/HPF (/HPF)",
             linkText = "UA WBC",
             sequence = 7,
-            predicate = function(discrete_value)
-                return discrete.get_dv_value_number(discrete_value) > 5
-            end,
+            ---@diagnostic disable-next-line: unused-local
+            predicate = function(dv, num) return num > 5 end,
         })
         table.insert(urine_analysis_links, links.get_discrete_value_link {
             discreteValueName = "",
             linkText = "UA Squamous Epithelias",
             sequence = 8,
-            predicate = function(discrete_value)
-                if discrete_value.result == nil then return false end
-                local a, b = string.match(discrete_value.result, "(%d+)-(%d+)")
+            ---@diagnostic disable-next-line: unused-local
+            predicate = function(dv, num)
+                if dv.result == nil then return false end
+                local a, b = string.match(dv.result, "(%d+)-(%d+)")
                 return tonumber(a) > 20 or tonumber(b) > 20
             end,
         })

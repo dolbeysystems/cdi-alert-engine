@@ -384,7 +384,7 @@ end
 --- @class (exact) GetDiscreteValueLinksArgs : LinkArgs
 --- @field discreteValueNames string[]? List of discrete value names to search for
 --- @field discreteValueName string? Single discrete value name to search for
---- @field predicate (fun(discrete_value: DiscreteValue): boolean)? Predicate function to filter discrete values
+--- @field predicate (fun(discrete_value: DiscreteValue, num: number?): boolean)? Predicate function to filter discrete values
 --- @field sort(fun(l: DiscreteValue, r: DiscreteValue): boolean)? Sort function to sort the matched values before creating links
 
 --------------------------------------------------------------------------------
@@ -420,7 +420,13 @@ function module.get_discrete_value_links(args)
         local discrete_value_name = discrete_value_names[i]
         local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
         for j = 1, #discrete_values_for_name do
-            if predicate == nil or predicate(discrete_values_for_name[j]) then
+            local dv = discrete_values_for_name[j]
+            local result_as_number =
+                dv.result and
+                tonumber(string.gsub(dv.result, "[<>]", "")) or
+                nil
+
+            if predicate == nil or predicate(dv, result_as_number) then
                 table.insert(discrete_values, discrete_values_for_name[j])
 
                 if max_per_value and #discrete_values >= max_per_value then

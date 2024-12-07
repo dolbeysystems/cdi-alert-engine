@@ -25,26 +25,27 @@ local headers = require("libs.common.headers")
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+--- @diagnostic disable: unused-local
 local anion_gap_dv_name = { "" }
-local anion_gap1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 14 end
+local anion_gap1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 14 end
 local arterial_blood_ph_dv_name = { "pH" }
-local arterial_blood_ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.32 end
+local arterial_blood_ph2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 7.32 end
 local base_excess_dv_name = { "BASE EXCESS (mmol/L)" }
-local base_excess1_predicate = function(dv) return discrete.get_dv_value_number(dv) < -2 end
+local base_excess1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < -2 end
 local blood_co2_dv_name = { "CO2 (mmol/L)" }
-local blood_co21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 21 end
-local blood_co22_predicate = function(dv) return discrete.get_dv_value_number(dv) > 32 end
+local blood_co21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 21 end
+local blood_co22_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 32 end
 local blood_glucose_dv_name = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-local blood_glucose1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
+local blood_glucose1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 250 end
 local blood_glucose_poc_dv_name = { "GLUCOSE ACCUCHECK (mg/dL)" }
-local blood_glucose_poc1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 250 end
+local blood_glucose_poc1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 250 end
 local fio2_dv_name = { "FIO2" }
-local fio21_predicate = function(dv) return discrete.get_dv_value_number(dv) <= 100 end
+local fio21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) <= 100 end
 local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
-local glasgow_coma_scale1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 15 end
+local glasgow_coma_scale1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 15 end
 local hco3_dv_name = { "HCO3 VENOUS (meq/L)" }
-local hco31_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
-local hco32_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
+local hco31_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 22 end
+local hco32_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 26 end
 local heart_rate_dv_name = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -52,43 +53,43 @@ local heart_rate_dv_name = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local heart_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 90 end
+local heart_rate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 90 end
 local map_dv_name = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local map1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 70 end
+local map1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 70 end
 local pao2_dv_name = { "BLD GAS O2 (mmHg)" }
-local pao21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 60 end
+local pao21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 60 end
 local po2_dv_name = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local po21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 80 end
+local po21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 80 end
 local pco2_dv_name = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
-local pco21_predicate = function(dv) return discrete.get_dv_value_number(dv) > 50 end
-local pco22_predicate = function(dv) return discrete.get_dv_value_number(dv) < 30 end
+local pco21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 50 end
+local pco22_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 30 end
 local ph_dv_name = { "pH (VENOUS)", "pH VENOUS" }
-local ph2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 7.30 end
+local ph2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 7.30 end
 local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local respiratory_rate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 20 end
-local respiratory_rate2_predicate = function(dv) return discrete.get_dv_value_number(dv) < 12 end
+local respiratory_rate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 20 end
+local respiratory_rate2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 12 end
 local sbp_dv_name = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local sbp1_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local sbp1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 90 end
 local serum_blood_urea_nitrogen_dv_name = { "BUN (mg/dL)" }
-local serum_blood_urea_nitrogen1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 23 end
+local serum_blood_urea_nitrogen1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 23 end
 local serum_bicarbonate_dv_name = { "HCO3 (meq/L)", "HCO3 (mmol/L)" }
-local serum_bicarbonate1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 26 end
-local serum_bicarbonate3_predicate = function(dv) return discrete.get_dv_value_number(dv) < 22 end
+local serum_bicarbonate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 26 end
+local serum_bicarbonate3_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 22 end
 local serum_chloride_dv_name = { "CHLORIDE (mmol/L)" }
-local serum_chloride1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 107 end
+local serum_chloride1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 107 end
 local serum_creatinine_dv_name = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
-local serum_creatinine1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 1.3 end
+local serum_creatinine1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 1.3 end
 local serum_lactate_dv_name = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
-local serum_lactate1_predicate = function(dv) return discrete.get_dv_value_number(dv) >= 4 end
-local serum_lactate2_predicate = function(dv)
+local serum_lactate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) >= 4 end
+local serum_lactate2_predicate = function(dv, num)
     return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4
 end
 local spo2_dv_name = { "Pulse Oximetry(Num) (%)" }
-local spo21_predicate = function(dv) return discrete.get_dv_value_number(dv) < 90 end
+local spo21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 90 end
 local venous_blood_co2_dv_name = { "BLD GAS CO2 VEN (mmHg)" }
-local venous_blood_co2_predicate = function(dv) return discrete.get_dv_value_number(dv) > 55 end
+local venous_blood_co2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 55 end
 local serum_ketone_dv_name = { "KETONES (mg/dL)" }
-local serum_ketone1_predicate = function(dv) return discrete.get_dv_value_number(dv) > 0 end
+local serum_ketone1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 0 end
 local urine_ketones_dv_name = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
 local possible_acute_respiratory_acidosis_subtitle = "Possible Acute Respiratory Acidosis"
@@ -97,6 +98,7 @@ local respiratory_acidosis_lacking_evidence_subtitle = (
 )
 local possible_lactic_acidosis_subtitle = "Possible Lactic Acidosis"
 local possible_acidosis_subtitle = "Possible Acidosis"
+--- @diagnostic enable: unused-local
 
 
 
@@ -505,7 +507,7 @@ if not existing_alert or not existing_alert.validated then
             -- Clinical Evidence
             local r4182_code_link = links.get_code_links { code = "R41.82", text = "Altered Level Of Consciousness" }
             if r4182_code_link then
-                clinical_evidence_header:add_link(r4182_code_link) 
+                clinical_evidence_header:add_link(r4182_code_link)
                 local altered_abs_link =
                     links.get_abstraction_link {
                         code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
@@ -540,13 +542,10 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("WEAKNESS", "Weakness")
 
             -- Labs
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = anion_gap_dv_name,
-                    predicate = anion_gap1_predicate,
-                    text = "Anion Gap"
-                }
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                anion_gap_dv_name,
+                "Anion Gap",
+                anion_gap1_predicate
             )
 
             local blood_glucose_dv_link =
@@ -556,129 +555,91 @@ if not existing_alert or not existing_alert.validated then
                     text = "Blood Glucose"
                 }
 
-            if blood_glucose_dv_link then
+            if not blood_glucose_dv_link then
                 laboratory_studies_header:add_link(blood_glucose_dv_link)
             else
-                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_dv_name, "Blood Glucose", blood_glucose1_predicate)
-                table.insert(
-                    labs_links,
-                    links.get_discrete_value_link {
-                        dvNames = blood_glucose_poc_dv_name,
-                        predicate = blood_glucose_poc1_predicate,
-                        text = "Blood Glucose POC"
-                    }
-                )
+                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_dv_name, "Blood Glucose", blood_glucose_poc1_predicate)
             end
 
-            table.insert(
-                labs_links,
-                links.get_abstraction_link { code = "POSITIVE_KETONES_IN_URINE", text = "Positive Ketones In Urine" }
+            laboratory_studies_header:add_abstraction_link("POSITIVE_KETONES_IN_URINE", "Positive Ketones In Urine")
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                serum_blood_urea_nitrogen_dv_name,
+                "Serum Blood Urea Nitrogen",
+                serum_blood_urea_nitrogen1_predicate
             )
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = serum_blood_urea_nitrogen_dv_name,
-                    predicate = serum_blood_urea_nitrogen1_predicate,
-                    text = "Serum Blood Urea Nitrogen"
-                }
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                serum_chloride_dv_name,
+                "Serum Chloride",
+                serum_chloride1_predicate
             )
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = serum_chloride_dv_name,
-                    predicate = serum_chloride1_predicate,
-                    text = "Serum Chloride"
-                }
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                serum_creatinine_dv_name,
+                "Serum Creatinine",
+                serum_creatinine1_predicate
             )
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = serum_creatinine_dv_name,
-                    predicate = serum_creatinine1_predicate,
-                    text = "Serum Creatinine"
-                }
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                serum_ketone_dv_name,
+                "Serum Ketones",
+                serum_ketone1_predicate
             )
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = serum_ketone_dv_name,
-                    predicate = serum_ketone1_predicate,
-                    text = "Serum Ketones"
-                }
-            )
-            table.insert(
-                labs_links,
-                links.get_discrete_value_link {
-                    dvNames = urine_ketones_dv_name,
-                    predicate = function(dv)
-                        return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
-                    end,
-                    text = "Urine Ketones"
-                }
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                urine_ketones_dv_name,
+                "Urine Ketones",
+                ---@diagnostic disable-next-line: unused-local
+                function(dv, num)
+                    return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
+                end
             )
 
             -- Lactate, ph, and blood links
-            table.insert(lactate_links, links.get_discrete_value_link { dvNames = serum_lactate_dv_name, predicate = serum_lactate2_predicate, text = "Serum Lactate" })
-            for _, entry in ipairs(high_serum_lactate_level_dv_links or {}) do
-                table.insert(lactate_links, entry)
-            end
-            for _, entry in ipairs(low_arterial_blood_ph_multi_dv_links) do
-                table.insert(ph_links, entry)
-            end
-            for _, entry in ipairs(ph_dv_links or {}) do
-                table.insert(ph_links, entry)
-            end
-            table.insert(blood_co2_links, links.get_discrete_value_link { dvNames = blood_co2_dv_name, predicate = blood_co22_predicate, text = "Blood CO2" })
-            for _, entry in ipairs(blood_co2_dv_links or {}) do
-                table.insert(blood_co2_links, entry)
-            end
+            lactate_header:add_discrete_value_one_of_link(serum_lactate_dv_name, "Serum Lactate", serum_lactate2_predicate)
+            lactate_header:add_links(high_serum_lactate_level_dv_links)
+
+            ph_header:add_links(low_arterial_blood_ph_multi_dv_links)
+            ph_header:add_links(ph_dv_links)
+
+            blood_co2_header:add_discrete_value_one_of_link(blood_co2_dv_name, "Blood CO2", blood_co22_predicate)
+            blood_co2_header:add_links(blood_co2_dv_links)
+
 
             -- Vitals
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = glasgow_coma_scale_dv_name, predicate = glasgow_coma_scale1_predicate, text = "Glasgow Coma Scale" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = heart_rate_dv_name, predicate = heart_rate1_predicate, text = "Heart Rate" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = map_dv_name, predicate = map1_predicate, text = "Mean Arterial Pressure" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate1_predicate, text = "Respiratory Rate" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = respiratory_rate_dv_name, predicate = respiratory_rate2_predicate, text = "Respiratory Rate" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = spo2_dv_name, predicate = spo21_predicate, text = "SpO2" })
-            table.insert(vital_signs_intake_links, links.get_discrete_value_link { dvNames = sbp_dv_name, predicate = sbp1_predicate, text = "Systolic Blood Pressure" })
-
-            -- ABG
-            table.insert(abg_links, links.get_discrete_value_link { dvNames = base_excess_dv_name, predicate = base_excess1_predicate, text = "Base Excess" })
-            table.insert(abg_links, links.get_discrete_value_link { dvNames = fio2_dv_name, predicate = fio21_predicate, text = "FiO2" })
-            table.insert(abg_links, links.get_discrete_value_link { dvNames = po2_dv_name, predicate = po21_predicate, text = "pO2" })
-            if paco2_dv_links and #paco2_dv_links > 0 then
-                for _, entry in ipairs(paco2_dv_links or {}) do
-                    table.insert(pa_co2_links, entry)
-                end
-            else
-                table.insert(pa_co2_links, links.get_discrete_value_link { dvNames = pco2_dv_name, predicate = pco22_predicate, text = "paC02" })
-            end
-            if high_serum_bicarbonate_dv_links and #high_serum_bicarbonate_dv_links > 0 then
-                for _, entry in ipairs(high_serum_bicarbonate_dv_links or {}) do
-                    table.insert(abg_hco3_links, entry)
-                end
-            else
-                table.insert(abg_hco3_links, links.get_discrete_value_link { dvNames = serum_bicarbonate_dv_name, predicate = serum_bicarbonate3_predicate, text = "HC03" })
-            end
-
-            -- ABG
-            table.insert(
-                pao2_links,
-                links.get_discrete_value_links { dvNames = pao2_dv_name, predicate = pao21_predicate, text = "Pa02", maxPerValue = 10 }
+            vital_signs_intake_header:add_discrete_value_one_of_link(glasgow_coma_scale_dv_name, "Glasgow Coma Scale", glasgow_coma_scale1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(heart_rate_dv_name, "Heart Rate", heart_rate1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_name, "Mean Arterial Pressure", map1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate", respiratory_rate1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate", respiratory_rate2_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(spo2_dv_name, "SpO2", spo21_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(
+                sbp_dv_name,
+                "Systolic Blood Pressure",
+                sbp1_predicate
             )
+
+            -- ABG
+            abg_header:add_discrete_value_one_of_link(base_excess_dv_name, "Base Excess", base_excess1_predicate)
+            abg_header:add_discrete_value_one_of_link(fio2_dv_name, "FiO2", fio21_predicate)
+            abg_header:add_discrete_value_one_of_link(po2_dv_name, "pO2", po21_predicate)
+
+
+            if #paco2_dv_links > 0 then
+                pa_co2_header:add_links(paco2_dv_links)
+            else
+                pa_co2_header:add_discrete_value_one_of_link(pco2_dv_name, "paCO2", pco22_predicate)
+            end
+            if #high_serum_bicarbonate_dv_links > 0 then
+                abg_hco3_header:add_links(high_serum_bicarbonate_dv_links)
+            else
+                abg_hco3_header:add_discrete_value_one_of_link(serum_bicarbonate_dv_name, "HC03", serum_bicarbonate3_predicate)
+            end
+
+            -- ABG
+            pao2_header:add_discrete_value_one_of_link(pao2_dv_name, "PaO2", pao21_predicate)
 
             -- VBG
-            table.insert(
-                vbh_co3_links,
-                links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco31_predicate, text = "HC03", maxPerValue = 10 }
-            )
-            table.insert(
-                vbh_co3_links,
-                links.get_discrete_value_links { dvNames = hco3_dv_name, predicate = hco32_predicate, text = "HC03", maxPerValue = 10 }
-            )
-            for _, entry in ipairs(venous_co2_dv_links or {}) do
-                table.insert(venous_co2_links, entry)
-            end
+            vbh_co3_header:add_discrete_value_one_of_link(hco3_dv_name, "HC03", hco31_predicate)
+            vbh_co3_header:add_discrete_value_one_of_link(hco3_dv_name, "HC03", hco32_predicate)
+
+            venous_co2_header:add_links(venous_co2_dv_links)
         end
 
         ----------------------------------------
