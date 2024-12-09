@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
@@ -41,6 +41,11 @@ local review_high_potassium_link_text = "Possible No High Serum Potassium Levels
 local review_low_potassium_link_text = "Possible No Low Serum Potassium Levels Were Found Please Review"
 --- @diagnostic enable: unused-local
 
+
+
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
@@ -171,7 +176,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif subtitle == possible_hypokalemia_subtitle and e876_code_link then
         -- Auto resolve Hypokalemia alert
         e876_code_link.link_text = "Autoresolved Code - " .. e876_code_link.link_text
@@ -180,7 +184,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == hyperkalemia_lacking_evidence_subtitle and
         e875_code_link and
@@ -201,7 +204,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == hypokalemia_lacking_evidence_subtitle and
         e876_code_link and
@@ -222,7 +224,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif not
         e875_code_link and
         #serum_potassium_dv_very_high_links > 1
@@ -238,7 +239,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = possible_hyperkalemia_subtitle
         Result.passed = true
-
     elseif
         not e876_code_link and
         #serum_potassium_dx_very_low_links > 1 and (
@@ -254,7 +254,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = possible_hypokalemia_subtitle
         Result.passed = true
-
     elseif e875_code_link and #serum_potassium_dv_high_links == 0 then
         -- Create alert for Hyperkalemia coded, but lacking evidence in labs
 
@@ -263,7 +262,6 @@ if not existing_alert or not existing_alert.validated then
 
         Result.subtitle = hyperkalemia_lacking_evidence_subtitle
         Result.passed = true
-
     elseif
         e876_code_link and
         #serum_potassium_dv_low_links == 0 and
@@ -317,7 +315,7 @@ if not existing_alert or not existing_alert.validated then
 
 
         --------------------------------------------------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         --------------------------------------------------------------------------------
         compile_links()
     end
