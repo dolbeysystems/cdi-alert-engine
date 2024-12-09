@@ -22,8 +22,8 @@ local module = {}
 --- @field add_abstraction_link_with_value (fun (self: header_builder, abstraction: string, description: string))
 --- @field add_discrete_value_link (fun (self: header_builder, dv_name: string, description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
 --- @field add_discrete_value_one_of_link (fun (self: header_builder, dv_names: string[], description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
---- @field add_discrete_value_links (fun (self: header_builder, dv_name: string, description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
---- @field add_discrete_value_many_links (fun (self: header_builder, dv_names: string[], description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_discrete_value_links (fun (self: header_builder, dv_name: string, description: string, max: number, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
+--- @field add_discrete_value_many_links (fun (self: header_builder, dv_names: string[], description: string, max_per_value: number, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?))
 --- @field add_medication_link (fun (self: header_builder, cat: string, description: string, predicate: (fun (med: Medication): boolean)?))
 --- @field add_medication_links (fun (self: header_builder, cats: string[], description: string, predicate: (fun (med: Medication): boolean)?))
 
@@ -36,7 +36,8 @@ local header_builder_meta = {
             if require_links and #self.links == 0 then
                 return nil
             end
-            local header = links_lib.make_header_link(self.name)
+            local header =
+                links_lib.make_header_link(self.name)
             header.links = self.links
             return header
         end,
@@ -157,9 +158,15 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_name string
         --- @param description string
+        --- @param max number
         --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
-        add_discrete_value_links = function(self, dv_name, description, predicate)
-            local lnks = links_lib.get_discrete_value_links { discreteValueName = dv_name, text = description, predicate = predicate }
+        add_discrete_value_links = function(self, dv_name, description, max, predicate)
+            local lnks = links_lib.get_discrete_value_links {
+                discreteValueName = dv_name,
+                text = description,
+                predicate = predicate,
+                max_per_value = max
+            }
 
             for _, link in ipairs(lnks) do
                 link.sequence = self.sequence_counter
@@ -171,9 +178,15 @@ local header_builder_meta = {
         --- @param self header_builder
         --- @param dv_names string[]
         --- @param description string
+        --- @param max_per_value number
         --- @param predicate (fun (dv: DiscreteValue, num: number): boolean)?
-        add_discrete_value_many_links = function(self, dv_names, description, predicate)
-            local lnks = links_lib.get_discrete_value_links { discreteValueNames = dv_names, text = description, predicate = predicate }
+        add_discrete_value_many_links = function(self, dv_names, description, max_per_value, predicate)
+            local lnks = links_lib.get_discrete_value_links {
+                discreteValueNames = dv_names,
+                text = description,
+                predicate = predicate,
+                max_per_value = max_per_value
+            }
 
             for _, link in ipairs(lnks) do
                 link.sequence = self.sequence_counter

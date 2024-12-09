@@ -44,50 +44,24 @@ if not existing_alert or not existing_alert.validated then
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
-    local documented_dx_header = links.make_header_link("Documented Dx")
-    local documented_dx_links = {}
-    local clinical_evidence_header = links.make_header_link("Clinical Evidence")
-    local clinical_evidence_links = {}
-    local treatment_and_monitoring_header = links.make_header_link("Treatment and Monitoring")
-    local treatment_and_monitoring_links = {}
-    local urinary_devices_header = links.make_header_link("Urinary Device(s)")
-    local urinary_devices_links = {}
-    local laboratory_studies_header = links.make_header_link("Laboratory Studies")
-    local laboratory_studies_links = {}
-    local vital_signs_header = links.make_header_link("Vital Signs/Intake and Output Data")
-    local vital_signs_links = {}
-    local urine_analysis_header = links.make_header_link("Urine Analysis")
-    local urine_analysis_links = {}
+    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+    local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 2)
+    local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 3)
+    local urinary_devices_header = headers.make_header_builder("Urinary Device(s)", 4)
+    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 5)
+    local vital_signs_header = headers.make_header_builder("Vital Signs/Intake and Output Data", 6)
+    local urine_analysis_header = headers.make_header_builder("Urine Analysis", 7)
 
     local function compile_links()
-        if #urine_analysis_links > 0 then
-            urine_analysis_header.links = urine_analysis_links
-            table.insert(laboratory_studies_links, urine_analysis_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #clinical_evidence_links > 0 then
-            clinical_evidence_header.links = clinical_evidence_links
-            table.insert(result_links, clinical_evidence_header)
-        end
-        if #laboratory_studies_links > 0 then
-            laboratory_studies_header.links = laboratory_studies_links
-            table.insert(result_links, laboratory_studies_header)
-        end
-        if #vital_signs_links > 0 then
-            vital_signs_header.links = vital_signs_links
-            table.insert(result_links, vital_signs_header)
-        end
-        if #treatment_and_monitoring_links > 0 then
-            treatment_and_monitoring_header.links = treatment_and_monitoring_links
-            table.insert(result_links, treatment_and_monitoring_header)
-        end
-        if #urinary_devices_links > 0 then
-            urinary_devices_header.links = urinary_devices_links
-            table.insert(result_links, urinary_devices_header)
-        end
+        laboratory_studies_header:add_link(urine_analysis_header:build(true))
+
+        table.insert(result_links, documented_dx_header:build(true))
+        table.insert(result_links, clinical_evidence_header:build(true))
+        table.insert(result_links, treatment_and_monitoring_header:build(true))
+        table.insert(result_links, urinary_devices_header:build(true))
+        table.insert(result_links, laboratory_studies_header:build(true))
+        table.insert(result_links, vital_signs_header:build(true))
+
         if existing_alert then
             result_links = links.merge_links(existing_alert.links, result_links)
         end
@@ -220,7 +194,7 @@ if not existing_alert or not existing_alert.validated then
         for _, lnks in pairs { ... } do
             if lnks ~= nil then
                 for _, link in ipairs(lnks) do
-                    table.insert(documented_dx_links, link)
+                    documented_dx_header:add_link(link)
                 end
                 had_non_nil = true
             end
@@ -232,7 +206,7 @@ if not existing_alert or not existing_alert.validated then
         local code = account_alert_codes[1]
         local code_desc = alert_code_dictionary[code]
         local auto_resolved_code_link = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
-        table.insert(documented_dx_links, auto_resolved_code_link)
+        documented_dx_header:add_link(auto_resolved_code_link)
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
@@ -240,30 +214,30 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
     elseif uti_code == nil and n390 ~= nil then
         if add_links(chronic_cystostomy_catheter_abstraction_link, cystostomy_catheter_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
             Result.passed = true
         elseif add_links(chronic_indwelling_urethral_catheter_abstraction_link, indwelling_urethral_catheter_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Indwelling Urethral Catheter"
             Result.passed = true
         elseif add_links(chronic_nephrostomy_catheter_abstraction_link, nephrostomy_catheter_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
             Result.passed = true
             -- #5
         elseif add_links(chronic_urinary_drainage_device_abstraction_link, urinary_drainage_device_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
             Result.passed = true
             -- #6
         elseif add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Ureteral Stent"
             Result.passed = true
             -- #7
         elseif add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
-            table.insert(documented_dx_links, n390)
+            documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
             Result.passed = true
         end
@@ -302,52 +276,27 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        table.insert(clinical_evidence_links, r8271)
-        table.insert(clinical_evidence_links,
-            links.get_code_link { code = "R41.0", text = "Disorientation", sequence = 2 })
-        table.insert(clinical_evidence_links,
-            links.get_code_link { code = "R31.0", text = "Hematuria", sequence = 3 })
-        table.insert(clinical_evidence_links,
-            links.get_abstraction_link { code = "INCREASED_URINARY_FREQUENCY", text = "Increased Urinary Frequency", sequence = 4 })
-        table.insert(clinical_evidence_links,
-            links.get_code_link { code = "R82.998", text = "Positive Urine Analysis", sequence = 5 })
-        table.insert(clinical_evidence_links,
-            links.get_code_link { code = "R82.89", text = "Positive Urine Culture", sequence = 6 })
-        table.insert(clinical_evidence_links, r8279)
-        table.insert(clinical_evidence_links, r8281)
-        table.insert(clinical_evidence_links,
-            links.get_abstraction_value_link { code = "URINARY_PAIN", text = "Urinary Pain", sequence = 9 })
-        table.insert(clinical_evidence_links,
-            links.get_abstraction_value_link { code = "UTI_CAUSATIVE_AGENT", text = "UTI Causative Agent", sequence = 0 })
-        table.insert(clinical_evidence_links,
-            links.get_discrete_value_link {
-                discreteValueName = "BLOOD",
-                text = "Blood in Urine",
-                ---@diagnostic disable-next-line: unused-local
-                predicate = function(dv, num) return num > 0 end,
-                sequence = 1
-            }
-        )
+        clinical_evidence_header:add_link(r8271)
+        clinical_evidence_header:add_code_link("R41.0", "Disorientation")
+        clinical_evidence_header:add_code_link("R31.0", "Hematuria")
+        clinical_evidence_header:add_abstraction_link("INCREASED_URINARY_FREQUENCY", "Increased Urinary Frequency")
+        clinical_evidence_header:add_code_link("R82.998", "Positive Urine Analysis")
+        clinical_evidence_header:add_code_link("R82.89", "Positive Urine Culture")
+        clinical_evidence_header:add_link(r8279)
+        clinical_evidence_header:add_link(r8281)
+        clinical_evidence_header:add_abstraction_link_with_value("URINARY_PAIN", "Urinary Pain")
+        clinical_evidence_header:add_abstraction_link_with_value("UTI_CAUSATIVE_AGENT", "UTI Causative Agent")
+        ---@diagnostic disable-next-line: unused-local
+        clinical_evidence_header:add_discrete_value_link("BLOOD", "Blood in Urine", function(dv, num) return num > 0 end)
+
         -- Why is this discrete value name empty?
-        table.insert(laboratory_studies_links,
-            links.get_discrete_value_link {
-                discreteValueName = "",
-                text = "Pus in Urine",
-                ---@diagnostic disable-next-line: unused-local
-                predicate = function(dv, num) return num > 0 end,
-                sequence = 2
-            }
-        )
-        table.insert(laboratory_studies_links, urine_culture)
-        table.insert(laboratory_studies_links,
-            links.get_discrete_value_link {
-                discreteValueName = "WBC (10x3/ul)",
-                text = "WBC",
-                ---@diagnostic disable-next-line: unused-local
-                predicate = function(dv, num) return num > 11 end,
-                sequence = 4
-            }
-        )
+        ---@diagnostic disable-next-line: unused-local
+        laboratory_studies_header:add_discrete_value_link("", "Pus in Urine", function(dv, num) return num > 0 end)
+        laboratory_studies_header:add_link(urine_culture)
+        laboratory_studies_header:add_discrete_value_link("WBC (10x3/ul)", "WBC", function(dv, num) return num > 11 end)
+
+
+
         table.insert(treatment_and_monitoring_links,
             links.get_medication_link { code = "Antibiotic", text = "Antibiotic", sequence = 1 })
         table.insert(treatment_and_monitoring_links,

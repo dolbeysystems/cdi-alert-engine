@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")
 local links = require("libs.common.basic_links")
@@ -140,7 +140,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["D50.8"] = "Other Iron Deficiency Anemias",
@@ -446,7 +446,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence" and
         d62_code_link and
@@ -474,7 +473,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == "Possible Acute Blood Loss Anemia" and
         d62_code_link
@@ -485,7 +483,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == "Possible Anemia Dx" and
         #account_alert_codes > 0
@@ -503,8 +500,12 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
-    elseif #account_alert_codes > 0 and not low_hemoglobin_dv_link and not low_hematocrit30_dv_link and not anemia_treatment then
+    elseif
+        #account_alert_codes > 0 and
+        not low_hemoglobin_dv_link and
+        not low_hematocrit30_dv_link and
+        not anemia_treatment
+    then
         -- Alert for "Anemia Dx Possibly Lacking Supporting Evidence"
         if not low_hemoglobin_dv_link or not anemia_treatment then
             documented_dx_header:add_text_link(link_text_possible_no_lows)
@@ -518,7 +519,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Anemia Dx Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif d62_code_link and (not signs_of_bleeding or not low_hemoglobin_dv_link or not anemia_treatment) then
         -- Alert for "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence"
         documented_dx_header:add_link(d62_code_link)
@@ -537,7 +537,6 @@ if not existing_alert or not existing_alert.validated then
 
         Result.subtitle = "Acute Blood Loss Anemia Dx Possibly Lacking Clinical Evidence"
         Result.passed = true
-
     elseif not d62_code_link and (#hematocrit_drop_dv_link_pairs > 0 or #hemoglobin_drop_dv_link_pairs > 0) then
         -- Alert for "Possible Acute Blood Loss Anemia" - Drops
         if hematocrit_drop_dv_link_pairs then
@@ -560,7 +559,6 @@ if not existing_alert or not existing_alert.validated then
         )
         Result.subtitle = "Possible Acute Blood Loss Anemia"
         Result.passed = true
-
     elseif not d62_code_link and not low_hemoglobin_dv_link and signs_of_bleeding and anemia_treatment then
         -- Alert for "Possible Acute Blood Loss Anemia" - Low hemoglobin, sign of bleeding, and anemia treatment
         hemoglobin_header:add_link(low_hemoglobin_dv_link)
@@ -572,7 +570,6 @@ if not existing_alert or not existing_alert.validated then
         )
         Result.subtitle = "Possible Acute Blood Loss Anemia"
         Result.passed = true
-
     elseif not d62_code_link and (low_hemoglobin10_dv_link or low_hematocrit30_dv_link) and signs_of_bleeding then
         -- Alert for "Possible Acute Blood Loss Anemia" -Hgb <10 or Hct <30 and possible sign of Bleeding present
         hemoglobin_header:add_link(low_hemoglobin10_dv_link)
@@ -582,7 +579,6 @@ if not existing_alert or not existing_alert.validated then
         )
         Result.subtitle = "Possible Acute Blood Loss Anemia"
         Result.passed = true
-
     elseif not d62_code_link and (d649_code_link or d500_code_link) and signs_of_bleeding and anemia_treatment then
         -- Alert for "Possible Acute Blood Loss Anemia" - Anemia dx and sign of bleeding and anemia treatment
         alert_trigger_header:add_text_link(
@@ -593,7 +589,6 @@ if not existing_alert or not existing_alert.validated then
 
         Result.subtitle = "Possible Acute Blood Loss Anemia"
         Result.passed = true
-
     elseif
         #account_alert_codes == 0 and
         not d649_code_link and
@@ -670,7 +665,8 @@ if not existing_alert or not existing_alert.validated then
             laboratory_studies_header:add_discrete_value_one_of_link(dv_mcv, "MCV", calc_mcv1)
             laboratory_studies_header:add_discrete_value_one_of_link(dv_rbc, "RBC", calc_rbc1)
             laboratory_studies_header:add_discrete_value_one_of_link(dv_rdw, "RDW", calc_rdw1)
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_reticulocyte_count, "Reticulocyte Count", calc_reticulocyte_count1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_reticulocyte_count, "Reticulocyte Count",
+                calc_reticulocyte_count1)
 
             local ferritin_args = {
                 discreteValueNames = dv_serum_ferritin,
@@ -683,7 +679,7 @@ if not existing_alert or not existing_alert.validated then
                 laboratory_studies_header:add_link(constrained_ferritin)
             else
                 ferritin_args.predicate = nil
-                local all_ferritin  = links.get_discrete_value_link(ferritin_args)
+                local all_ferritin      = links.get_discrete_value_link(ferritin_args)
                 laboratory_studies_header:add_link(all_ferritin)
             end
 
@@ -804,7 +800,7 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end

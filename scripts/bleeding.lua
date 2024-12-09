@@ -49,62 +49,27 @@ if not existing_alert or not existing_alert.validated then
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
-    local documented_dx_header = links.make_header_link("Documented Dx")
-    local documented_dx_links = {}
-    local laboratory_studies_header = links.make_header_link("Laboratory Studies")
-    local laboratory_studies_links = {}
-    local signs_of_bleeding_header = links.make_header_link("Signs of Bleeding")
-    local signs_of_bleeding_links = {}
-    local medications_header = links.make_header_link("Medication(s)/Transfusion(s)")
-    local medications_links = {}
-    local hemoglobin_header = links.make_header_link("Hemoglobin")
-    local hemoglobin_links = {}
-    local hematocrit_header = links.make_header_link("Hematocrit")
-    local hematocrit_links = {}
-    local inr_header = links.make_header_link("INR")
-    local inr_links = {}
-    local pt_header = links.make_header_link("PT")
-    local pt_links = {}
-    local ptt_header = links.make_header_link("PTT")
-    local ptt_links = {}
+    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 2)
+    local signs_of_bleeding_header = headers.make_header_builder("Signs of Bleeding", 3)
+    local medications_header = headers.make_header_builder("Medication(s)/Transfusion(s)", 4)
+    local hemoglobin_header = headers.make_header_builder("Hemoglobin", 1)
+    local hematocrit_header = headers.make_header_builder("Hematocrit", 2)
+    local inr_header = headers.make_header_builder("INR", 3)
+    local pt_header = headers.make_header_builder("PT", 4)
+    local ptt_header = headers.make_header_builder("PTT", 5)
 
     local function compile_links()
-        if #inr_links > 0 then
-            inr_header.links = inr_links
-            table.insert(laboratory_studies_links, inr_header)
-        end
-        if #pt_links > 0 then
-            pt_header.links = pt_links
-            table.insert(laboratory_studies_links, pt_header)
-        end
-        if #ptt_links > 0 then
-            ptt_header.links = ptt_links
-            table.insert(laboratory_studies_links, ptt_header)
-        end
-        if #hemoglobin_links > 0 then
-            hemoglobin_header.links = hemoglobin_links
-            table.insert(laboratory_studies_links, hemoglobin_header)
-        end
-        if #hematocrit_links > 0 then
-            hematocrit_header.links = hematocrit_links
-            table.insert(laboratory_studies_links, hematocrit_header)
-        end
-        if #documented_dx_links > 0 then
-            documented_dx_header.links = documented_dx_links
-            table.insert(result_links, documented_dx_header)
-        end
-        if #signs_of_bleeding_links > 0 then
-            signs_of_bleeding_header.links = signs_of_bleeding_links
-            table.insert(result_links, signs_of_bleeding_header)
-        end
-        if #laboratory_studies_links > 0 then
-            laboratory_studies_header.links = laboratory_studies_links
-            table.insert(result_links, laboratory_studies_header)
-        end
-        if #medications_links > 0 then
-            medications_header.links = medications_links
-            table.insert(result_links, medications_header)
-        end
+        laboratory_studies_header:add_link(hemoglobin_header:build(true))
+        laboratory_studies_header:add_link(hematocrit_header:build(true))
+        laboratory_studies_header:add_link(inr_header:build(true))
+        laboratory_studies_header:add_link(pt_header:build(true))
+        laboratory_studies_header:add_link(ptt_header:build(true))
+
+        table.insert(result_links, documented_dx_header:build(true))
+        table.insert(result_links, laboratory_studies_header:build(true))
+        table.insert(result_links, signs_of_bleeding_header:build(true))
+        table.insert(result_links, medications_header:build(true))
 
         if existing_alert then
             result_links = links.merge_links(existing_alert.links, result_links)
@@ -215,7 +180,7 @@ if not existing_alert or not existing_alert.validated then
             local temp_code = links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. description }
 
             if temp_code then
-                table.insert(documented_dx_links, temp_code)
+                documented_dx_header:add_link(temp_code)
             end
         end
         Result.outcome = "AUTORESOLVED"
@@ -257,83 +222,68 @@ if not existing_alert or not existing_alert.validated then
             local low_hematocrit_multi_dv_link_pairs = blood.get_low_hematocrit_discrete_value_pairs(gender)
 
             for _, pair in ipairs(low_hemoglobin_multi_dv_link_pairs) do
-                table.insert(hemoglobin_links, pair.hemoglobinLink)
-                table.insert(hematocrit_links, pair.hematocritLink)
+                hemoglobin_header:add_link(pair.hemoglobinLink)
+                hemoglobin_header:add_link(pair.hematocritLink)
             end
 
             for _, pair in ipairs(low_hematocrit_multi_dv_link_pairs) do
-                table.insert(hemoglobin_links, pair.hemoglobinLink)
-                table.insert(hematocrit_links, pair.hematocritLink)
+                hematocrit_header:add_link(pair.hematocritLink)
+                hematocrit_header:add_link(pair.hemoglobinLink)
             end
 
-            inr_links = links.get_discrete_value_links {
-                discreteValueNames = inr_dv_names,
-                predicate = high_inr_predicate,
-                text = "INR",
-                maxPerValue = 10
-            }
-            pt_links = links.get_discrete_value_links {
-                discreteValueNames = pt_dv_names,
-                predicate = high_pt_predicate,
-                text = "PT",
-                maxPerValue = 10,
-            }
-            ptt_links = links.get_discrete_value_links {
-                discreteValueNames = ptt_dv_names,
-                predicate = high_ptt_predicate,
-                text = "PTT",
-                maxPerValue = 10,
-            }
+            inr_header:add_discrete_value_many_links(inr_dv_names, "INR", 10, high_inr_predicate)
+            pt_header:add_discrete_value_many_links(pt_dv_names, "PT", 10, high_pt_predicate)
+            ptt_header:add_discrete_value_many_links(ptt_dv_names, "PTT", 10, high_ptt_predicate)
 
             -- Meds
-            table.insert(medications_links, anticoagulant_med_link)
-            table.insert(medications_links, anticoagulant_abs_link)
-            table.insert(medications_links, antiplatelet_med_link)
-            table.insert(medications_links, antiplatelet2_med_link)
-            table.insert(medications_links, antiplatelet_abs_link)
-            table.insert(medications_links, antiplatelet2_abs_link)
-            table.insert(medications_links, aspirin_med_link)
-            table.insert(medications_links, aspirin_abs_link)
-            table.insert(medications_links, links.get_abstraction_value_link { code = "CLOT_SUPPORTING_THERAPY", text = "Clot Supporting Therapy", seq = 9 })
-            table.insert(medications_links, links.get_medication_link { cat = "Clot Supporting Therapy Reversal Agent", seq = 10 })
-            table.insert(medications_links, links.get_code_link { code = "30233M1", text = "Cryoprecipitate", seq = 11 })
-            table.insert(medications_links, links.get_abstraction_value_link { code = "DESMOPRESSIN_ACETATE", text = "Desmopressin Acetate", seq = 12 })
-            table.insert(medications_links, links.get_code_link { code = "30233T1", text = "Fibrinogen Transfusion", seq = 13 })
-            table.insert(medications_links, links.get_code_link { codes = { "30233L1", "30243L1" }, text = "Fresh Frozen Plasma", seq = 14 })
-            table.insert(medications_links, heparin_med_link)
-            table.insert(medications_links, heparin_abs_link)
-            table.insert(medications_links, z7901_code_link)
-            table.insert(medications_links, z7982_code_link)
-            table.insert(medications_links, z7902_code_link)
-            table.insert(medications_links, links.get_abstraction_value_link { code = "PLASMA_DERIVED_FACTOR_CONCENTRATE", text = "Plasma Derived Factor Concentrate", seq = 20 })
-            table.insert(medications_links, links.get_code_link { codes = { "30233R1", "30243R1" }, text = "Platelet Transfusion", seq = 21 })
-            table.insert(medications_links, links.get_abstraction_value_link { code = "RECOMBINANT_FACTOR_CONCENTRATE", text = "Recombinant Factor Concentrate", seq = 22 })
-            table.insert(medications_links, links.get_code_link { codes = { "30233N1", "30243N1" }, text = "Red Blood Cell Transfusion", seq = 23 })
+            medications_header:add_link(anticoagulant_med_link)
+            medications_header:add_link(anticoagulant_abs_link)
+            medications_header:add_link(antiplatelet_med_link)
+            medications_header:add_link(antiplatelet2_med_link)
+            medications_header:add_link(antiplatelet_abs_link)
+            medications_header:add_link(antiplatelet2_abs_link)
+            medications_header:add_link(aspirin_med_link)
+            medications_header:add_link(aspirin_abs_link)
+            medications_header:add_abstraction_link_with_value("CLOT_SUPPORTING_THERAPY", "Clot Supporting Therapy")
+            medications_header:add_medication_link("Clot Supporting Therapy Reversal Agent", "")
+            medications_header:add_code_link("30233M1", "Cryoprecipitate")
+            medications_header:add_abstraction_link_with_value("DESMOPRESSIN_ACETATE", "Desmopressin Acetate")
+            medications_header:add_code_link("30233T1", "Fibrinogen Transfusion")
+            medications_header:add_code_link("30233L1", "Fresh Frozen Plasma")
+            medications_header:add_link(heparin_med_link)
+            medications_header:add_link(heparin_abs_link)
+            medications_header:add_link(z7901_code_link)
+            medications_header:add_link(z7982_code_link)
+            medications_header:add_link(z7902_code_link)
+            medications_header:add_abstraction_link_with_value("PLASMA_DERIVED_FACTOR_CONCENTRATE", "Plasma Derived Factor Concentrate")
+            medications_header:add_code_links({ "30233R1", "30243R1" }, "Platelet Transfusion")
+            medications_header:add_abstraction_link_with_value("RECOMBINANT_FACTOR_CONCENTRATE", "Recombinant Factor Concentrate")
+            medications_header:add_code_links({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
 
             -- Sings of Bleeding
-            table.insert(signs_of_bleeding_links, d62_code_link)
-            table.insert(signs_of_bleeding_links, bleeding_abs_link)
-            table.insert(signs_of_bleeding_links, blood_loss_dv_link)
-            table.insert(signs_of_bleeding_links, n99510_code_link)
-            table.insert(signs_of_bleeding_links, r040_code_link)
-            table.insert(signs_of_bleeding_links, est_blood_loss_abs_link)
-            table.insert(signs_of_bleeding_links, k922_code_link)
-            table.insert(signs_of_bleeding_links, gi_bleed_codes_link)
-            table.insert(signs_of_bleeding_links, hematochezia_abs_link)
-            table.insert(signs_of_bleeding_links, k920_code_link)
-            table.insert(signs_of_bleeding_links, hematoma_abs_link)
-            table.insert(signs_of_bleeding_links, r310_code_link)
-            table.insert(signs_of_bleeding_links, k661_code_link)
-            table.insert(signs_of_bleeding_links, hemoptysis_code_link)
-            table.insert(signs_of_bleeding_links, hemorrhage_abs_link)
-            table.insert(signs_of_bleeding_links, r049_code_link)
-            table.insert(signs_of_bleeding_links, j9501_code_link)
-            table.insert(signs_of_bleeding_links, r041_code_link)
-            table.insert(signs_of_bleeding_links, k921_code_link)
-            table.insert(signs_of_bleeding_links, i62_codes_link)
-            table.insert(signs_of_bleeding_links, i60_codes_link)
-            table.insert(signs_of_bleeding_links, h922_codes_link)
-            table.insert(signs_of_bleeding_links, r0489_code_link)
+            signs_of_bleeding_header:add_link(d62_code_link)
+            signs_of_bleeding_header:add_link(bleeding_abs_link)
+            signs_of_bleeding_header:add_link(blood_loss_dv_link)
+            signs_of_bleeding_header:add_link(n99510_code_link)
+            signs_of_bleeding_header:add_link(r040_code_link)
+            signs_of_bleeding_header:add_link(est_blood_loss_abs_link)
+            signs_of_bleeding_header:add_link(k922_code_link)
+            signs_of_bleeding_header:add_link(gi_bleed_codes_link)
+            signs_of_bleeding_header:add_link(hematochezia_abs_link)
+            signs_of_bleeding_header:add_link(k920_code_link)
+            signs_of_bleeding_header:add_link(hematoma_abs_link)
+            signs_of_bleeding_header:add_link(r310_code_link)
+            signs_of_bleeding_header:add_link(k661_code_link)
+            signs_of_bleeding_header:add_link(hemoptysis_code_link)
+            signs_of_bleeding_header:add_link(hemorrhage_abs_link)
+            signs_of_bleeding_header:add_link(r049_code_link)
+            signs_of_bleeding_header:add_link(j9501_code_link)
+            signs_of_bleeding_header:add_link(r041_code_link)
+            signs_of_bleeding_header:add_link(k921_code_link)
+            signs_of_bleeding_header:add_link(i62_codes_link)
+            signs_of_bleeding_header:add_link(i60_codes_link)
+            signs_of_bleeding_header:add_link(h922_codes_link)
+            signs_of_bleeding_header:add_link(r0489_code_link)
         end
 
 
