@@ -283,15 +283,18 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         vital_signs_header:add_link(altered_level_of_consciousness)
+        ---@diagnostic disable: unused-local
         vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score",
             function(dv, num) return num < 15 end)
         vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature",
             function(dv, num) return num > 38.3 end)
+        ---@diagnostic enable: unused-local
 
         urinary_devices_header:add_link(urine_bacteria)
         urinary_devices_header:add_discrete_value_link("BLOOD", "UA Blood", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("", "UA Gran Cast", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("PROTEIN (mg/dL)", "UA Protein", numeric_result_predicate)
+        ---@diagnostic disable: unused-local
         urinary_devices_header:add_discrete_value_link("RBC/HPF (/HPF)", "UA RBC", function(dv, num) return num > 3 end)
         urinary_devices_header:add_discrete_value_link("WBC/HPF (/HPF)", "UA WBC", function(dv, num) return num > 5 end)
         urinary_devices_header:add_discrete_value_link("", "UA Squamous Epithelias", function(dv, num)
@@ -299,6 +302,7 @@ if not existing_alert or not existing_alert.validated then
             local a, b = string.match(dv.result, "(%d+)-(%d+)")
             return tonumber(a) > 20 or tonumber(b) > 20
         end)
+        ---@diagnostic enable: unused-local
         urinary_devices_header:add_discrete_value_link("HYALINE CASTS (/LPF)", "UA Hyaline Casts", presence_predicate)
         urinary_devices_header:add_discrete_value_link("LEAK ESTERASE", "UA Leak Esterase", presence_predicate)
 

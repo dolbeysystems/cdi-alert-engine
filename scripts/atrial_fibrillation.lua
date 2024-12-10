@@ -198,7 +198,7 @@ if not existing_alert or not existing_alert.validated then
 
 
             -- Vital Links
-            vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate", high_heart_rate_predicate) 
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate", high_heart_rate_predicate)
             vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_names, "Mean Arterial Pressure", low_map_predicate)
             vital_signs_intake_header:add_discrete_value_one_of_link(
                 systolic_blood_pressure_dv_names,
