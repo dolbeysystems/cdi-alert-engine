@@ -1,4 +1,4 @@
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 --- CDI Alert Script - Cerebral Edema and Brain Compression
 ---
 --- This script checks an account to see if it matches the criteria for a cerebral edema and brain compression alert.
@@ -6,7 +6,7 @@
 --- Date: 11/22/2024
 --- Version: 1.0
 --- Site: Sarasota County Health District
----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 ---@diagnostic disable: unused-local, empty-block, unused-function -- Remove once the script is filled out
 
 
@@ -58,20 +58,20 @@ if not existing_alert or not existing_alert.validated then
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
     local result_links = {}
-    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
-    local alert_trigger_header = headers.make_header_builder("Alert Trigger", 2)
-    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 3)
+    local documented_dx_header = headers.make_header_builder("Documented Code", 1)
     local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake", 4)
     local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 5)
     local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 6)
+    local ct_head_brain_header = headers.make_header_builder("CT Head/Brain", 7)
+    local mri_brain_header = headers.make_header_builder("MRI Brain", 8)
 
     local function compile_links()
         table.insert(result_links, documented_dx_header:build(true))
-        table.insert(result_links, alert_trigger_header:build(true))
         table.insert(result_links, clinical_evidence_header:build(true))
-        table.insert(result_links, laboratory_studies_header:build(true))
         table.insert(result_links, vital_signs_intake_header:build(true))
         table.insert(result_links, treatment_and_monitoring_header:build(true))
+        table.insert(result_links, ct_head_brain_header:build(true))
+        table.insert(result_links, mri_brain_header:build(true))
 
         if existing_alert then
             result_links = links.merge_links(existing_alert.links, result_links)
@@ -91,14 +91,10 @@ if not existing_alert or not existing_alert.validated then
         ["S06.1X2A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 31 Minutes To 59 Minutes",
         ["SO6.1X3A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 1 Hour To 5 Hours 59 Minutes",
         ["SO6.1X4A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 6 Hours To 24 Hours",
-        ["SO6.1X5A"] =
-        "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours With Return To Pre-Existing Conscious Level",
-        ["SO6.1X6A"] =
-        "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours Without Return To Pre-Existing Conscious Level With Patient Surviving",
-        ["SO6.1X7A"] =
-        "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Brain Injury Prior To Regaining Consciousness",
-        ["S06.1X8A"] =
-        "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Other Cause Prior To Regaining Consciousness",
+        ["SO6.1X5A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours With Return To Pre-Existing Conscious Level",
+        ["SO6.1X6A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours Without Return To Pre-Existing Conscious Level With Patient Surviving",
+        ["SO6.1X7A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Brain Injury Prior To Regaining Consciousness",
+        ["S06.1X8A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Other Cause Prior To Regaining Consciousness",
         ["SO6.1X9A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Unspecified Duration",
     }
     local compression_code_dictionary = {
@@ -120,14 +116,22 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negations
-    local cervical_decompression_abs = links.get_abstraction_link { code = "CERVICAL_DECOMPRESSION", text = "Cervical Decompression" }
-    local cervical_fusion_abs = links.get_abstraction_link { code = "CERVICAL_FUSION", text = "Cervical Fusion" }
-    local lumbar_decompression_abs = links.get_abstraction_link { code = "LUMBAR_DECOMPRESSION", text = "Lumbar Decompression" }
-    local lumbar_fusion_abs = links.get_abstraction_link { code = "LUMBAR_FUSION", text = "Lumbar Fusion" }
-    local sacral_decompression_abs = links.get_abstraction_link { code = "SACRAL_DECOMPRESSION", text = "Sacral Decompression" }
-    local sacral_fusion_abs = links.get_abstraction_link { code = "SACRAL_FUSION", text = "Sacral Fusion" }
-    local thoracic_decompression_abs = links.get_abstraction_link { code = "THORACIC_DECOMPRESSION", text = "Thoracic Decompression" }
-    local thoracic_fusion_abs = links.get_abstraction_link { code = "THORACIC_FUSION", text = "Thoracic Fusion" }
+    local cervical_decompression_abs =
+        links.get_abstraction_link { code = "CERVICAL_DECOMPRESSION", text = "Cervical Decompression" }
+    local cervical_fusion_abs =
+        links.get_abstraction_link { code = "CERVICAL_FUSION", text = "Cervical Fusion" }
+    local lumbar_decompression_abs =
+        links.get_abstraction_link { code = "LUMBAR_DECOMPRESSION", text = "Lumbar Decompression" }
+    local lumbar_fusion_abs =
+        links.get_abstraction_link { code = "LUMBAR_FUSION", text = "Lumbar Fusion" }
+    local sacral_decompression_abs =
+        links.get_abstraction_link { code = "SACRAL_DECOMPRESSION", text = "Sacral Decompression" }
+    local sacral_fusion_abs =
+        links.get_abstraction_link { code = "SACRAL_FUSION", text = "Sacral Fusion" }
+    local thoracic_decompression_abs =
+        links.get_abstraction_link { code = "THORACIC_DECOMPRESSION", text = "Thoracic Decompression" }
+    local thoracic_fusion_abs =
+        links.get_abstraction_link { code = "THORACIC_FUSION", text = "Thoracic Fusion" }
 
     -- Alert Trigger
     -- get latest medical document
@@ -136,7 +140,11 @@ if not existing_alert or not existing_alert.validated then
     --- @type string | nil
     local latest_medical_document_type = nil
     for _, document in ipairs(Account.documents) do
-        if document_list[document.document_type] and latest_medical_document_date == nil or dates.date_string_to_int(document.document_date) then
+        if
+            document_list[document.document_type] and
+            latest_medical_document_date == nil or
+            dates.date_string_to_int(document.document_date)
+        then
             latest_medical_document_date = dates.date_string_to_int(document.document_date)
             latest_medical_document_type = document.document_type
         end
@@ -166,7 +174,8 @@ if not existing_alert or not existing_alert.validated then
     local brain_herniation_abs = links.get_abstraction_link { code = "BRAIN_HERNIATION", text = "Brain Herniation" }
     local brain_pressure_abs = links.get_abstraction_link { code = "BRAIN_PRESSURE", text = "Brain Pressure" }
     local cerebral_edema_abs = links.get_abstraction_link { code = "CEREBRAL_EDEMA", text = "Cerebral Edema" }
-    local cerebral_ventricle_effacement_abs = links.get_abstraction_link { code = "CEREBRAL_VENTRICLE_EFFACEMENT", text = "Cerebral Ventricle Effacement" }
+    local cerebral_ventricle_effacement_abs =
+        links.get_abstraction_link { code = "CEREBRAL_VENTRICLE_EFFACEMENT", text = "Cerebral Ventricle Effacement" }
     local mass_effect_abs = links.get_abstraction_link { code = "MASS_EFFECT", text = "Mass Effect" }
     local sulcal_effacement_abs = links.get_abstraction_link { code = "SULCAL_EFFACEMENT", text = "Sulcal Effacement" }
 
@@ -180,13 +189,22 @@ if not existing_alert or not existing_alert.validated then
             return med.route:find("Aerosol") ~= nil
         end
     }
-    local hyperventilation_therapy_abs = links.get_abstraction_link { code = "HYPERVENTILATION_THERAPY", text = "Hyperventilation Therapy" }
-    local subarchnoid_epidural_bolt_code = links.get_code_link { code = "00H032Z", text = "Subarchnoid/Epidural Bolt" }
-    local ventriculostomy_codes = links.get_code_link { codes = { "009600Z", "009630Z", "009640Z" }, text = "Ventriculostomy" }
+    local hyperventilation_therapy_abs =
+        links.get_abstraction_link { code = "HYPERVENTILATION_THERAPY", text = "Hyperventilation Therapy" }
+    local subarchnoid_epidural_bolt_code =
+        links.get_code_link { code = "00H032Z", text = "Subarchnoid/Epidural Bolt" }
+    local ventriculostomy_codes =
+        links.get_code_link { codes = { "009600Z", "009630Z", "009640Z" }, text = "Ventriculostomy" }
 
     -- Vitals
-    local intra_pressure_dv = links.get_discrete_value_link { discreteValueName = "Intracranial Pressure", text = "Intracranial Pressure", predicate = intracranial_pressure_predicate }
-    local intra_pressure_abs = links.get_abstraction_link { code = "ELEVATED_INTRACRANIAL_PRESSURE", text = "Intracranial Pressure" }
+    local intra_pressure_dv =
+        links.get_discrete_value_link {
+            discreteValueName = "Intracranial Pressure",
+            text = "Intracranial Pressure",
+            predicate = intracranial_pressure_predicate
+        }
+    local intra_pressure_abs =
+        links.get_abstraction_link { code = "ELEVATED_INTRACRANIAL_PRESSURE", text = "Intracranial Pressure" }
 
     local negation_check =
         cervical_decompression_abs or
@@ -225,7 +243,12 @@ if not existing_alert or not existing_alert.validated then
             Result.reason = "Previously Autoresolved"
         end
         Result.passed = true
-    elseif brain_compression_abs and #account_compression_codes == 0 and cerebral_edema_abs and #account_edema_codes == 0 then
+    elseif
+        brain_compression_abs and
+        #account_compression_codes == 0 and
+        cerebral_edema_abs and
+        #account_edema_codes == 0
+    then
         documented_dx_header:add_link(brain_compression_abs)
         documented_dx_header:add_link(cerebral_edema_abs)
         Result.subtitle = "Brain Compression and Cerebral Edema Dx Possibly only present on Radiology Reports."
@@ -267,6 +290,16 @@ if not existing_alert or not existing_alert.validated then
         )
     then
         -- TODO: Left off here
+        if mannitol_med_doc_link and latest_medical_document_type then
+            documented_dx_header:add_link(mannitol_med_doc_link)
+            documented_dx_header:add_document_link(latest_medical_document_type, latest_medical_document_type)
+        end
+        if dexamethasone_med_doc_link and latest_medical_document_type then
+            documented_dx_header:add_link(dexamethasone_med_doc_link)
+            documented_dx_header:add_document_link(latest_medical_document_type, latest_medical_document_type)
+        end
+        Result.subtitle = "Possible Cerebral Edema Dx"
+        Result.passed = true
     end
 
 
@@ -276,7 +309,151 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            -- Normal Alert
+            -- Clinical Evidence
+            local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
+            local altered_abs =
+                links.get_abstraction_link {
+                    code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                    text = "Altered Level Of Consciousness"
+                }
+            if r4182_code then
+                clinical_evidence_header:add_link(r4182_code)
+                if altered_abs then
+                    altered_abs.hidden = true
+                end
+            end
+            clinical_evidence_header:add_link(altered_abs)
+            clinical_evidence_header:add_link(brain_compression_abs)
+
+            clinical_evidence_header:add_code_links(
+                {
+                    "I60.31", "I60.32", "I60.4", "I60.5", "I60.50", "I60.51", "I60.52", "I60.6", "I60.7", "I60.8",
+                    "I60.9", "I61.0", "I61.1", "I61.2", "I61.3", "I61.4", "I61.5", "I61.6", "I61.8", "I61.9", "I62",
+                    "I62.0", "I62.00", "I62.01", "I62.02", "I62.03", "I62.1", "I62.9", "I60.0", "I60.00", "I60.01",
+                    "I60.02", "I60.1", "I60.10", "I60.11", "I60.12", "I60.2", "I60.3", "I60.30",
+                },
+                "Brain Hemorrhage"
+            )
+            clinical_evidence_header:add_link(brain_herniation_abs)
+            clinical_evidence_header:add_link(brain_pressure_abs)
+            clinical_evidence_header:add_code_link("G93.0", "Cerebral Cysts")
+            clinical_evidence_header:add_link(cerebral_edema_abs)
+            clinical_evidence_header:add_code_link("I67.82", "Cerebral Ischemia")
+            clinical_evidence_header:add_link(cerebral_ventricle_effacement_abs)
+            clinical_evidence_header:add_code_link("G31.9", "Cerebral Volume loss")
+            clinical_evidence_header:add_code_link("Z98.2", "Cerebrospinal Fluid Drainage Device")
+            clinical_evidence_header:add_abstraction_link("COMA", "Coma");
+            clinical_evidence_header:add_code_link("R41.0", "Disorientation")
+            clinical_evidence_header:add_code_link("R29.810", "Facial Droop")
+            clinical_evidence_header:add_abstraction_link("FACIAL_NUMBNESS", "Facial Numbness")
+            clinical_evidence_header:add_code_link("R51.9", "Headache")
+            clinical_evidence_header:add_code_links(
+                {
+                    "G81.00", "G81.01", "G81.02", "G81.03", "G81.04", "G81.1", "G81.10", "G81.11", "G81.12",
+                    "G81.13", "G81.14", "G81.90", "G81.91", "G81.92", "G81.93", "G81.94"
+                },
+                "Hemiplegia"
+            )
+            clinical_evidence_header:add_code_links(
+                { "G81.00", "G81.10", "G81.90" },
+                "Hemiplegia/Hemiparesis of Unspecified Site"
+            )
+            clinical_evidence_header:add_code_links({ "G91.1", "G91.3", "G91.9" }, "Hydrocephalus")
+            clinical_evidence_header:add_code_link("G04.90", "Encephalitis")
+            clinical_evidence_header:add_code_prefix_link("S06%.", "Intracranial Injury")
+            clinical_evidence_header:add_abstraction_link("IRREGULAR_RADIOLOGY_FINDINGS_BRAIN", "Radiology Findings")
+            clinical_evidence_header:add_code_links({ "5A1935Z", "5A1945Z", "5A1955Z" }, "Intubation")
+            clinical_evidence_header:add_link(mass_effect_abs)
+            clinical_evidence_header:add_abstraction_link("MIDLINE_SHIFT", "Midline Shift")
+            clinical_evidence_header:add_abstraction_link("MUSCLE_CRAMPS", "Muscle Cramps")
+            clinical_evidence_header:add_code_links(
+                {
+                    "I63.0", "I63.00", "I63.01", "I63.011", "I63.012", "I63.013", "I63.019", "I63.02", "I63.03",
+                    "I63.031", "I63.032", "I63.033", "I63.039", "I63.09", "I63.1", "I63.10", "I63.11", "I63.111",
+                    "I63.112", "I63.113", "I63.119", "I63.12", "I63.13", "I63.131", "I63.132", "I63.133", "I63.139",
+                    "I63.19", "I63.2", "I63.20", "I63.21", "I63.211", "I63.212", "I63.213", "I63.219", "I63.22",
+                    "I63.23", "I63.231", "I63.232", "I63.233", "I63.239", "I63.29", "I63.3", "I63.30", "I63.31",
+                    "I63.311", "I63.312", "I63.313", "I63.319", "I63.32", "I63.321", "I63.322", "I63.323", "I63.329",
+                    "I63.33", "I63.331", "I63.332", "I63.333", "I63.339", "I63.34", "I63.341", "I63.342", "I63.343",
+                    "I63.349", "I63.39", "I63.4", "I63.40", "I63.41", "I63.411", "I63.412", "I63.413", "I63.419",
+                    "I63.432", "I63.433", "I63.439", "I63.44", "I63.441", "I63.442", "I63.443", "I63.449", "I63.49",
+                    "I63.5", "I63.50", "I63.51", "I63.511", "I63.512", "I63.513", "I63.519", "I63.52", "I63.521",
+                    "I63.522", "I63.523", "I63.529", "I63.53", "I63.531", "I63.532", "I63.533", "I63.539", "I63.54",
+                    "I63.541", "I63.542", "I63.543", "I63.549", "I63.59", "I63.6", "I63.8", "I63.81", "I63.89", "I63.9"
+                },
+                "Cerebral Infarction"
+            )
+            clinical_evidence_header:add_abstraction_link("OBTUNED", "Obtuned")
+            clinical_evidence_header:add_abstraction_link("SEIZURE", "Seizure")
+            clinical_evidence_header:add_link(sulcal_effacement_abs)
+            clinical_evidence_header:add_code_link("S09.8XXA", "Traumatic Brain Injury - Closed Head Injury")
+            clinical_evidence_header:add_code_link("S09.90XA", "Traumatic Brain Injury - Open Head Injury")
+            clinical_evidence_header:add_code_link("R11.10", "Vomiting")
+
+            -- Document Links
+            ct_head_brain_header:add_document_link("CT Head WO", "CT Head WO")
+            ct_head_brain_header:add_document_link("CT Head Stroke Alert", "CT Head Stroke Alert")
+            ct_head_brain_header:add_document_link("CTA Head-Neck", "CTA Head-Neck")
+            ct_head_brain_header:add_document_link("CTA Head", "CTA Head")
+            ct_head_brain_header:add_document_link("CT Head  WWO", "CT Head  WWO")
+            ct_head_brain_header:add_document_link("CT Head  W", "CT Head  W")
+            mri_brain_header:add_document_link("MRI Brain WWO", "MRI Brain WWO")
+            mri_brain_header:add_document_link("MRI Brain  W and W/O Contrast", "MRI Brain  W and W/O Contrast")
+            mri_brain_header:add_document_link("WO", "WO")
+            mri_brain_header:add_document_link("MRI Brain W/O Contrast", "MRI Brain W/O Contrast")
+            mri_brain_header:add_document_link("MRI Brain W/O Con", "MRI Brain W/O Con")
+            mri_brain_header:add_document_link("MRI Brain  W and W/O Con", "MRI Brain  W and W/O Con")
+            mri_brain_header:add_document_link("MRI Brain  W", "MRI Brain  W")
+            mri_brain_header:add_document_link("MRI Brain  W/ Contrast", "MRI Brain  W/ Contrast")
+
+            -- Treatment Links
+            treatment_and_monitoring_header:add_medication_link("Acetazolamide", "")
+            treatment_and_monitoring_header:add_abstraction_link("ACETAZOLAMIDE", "Acetazolamide")
+            treatment_and_monitoring_header:add_medication_link("Anticonvulsant", "")
+            treatment_and_monitoring_header:add_abstraction_link("ANTICONVULSANT", "Anticonvulsant")
+            treatment_and_monitoring_header:add_medication_link("Benzodiazepine", "")
+            treatment_and_monitoring_header:add_abstraction_link("BENZODIAZEPINE", "Benzodiazepine")
+            treatment_and_monitoring_header:add_link(burr_holes_codes)
+            treatment_and_monitoring_header:add_medication_link("Beta Blocker", "")
+            treatment_and_monitoring_header:add_medication_link("Bumetanide", "")
+            treatment_and_monitoring_header:add_medication_link("Calcium Channel Blockers", "")
+            treatment_and_monitoring_header:add_abstraction_link("CALCIUM_CHANNEL_BLOCKER", "Calcium Channel Blocker")
+            treatment_and_monitoring_header:add_link(decompressive_craniectomy_code)
+            treatment_and_monitoring_header:add_medication_link("Dexamethasone", "")
+            treatment_and_monitoring_header:add_medication_link("Diuretic", "")
+            treatment_and_monitoring_header:add_abstraction_link("DIURETIC", "Diuretic")
+            treatment_and_monitoring_header:add_medication_link("Furosemide", "")
+            treatment_and_monitoring_header:add_medication_link("Hydralazine", "")
+            treatment_and_monitoring_header:add_link(hypertonic_saline_med)
+            treatment_and_monitoring_header:add_abstraction_link("HYPERTONIC_SALINE", "Hypertonic Saline")
+            treatment_and_monitoring_header:add_link(hyperventilation_therapy_abs)
+            treatment_and_monitoring_header:add_medication_link("Lithium", "")
+            treatment_and_monitoring_header:add_medication_link("Mannitol", "")
+            treatment_and_monitoring_header:add_medication_link("Methylprednisolone", "")
+            treatment_and_monitoring_header:add_medication_link("Sodium Nitroprusside", "")
+            treatment_and_monitoring_header:add_medication_link("Steroid", "")
+            treatment_and_monitoring_header:add_abstraction_link("STEROIDS", "Steroid")
+            treatment_and_monitoring_header:add_link(subarchnoid_epidural_bolt_code)
+            treatment_and_monitoring_header:add_link(ventriculostomy_codes)
+
+            -- Vitals Links
+            vital_signs_intake_header:add_discrete_value_one_of_link(
+                glasgow_coma_scale_dv_name,
+                "Glasgow Coma Score",
+                glasgow_coma_scale_predicate
+            )
+            vital_signs_intake_header:add_discrete_value_one_of_link(
+                heart_rate_dv_name,
+                "Heart Rate",
+                heart_rate_predicate
+            )
+            vital_signs_intake_header:add_link(intra_pressure_dv)
+            vital_signs_intake_header:add_link(intra_pressure_abs)
+            vital_signs_intake_header:add_discrete_value_one_of_link(
+                respiratory_rate_dv_name,
+                "Respiratory Rate",
+                respiratory_rate_predicate
+            )
         end
 
 
