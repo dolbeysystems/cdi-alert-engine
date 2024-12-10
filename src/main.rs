@@ -1,13 +1,17 @@
+#![feature(let_chains)]
+
 use anyhow::Result;
 use cdi_alert_engine::*;
 use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
+use std::cell::Cell;
 use std::collections::HashMap;
-use std::{fs, usize};
-use std::path::{Path, PathBuf};
+use std::fs;
+use std::path::Path;
 use std::process::exit;
+use std::sync::Arc;
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -18,7 +22,7 @@ const ENV_PREFIX: &str = "CDI_ALERT_ENGINE";
 #[clap(author, version, about)]
 pub struct Cli {
     #[clap(short, long, value_name = "path", default_value = "config.lua")]
-    pub config: PathBuf,
+    pub config: Box<Path>,
     #[clap(short, long, value_name = "path", default_value = "info")]
     pub log: config::LogLevel,
 }
@@ -33,13 +37,17 @@ pub struct Config {
     #[serde(default)]
     pub script_engine_workflow_rest_url: String,
     pub mongo: config::Mongo,
-    #[serde(default="default_dv_days_back")]
+    #[serde(default = "default_dv_days_back")]
     pub dv_days_back: u32,
-    #[serde(default="default_med_days_back")]
+    #[serde(default = "default_med_days_back")]
     pub med_days_back: u32,
 }
-fn default_dv_days_back() -> u32 { 7 }
-fn default_med_days_back() -> u32 { 7 }
+fn default_dv_days_back() -> u32 {
+    7
+}
+fn default_med_days_back() -> u32 {
+    7
+}
 
 impl Config {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
@@ -60,31 +68,14 @@ impl Config {
     }
 }
 
-#[derive(Clone, Debug)]
-struct Script {
-    path: Box<Path>,
-    // We don't use this info yet, but it is necessary
-    info: ScriptInfo,
-    contents: String,
+struct ConfiguredRuntime {
+    lua: mlua::Lua,
+    config: Arc<Config>,
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct ScriptInfo {
     pub criteria_group: String,
-}
-
-fn load_scripts(scripts: impl Iterator<Item = (Box<Path>, ScriptInfo)>) -> Result<Box<[Script]>> {
-    scripts
-        .map(|(path, info)| {
-            let contents = fs::read_to_string(&path)?;
-            info!("loaded script: {}", path.display());
-            Ok(Script {
-                path,
-                info,
-                contents,
-            })
-        })
-        .collect()
 }
 
 #[tokio::main]
@@ -112,25 +103,15 @@ async fn main() {
         error!("{msg}");
     }
 
-    let Config {
-        scripts,
-        polling_seconds,
-        create_test_accounts,
-        mongo,
-        script_engine_workflow_rest_url,
-        dv_days_back,
-        med_days_back,   
-    } = config;
-    let mut scripts = load_scripts(scripts.into_iter()).unwrap();
-
-    if create_test_accounts > 0 {
+    if config.create_test_accounts > 0 {
         info!("Removing old test data");
-        if let Err(e) = cdi_alerts::delete_test_data(&mongo.url).await {
+        if let Err(e) = cdi_alerts::delete_test_data(&config.mongo.url).await {
             error!("Failed to delete test data: {e}");
         }
         info!("Creating test data");
         if let Err(e) =
-            cdi_alerts::create_test_data(&mongo.url, create_test_accounts as usize).await
+            cdi_alerts::create_test_data(&config.mongo.url, config.create_test_accounts as usize)
+                .await
         {
             error!("Failed to create test data: {e}");
         }
@@ -139,40 +120,38 @@ async fn main() {
     loop {
         profiling::scope!("database poll");
 
-        info!("Reloading scripts");
-        match Config::open(&cli.config) {
-            Ok(config) => scripts = load_scripts(config.scripts.into_iter()).unwrap(),
-            Err(msg) => {
-                error!("Failed to open {}: {msg}", cli.config.display());
-            }
-        };
+        // TODO: Use inotify to only open when necessary.
+        let config = Arc::new(Config::open(&cli.config).unwrap());
 
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
         let mut script_threads = Vec::new();
 
-        while let Some(account) = cdi_alerts::next_pending_account(&mongo.url, dv_days_back, med_days_back)
-            .await
-            // print error message
-            .map_err(|e| error!("Failed to get next pending account: {e}"))
-            // discard error
-            .ok()
-            // coallesce Option<Option<T> into Option<T>.
-            .and_then(|x| x)
+        while let Some(account) = cdi_alerts::next_pending_account(
+            &config.mongo.url,
+            config.dv_days_back,
+            config.med_days_back,
+        )
+        .await
+        .map_err(|e| error!("Failed to get next pending account: {e}"))
+        .ok()
+        // coallesce Option<Option<T> into Option<T>.
+        .and_then(|x| x)
         {
             profiling::scope!("processing account");
             info!("Evaluating account: {:?}", account.id);
 
-            for script in scripts.iter().cloned() {
+            for (path, _info) in config.scripts.iter() {
                 profiling::scope!("initializing script");
 
-                // Script name without directory
-                let script_name = script.path.file_name().map(|x| x.to_string_lossy());
+                let path = path.clone();
+                // Script path without directory & extension
+                let script_name = path.file_name().map(|x| x.to_string_lossy());
                 let script_name = script_name
                     .as_ref()
-                    .map(|x| x.as_ref())
-                    .unwrap_or("unnamed script");
+                    .map(|x| x.to_string())
+                    .unwrap_or("unnamed script".into());
 
                 let result = cac_data::CdiAlert {
                     script_name: script_name.to_string(),
@@ -187,42 +166,97 @@ async fn main() {
                 };
 
                 let account = account.clone();
+                let config = config.clone();
 
                 script_threads.push(task::spawn_blocking(move || {
-                    profiling::scope!("executing script");
-
-                    let lua = make_runtime().unwrap();
-                    let script_name = script.path.to_string_lossy();
-                    let _enter =
-                        error_span!("lua", path = &*script_name, account = &account.id).entered();
-
-                    #[allow(clippy::unwrap_used)]
-                    {
-                        lua.globals().set("Account", account.clone()).unwrap();
-                        lua.globals().set("Result", result).unwrap();
-                        lua.globals().set("ScriptName", script_name).unwrap();
+                    thread_local! {
+                        static RUNTIME: Cell<Option<ConfiguredRuntime>> = const { Cell::new(None) };
                     }
 
-                    lua.load(&script.contents)
-                        .exec()
-                        .map_err(|msg| error!("Lua script error: {msg}"))
-                        .ok()
-                        .and_then(|()| {
-                            match lua.globals().get::<mlua::Value>("Result") {
-                                Ok(result) => match result.as_userdata() {
-                                    Some(result) => {
-                                        let result = result.take();
-                                        if let Err(msg) = &result {
-                                            error!("Failed to retrieve result value: {msg}");
+                    profiling::scope!("executing script");
+
+                    let _enter =
+                        error_span!("lua", path = &*script_name, account = &account.id).entered();
+                    RUNTIME.with(|runtime| {
+                        let (lua, config) = if let Some(runtime) = runtime.take()
+                            && Arc::as_ptr(&runtime.config) == Arc::as_ptr(&config)
+                        {
+                            (runtime.lua, runtime.config)
+                        } else {
+                            let lua = make_runtime().expect("runtime init should not fail");
+                            (lua, config)
+                        };
+
+                        let function = match lua
+                            .load(mlua::chunk! { return require "cdi.scripts" [...] })
+                            .call::<Option<mlua::Function>>(path.as_ref())
+                        {
+                            Ok(Some(function)) => function,
+                            Ok(None) => match fs::read_to_string(&path) {
+                                Ok(chunk) => lua
+                                    .load(chunk)
+                                    .set_name(&script_name)
+                                    .into_function()
+                                    .map_err(|msg| {
+                                        error!("failed to load {} into lua: {msg}", path.display())
+                                    })
+                                    .ok()?,
+                                Err(msg) => {
+                                    error!("failed to open {}: {msg}", path.display());
+                                    return None;
+                                }
+                            },
+                            Err(msg) => {
+                                error!("failed to retrieve script cache: {msg}");
+                                return None;
+                            }
+                        };
+
+                        runtime.set(Some(ConfiguredRuntime {
+                            lua: lua.clone(),
+                            config,
+                        }));
+
+                        let function_environment = lua.create_table().unwrap();
+                        let function_environment_meta = lua.create_table().unwrap();
+                        function_environment_meta
+                            .set("__index", lua.globals())
+                            .unwrap();
+                        function_environment.set_metatable(Some(function_environment_meta));
+                        function_environment
+                            .set("Account", account.clone())
+                            .unwrap();
+                        function_environment.set("Result", result).unwrap();
+                        function_environment.set("ScriptName", script_name).unwrap();
+                        function
+                            .set_environment(function_environment.clone())
+                            .unwrap();
+
+                        function
+                            .call::<()>(())
+                            .map_err(|msg| error!("Lua script error: {msg}"))
+                            .ok()
+                            .and_then(|()| {
+                                let result = function_environment.get::<mlua::Value>("Result");
+                                match result {
+                                    Ok(result) => match result.as_userdata() {
+                                        Some(result) => {
+                                            let result = result.take();
+                                            if let Err(msg) = &result {
+                                                error!("Failed to retrieve result value: {msg}");
+                                            }
+                                            return result.ok().zip(Some(account));
                                         }
-                                        return result.ok().zip(Some(account));
-                                    }
-                                    None => error!("Result value is an unrecognized type"),
-                                },
-                                Err(msg) => error!("Result value is missing: {msg}"),
-                            };
-                            None
-                        })
+                                        None => error!(
+                                            "Result value is an unrecognized type: {}",
+                                            result.type_name()
+                                        ),
+                                    },
+                                    Err(msg) => error!("Result value is missing: {msg}"),
+                                };
+                                None
+                            })
+                    })
                 }));
             }
         }
@@ -247,10 +281,10 @@ async fn main() {
         }
         for (_, (account, result)) in results.into_iter() {
             let save_result = cdi_alerts::save(
-                &mongo,
+                &config.mongo,
                 account,
                 result.into_iter(),
-                &script_engine_workflow_rest_url,
+                &config.script_engine_workflow_rest_url,
             )
             .await;
             if let Err(e) = save_result {
@@ -263,7 +297,7 @@ async fn main() {
         // Flush profiling information
         profiling::finish_frame!();
 
-        tokio::time::sleep(tokio::time::Duration::from_secs(polling_seconds)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(config.polling_seconds)).await;
     }
 }
 
@@ -296,7 +330,6 @@ fn make_runtime() -> mlua::Result<Lua> {
         "cdi.log",
         lua.create_function(move |_, ()| Ok(log.clone()))?,
     )?;
-    // TODO: Why aren't these used anywhere?
     lua.load_from_function::<mlua::Value>(
         "cdi.link",
         lua.create_function(move |lua, ()| {
@@ -310,6 +343,12 @@ fn make_runtime() -> mlua::Result<Lua> {
                 Ok(cac_data::DiscreteValue::new(&id, name))
             })
         })?,
+    )?;
+
+    // Initialize a scripts "library" to contain function caches.
+    lua.load_from_function::<mlua::Value>(
+        "cdi.scripts",
+        lua.create_function(|lua, ()| lua.create_table())?,
     )?;
 
     Ok(lua)

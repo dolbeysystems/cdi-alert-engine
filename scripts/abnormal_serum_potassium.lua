@@ -18,8 +18,6 @@ local links = require("libs.common.basic_links")
 local dates = require("libs.common.dates")
 local headers = require("libs.common.headers")
 
-
-
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------

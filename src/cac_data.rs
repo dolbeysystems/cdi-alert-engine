@@ -186,7 +186,9 @@ impl mlua::UserData for Account {
             Ok(this.discrete_values.clone())
         });
         fields.add_field_method_get("cdi_alerts", |_, this| Ok(this.cdi_alerts.clone()));
-        fields.add_field_method_get("working_history", |_, this| Ok(this.working_history.clone()));
+        fields.add_field_method_get("working_history", |_, this| {
+            Ok(this.working_history.clone())
+        });
     }
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
@@ -250,19 +252,25 @@ impl mlua::UserData for Account {
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>())
         });
-        methods.add_method("is_diagnosis_code_in_working_history", |_, this, code: String| {
-            Ok(this
-                .working_history
-                .iter()
-                .any(|x| x.diagnoses.iter().any(|y| y.code == code)))
-        });
+        methods.add_method(
+            "is_diagnosis_code_in_working_history",
+            |_, this, code: String| {
+                Ok(this
+                    .working_history
+                    .iter()
+                    .any(|x| x.diagnoses.iter().any(|y| y.code == code)))
+            },
+        );
 
-        methods.add_method("is_procedure_code_in_working_history", |_, this, code: String| {
-            Ok(this
-                .working_history
-                .iter()
-                .any(|x| x.procedures.iter().any(|y| y.code == code)))
-        });
+        methods.add_method(
+            "is_procedure_code_in_working_history",
+            |_, this, code: String| {
+                Ok(this
+                    .working_history
+                    .iter()
+                    .any(|x| x.procedures.iter().any(|y| y.code == code)))
+            },
+        );
     }
 }
 
@@ -618,26 +626,26 @@ pub struct AccountWorkingHistoryEntry {
     pub diagnoses: Vec<DiagnosisCode>,
     #[serde(rename = "Procedures")]
     pub procedures: Vec<ProcedureCode>,
-} 
+}
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
 pub struct DiagnosisCode {
-    #[serde (rename = "Code")]
+    #[serde(rename = "Code")]
     pub code: String,
-    #[serde (rename = "Description")]
+    #[serde(rename = "Description")]
     pub description: String,
-    #[serde (rename = "isPrincipal")]
+    #[serde(rename = "isPrincipal")]
     pub is_principal: bool,
 }
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
 pub struct ProcedureCode {
-    #[serde (rename = "Code")]
+    #[serde(rename = "Code")]
     pub code: String,
-    #[serde (rename = "Description")]
+    #[serde(rename = "Description")]
     pub description: String,
-    #[serde (rename = "isPrincipal")]    
-    pub is_principal: bool, 
+    #[serde(rename = "isPrincipal")]
+    pub is_principal: bool,
 }
