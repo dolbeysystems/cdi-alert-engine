@@ -122,7 +122,7 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local ciwa_score_dv_link = links.get_discrete_value_links {
+    local ciwa_score_dv_link = links.get_discrete_value_link {
         discreteValueName = ciwa_score_dv_name,
         text = "CIWA Score",
         seq = 5,
