@@ -59,6 +59,11 @@ local dv_sputum_culture = { "" }
 --------------------------------------------------------------------------------
 --- Script Functions
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--- Get the links for PaO2/FiO2, through various attempts
+--- 
+--- @return CdiAlertLink[]
+--------------------------------------------------------------------------------
 local function get_pa_o2_fi_o2_links()
     --- Final links
     --- @type CdiAlertLink[]
@@ -288,6 +293,129 @@ local function get_pa_o2_fi_o2_links()
     end
     return pa_o2_fi_o2_ratio_links
 end
+--------------------------------------------------------------------------------
+--- Get fallback links for PaO2 and SpO2
+--- These are gathered if the PaO2/FiO2 collection fails
+--- 
+--- @return CdiAlertLink[]
+--------------------------------------------------------------------------------
+local function get_pa_o2_sp_o2_links()
+    -- TODO: Implement this
+    --[[
+def sp02pa02Lookup(dvDic, DV1, DV2, DV3, DV4):
+    discreteDic1 = {}
+    discreteDic2 = {}
+    discreteDic3 = {}
+    discreteDic4 = {}
+    linkText1 = "sp02: [VALUE] (Result Date: [RESULTDATETIME])"
+    linkText2 = "pa02: [VALUE] (Result Date: [RESULTDATETIME])"
+    linkText3 = "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])"
+    linkText4 = "Respiratory Rate: [VALUE] (Result Date: [RESULTDATETIME])"
+    rrDV = None
+    #Default should be set to -1 day back.
+    dateLimit = System.DateTime.Now.AddDays(-1)
+    otDv = None
+    spDv = None
+    paDv = None
+    matchingDate = None
+    oxygenValue = None
+    respRateDV = None
+    w = 0
+    x = 0
+    y = 0
+    z = 0
+    matchedList = []
+    #Pull all values for discrete values we need
+    for dv in dvDic or []:
+        if dvDic[dv]['ResultDate'] >= dateLimit:
+            dvr = cleanNumbers(dvDic[dv]['Result'])
+            if dvDic[dv]['Name'] in DV1 and dvr is not None and float(dvr) < float(91):
+                #dvSPO2
+                w += 1
+                discreteDic1[w] = dvDic[dv]
+            elif dvDic[dv]['Name'] in DV2 and dvr is not None and float(dvr) <= float(60):
+                #dvPaO2
+                x += 1
+                discreteDic2[x] = dvDic[dv]
+            elif dvDic[dv]['Name'] in DV3 and dvDic[dv]['Result'] is not None:
+                #dvOxygenTherapy
+                y += 1
+                discreteDic3[y] = dvDic[dv]
+            elif dvDic[dv]['Name'] in DV4 and dvr is not None:
+                #dvRespiratoryRate
+                z += 1
+                discreteDic4[z] = dvDic[dv]
+    if x > 0:
+        for item in discreteDic2:
+            matchingDate = discreteDic2[item].ResultDate
+            paDv = item
+            if y > 0:
+                for item2 in discreteDic3:
+                    if discreteDic2[item].ResultDate == discreteDic3[item2].ResultDate:
+                        matchingDate = discreteDic2[item].ResultDate
+                        otDv = item2
+                        oxygenValue = discreteDic3[item2].Result
+            else:
+                oxygenValue = "XX" 
+            if z > 0:
+                for item3 in discreteDic4:
+                    if discreteDic4[item3].ResultDate == matchingDate:
+                        rrDV = item3
+                        respRateDV = discreteDic4[item3].Result
+                        break
+            else:
+                respRateDV = "XX"
+            matchingDate = datetimeFromUtcToLocal(matchingDate)
+            matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
+            matchedList.append(dataConversion(None, matchingDate + " Respiratory Rate: " + str(respRateDV) + ", Oxygen Therapy: " + str(oxygenValue) + ", pa02: " + str(discreteDic2[paDv].Result), None, discreteDic2[paDv].UniqueId or discreteDic2[paDv]._id, oxygenation, 0, False))
+            matchedList.append(dataConversion(discreteDic2[paDv].ResultDate, linkText2, discreteDic2[paDv].Result, discreteDic2[paDv].UniqueId or discreteDic2[paDv]._id, paO2, 2, False))
+            if otDv is not None:
+                matchedList.append(dataConversion(discreteDic3[otDv].ResultDate, linkText3, discreteDic3[otDv].Result, discreteDic3[otDv].UniqueId or discreteDic3[otDv]._id, oxygenTherapy, 3, False))
+            if rrDV is not None:
+                matchedList.append(dataConversion(discreteDic4[rrDV].ResultDate, linkText4, discreteDic4[rrDV].Result, discreteDic4[rrDV].UniqueId or discreteDic4[rrDV]._id, rr, 4, False))
+        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
+            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
+            + str(account._id), scriptName, scriptInstance, "Debug")
+        return matchedList
+    elif w > 0:
+        for item in discreteDic1:
+            matchingDate = discreteDic1[item].ResultDate
+            spDv = item
+            if y > 0:
+                for item2 in discreteDic3:
+                    if discreteDic1[item].ResultDate == discreteDic3[item2].ResultDate:
+                        otDv = item2
+                        oxygenValue = discreteDic3[item2].Result
+                        break
+            else:
+                oxygenValue = "XX" 
+            if z > 0:
+                for item3 in discreteDic4:
+                    if discreteDic4[item3].ResultDate == discreteDic1[item].ResultDate:
+                        rrDV = item3
+                        respRateDV = discreteDic4[item3].Result
+                        break
+            else:
+                respRateDV = "XX"
+            matchingDate = datetimeFromUtcToLocal(matchingDate)
+            matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
+            matchedList.append(dataConversion(None, matchingDate + " Respiratory Rate: " + str(respRateDV) + ", Oxygen Therapy: " + str(oxygenValue) + ", sp02: " + str(discreteDic1[spDv].Result), None, discreteDic1[spDv].UniqueId or discreteDic1[spDv]._id, oxygenation, 0, False))
+            matchedList.append(dataConversion(discreteDic1[spDv].ResultDate, linkText1, discreteDic1[spDv].Result, discreteDic1[spDv].UniqueId or discreteDic1[spDv]._id, spo2, 1, False))
+            if otDv is not None:
+                matchedList.append(dataConversion(discreteDic3[otDv].ResultDate, linkText3, discreteDic3[otDv].Result, discreteDic3[otDv].UniqueId or discreteDic3[otDv]._id, oxygenTherapy, 5, False))
+            if rrDV is not None:
+                matchedList.append(dataConversion(discreteDic4[rrDV].ResultDate, linkText4, discreteDic4[rrDV].Result, discreteDic4[rrDV].UniqueId or discreteDic4[rrDV]._id, rr, 7, False))
+        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
+            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
+            + str(account._id), scriptName, scriptInstance, "Debug")
+        return matchedList
+    else:
+        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
+            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
+            + str(account._id), scriptName, scriptInstance, "Debug")
+        return None 
+    --]]
+end
 
 
 
@@ -496,8 +624,35 @@ if not existing_alert or not existing_alert.validated then
     end
     if not pa_o2_fi_o2_ratio_links then
         -- TODO: and now this!
+        spo2_pao2_dv_links = get_pa_o2_sp_o2_links()
     end
 
+    --[[
+    #Copd Exacerbation Treatment Medication
+    if respiratoryTreatmentMedicationAbs is not None: meds.Links.Add(respiratoryTreatmentMedicationAbs); RTMA += 1
+    if inhaledCorticosteriodTreatmeantsAbs is not None: RTMA += 1
+    if respiratoryTreatmentMedicationMed is not None: RTMA += 1
+    if bronchodilatorMed is not None: RTMA += 1
+    if inhaledCorticosteriodMed is not None: RTMA += 1
+    #Signs of Low Oxygen
+    if pao2Calc is not None: SLO += 1
+    if lowPaO2DV is not None: labs.Links.Add(lowPaO2DV); SLO += 1
+    if r0902Code is not None: vitals.Links.Add(r0902Code); SLO += 1
+    if lowPulseOximetryDV is not None: vitals.Links.Add(lowPulseOximetryDV); SLO += 1
+    #Signs of Resp Distress
+    if wheezingAbs is not None: abs.Links.Add(wheezingAbs); SRD += 1
+    if useOfAccessoryMusclesAbs is not None: abs.Links.Add(useOfAccessoryMusclesAbs); SRD += 1
+    if shortnessOfBreathAbs is not None: abs.Links.Add(shortnessOfBreathAbs); SRD += 1
+    if r0603Code is not None: abs.Links.Add(r0603Code); SRD += 1
+    if highRespiratoryRateDV is not None: vitals.Links.Add(highRespiratoryRateDV); SRD += 1
+    if j9801Code is not None: abs.Links.Add(j9801Code); SRD += 1
+    #Oxygen Delievery Check
+    if highFlowNasalCodes is not None: ODC += 1
+    if invasiveMechVentCodes is not None: ODC += 1
+    if nonInvasiveVentAbs is not None: ODC += 1
+    if oxygenFlowRateDV is not None: ODC += 1
+    if oxygenTherapyAbs is not None: ODC += 1
+    --]]
 
 
 
@@ -506,17 +661,219 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
+--[[
+    #Starting Main Algorithm
+    if subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection" and j440Code is not None:
+        if j440Code is not None: updateLinkText(j440Code, autoCodeText); dc.Links.Add(j440Code)
+        result.Outcome = "AUTORESOLVED"
+        result.Reason = "Autoresolved due to one Specified Code on the Account"
+        result.Validated = True
+        AlertConditions = True
+        
+    elif (
+        j449Code is not None and
+        (j20Codes is not None or
+        j22Codes is not None or
+        pneumoniaJ12 is not None or
+        pneumoniaJ13 is not None or
+        pneumoniaJ14 is not None or
+        pneumoniaJ15 is not None or
+        pneumoniaJ16 is not None or
+        pneumoniaJ17 is not None or
+        pneumoniaJ18 is not None or 
+        j21Codes is not None) and
+        j440Code is None
+        ):
+        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection"
+        AlertPassed = True
+        dc.Links.Add(j449Code)
+        if j20Codes is not None: dc.Links.Add(j20Codes)
+        if j22Codes is not None: dc.Links.Add(j22Codes)
+        if j21Codes is not None: dc.Links.Add(j21Codes)
+        if pneumoniaJ12 is not None: dc.Links.Add(pneumoniaJ12)
+        if pneumoniaJ13 is not None: dc.Links.Add(pneumoniaJ13)
+        if pneumoniaJ14 is not None: dc.Links.Add(pneumoniaJ14)
+        if pneumoniaJ15 is not None: dc.Links.Add(pneumoniaJ15)
+        if pneumoniaJ16 is not None: dc.Links.Add(pneumoniaJ16)
+        if pneumoniaJ17 is not None: dc.Links.Add(pneumoniaJ17)
+        if pneumoniaJ18 is not None: dc.Links.Add(pneumoniaJ18)
+        if respiratoryTuberculosis is not None: dc.Links.Add(respiratoryTuberculosis)
+    
+    elif subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation" and j441Code is not None:
+        if j441Code is not None: updateLinkText(j441Code, autoCodeText); dc.Links.Add(j441Code)
+        result.Outcome = "AUTORESOLVED"
+        result.Reason = "Autoresolved due to one Specified Code on the Account"
+        result.Validated = True
+        AlertConditions = True
+    
+    elif (
+        j449Code is not None and
+        RespiratoryCodeCheck is not None and
+        opioidOverdoseAbs is None and
+        j441Code is None and
+        pulmonaryEmbolismNeg is None and
+        j810Code is None and
+        sepsis40Neg is None and
+        sepsis41Neg is None and
+        sepsisNeg is None and
+        f410Code is None and
+        pneumonthroaxNeg is None and
+        HeartFailureCodeCheck is None and
+        acuteMINeg is None and
+        copdWithoutExacerbationAbs is None and
+        (bronchodilatorMed is not None or
+        respiratoryTreatmentMedicationMed is not None or
+        respiratoryTreatmentMedicationAbs is not None or
+        inhaledCorticosteriodMed is not None or
+        inhaledCorticosteriodTreatmeantsAbs is not None)
+        ):
+        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
+        AlertPassed = True
+        dc.Links.Add(j449Code)
+        dc.Links.Add(RespiratoryCodeCheck)    
+    
+    elif (
+        j449Code is not None and
+        SLO > 0 and
+        SRD > 0 and
+        RTMA > 0 and
+        ODC > 0 and
+        opioidOverdoseAbs is None and
+        pulmonaryEmbolismNeg is None and
+        j810Code is None and
+        sepsis40Neg is None and
+        sepsis41Neg is None and
+        sepsisNeg is None and
+        f410Code is None and
+        pneumonthroaxNeg is None and
+        HeartFailureCodeCheck is None and
+        acuteMINeg is None and
+        copdWithoutExacerbationAbs is None and
+        j441Code is None
+    ):
+        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
+        AlertPassed = True
+        dc.Links.Add(j449Code)
+        
+    elif subtitle == "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence" and SLO > 0 and SRD > 0 and RTMA > 0:
+        if message1 and SLO > 0:
+            vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, False))
+        if message2 and SRD > 0:
+            abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None, False))
+        result.Outcome = "AUTORESOLVED"
+        result.Reason = "Autoresolved due to clinical evidence now existing on the Account"
+        result.Validated = True
+        AlertPassed = True
+        
+    elif (
+        j441Code is not None and
+        SLO == 0 and
+        SRD == 0 and
+        RTMA > 0
+    ):
+        if SLO < 1: vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None))
+        elif message1 and SLO > 0:
+            vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, False))
+        if SRD < 1: abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None))
+        elif message2 and SRD > 0:
+            abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None, False))
+        result.Subtitle = "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence"
+        AlertPassed = True
 
+    else:
+        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
+        result.Passed = False
+--]]
 
 
     if Result.passed then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        if not Result.validated then
-            -- Normal Alert
-        end
-
+        --[[
+        #Abs
+        abstractValue("ABNORMAL_SPUTUM", "Abnormal Sputum '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 1, abs, True)
+        #2
+        dvBreathCheck(dict(maindiscreteDic), dvBreathSounds, "Breath Sounds '[VALUE]' (Result Date: [RESULTDATETIME])", 3, abs, True)
+        multiCodeValue(["J96.01", "J96.2", "J96.21", "J96.22"], "Acute Respiratory Failure: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, abs, True)
+        if j9801Code is not None: abs.Links.Add(j9801Code) #5
+        abstractValue("BRONCHOSPASM", "Bronchospasm '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, abs, True)
+        codeValue("R05.9", "Cough: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 6, abs, True)
+        codeValue("U07.1", "Covid-19: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 7, abs, True)
+        codeValue("R53.83", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8, abs, True)
+        abstractValue("LOW_FORCED_EXPIRATORY_VOLUME_1", "Low Forced Expiratory Volume 1 '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, abs, True)
+        abstractValue("BACTERIAL_PNEUMONIA_ORGANISM", "Possible Bacterial Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 10, abs, True)
+        abstractValue("FUNGAL_PNEUMONIA_ORGANISM", "Possible Fungal Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 11, abs, True)
+        abstractValue("VIRAL_PNEUMONIA_ORGANISM", "Possible Viral Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, abs, True)
+        dvRespPatCheck(dict(maindiscreteDic), dvRespiratoryPattern, "Respiratory Pattern '[VALUE]' (Result Date: [RESULTDATETIME])", 13, abs, True)
+        #14-17
+        #Document Links
+        documentLink("Chest  3 View", "Chest  3 View", 0, chestXRayLinks, True)
+        documentLink("Chest  PA and Lateral", "Chest  PA and Lateral", 0, chestXRayLinks, True)
+        documentLink("Chest  Portable", "Chest  Portable", 0, chestXRayLinks, True)
+        documentLink("Chest PA and Lateral", "Chest PA and Lateral", 0, chestXRayLinks, True)
+        documentLink("Chest  1 View", "Chest  1 View", 0, chestXRayLinks, True)
+        #Labs
+        dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVID, "Covid 19 Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 2, labs, True)
+        dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVIDAntigen, "Covid 19 Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 3, labs, True)
+        dvBloodCheck(dict(maindiscreteDic), dvInfluenzeScreenA, "Influenza A Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 4, labs, True)
+        dvBloodCheck(dict(maindiscreteDic), dvInfluenzeScreenB, "Influenza B Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 5, labs, True)
+        dvmrsaCheck(dict(maindiscreteDic), dvMRSASCreen, "Final Report", "MRSA Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 6, labs, True)
+        dvPositiveCheck(dict(maindiscreteDic), dvPleuralFluidCulture, "Positive Pleural Fluid Culture: '[VALUE]' (Result Date: [RESULTDATETIME])", 7)
+        abstractValue("POSITIVE_SPUTUM_CULTURE", "Positive Sputum Culture '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 8, labs, True)
+        dvPositiveCheck(dict(maindiscreteDic), dvPneumococcalAntigen, "Strept Pneumonia Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 9, labs, True)
+        #Meds
+        medValue("Antibiotic", "Antibiotic: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 1, meds, True)
+        abstractValue("ANTIBIOTIC", "Antibiotic '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 2, meds, True)
+        if bronchodilatorMed is not None: meds.Links.Add(bronchodilatorMed) #3
+        medValue("Dexamethasone", "Dexamethasone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 4, meds, True)
+        if inhaledCorticosteriodMed is not None: meds.Links.Add(inhaledCorticosteriodMed) #5
+        if inhaledCorticosteriodTreatmeantsAbs is not None: meds.Links.Add(inhaledCorticosteriodTreatmeantsAbs) #6
+        medValue("Methylprednisolone", "Methylprednisolone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 7, meds, True)
+        if respiratoryTreatmentMedicationAbs is not None: meds.Links.Add(respiratoryTreatmentMedicationAbs) #8
+        if respiratoryTreatmentMedicationMed is not None: meds.Links.Add(respiratoryTreatmentMedicationMed) #9
+        #10
+        medValue("Steroid", "Steroid: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 11, meds, True)
+        abstractValue("STEROIDS", "Steroid '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, meds, True)
+        medValue("Vasodilator", "Vasodilator: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 13, meds, True)
+        #Oxygen
+        codeValue("Z99.81", "Dependence On Supplemental Oxygen: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, oxygen, True)
+        if z9981Code is not None: oxygen.Links.Add(z9981Code) #2
+        if highFlowNasalCodes is not None: oxygen.Links.Add(highFlowNasalCodes) #3
+        if invasiveMechVentCodes is not None: oxygen.Links.Add(invasiveMechVentCodes) #4
+        if nonInvasiveVentAbs is not None: oxygen.Links.Add(nonInvasiveVentAbs) #5
+        if oxygenFlowRateDV is not None: oxygen.Links.Add(oxygenFlowRateDV) #6
+        dvOxygenCheck(dict(maindiscreteDic), dvOxygenTherapy, "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])", 7, oxygen, True)
+        if oxygenTherapyAbs is not None: oxygen.Links.Add(oxygenTherapyAbs) #8
+        #Vitals
+        dvValue(dvHeartRate, "HR: [VALUE] (Result Date: [RESULTDATETIME])", calcHeartRate1, 1, vitals, True)
+        #2-5
+        #Calculated Ratio
+        if pao2Calc is not None:
+            for entry in pao2Calc:
+                if entry.Sequence == 8:
+                    calcpo2fio2.Links.Add(MatchedCriteriaLink("Verify the Calculated PF ratio, as it's generated by a computer calculation and requires verification.", None, None, None, True, None, None, 1))
+                    calcpo2fio2.Links.Add(entry)
+                elif entry.Sequence == 2:
+                    abg.Links.Add(entry)
+            if pa02Fi02.Links: calcpo2fio2.Links.Add(pa02Fi02)
+        elif sp02pao2Dvs is not None:
+            for entry in sp02pao2Dvs:
+                if entry.Sequence == 0:
+                    oxygenation.Links.Add(entry)
+                if entry.Sequence == 2:
+                    paO2.Links.Add(entry)
+                elif entry.Sequence == 1:
+                    spo22.Links.Add(entry)
+                elif entry.Sequence == 3:
+                    oxygenTherapy.Links.Add(entry)
+                elif entry.Sequence == 4:
+                    rr.Links.Add(entry)
+            if paO2.Links: oxygenation.Links.Add(paO2)
+            if spo22.Links: oxygenation.Links.Add(spo22)
+            if oxygenTherapy.Links: oxygenation.Links.Add(oxygenTherapy)
+            if rr.Links: oxygenation.Links.Add(rr)
+        --]]
 
 
         ----------------------------------------
