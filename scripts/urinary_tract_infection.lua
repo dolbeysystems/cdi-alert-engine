@@ -13,12 +13,10 @@
 --------------------------------------------------------------------------------
 --- Requires
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
-local headers = require("libs.common.headers")
-
-
+local alerts = require "libs.common.alerts" (Account)
+local links = require "libs.common.basic_links" (Account)
+local codes = require "libs.common.codes" (Account)
+local headers = require "libs.common.headers" (Account)
 
 --------------------------------------------------------------------------------
 --- Existing Alert
@@ -159,7 +157,6 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     local function add_many_dx_links(...)
         local had_non_nil = false
-        ---@diagnostic disable-next-line: no-unknown
         for _, lnks in pairs { ... } do
             if lnks ~= nil then
                 for _, link in ipairs(lnks) do
