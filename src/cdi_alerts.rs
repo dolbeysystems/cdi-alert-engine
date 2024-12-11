@@ -1,13 +1,18 @@
 use crate::cac_data::*;
 use crate::config;
 use anyhow::{Context, Result};
+use chrono::DateTime;
 use chrono::{TimeZone, Utc};
 use mongodb::bson::doc;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
 #[profiling::function]
-pub async fn next_pending_account(connection_string: &str, dv_days_back: u32, med_days_back: u32) -> Result<Option<Account>> {
+pub async fn next_pending_account(
+    connection_string: &str,
+    dv_days_back: u32,
+    med_days_back: u32,
+) -> Result<Option<Account>> {
     debug!("Getting next pending account");
     let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
@@ -23,7 +28,8 @@ pub async fn next_pending_account(connection_string: &str, dv_days_back: u32, me
 
     if let Some(pending_account) = pending_account {
         let id = pending_account.id.clone();
-        let account = get_account_by_id(connection_string, &id, dv_days_back, med_days_back).await?;
+        let account =
+            get_account_by_id(connection_string, &id, dv_days_back, med_days_back).await?;
         debug!("Found pending account: {:?}", &id);
         Ok(account)
     } else {
@@ -32,8 +38,34 @@ pub async fn next_pending_account(connection_string: &str, dv_days_back: u32, me
     }
 }
 
+fn cache_by_date<'a, T: Clone + 'a>(
+    get_date: impl Fn(&T) -> DateTime<Utc>,
+    mut root_values: impl Iterator<Item = (&'a str, &'a T)> + Clone,
+    hashed_values: &mut HashMap<Arc<str>, Vec<T>>,
+) {
+    while let Some((key, discrete_value)) = root_values.next() {
+        if hashed_values.contains_key(key) {
+            continue;
+        }
+        // capture the current state of the root values iterator
+        // (past entries will never be useful)
+        let mut keyed_values = Some(discrete_value)
+            .into_iter()
+            .chain(root_values.clone().filter(|x| x.0 == key).map(|x| x.1))
+            .cloned()
+            .collect::<Vec<_>>();
+        keyed_values.sort_by_key(|a| std::cmp::Reverse(get_date(a)));
+        hashed_values.insert(key.into(), keyed_values);
+    }
+}
+
 #[profiling::function]
-pub async fn get_account_by_id(connection_string: &str, id: &str, dv_days_back: u32, med_days_back: u32) -> Result<Option<Account>> {
+pub async fn get_account_by_id(
+    connection_string: &str,
+    id: &str,
+    dv_days_back: u32,
+    med_days_back: u32,
+) -> Result<Option<Account>> {
     debug!("Loading account #{:?} from database", id);
     let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await
@@ -72,35 +104,28 @@ pub async fn get_account_by_id(connection_string: &str, id: &str, dv_days_back: 
     }
 
     debug!("Building HashMaps for account #{:?}", id);
-    for discrete_value in account.discrete_values.iter().filter(|dv| 
-        if let Some(result_date) = dv.result_date {
-            result_date >= Utc::now() - chrono::Duration::days(dv_days_back as i64)
-        } else {
-            false
-        }
-    ) {
-        let name = discrete_value.name.clone().unwrap_or("".to_string());
-        account
-            .hashed_discrete_values
-            .entry(name.into())
-            .or_insert_with(Vec::new)
-            .push(discrete_value.clone());
-    }
-
-    for medication in account.medications.iter().filter(|med|
-        if let Some(start_date) = med.start_date {
-            start_date >= Utc::now() - chrono::Duration::days(med_days_back as i64)
-        } else {
-            false
-        }
-    ) {
-        let category = medication.category.clone().unwrap_or("".to_string());
-        account
-            .hashed_medications
-            .entry(category.into())
-            .or_insert_with(Vec::new)
-            .push(medication.clone());
-    }
+    let oldest_allowed = Utc::now() - chrono::Duration::days(dv_days_back as i64);
+    let root_discrete_values = account
+        .discrete_values
+        .iter()
+        .filter(|x| x.result_date.is_some_and(|x| x >= oldest_allowed))
+        .filter_map(|x| x.name.as_deref().zip(Some(x)));
+    cache_by_date(
+        |x| x.result_date.unwrap(),
+        root_discrete_values,
+        &mut account.hashed_discrete_values,
+    );
+    let oldest_allowed = Utc::now() - chrono::Duration::days(med_days_back as i64);
+    let root_medications = account
+        .medications
+        .iter()
+        .filter(|x| x.start_date.is_some_and(|x| x >= oldest_allowed))
+        .filter_map(|x| x.category.as_deref().zip(Some(x)));
+    cache_by_date(
+        |x| x.start_date.unwrap(),
+        root_medications,
+        &mut account.hashed_medications,
+    );
 
     for document in account.documents.iter() {
         let document_type = document.document_type.clone().unwrap_or("".to_string());
