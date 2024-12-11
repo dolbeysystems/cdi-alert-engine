@@ -1,5 +1,5 @@
 local module = {}
-local discrete = require("libs.common.discrete_values")
+local discrete = require("libs.common.discrete_values")(Account)
 
 --- @class (exact) HematocritHemoglobinDiscreteValuePair
 --- @field hemoglobinLink CdiAlertLink

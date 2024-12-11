@@ -1,7 +1,7 @@
 ---@diagnostic disable-next-line:name-style-check
 return function(Account)
     local module = {}
-    local links = require("libs.common.basic_links")
+    local links = require("libs.common.basic_links")(Account)
 
     --------------------------------------------------------------------------------
     --- Get account codes matching a prefix
