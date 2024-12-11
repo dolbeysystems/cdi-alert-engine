@@ -1,8 +1,8 @@
 ---@diagnostic disable-next-line:name-style-check
 return function(Account)
     local module = {}
-    local dates = require("libs.common.dates")
-    local links = require("libs.common.basic_links")
+    local dates = require "libs.common.dates"
+    local links = require "libs.common.basic_links" (Account)
     local cdi_alert_link = require "cdi.link"
 
     --------------------------------------------------------------------------------

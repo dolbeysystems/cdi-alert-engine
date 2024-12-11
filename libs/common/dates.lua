@@ -48,5 +48,22 @@ function module.date_is_less_than_x_minutes_ago(date_string, minutes)
     return now_utc - date < minutes_in_seconds
 end
 
+--------------------------------------------------------------------------------
+--- Check if two dates are less than a certain number of minutes apart
+---
+--- @param date1 string The first date string to check
+--- @param date2 string The second date string to check
+--- @param minutes number The number of minutes to check against
+---
+--- @return boolean - true if the dates are less than the number of minutes apart, false otherwise
+--------------------------------------------------------------------------------
+function module.dates_are_less_than_x_minutes_apart(date1, date2, minutes)
+    local date1_int = module.date_string_to_int(date1)
+    local date2_int = module.date_string_to_int(date2)
+
+    local minutes_in_seconds = minutes * 60
+    return math.abs(date1_int - date2_int) < minutes_in_seconds
+end
+
 return module
 
