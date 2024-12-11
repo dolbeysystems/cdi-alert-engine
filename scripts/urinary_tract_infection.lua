@@ -103,7 +103,7 @@ if not existing_alert or not existing_alert.validated then
 
     local urine_culture = links.get_discrete_value_link {
         discreteValueName = "BACTERIA (/HPF)",
-        linkText = "Urine Culture",
+        text = "Urine Culture",
         ---@diagnostic disable-next-line: unused-local
         predicate = function(dv, num)
             return dv.result ~= nil and
@@ -112,7 +112,7 @@ if not existing_alert or not existing_alert.validated then
     }
     local urine_bacteria = links.get_discrete_value_link {
         discreteValueName = "BACTERIA (/HPF)",
-        linkText = "UA Bacteria",
+        text = "UA Bacteria",
         predicate = numeric_result_predicate,
     }
 

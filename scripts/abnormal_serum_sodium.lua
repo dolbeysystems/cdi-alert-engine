@@ -13,9 +13,9 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local headers = require("libs.common.headers")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local headers = require("libs.common.headers")(Account)
 
 
 

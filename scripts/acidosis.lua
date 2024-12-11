@@ -13,12 +13,12 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
-local headers = require("libs.common.headers")
+local discrete = require("libs.common.discrete_values")(Account)
+local headers = require("libs.common.headers")(Account)
 
 
 

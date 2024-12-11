@@ -62,7 +62,8 @@ return function(Account)
 
     --- @class (exact) GetOrderedDiscreteValuesArgs
     --- @field account Account? Account object (uses global account if not provided)
-    --- @field discreteValueName string The name of the discrete value to search for
+    --- @field discreteValueName? string The name of the discrete value to search for
+    --- @field discreteValueNames? string[] The names of the discrete values to search for
     --- @field daysBack number? The number of days back to search for discrete values (default 7)
     --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
 
@@ -75,16 +76,18 @@ return function(Account)
     --------------------------------------------------------------------------------
     function module.get_ordered_discrete_values(args)
         local account = args.account or Account
-        local discrete_value_name = args.discreteValueName
+        local discrete_value_names = args.discreteValueNames or { args.discreteValueName }
         local days_back = args.daysBack or 7
         local predicate = args.predicate
         --- @type DiscreteValue[]
         local discrete_values = {}
 
-        local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
-        for i = 1, #discrete_values_for_name do
-            if module.DateIsLessThanXDaysAgo(discrete_values_for_name[i].result_date, days_back) and (predicate == nil or predicate(discrete_values_for_name[i])) then
-                table.insert(discrete_values, discrete_values_for_name[i])
+        for _, dv_name in ipairs(discrete_value_names) do
+            local discrete_values_for_name = account:find_discrete_values(dv_name)
+            for i = 1, #discrete_values_for_name do
+                if module.DateIsLessThanXDaysAgo(discrete_values_for_name[i].result_date, days_back) and (predicate == nil or predicate(discrete_values_for_name[i])) then
+                    table.insert(discrete_values, discrete_values_for_name[i])
+                end
             end
         end
 

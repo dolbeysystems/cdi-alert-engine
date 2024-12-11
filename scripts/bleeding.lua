@@ -13,11 +13,11 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local blood = require("libs.common.blood")
-local codes = require("libs.common.codes")
-local headers = require("libs.common.headers")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local blood = require("libs.common.blood")(Account)
+local codes = require("libs.common.codes")(Account)
+local headers = require("libs.common.headers")(Account)
 
 
 
@@ -130,15 +130,15 @@ if not existing_alert or not existing_alert.validated then
     local r0489_code_link = links.get_code_link { code = "R04.89", text = "Pulmonary Hemorrhage", seq = 23 }
 
     -- Medications
-    local anticoagulant_med_link = links.get_medication_link { cat = "Anticoagulant", seq = 1 }
+    local anticoagulant_med_link = links.get_medication_link { cat = "Anticoagulant", text = "", seq = 1 }
     local anticoagulant_abs_link = links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant", seq = 2 }
-    local antiplatelet_med_link = links.get_medication_link { cat = "Antiplatelet", seq = 3 }
-    local antiplatelet2_med_link = links.get_medication_link { cat = "Antiplatelet2", seq = 4 }
+    local antiplatelet_med_link = links.get_medication_link { cat = "Antiplatelet", text = "", seq = 3 }
+    local antiplatelet2_med_link = links.get_medication_link { cat = "Antiplatelet2", text = "", seq = 4 }
     local antiplatelet_abs_link = links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet", seq = 5 }
     local antiplatelet2_abs_link = links.get_abstraction_link { code = "ANTIPLATELET_2", text = "Antiplatelet", seq = 6 }
-    local aspirin_med_link = links.get_medication_link { cat = "Aspirin", seq = 7 }
+    local aspirin_med_link = links.get_medication_link { cat = "Aspirin", text = "", seq = 7 }
     local aspirin_abs_link = links.get_abstraction_link { code = "ASPIRIN", text = "Aspirin", seq = 8 }
-    local heparin_med_link = links.get_medication_link { cat = "Heparin", seq = 15 }
+    local heparin_med_link = links.get_medication_link { cat = "Heparin", text = "", seq = 15 }
     local heparin_abs_link = links.get_abstraction_link { code = "HEPARIN", text = "Heparin", seq = 16 }
     local z7901_code_link = links.get_code_link { code = "Z79.01", text = "Long Term use of Anticoagulants", seq = 17 }
     local z7982_code_link = links.get_code_link { code = "Z79.82", text = "Long-Term use of Asprin", seq = 18 }

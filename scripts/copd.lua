@@ -14,12 +14,12 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
-local headers = require("libs.common.headers")
+local discrete = require("libs.common.discrete_values")(Account)
+local headers = require("libs.common.headers")(Account)
 local cdi_alert_link = require "cdi.link"
 
 
@@ -138,8 +138,10 @@ local function get_pa_o2_fi_o2_links()
                         os.date(fi_o2_dv.result_date) ..
                         " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                         ") and PaO2 (" .. pa_o2 ..
-                        ") yielding a ratio of (" .. ratio .. ") - Respiratory Rate: " ..
-                        resp_rate_dv ~= nil and discrete.get_dv_value_number(resp_rate_dv) or "N/A"
+                        ") yielding a ratio of (" .. ratio .. ")"
+                    if resp_rate_dv then
+                        link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                    end
 
                     table.insert(pa_o2_fi_o2_ratio_links, link)
                 end
@@ -176,8 +178,10 @@ local function get_pa_o2_fi_o2_links()
                             os.date(fi_o2_dv.result_date) ..
                             " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                             ") and SpO2(" .. sp_o2 ..
-                            ") yielding a ratio of (" .. ratio .. ") - Respiratory Rate: " ..
-                            discrete.get_dv_value_number(resp_rate_dv)
+                            ") yielding a ratio of (" .. ratio .. ")"
+                        if resp_rate_dv then
+                            link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                        end
                         table.insert(pa_o2_fi_o2_ratio_links, link)
                     end
                 end
@@ -221,6 +225,10 @@ local function get_pa_o2_fi_o2_links()
                                 " - " .. oxygen_therapy_value ..
                                 ") and PaO2 (" .. pa_o2 ..
                                 ") yielding a ratio of (" .. ratio .. ")"
+
+                            if resp_rate_dv then
+                                link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                            end
                             table.insert(pa_o2_fi_o2_ratio_links, link)
                         end
                     end
@@ -267,6 +275,9 @@ local function get_pa_o2_fi_o2_links()
                                     " - " .. oxygen_therapy_value ..
                                     ") and SpO2 (" .. sp_o2 ..
                                     ") yielding a ratio of (" .. ratio .. ")"
+                                if resp_rate_dv then
+                                    link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                                end
                                 table.insert(pa_o2_fi_o2_ratio_links, link)
                             end
                         end

@@ -13,10 +13,10 @@
 --------------------------------------------------------------------------------
 --- Requires
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
 local dates = require("libs.common.dates")
-local headers = require("libs.common.headers")
+local headers = require("libs.common.headers")(Account)
 
 --------------------------------------------------------------------------------
 --- Site Constants

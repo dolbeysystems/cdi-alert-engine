@@ -14,12 +14,12 @@
 --------------------------------------------------------------------------------
 --- Requires
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
-local headers = require("libs.common.headers")
+local discrete = require("libs.common.discrete_values")(Account)
+local headers = require("libs.common.headers")(Account)
 
 
 
@@ -149,7 +149,7 @@ if not existing_alert or not existing_alert.validated then
             latest_medical_document_type = document.document_type
         end
     end
-    local latest_medical_document_link = links.get_document_link { documentType = latest_medical_document_type }
+    local latest_medical_document_link = links.get_document_link { documentType = latest_medical_document_type, text = "" }
     local mannitol_med_doc_link =
         latest_medical_document_date and
         links.get_medication_link {

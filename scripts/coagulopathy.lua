@@ -14,12 +14,12 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")
-local headers = require("libs.common.headers")
+local discrete = require("libs.common.discrete_values")(Account)
+local headers = require("libs.common.headers")(Account)
 
 
 
@@ -168,13 +168,13 @@ if not existing_alert or not existing_alert.validated then
     local pt_dv = links.get_discrete_value_links { discrete_value = dv_prothrombin_time, text = "Prothrombin Time", predicate = calc_prothrombin_time1, max_per_value = 10 }
 
     -- Meds
-    local anticoagulant_dv = links.get_medication_link { medication = "Anticoagulant" }
+    local anticoagulant_dv = links.get_medication_link { medication = "Anticoagulant", text = "" }
     local anticoagulant_abs = links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant" }
-    local antiplatelet_dv = links.get_medication_link { medication = "Antiplatelet" }
+    local antiplatelet_dv = links.get_medication_link { medication = "Antiplatelet", text = "" }
     local antiplatelet_abs = links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet" }
-    local aspirin_dv = links.get_medication_link { medication = "Aspirin" }
+    local aspirin_dv = links.get_medication_link { medication = "Aspirin", text = "" }
     local aspirin_abs = links.get_abstraction_link { code = "ASPIRIN", text = "Aspirin" }
-    local heparin_dv = links.get_medication_link { medication = "Heparin" }
+    local heparin_dv = links.get_medication_link { medication = "Heparin", text = "" }
     local heparin_abs = links.get_abstraction_link { code = "HEPARIN", text = "Heparin" }
     local z7901_code = links.get_code_link { code = "Z79.01", text = "Long Term Anticoagulants" }
     local z7902_code = links.get_code_link { code = "Z79.02", text = "Long Term use of Antithrombotics/Antiplatelets" }

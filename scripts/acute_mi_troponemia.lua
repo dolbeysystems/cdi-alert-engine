@@ -13,11 +13,11 @@
 --------------------------------------------------------------------------------
 --- Requires 
 --------------------------------------------------------------------------------
-local alerts = require("libs.common.alerts")
-local links = require("libs.common.basic_links")
-local codes = require("libs.common.codes")
-local headers = require("libs.common.headers")
-local discrete = require("libs.common.discrete_values")
+local alerts = require("libs.common.alerts")(Account)
+local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
+local headers = require("libs.common.headers")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
 
 
 
@@ -155,11 +155,11 @@ then
     local irregular_ekg_findings_abstraction_link = links.get_abstraction_link { code = "IRREGULAR_EKG_FINDINGS_MI", text = "Irregular EKG Finding" }
 
     -- Medications
-    local antiplatlet2_medication_link = links.get_medication_link { cat = "Antiplatelet 2" }
-    local aspirin_medication_link = links.get_medication_link { cat = "Aspirin" }
-    local heparin_medication_link = links.get_medication_link { cat = "Heparin" }
-    local morphine_medication_link = links.get_medication_link { cat = "Morphine" }
-    local nitroglycerin_medication_link = links.get_medication_link { cat = "Nitroglycerin" }
+    local antiplatlet2_medication_link = links.get_medication_link { cat = "Antiplatelet 2", text = "" }
+    local aspirin_medication_link = links.get_medication_link { cat = "Aspirin", text = "" }
+    local heparin_medication_link = links.get_medication_link { cat = "Heparin", text = "" }
+    local morphine_medication_link = links.get_medication_link { cat = "Morphine", text = "" }
+    local nitroglycerin_medication_link = links.get_medication_link { cat = "Nitroglycerin", text = "" }
 
     -- Laboratory Studies
     troponin_header:add_link(
@@ -169,7 +169,12 @@ then
             linkText = "Troponin T High Sensitivity: (DATE1, DATE2) - ",
         }
     )
-    local high_troponin_discrete_value_links = links.get_discrete_value_links { dvNames = troponin_dv_names, predicate = high_troponin_predicate, maxPerValue = 10 }
+    local high_troponin_discrete_value_links = links.get_discrete_value_links { 
+        dvNames = troponin_dv_names,
+        text = "Elevated Troponin",
+        predicate = high_troponin_predicate, 
+        maxPerValue = 10 
+    }
 
 
 
