@@ -535,13 +535,18 @@ return function(Account)
     --- Create a link to a header
     ---
     --- @param header_text string The text of the header
+    --- @param validated boolean? Whether the header is validated
     ---
     --- @return CdiAlertLink - the link to the header
     --------------------------------------------------------------------------------
-    function module.make_header_link(header_text)
+    function module.make_header_link(header_text, validated)
+        local is_validated = true
+        if validated ~= nil then
+            is_validated = validated
+        end
         local link = cdi_alert_link()
         link.link_text = header_text
-        link.is_validated = true
+        link.is_validated = is_validated
         return link
     end
 

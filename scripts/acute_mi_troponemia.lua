@@ -169,11 +169,11 @@ then
             linkText = "Troponin T High Sensitivity: (DATE1, DATE2) - ",
         }
     )
-    local high_troponin_discrete_value_links = links.get_discrete_value_links { 
+    local high_troponin_discrete_value_links = links.get_discrete_value_links {
         dvNames = troponin_dv_names,
         text = "Elevated Troponin",
-        predicate = high_troponin_predicate, 
-        maxPerValue = 10 
+        predicate = high_troponin_predicate,
+        maxPerValue = 10
     }
 
 

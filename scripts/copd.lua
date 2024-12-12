@@ -62,6 +62,10 @@ local dv_sputum_culture = { "" }
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --- Get the links for PaO2/FiO2, through various attempts
+---
+--- Links returned use the seq field to communicate other meaning:
+--- 2 - Ratio was calcluated by site
+--- 8 - Ratio was calculated by us and needs a warning added before it
 --- 
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
@@ -113,7 +117,8 @@ local function get_pa_o2_fi_o2_links()
             text = "PaO2/FiO2",
             predicate = function(dv, num)
                 return dates.date_is_less_than_x_days_ago(dv.result_date, 1) and num < 300
-            end
+            end,
+            seq = 2
         }
     end
     if #pa_o2_fi_o2_ratio_links == 0 then
@@ -145,6 +150,7 @@ local function get_pa_o2_fi_o2_links()
                         " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                         ") and PaO2 (" .. pa_o2 ..
                         ") yielding a ratio of (" .. ratio .. ")"
+                    link.sequence = 8
                     if resp_rate_dv then
                         link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                     end
@@ -185,6 +191,7 @@ local function get_pa_o2_fi_o2_links()
                             " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                             ") and SpO2(" .. sp_o2 ..
                             ") yielding a ratio of (" .. ratio .. ")"
+                        link.sequence = 8
                         if resp_rate_dv then
                             link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                         end
@@ -231,7 +238,7 @@ local function get_pa_o2_fi_o2_links()
                                 " - " .. oxygen_therapy_value ..
                                 ") and PaO2 (" .. pa_o2 ..
                                 ") yielding a ratio of (" .. ratio .. ")"
-
+                            link.sequence = 8
                             if resp_rate_dv then
                                 link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                             end
@@ -281,6 +288,7 @@ local function get_pa_o2_fi_o2_links()
                                     " - " .. oxygen_therapy_value ..
                                     ") and SpO2 (" .. sp_o2 ..
                                     ") yielding a ratio of (" .. ratio .. ")"
+                                link.sequence = 8
                                 if resp_rate_dv then
                                     link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                                 end
@@ -301,82 +309,90 @@ end
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_sp_o2_links()
-    local function create_link(date_time, link_text, result, id)
+    --- @param date_time string?
+    --- @param link_text string
+    --- @param result string?
+    --- @param id string?
+    --- @param seq number
+    ---
+    --- @return CdiAlertLink
+    local function create_link(date_time, link_text, result, id, seq)
         local link = cdi_alert_link()
 
         if date_time then
-            link_text = link_text.replace("[RESULTDATETIME]", date_time)
+            link_text = link_text:gsub("[RESULTDATETIME]", date_time)
         else
-            link_text = link_text.replace("(Result Date: [RESULTDATETIME])", "")
+            link_text = link_text:gsub("(Result Date: [RESULTDATETIME])", "")
         end
         if result then
-            link_text = link_text.replace("[VALUE]", result)
+            link_text = link_text:gsub("[VALUE]", result)
         else
-            link_text = link_text.replace("[VALUE]", "")
+            link_text = link_text:gsub("[VALUE]", "")
         end
         link.link_text = link_text
         link.discrete_value_id = id
+        link.sequence = seq
         return link
     end
 
     -- DV1     DV2     DV3              DV4
     -- dvSPO2, dvPaO2, dvOxygenTherapy, dvRespiratoryRate
     -- w       x       y                z
-    local discrete_dic_1 = {}
-    local discrete_dic_2 = {}
-    local discrete_dic_3 = {}
-    local discrete_dic_4 = {}
-    local link_text1 = "sp02: [VALUE] (Result Date: [RESULTDATETIME])"
-    local link_text2 = "pa02: [VALUE] (Result Date: [RESULTDATETIME])"
-    local link_text3 = "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])"
-    local link_text4 = "Respiratory Rate: [VALUE] (Result Date: [RESULTDATETIME])"
-    local rr_dv = nil
+    local sp_o2_discrete_values = {}
+    local pa_o2_discrete_values = {}
+    local o2_therapy_discrete_values = {}
+    local respiratory_rate_discrete_values = {}
+    local sp_o2_link_text = "sp02: [VALUE] (Result Date: [RESULTDATETIME])"
+    local pao2_link_text = "pa02: [VALUE] (Result Date: [RESULTDATETIME])"
+    local o2_therapy_link_text = "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])"
+    local respiratory_rate_link_text = "Respiratory Rate: [VALUE] (Result Date: [RESULTDATETIME])"
     local date_limit = os.time() - 86400
-    local ot_dv = nil
-    local sp_dv = nil
-    local pa_dv = nil
+    local pa_dv_idx = nil
+    local sp_dv_idx = nil
+    local ot_dv_idx = nil
+    local rr_dv_idx = nil
     local matching_date = nil
     local oxygen_value = nil
-    local resp_rate_dv = nil
+    local resp_rate_str = nil
     local matched_list = {}
 
-    discrete_dic_1 = discrete.get_ordered_discrete_values {
+    sp_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_sp_o2,
         predicate = function(dv)
             return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) < 91
         end
     }
 
-    discrete_dic_2 = discrete.get_ordered_discrete_values {
+    pa_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_pa_o2,
         predicate = function(dv)
             return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) <= 60
         end
     }
 
-    discrete_dic_3 = discrete.get_ordered_discrete_values {
+    o2_therapy_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_oxygen_therapy,
         predicate = function(dv)
             return dates.date_string_to_int(dv.result_date) >= date_limit and dv.result ~= nil
         end
     }
 
-    discrete_dic_4 = discrete.get_ordered_discrete_values {
+    respiratory_rate_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_respiratory_rate,
         predicate = function(dv)
             return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) ~= nil
         end
     }
 
-    if #discrete_dic_2 > 0 then
-        for idx, item in discrete_dic_2 do
+    if #pa_o2_discrete_values > 0 then
+        for idx, item in pa_o2_discrete_values do
             matching_date = dates.date_string_to_int(item.result_date)
-            pa_dv = idx
-            if #discrete_dic_3 > 0 then
-                for idx2, item2 in discrete_dic_3 do
+            pa_dv_idx = idx
+            if #o2_therapy_discrete_values > 0 then
+                for idx2, item2 in o2_therapy_discrete_values do
                     if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
                         matching_date = dates.date_string_to_int(item.result_date)
-                        ot_dv = idx2
+                        ot_dv_idx = idx2
                         oxygen_value = item2.result
                         break
                     end
@@ -384,16 +400,16 @@ local function get_pa_o2_sp_o2_links()
             else
                 oxygen_value = "XX"
             end
-            if #discrete_dic_4 > 0 then
-                for idx3, item3 in discrete_dic_4 do
+            if #respiratory_rate_discrete_values > 0 then
+                for idx3, item3 in respiratory_rate_discrete_values do
                     if dates.date_string_to_int(item3.result_date) == matching_date then
-                        rr_dv = idx3
-                        resp_rate_dv = item3.result
+                        rr_dv_idx = idx3
+                        resp_rate_str = item3.result
                         break
                     end
                 end
             else
-                resp_rate_dv = "XX"
+                resp_rate_str = "XX"
             end
 
             matching_date = dates.date_int_to_string(matching_date)
@@ -401,79 +417,126 @@ local function get_pa_o2_sp_o2_links()
                 matched_list,
                 create_link(
                     nil,
-                    matching_date .. " Respiratory Rate: " .. resp_rate_dv .. ", Oxygen Therapy: " .. oxygen_value ..
-                    ", pa02: " .. discrete_dic_2[pa_dv].result,
+                    matching_date .. " Respiratory Rate: " .. resp_rate_str .. ", Oxygen Therapy: " .. oxygen_value ..
+                    ", pa02: " .. pa_o2_discrete_values[pa_dv_idx].result,
                     nil,
-                    discrete_dic_2[pa_dv].unique_id
+                    pa_o2_discrete_values[pa_dv_idx].unique_id,
+                    0
                 )
             )
             table.insert(
                 matched_list,
                 create_link(
-                    discrete_dic_2[pa_dv].result_date,
-                    link_text2,
-                    discrete_dic_2[pa_dv].result,
-                    discrete_dic_2[pa_dv].unique_id
+                    pa_o2_discrete_values[pa_dv_idx].result_date,
+                    pao2_link_text,
+                    pa_o2_discrete_values[pa_dv_idx].result,
+                    pa_o2_discrete_values[pa_dv_idx].unique_id,
+                    2
                 )
             )
-            if ot_dv then
+            if ot_dv_idx then
                 table.insert(
                     matched_list,
                     create_link(
-                        discrete_dic_3[ot_dv].result_date,
-                        link_text3,
-                        discrete_dic_3[ot_dv].result,
-                        discrete_dic_3[ot_dv].unique_id
+                        o2_therapy_discrete_values[ot_dv_idx].result_date,
+                        o2_therapy_link_text,
+                        o2_therapy_discrete_values[ot_dv_idx].result,
+                        o2_therapy_discrete_values[ot_dv_idx].unique_id,
+                        3
                     )
                 )
             end
-            if rr_dv then
+            if rr_dv_idx then
                 table.insert(
                     matched_list,
                     create_link(
-                        discrete_dic_4[rr_dv].result_date,
-                        link_text4,
-                        discrete_dic_4[rr_dv].result,
-                        discrete_dic_4[rr_dv].unique_id
+                        respiratory_rate_discrete_values[rr_dv_idx].result_date,
+                        respiratory_rate_link_text,
+                        respiratory_rate_discrete_values[rr_dv_idx].result,
+                        respiratory_rate_discrete_values[rr_dv_idx].unique_id,
+                        4
                     )
                 )
             end
         end
         return matched_list
-    elseif #discrete_dic_1 > 0 then
-        --[[
-        for item in discreteDic1:
-            matchingDate = discreteDic1[item].ResultDate
-            spDv = item
-            if y > 0:
-                for item2 in discreteDic3:
-                    if discreteDic1[item].ResultDate == discreteDic3[item2].ResultDate:
-                        otDv = item2
-                        oxygenValue = discreteDic3[item2].Result
+    elseif #sp_o2_discrete_values > 0 then
+        for idx, item in sp_o2_discrete_values do
+            matching_date = dates.date_string_to_int(item.result_date)
+            sp_dv_idx = idx
+
+            if #o2_therapy_discrete_values > 0 then
+                for idx2, item2 in o2_therapy_discrete_values do
+                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
+                        matching_date = dates.date_string_to_int(item.result_date)
+                        ot_dv_idx = idx2
+                        oxygen_value = item2.result
                         break
-            else:
-                oxygenValue = "XX" 
-            if z > 0:
-                for item3 in discreteDic4:
-                    if discreteDic4[item3].ResultDate == discreteDic1[item].ResultDate:
-                        rrDV = item3
-                        respRateDV = discreteDic4[item3].Result
+                    end
+                end
+            else
+                oxygen_value = "XX"
+            end
+            if #respiratory_rate_discrete_values > 0 then
+                for idx3, item3 in respiratory_rate_discrete_values do
+                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                        rr_dv_idx = idx3
+                        resp_rate_str = item3.result
                         break
-            else:
-                respRateDV = "XX"
-            matchingDate = datetimeFromUtcToLocal(matchingDate)
-            matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-            matchedList.append(dataConversion(None, matchingDate + " Respiratory Rate: " + str(respRateDV) + ", Oxygen Therapy: " + str(oxygenValue) + ", sp02: " + str(discreteDic1[spDv].Result), None, discreteDic1[spDv].UniqueId or discreteDic1[spDv]._id, oxygenation, 0, False))
-            matchedList.append(dataConversion(discreteDic1[spDv].ResultDate, linkText1, discreteDic1[spDv].Result, discreteDic1[spDv].UniqueId or discreteDic1[spDv]._id, spo2, 1, False))
-            if otDv is not None:
-                matchedList.append(dataConversion(discreteDic3[otDv].ResultDate, linkText3, discreteDic3[otDv].Result, discreteDic3[otDv].UniqueId or discreteDic3[otDv]._id, oxygenTherapy, 5, False))
-            if rrDV is not None:
-                matchedList.append(dataConversion(discreteDic4[rrDV].ResultDate, linkText4, discreteDic4[rrDV].Result, discreteDic4[rrDV].UniqueId or discreteDic4[rrDV]._id, rr, 7, False))
-        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
-            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
-            + str(account._id), scriptName, scriptInstance, "Debug")
-        return matchedList
-        --]]
+                    end
+                end
+            else
+                resp_rate_str = "XX"
+            end
+            matching_date = dates.date_int_to_string(matching_date)
+            table.insert(
+                matched_list,
+                create_link(
+                    nil,
+                    matching_date .. " Respiratory Rate: " .. resp_rate_str .. ", Oxygen Therapy: " .. oxygen_value ..
+                    ", sp02: " .. sp_o2_discrete_values[sp_dv_idx].result,
+                    nil,
+                    sp_o2_discrete_values[sp_dv_idx].unique_id,
+                    0
+                )
+            )
+            table.insert(
+                matched_list,
+                create_link(
+                    sp_o2_discrete_values[sp_dv_idx].result_date,
+                    sp_o2_link_text,
+                    sp_o2_discrete_values[sp_dv_idx].result,
+                    sp_o2_discrete_values[sp_dv_idx].unique_id,
+                    1
+                )
+            )
+            if ot_dv_idx then
+                table.insert(
+                    matched_list,
+                    create_link(
+                        o2_therapy_discrete_values[ot_dv_idx].result_date,
+                        o2_therapy_link_text,
+                        o2_therapy_discrete_values[ot_dv_idx].result,
+                        o2_therapy_discrete_values[ot_dv_idx].unique_id,
+                        5
+                    )
+                )
+            end
+            if rr_dv_idx then
+                table.insert(
+                    matched_list,
+                    create_link(
+                        respiratory_rate_discrete_values[rr_dv_idx].result_date,
+                        respiratory_rate_link_text,
+                        respiratory_rate_discrete_values[rr_dv_idx].result,
+                        respiratory_rate_discrete_values[rr_dv_idx].unique_id,
+                        7
+                    )
+                )
+            end
+
+        end
+        return matched_list
     else
         return {}
     end
@@ -521,17 +584,21 @@ if not existing_alert or not existing_alert.validated then
     local o2_indicators_header = headers.make_header_builder("O2 Indicators", 7)
     local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 8)
     local chest_x_ray_header = headers.make_header_builder("Chest X-Ray", 9)
-    local spo2_header = headers.make_header_builder("SpO2", 10)
-    local pa_o2_fi_o2_header = headers.make_header_builder("PaO2/FiO2", 11)
-    local spo22_header = headers.make_header_builder("SpO2", 12)
+
     local pa_o2_header = headers.make_header_builder("PaO2", 13)
-    local fi_o2_header = headers.make_header_builder("FiO2", 14)
-    local respiratory_rate_header = headers.make_header_builder("Respiratory Rate", 15)
-    local oxygen_flow_rate_header = headers.make_header_builder("Oxygen Flow Rate", 16)
+    local sp_o2_header = headers.make_header_builder("SpO2", 12)
     local oxygen_therapy_header = headers.make_header_builder("Oxygen Therapy", 17)
+    local respiratory_rate_header = headers.make_header_builder("Respiratory Rate", 15)
+    local pa_o2_fi_o2_header = headers.make_header_builder("PaO2/FiO2", 11)
 
     local function compile_links()
-        -- TODO: Unclear at this point how the child link headers are composed
+        oxygenation_ventilation_header:add_link(pa_o2_header:build(true))
+        oxygenation_ventilation_header:add_link(sp_o2_header:build(true))
+        oxygenation_ventilation_header:add_link(oxygen_therapy_header:build(true))
+        oxygenation_ventilation_header:add_link(respiratory_rate_header:build(true))
+
+        calculated_po2_fio2_header:add_link(pa_o2_fi_o2_header:build(true))
+
         table.insert(result_links, documented_dx_header:build(true))
         table.insert(result_links, clinical_evidence_header:build(true))
         table.insert(result_links, oxygenation_ventilation_header:build(true))
@@ -685,37 +752,50 @@ if not existing_alert or not existing_alert.validated then
         pa_o2_fi_o2_ratio_links = get_pa_o2_fi_o2_links()
     end
     if not pa_o2_fi_o2_ratio_links then
-        -- TODO: and now this!
         spo2_pao2_dv_links = get_pa_o2_sp_o2_links()
     end
 
-    --[[
-    #Copd Exacerbation Treatment Medication
-    if respiratoryTreatmentMedicationAbs is not None: meds.Links.Add(respiratoryTreatmentMedicationAbs); RTMA += 1
-    if inhaledCorticosteriodTreatmeantsAbs is not None: RTMA += 1
-    if respiratoryTreatmentMedicationMed is not None: RTMA += 1
-    if bronchodilatorMed is not None: RTMA += 1
-    if inhaledCorticosteriodMed is not None: RTMA += 1
-    #Signs of Low Oxygen
-    if pao2Calc is not None: SLO += 1
-    if lowPaO2DV is not None: labs.Links.Add(lowPaO2DV); SLO += 1
-    if r0902Code is not None: vitals.Links.Add(r0902Code); SLO += 1
-    if lowPulseOximetryDV is not None: vitals.Links.Add(lowPulseOximetryDV); SLO += 1
-    #Signs of Resp Distress
-    if wheezingAbs is not None: abs.Links.Add(wheezingAbs); SRD += 1
-    if useOfAccessoryMusclesAbs is not None: abs.Links.Add(useOfAccessoryMusclesAbs); SRD += 1
-    if shortnessOfBreathAbs is not None: abs.Links.Add(shortnessOfBreathAbs); SRD += 1
-    if r0603Code is not None: abs.Links.Add(r0603Code); SRD += 1
-    if highRespiratoryRateDV is not None: vitals.Links.Add(highRespiratoryRateDV); SRD += 1
-    if j9801Code is not None: abs.Links.Add(j9801Code); SRD += 1
-    #Oxygen Delievery Check
-    if highFlowNasalCodes is not None: ODC += 1
-    if invasiveMechVentCodes is not None: ODC += 1
-    if nonInvasiveVentAbs is not None: ODC += 1
-    if oxygenFlowRateDV is not None: ODC += 1
-    if oxygenTherapyAbs is not None: ODC += 1
-    --]]
+    -- COPD Exacerbation Treatment Medication
+    local rtma =
+        (respiratory_treatment_medication_abs and 1 or 0) +
+        (inhaled_corticosteriod_treatmeants_abs and 1 or 0) +
+        (respiratory_treatment_medication_med and 1 or 0) +
+        (bronchodilator_med and 1 or 0) +
+        (inhaled_corticosteriod_med and 1 or 0)
+    treatment_and_monitoring_header:add_link(respiratory_treatment_medication_abs)
 
+    -- Signs of Low Oxygen
+    local slo =
+        (pa_o2_fi_o2_ratio_links and 1 or 0) +
+        (low_pa_o2_dv and 1 or 0) +
+        (r0902_code and 1 or 0) +
+        (low_pulse_oximetry_dv and 1 or 0)
+    laboratory_studies_header:add_link(low_pa_o2_dv)
+    vital_signs_intake_header:add_link(r0902_code)
+    vital_signs_intake_header:add_link(low_pulse_oximetry_dv)
+
+    -- Signs of Resp Distress
+    local srd =
+        (wheezing_abs and 1 or 0) +
+        (use_of_accessory_muscles_abs and 1 or 0) +
+        (shortness_of_breath_abs and 1 or 0) +
+        (r0603_code and 1 or 0) +
+        (high_respiratory_rate_dv and 1 or 0) +
+        (j9801_code and 1 or 0)
+    clinical_evidence_header:add_link(wheezing_abs)
+    clinical_evidence_header:add_link(use_of_accessory_muscles_abs)
+    clinical_evidence_header:add_link(shortness_of_breath_abs)
+    clinical_evidence_header:add_link(r0603_code)
+    vital_signs_intake_header:add_link(high_respiratory_rate_dv)
+    clinical_evidence_header:add_link(j9801_code)
+
+    -- Oxygen Delievery Check
+    local odc =
+        (high_flow_nasal_codes and 1 or 0) +
+        (invasive_mech_vent_codes and 1 or 0) +
+        (non_invasive_vent_abs and 1 or 0) +
+        (oxygen_flow_rate_dv and 1 or 0) +
+        (oxygen_therapy_abs and 1 or 0)
 
 
 
@@ -723,220 +803,266 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
---[[
-    #Starting Main Algorithm
-    if subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection" and j440Code is not None:
-        if j440Code is not None: updateLinkText(j440Code, autoCodeText); dc.Links.Add(j440Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        
-    elif (
-        j449Code is not None and
-        (j20Codes is not None or
-        j22Codes is not None or
-        pneumoniaJ12 is not None or
-        pneumoniaJ13 is not None or
-        pneumoniaJ14 is not None or
-        pneumoniaJ15 is not None or
-        pneumoniaJ16 is not None or
-        pneumoniaJ17 is not None or
-        pneumoniaJ18 is not None or 
-        j21Codes is not None) and
-        j440Code is None
-        ):
-        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection"
-        AlertPassed = True
-        dc.Links.Add(j449Code)
-        if j20Codes is not None: dc.Links.Add(j20Codes)
-        if j22Codes is not None: dc.Links.Add(j22Codes)
-        if j21Codes is not None: dc.Links.Add(j21Codes)
-        if pneumoniaJ12 is not None: dc.Links.Add(pneumoniaJ12)
-        if pneumoniaJ13 is not None: dc.Links.Add(pneumoniaJ13)
-        if pneumoniaJ14 is not None: dc.Links.Add(pneumoniaJ14)
-        if pneumoniaJ15 is not None: dc.Links.Add(pneumoniaJ15)
-        if pneumoniaJ16 is not None: dc.Links.Add(pneumoniaJ16)
-        if pneumoniaJ17 is not None: dc.Links.Add(pneumoniaJ17)
-        if pneumoniaJ18 is not None: dc.Links.Add(pneumoniaJ18)
-        if respiratoryTuberculosis is not None: dc.Links.Add(respiratoryTuberculosis)
-    
-    elif subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation" and j441Code is not None:
-        if j441Code is not None: updateLinkText(j441Code, autoCodeText); dc.Links.Add(j441Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    
-    elif (
-        j449Code is not None and
-        RespiratoryCodeCheck is not None and
-        opioidOverdoseAbs is None and
-        j441Code is None and
-        pulmonaryEmbolismNeg is None and
-        j810Code is None and
-        sepsis40Neg is None and
-        sepsis41Neg is None and
-        sepsisNeg is None and
-        f410Code is None and
-        pneumonthroaxNeg is None and
-        HeartFailureCodeCheck is None and
-        acuteMINeg is None and
-        copdWithoutExacerbationAbs is None and
-        (bronchodilatorMed is not None or
-        respiratoryTreatmentMedicationMed is not None or
-        respiratoryTreatmentMedicationAbs is not None or
-        inhaledCorticosteriodMed is not None or
-        inhaledCorticosteriodTreatmeantsAbs is not None)
-        ):
-        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
-        AlertPassed = True
-        dc.Links.Add(j449Code)
-        dc.Links.Add(RespiratoryCodeCheck)    
-    
-    elif (
-        j449Code is not None and
-        SLO > 0 and
-        SRD > 0 and
-        RTMA > 0 and
-        ODC > 0 and
-        opioidOverdoseAbs is None and
-        pulmonaryEmbolismNeg is None and
-        j810Code is None and
-        sepsis40Neg is None and
-        sepsis41Neg is None and
-        sepsisNeg is None and
-        f410Code is None and
-        pneumonthroaxNeg is None and
-        HeartFailureCodeCheck is None and
-        acuteMINeg is None and
-        copdWithoutExacerbationAbs is None and
-        j441Code is None
-    ):
-        result.Subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
-        AlertPassed = True
-        dc.Links.Add(j449Code)
-        
-    elif subtitle == "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence" and SLO > 0 and SRD > 0 and RTMA > 0:
-        if message1 and SLO > 0:
-            vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, False))
-        if message2 and SRD > 0:
-            abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None, False))
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to clinical evidence now existing on the Account"
-        result.Validated = True
-        AlertPassed = True
-        
-    elif (
-        j441Code is not None and
-        SLO == 0 and
-        SRD == 0 and
-        RTMA > 0
-    ):
-        if SLO < 1: vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None))
-        elif message1 and SLO > 0:
-            vitals.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, False))
-        if SRD < 1: abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None))
-        elif message2 and SRD > 0:
-            abs.Links.Add(MatchedCriteriaLink(LinkText2, None, None, None, False))
-        result.Subtitle = "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence"
-        AlertPassed = True
+    if subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection" and j440_code then
+        if j440_code then
+            j440_code.link_text = "Autoresolved Specified Code - " .. j440_code.link_text
+            documented_dx_header:add_link(j440_code)
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+    elseif
+        j449_code and (
+            j20_codes or
+            j22_codes or
+            pneumonia_j12 or
+            pneumonia_j13 or
+            pneumonia_j14 or
+            pneumonia_j15 or
+            pneumonia_j16 or
+            pneumonia_j17 or
+            pneumonia_j18 or
+            j21_codes
+        ) and not j440_code
+    then
+        Result.subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Lower Respiratory Infection"
+        Result.passed = true
+        documented_dx_header:add_link(j449_code)
+        documented_dx_header:add_link(j20_codes)
+        documented_dx_header:add_link(j22_codes)
+        documented_dx_header:add_link(j21_codes)
+        documented_dx_header:add_link(pneumonia_j12)
+        documented_dx_header:add_link(pneumonia_j13)
+        documented_dx_header:add_link(pneumonia_j14)
+        documented_dx_header:add_link(pneumonia_j15)
+        documented_dx_header:add_link(pneumonia_j16)
+        documented_dx_header:add_link(pneumonia_j17)
+        documented_dx_header:add_link(pneumonia_j18)
+        documented_dx_header:add_link(respiratory_tuberculosis)
+    elseif subtitle == "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation" and j441_code then
+        if j441_code then
+            j441_code.link_text = "Autoresolved Specified Code - " .. j441_code.link_text
+            documented_dx_header:add_link(j441_code)
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+    elseif
+        j449_code and
+        respiratory_code_check and
+        not opioid_overdose_abs and
+        not j441_code and
+        not pulmonary_embolism_neg and
+        not j810_code and
+        not sepsis40_neg and
+        not sepsis41_neg and
+        not sepsis_neg and
+        not f410_code and
+        not pneumonthroax_neg and
+        not heart_failure_code_check and
+        not acute_mi_neg and
+        not copd_without_exacerbation_abs and
+        (
+            bronchodilator_med or
+            respiratory_treatment_medication_med or
+            respiratory_treatment_medication_abs or
+            inhaled_corticosteriod_med or
+            inhaled_corticosteriod_treatmeants_abs
+        )
+    then
+        Result.subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
+        Result.passed = true
+        documented_dx_header:add_link(j449_code)
+        documented_dx_header:add_link(respiratory_code_check)
+    elseif
+        j449_code and
+        slo > 0 and
+        srd > 0 and
+        rtma > 0 and
+        odc > 0 and
+        not opioid_overdose_abs and
+        not pulmonary_embolism_neg and
+        not j810_code and
+        not sepsis40_neg and
+        not sepsis41_neg and
+        not sepsis_neg and
+        not f410_code and
+        not pneumonthroax_neg and
+        not heart_failure_code_check and
+        not acute_mi_neg and
+        not copd_without_exacerbation_abs and
+        not j441_code
+    then
+        Result.subtitle = "Possible Chronic Obstructive Pulmonary Disease with Acute Exacerbation"
+        Result.passed = true
+        documented_dx_header:add_link(j449_code)
+    elseif subtitle == "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence" and slo > 0 and srd > 0 and rtma > 0 then
+        if link_text_1_found and slo > 0 then
+            vital_signs_intake_header:add_link(links.make_header_link(link_text_1))
+        end
+        if link_text_2_found and srd > 0 then
+            clinical_evidence_header:add_link(links.make_header_link(link_text_2))
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
+        Result.validated = true
+        Result.passed = true
+    elseif j441_code and slo < 1 and srd < 1 and rtma > 0 then
+        if slo < 1 then
+            vital_signs_intake_header:add_link(links.make_header_link(link_text_1))
+        elseif link_text_1_found and slo > 0 then
+            vital_signs_intake_header:add_link(links.make_header_link(link_text_1, false))
+        end
+        if srd < 1 then
+            clinical_evidence_header:add_link(links.make_header_link(link_text_2))
+        elseif link_text_2_found and srd > 0 then
+            clinical_evidence_header:add_link(links.make_header_link(link_text_2, false))
+        end
+        Result.subtitle = "COPD with Acute Exacerbation Possibly Lacking Supporting Evidence"
+        Result.passed = true
+    end
 
-    else:
-        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-        result.Passed = False
---]]
 
 
     if Result.passed then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        --[[
-        #Abs
-        abstractValue("ABNORMAL_SPUTUM", "Abnormal Sputum '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 1, abs, True)
-        #2
-        dvBreathCheck(dict(maindiscreteDic), dvBreathSounds, "Breath Sounds '[VALUE]' (Result Date: [RESULTDATETIME])", 3, abs, True)
-        multiCodeValue(["J96.01", "J96.2", "J96.21", "J96.22"], "Acute Respiratory Failure: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, abs, True)
-        if j9801Code is not None: abs.Links.Add(j9801Code) #5
-        abstractValue("BRONCHOSPASM", "Bronchospasm '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, abs, True)
-        codeValue("R05.9", "Cough: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 6, abs, True)
-        codeValue("U07.1", "Covid-19: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 7, abs, True)
-        codeValue("R53.83", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8, abs, True)
-        abstractValue("LOW_FORCED_EXPIRATORY_VOLUME_1", "Low Forced Expiratory Volume 1 '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, abs, True)
-        abstractValue("BACTERIAL_PNEUMONIA_ORGANISM", "Possible Bacterial Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 10, abs, True)
-        abstractValue("FUNGAL_PNEUMONIA_ORGANISM", "Possible Fungal Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 11, abs, True)
-        abstractValue("VIRAL_PNEUMONIA_ORGANISM", "Possible Viral Pneumonia Organism '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, abs, True)
-        dvRespPatCheck(dict(maindiscreteDic), dvRespiratoryPattern, "Respiratory Pattern '[VALUE]' (Result Date: [RESULTDATETIME])", 13, abs, True)
-        #14-17
-        #Document Links
-        documentLink("Chest  3 View", "Chest  3 View", 0, chestXRayLinks, True)
-        documentLink("Chest  PA and Lateral", "Chest  PA and Lateral", 0, chestXRayLinks, True)
-        documentLink("Chest  Portable", "Chest  Portable", 0, chestXRayLinks, True)
-        documentLink("Chest PA and Lateral", "Chest PA and Lateral", 0, chestXRayLinks, True)
-        documentLink("Chest  1 View", "Chest  1 View", 0, chestXRayLinks, True)
-        #Labs
-        dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVID, "Covid 19 Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 2, labs, True)
-        dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVIDAntigen, "Covid 19 Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 3, labs, True)
-        dvBloodCheck(dict(maindiscreteDic), dvInfluenzeScreenA, "Influenza A Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 4, labs, True)
-        dvBloodCheck(dict(maindiscreteDic), dvInfluenzeScreenB, "Influenza B Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 5, labs, True)
-        dvmrsaCheck(dict(maindiscreteDic), dvMRSASCreen, "Final Report", "MRSA Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 6, labs, True)
-        dvPositiveCheck(dict(maindiscreteDic), dvPleuralFluidCulture, "Positive Pleural Fluid Culture: '[VALUE]' (Result Date: [RESULTDATETIME])", 7)
-        abstractValue("POSITIVE_SPUTUM_CULTURE", "Positive Sputum Culture '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 8, labs, True)
-        dvPositiveCheck(dict(maindiscreteDic), dvPneumococcalAntigen, "Strept Pneumonia Screen: '[VALUE]' (Result Date: [RESULTDATETIME])", 9, labs, True)
-        #Meds
-        medValue("Antibiotic", "Antibiotic: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 1, meds, True)
-        abstractValue("ANTIBIOTIC", "Antibiotic '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 2, meds, True)
-        if bronchodilatorMed is not None: meds.Links.Add(bronchodilatorMed) #3
-        medValue("Dexamethasone", "Dexamethasone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 4, meds, True)
-        if inhaledCorticosteriodMed is not None: meds.Links.Add(inhaledCorticosteriodMed) #5
-        if inhaledCorticosteriodTreatmeantsAbs is not None: meds.Links.Add(inhaledCorticosteriodTreatmeantsAbs) #6
-        medValue("Methylprednisolone", "Methylprednisolone: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 7, meds, True)
-        if respiratoryTreatmentMedicationAbs is not None: meds.Links.Add(respiratoryTreatmentMedicationAbs) #8
-        if respiratoryTreatmentMedicationMed is not None: meds.Links.Add(respiratoryTreatmentMedicationMed) #9
-        #10
-        medValue("Steroid", "Steroid: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 11, meds, True)
-        abstractValue("STEROIDS", "Steroid '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, meds, True)
-        medValue("Vasodilator", "Vasodilator: [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 13, meds, True)
-        #Oxygen
-        codeValue("Z99.81", "Dependence On Supplemental Oxygen: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, oxygen, True)
-        if z9981Code is not None: oxygen.Links.Add(z9981Code) #2
-        if highFlowNasalCodes is not None: oxygen.Links.Add(highFlowNasalCodes) #3
-        if invasiveMechVentCodes is not None: oxygen.Links.Add(invasiveMechVentCodes) #4
-        if nonInvasiveVentAbs is not None: oxygen.Links.Add(nonInvasiveVentAbs) #5
-        if oxygenFlowRateDV is not None: oxygen.Links.Add(oxygenFlowRateDV) #6
-        dvOxygenCheck(dict(maindiscreteDic), dvOxygenTherapy, "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])", 7, oxygen, True)
-        if oxygenTherapyAbs is not None: oxygen.Links.Add(oxygenTherapyAbs) #8
-        #Vitals
-        dvValue(dvHeartRate, "HR: [VALUE] (Result Date: [RESULTDATETIME])", calcHeartRate1, 1, vitals, True)
-        #2-5
-        #Calculated Ratio
-        if pao2Calc is not None:
-            for entry in pao2Calc:
-                if entry.Sequence == 8:
-                    calcpo2fio2.Links.Add(MatchedCriteriaLink("Verify the Calculated PF ratio, as it's generated by a computer calculation and requires verification.", None, None, None, True, None, None, 1))
-                    calcpo2fio2.Links.Add(entry)
-                elif entry.Sequence == 2:
-                    abg.Links.Add(entry)
-            if pa02Fi02.Links: calcpo2fio2.Links.Add(pa02Fi02)
-        elif sp02pao2Dvs is not None:
-            for entry in sp02pao2Dvs:
-                if entry.Sequence == 0:
-                    oxygenation.Links.Add(entry)
-                if entry.Sequence == 2:
-                    paO2.Links.Add(entry)
-                elif entry.Sequence == 1:
-                    spo22.Links.Add(entry)
-                elif entry.Sequence == 3:
-                    oxygenTherapy.Links.Add(entry)
-                elif entry.Sequence == 4:
-                    rr.Links.Add(entry)
-            if paO2.Links: oxygenation.Links.Add(paO2)
-            if spo22.Links: oxygenation.Links.Add(spo22)
-            if oxygenTherapy.Links: oxygenation.Links.Add(oxygenTherapy)
-            if rr.Links: oxygenation.Links.Add(rr)
-        --]]
+        -- Vitals
+        vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "HR", calc_heart_rate1)
 
+        -- Clinical Evidence
+        clinical_evidence_header:add_abstraction_link("ABNORMAL_SPUTUM", "Abnormal Sputum")
+        clinical_evidence_header:add_discrete_value_one_of_link(
+            dv_breath_sounds,
+            "Breath Sounds",
+            function(dv, num) return not string.match(dv.result, "clear") end
+        )
+        clinical_evidence_header:add_code_links(
+            { "J96.01", "J96.2", "J96.21", "J96.22" },
+            "Acute Respiratory Failure"
+        )
+        clinical_evidence_header:add_link(j9801_code)
+        clinical_evidence_header:add_abstraction_link("BRONCHOSPASM", "Bronchospasm")
+        clinical_evidence_header:add_code_link("R05.9", "Cough")
+        clinical_evidence_header:add_code_link("U07.1", "Covid-19")
+        clinical_evidence_header:add_code_link("R53.83", "Fatigue")
+        clinical_evidence_header:add_abstraction_link("LOW_FORCED_EXPIRATORY_VOLUME_1", "Low Forced Expiratory Volume 1")
+        clinical_evidence_header:add_abstraction_link("BACTERIAL_PNEUMONIA_ORGANISM", "Possible Bacterial Pneumonia Organism")
+        clinical_evidence_header:add_abstraction_link("FUNGAL_PNEUMONIA_ORGANISM", "Possible Fungal Pneumonia Organism")
+        clinical_evidence_header:add_abstraction_link("VIRAL_PNEUMONIA_ORGANISM", "Possible Viral Pneumonia Organism")
+        clinical_evidence_header:add_discrete_value_one_of_link(
+            dv_respiratory_pattern,
+            "Respiratory Pattern",
+            function(dv, num) return not string.match(dv.result, "regular") end
+        )
+
+        -- Document Links
+        chest_x_ray_header:add_document_link("Chest  3 View", "Chest  3 View")
+        chest_x_ray_header:add_document_link("Chest  PA and Lateral", "Chest  PA and Lateral")
+        chest_x_ray_header:add_document_link("Chest  Portable", "Chest  Portable")
+        chest_x_ray_header:add_document_link("Chest PA and Lateral", "Chest PA and Lateral")
+        chest_x_ray_header:add_document_link("Chest  1 View", "Chest  1 View")
+
+        -- Labs
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_mrsa_screen,
+            "MRSA Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_sars_covid,
+            "Covid 19 Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_sars_covid_antigen,
+            "Covid 19 Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_pneumococcal_antigen,
+            "Strept Pneumonia Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_influenze_screen_a,
+            "Influenza A Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_influenze_screen_b,
+            "Influenza B Screen",
+            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+        )
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_pleural_fluid_culture,
+            "Pleural Fluid Culture",
+            function(dv, num) return string.match(dv.result, "positive") end
+        )
+        laboratory_studies_header:add_abstraction_link("POSITIVE_PLEURAL_FLUID_CULTURE", "Positive Pleural Fluid Culture")
+        laboratory_studies_header:add_discrete_value_one_of_link(
+            dv_sputum_culture,
+            "Sputum Culture",
+            function(dv, num) return string.match(dv.result, "positive") end
+        )
+        laboratory_studies_header:add_abstraction_link("POSITIVE_SPUTUM_CULTURE", "Positive Sputum Culture")
+
+        -- Oxygen
+        oxygenation_ventilation_header:add_link(high_flow_nasal_codes)
+        oxygenation_ventilation_header:add_link(invasive_mech_vent_codes)
+        oxygenation_ventilation_header:add_link(non_invasive_vent_abs)
+        oxygenation_ventilation_header:add_link(oxygen_flow_rate_dv)
+        oxygenation_ventilation_header:add_discrete_value_one_of_link(
+            dv_oxygen_therapy,
+            "Oxygen Therapy",
+            function(dv, num)
+                return not string.match(dv.result, "room air") and not string.match(dv.result, "RA")
+            end
+        )
+        oxygenation_ventilation_header:add_link(oxygen_therapy_abs)
+
+        -- Meds
+        treatment_and_monitoring_header:add_medication_link("Antibiotic", "Antibiotic")
+        treatment_and_monitoring_header:add_abstraction_link("ANTIBIOTIC", "Antibiotic")
+        treatment_and_monitoring_header:add_link(bronchodilator_med)
+        treatment_and_monitoring_header:add_medication_link("Dexamethasone", "Dexamethasone")
+        treatment_and_monitoring_header:add_link(inhaled_corticosteriod_med)
+        treatment_and_monitoring_header:add_link(inhaled_corticosteriod_treatmeants_abs)
+        treatment_and_monitoring_header:add_medication_link("Methylprednisolone", "Methylprednisolone")
+        treatment_and_monitoring_header:add_link(respiratory_treatment_medication_abs)
+        treatment_and_monitoring_header:add_link(respiratory_treatment_medication_med)
+        treatment_and_monitoring_header:add_medication_link("Steroid", "Steroid")
+        treatment_and_monitoring_header:add_abstraction_link("STEROIDS", "Steroid")
+        treatment_and_monitoring_header:add_medication_link("Vasodilator", "Vasodilator")
+
+        if pa_o2_fi_o2_ratio_links then
+            for _, entry in ipairs(pa_o2_fi_o2_ratio_links) do
+                if entry.sequence == 8 then
+                    calculated_po2_fio2_header:add_text_link(
+                        "Verify the Calculated PF ratio, " ..
+                        "as it's generated by a computer calculation and requires verification"
+                    )
+                    calculated_po2_fio2_header:add_link(entry)
+                elseif entry.sequence == 2 then
+                    oxygenation_ventilation_header:add_link(entry)
+                end
+            end
+        elseif spo2_pao2_dv_links then
+            for _, entry in ipairs(spo2_pao2_dv_links) do
+                if entry.sequence == 0 then
+                    oxygenation_ventilation_header:add_link(entry)
+                elseif entry.sequence == 2 then
+                    pa_o2_header:add_link(entry)
+                elseif entry.sequence == 1 then
+                    sp_o2_header:add_link(entry)
+                elseif entry.sequence == 3 then
+                    oxygen_therapy_header:add_link(entry)
+                elseif entry.sequence == 4 then
+                    respiratory_rate_header:add_link(entry)
+                end
+            end
+        end
 
         ----------------------------------------
         --- Result Finalization 
