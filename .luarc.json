@@ -23,5 +23,8 @@
         "ignoreDir": [
             "old-scripts"
         ]
-    }
+    },
+    "diagnostics.disable": [
+        "no-unknown"
+    ]
 }

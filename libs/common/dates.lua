@@ -3,13 +3,41 @@ local module = {}
 --- Convert a date string to an integer
 ---
 --- @param date_string string The date string to convert
+--- @param convert_from_utc boolean? Whether to convert from UTC (default is true)
 ---
 --- @return number - the date as an integer
 --------------------------------------------------------------------------------
-function module.date_string_to_int(date_string)
+function module.date_string_to_int(date_string, convert_from_utc)
     local pattern = "(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)"
     local year, month, day, hour, min, sec, _ = date_string:match(pattern)
-    return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+    local from_utc = convert_from_utc == nil and true or convert_from_utc
+
+    local time = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+    if from_utc then
+        local tmp_time = os.time()
+        local d1 = os.date("*t", tmp_time)
+        local d2 = os.date("!*t", tmp_time)
+        d1.isdst = false
+
+        ---@diagnostic disable-next-line: param-type-mismatch
+        local zone_diff = os.difftime(os.time(d1), os.time(d2))
+        time = time + zone_diff
+    end
+    return time
+end
+
+--------------------------------------------------------------------------------
+--- Convert a date integer to a string
+---
+--- @param date_int number The date integer to convert
+--- @param format string? The format to convert to
+---
+--- @return string - the date as a string
+--------------------------------------------------------------------------------
+function module.date_int_to_string(date_int, format)
+    local fmt = format or "%m/%d/%Y %H:%M"
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return os.date(fmt, date_int)
 end
 
 --------------------------------------------------------------------------------

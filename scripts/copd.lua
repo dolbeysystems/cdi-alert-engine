@@ -20,6 +20,7 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require("libs.common.lists")
 local cdi_alert_link = require "cdi.link"
 
 
@@ -300,84 +301,147 @@ end
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_sp_o2_links()
-    -- TODO: Implement this
-    --[[
-def sp02pa02Lookup(dvDic, DV1, DV2, DV3, DV4):
-    discreteDic1 = {}
-    discreteDic2 = {}
-    discreteDic3 = {}
-    discreteDic4 = {}
-    linkText1 = "sp02: [VALUE] (Result Date: [RESULTDATETIME])"
-    linkText2 = "pa02: [VALUE] (Result Date: [RESULTDATETIME])"
-    linkText3 = "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])"
-    linkText4 = "Respiratory Rate: [VALUE] (Result Date: [RESULTDATETIME])"
-    rrDV = None
-    #Default should be set to -1 day back.
-    dateLimit = System.DateTime.Now.AddDays(-1)
-    otDv = None
-    spDv = None
-    paDv = None
-    matchingDate = None
-    oxygenValue = None
-    respRateDV = None
-    w = 0
-    x = 0
-    y = 0
-    z = 0
-    matchedList = []
-    #Pull all values for discrete values we need
-    for dv in dvDic or []:
-        if dvDic[dv]['ResultDate'] >= dateLimit:
-            dvr = cleanNumbers(dvDic[dv]['Result'])
-            if dvDic[dv]['Name'] in DV1 and dvr is not None and float(dvr) < float(91):
-                #dvSPO2
-                w += 1
-                discreteDic1[w] = dvDic[dv]
-            elif dvDic[dv]['Name'] in DV2 and dvr is not None and float(dvr) <= float(60):
-                #dvPaO2
-                x += 1
-                discreteDic2[x] = dvDic[dv]
-            elif dvDic[dv]['Name'] in DV3 and dvDic[dv]['Result'] is not None:
-                #dvOxygenTherapy
-                y += 1
-                discreteDic3[y] = dvDic[dv]
-            elif dvDic[dv]['Name'] in DV4 and dvr is not None:
-                #dvRespiratoryRate
-                z += 1
-                discreteDic4[z] = dvDic[dv]
-    if x > 0:
-        for item in discreteDic2:
-            matchingDate = discreteDic2[item].ResultDate
-            paDv = item
-            if y > 0:
-                for item2 in discreteDic3:
-                    if discreteDic2[item].ResultDate == discreteDic3[item2].ResultDate:
-                        matchingDate = discreteDic2[item].ResultDate
-                        otDv = item2
-                        oxygenValue = discreteDic3[item2].Result
-            else:
-                oxygenValue = "XX" 
-            if z > 0:
-                for item3 in discreteDic4:
-                    if discreteDic4[item3].ResultDate == matchingDate:
-                        rrDV = item3
-                        respRateDV = discreteDic4[item3].Result
+    local function create_link(date_time, link_text, result, id)
+        local link = cdi_alert_link()
+
+        if date_time then
+            link_text = link_text.replace("[RESULTDATETIME]", date_time)
+        else
+            link_text = link_text.replace("(Result Date: [RESULTDATETIME])", "")
+        end
+        if result then
+            link_text = link_text.replace("[VALUE]", result)
+        else
+            link_text = link_text.replace("[VALUE]", "")
+        end
+        link.link_text = link_text
+        link.discrete_value_id = id
+        return link
+    end
+
+    -- DV1     DV2     DV3              DV4
+    -- dvSPO2, dvPaO2, dvOxygenTherapy, dvRespiratoryRate
+    -- w       x       y                z
+    local discrete_dic_1 = {}
+    local discrete_dic_2 = {}
+    local discrete_dic_3 = {}
+    local discrete_dic_4 = {}
+    local link_text1 = "sp02: [VALUE] (Result Date: [RESULTDATETIME])"
+    local link_text2 = "pa02: [VALUE] (Result Date: [RESULTDATETIME])"
+    local link_text3 = "Oxygen Therapy '[VALUE]' (Result Date: [RESULTDATETIME])"
+    local link_text4 = "Respiratory Rate: [VALUE] (Result Date: [RESULTDATETIME])"
+    local rr_dv = nil
+    local date_limit = os.time() - 86400
+    local ot_dv = nil
+    local sp_dv = nil
+    local pa_dv = nil
+    local matching_date = nil
+    local oxygen_value = nil
+    local resp_rate_dv = nil
+    local matched_list = {}
+
+    discrete_dic_1 = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_sp_o2,
+        predicate = function(dv)
+            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) < 91
+        end
+    }
+
+    discrete_dic_2 = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_pa_o2,
+        predicate = function(dv)
+            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) <= 60
+        end
+    }
+
+    discrete_dic_3 = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_oxygen_therapy,
+        predicate = function(dv)
+            return dates.date_string_to_int(dv.result_date) >= date_limit and dv.result ~= nil
+        end
+    }
+
+    discrete_dic_4 = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_respiratory_rate,
+        predicate = function(dv)
+            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) ~= nil
+        end
+    }
+
+    if #discrete_dic_2 > 0 then
+        for idx, item in discrete_dic_2 do
+            matching_date = dates.date_string_to_int(item.result_date)
+            pa_dv = idx
+            if #discrete_dic_3 > 0 then
+                for idx2, item2 in discrete_dic_3 do
+                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
+                        matching_date = dates.date_string_to_int(item.result_date)
+                        ot_dv = idx2
+                        oxygen_value = item2.result
                         break
-            else:
-                respRateDV = "XX"
-            matchingDate = datetimeFromUtcToLocal(matchingDate)
-            matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-            matchedList.append(dataConversion(None, matchingDate + " Respiratory Rate: " + str(respRateDV) + ", Oxygen Therapy: " + str(oxygenValue) + ", pa02: " + str(discreteDic2[paDv].Result), None, discreteDic2[paDv].UniqueId or discreteDic2[paDv]._id, oxygenation, 0, False))
-            matchedList.append(dataConversion(discreteDic2[paDv].ResultDate, linkText2, discreteDic2[paDv].Result, discreteDic2[paDv].UniqueId or discreteDic2[paDv]._id, paO2, 2, False))
-            if otDv is not None:
-                matchedList.append(dataConversion(discreteDic3[otDv].ResultDate, linkText3, discreteDic3[otDv].Result, discreteDic3[otDv].UniqueId or discreteDic3[otDv]._id, oxygenTherapy, 3, False))
-            if rrDV is not None:
-                matchedList.append(dataConversion(discreteDic4[rrDV].ResultDate, linkText4, discreteDic4[rrDV].Result, discreteDic4[rrDV].UniqueId or discreteDic4[rrDV]._id, rr, 4, False))
-        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
-            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
-            + str(account._id), scriptName, scriptInstance, "Debug")
-        return matchedList
-    elif w > 0:
+                    end
+                end
+            else
+                oxygen_value = "XX"
+            end
+            if #discrete_dic_4 > 0 then
+                for idx3, item3 in discrete_dic_4 do
+                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                        rr_dv = idx3
+                        resp_rate_dv = item3.result
+                        break
+                    end
+                end
+            else
+                resp_rate_dv = "XX"
+            end
+
+            matching_date = dates.date_int_to_string(matching_date)
+            table.insert(
+                matched_list,
+                create_link(
+                    nil,
+                    matching_date .. " Respiratory Rate: " .. resp_rate_dv .. ", Oxygen Therapy: " .. oxygen_value ..
+                    ", pa02: " .. discrete_dic_2[pa_dv].result,
+                    nil,
+                    discrete_dic_2[pa_dv].unique_id
+                )
+            )
+            table.insert(
+                matched_list,
+                create_link(
+                    discrete_dic_2[pa_dv].result_date,
+                    link_text2,
+                    discrete_dic_2[pa_dv].result,
+                    discrete_dic_2[pa_dv].unique_id
+                )
+            )
+            if ot_dv then
+                table.insert(
+                    matched_list,
+                    create_link(
+                        discrete_dic_3[ot_dv].result_date,
+                        link_text3,
+                        discrete_dic_3[ot_dv].result,
+                        discrete_dic_3[ot_dv].unique_id
+                    )
+                )
+            end
+            if rr_dv then
+                table.insert(
+                    matched_list,
+                    create_link(
+                        discrete_dic_4[rr_dv].result_date,
+                        link_text4,
+                        discrete_dic_4[rr_dv].result,
+                        discrete_dic_4[rr_dv].unique_id
+                    )
+                )
+            end
+        end
+        return matched_list
+    elseif #discrete_dic_1 > 0 then
+        --[[
         for item in discreteDic1:
             matchingDate = discreteDic1[item].ResultDate
             spDv = item
@@ -409,12 +473,10 @@ def sp02pa02Lookup(dvDic, DV1, DV2, DV3, DV4):
             + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
             + str(account._id), scriptName, scriptInstance, "Debug")
         return matchedList
-    else:
-        db.LogEvaluationScriptMessage("SPO2 log message: SPO2 Found matches" + str(w) + ", PAO2 Found Matches: " + str(x)
-            + ", Oxygen Therapy Found Matches: " + str(y) + ", Respiratory Found Matchs: " + str(z) + ", Matching Date: " + str(matchingDate) + " " 
-            + str(account._id), scriptName, scriptInstance, "Debug")
-        return None 
-    --]]
+        --]]
+    else
+        return {}
+    end
 end
 
 
