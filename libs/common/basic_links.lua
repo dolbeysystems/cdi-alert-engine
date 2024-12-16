@@ -307,7 +307,11 @@ return function(Account)
         end
 
         if include_standard_suffix == nil or include_standard_suffix then
-            link_template = link_template .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+            if link_template == "" then
+                link_template = "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+            else
+                link_template = link_template .. ": [MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
+            end
         end
 
         --- @type CdiAlertLink[]

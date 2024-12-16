@@ -365,123 +365,113 @@ if not existing_alert or not existing_alert.validated then
         dka_alert_passed = true
         Result.subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma"
         Result.passed = true
-    --[[
-    elif subtitle == "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma" and e1111Code is not None:
-        #11.1/12.1
-        if e1111Code is not None: dc.Links.Add(e1111Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    elif DKA >= 1 and DKACheck and (SoC or r4020Code is not None) and unspecTypeIIDiabetes is not None and e1111Code is None:
-        #11
-        dc.Links.Add(unspecTypeIIDiabetes)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        DKAAlertPassed = True
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif (SoC or r4020Code is not None) and e1110Code is not None and e1111Code is None:
-        #12
-        dc.Links.Add(e1110Code)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        DKAAlertPassed = True
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif subtitle == "Possible Type 2 Diabetes Mellitus with Hyperosmolarity with Coma" and e1101Code is not None:
-        #13.1
-        if e1101Code is not None: dc.Links.Add(e1101Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    elif e1165Code is not None and (SoC or r4020Code is not None) and elevatedSerumOsmolalityDV is not None and e1101Code is None:
-        #13
-        dc.Links.Add(e1165Code)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        HHNSAlertPassed = True
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Hyperosmolarity with Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif subtitle == "Possible Type 2 Diabetes Mellitus with Hyperosmolarity without Coma" and e1101Code is not None:
-        #14.1
-        if e1101Code is not None: dc.Links.Add(e1101Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    elif e1165Code is not None and (SoC is False and r4020Code is None) and elevatedSerumOsmolalityDV is not None and e1101Code is None:
-        #14
-        dc.Links.Add(e1165Code)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        HHNSAlertPassed = True
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Hyperosmolarity without Coma"
-        AlertPassed = True        
-    --]]
-    --[[
-    elif subtitle == "Possible Type 2 Diabetes Mellitus with Ketoacidosis without Coma" and (e1100Code is not None or e1101Code is not None):
-        #15.1
-        if e1110Code is not None: updateLinkText(e1110Code, autoCodeText); dc.Links.Add(e1110Code)
-        if e1111Code is not None: dc.Links.Add(e1111Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    elif (SoC is False and r4020Code is None) and DKA >= 1 and DKACheck and unspecTypeIIDiabetes is not None and e1110Code is None and e1111Code is None:
-        #15
-        dc.Links.Add(unspecTypeIIDiabetes)
-        DKAAlertPassed = True
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis without Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif subtitle == "Possible Type 2 Diabetes Mellitus with Hypoglycemia with Coma" and e11641Code is not None:
-        #16.1/17.1
-        if e11641Code is not None: dc.Links.Add(e11641Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    elif unspecTypeIIDiabetes is not None and (r4020Code is not None or SoC) and len(lowBloodGlucoseDV or noLabs) > 1 and e11641Code is None:
-        #16
-        dc.Links.Add(unspecTypeIIDiabetes)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        for entry in lowBloodGlucoseDV:
-            bloodGlucose.Links.Add(entry)
-        if bloodGlucose.Links: dc.Links.Add(bloodGlucose)
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Hypoglycemia with Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif e11649Code is not None and (SoC or r4020Code is not None) and e11641Code is None:
-        #17
-        dc.Links.Add(e11649Code)
-        if r4020Code is not None: dc.Links.Add(r4020Code)
-        result.Subtitle = "Possible Type 2 Diabetes Mellitus with Hypoglycemia with Coma"
-        AlertPassed = True
-    --]]
-    --[[
-    elif unspecTypeIDiabetes is not None and unspecTypeIIDiabetes is not None:
-        #18
-        dc.Links.Add(unspecTypeIDiabetes)
-        dc.Links.Add(unspecTypeIIDiabetes)
-        result.Subtitle = "Conflicting Diabetes Type 1 and Diabetes Type 2 Dx"
-        AlertPassed = True
-    --]]
+
+    elseif subtitle == "Possible Type 2 Diabetes Mellitus with Keotacidosis with Coma" and e1111_code then
+        -- #11.1/12.1
+        documented_dx_header:add_link(e1111_code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif dka >= 1 and dka_check and (soc or r4020_code) and unspec_type2_diabetes and not e1111_code then
+        -- #11
+        documented_dx_header:add_link(unspec_type2_diabetes)
+        documented_dx_header:add_link(r4020_code)
+        dka_alert_passed = true
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma"
+        Result.passed = true
+
+    elseif (soc or r4020_code) and e1110_code and not e1111_code then
+        -- #12
+        documented_dx_header:add_link(e1110_code)
+        documented_dx_header:add_link(r4020_code)
+        dka_alert_passed = true
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis with Coma"
+        Result.passed = true
+
+    elseif subtitle == "Possible Type 2 Diabetes Mellitus with Hyperosmolarity without Coma" and e1101_code then
+        -- #13.1
+        documented_dx_header:add_link(e1101_code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif e1165_code and (soc or r4020_code) and elevated_serum_osmolality_dv and not e1101_code then
+        -- #13
+        clinical_evidence_header:add_link(e1165_code)
+        clinical_evidence_header:add_link(r4020_code)
+        hhns_alert_passed = true
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Hyperosmolarity with Coma"
+        Result.passed = true
+
+    elseif subtitle == "Possible Type 2 Diabetes Mellitus with Hyperosmolarity without Coma" and e1101_code then
+        -- #14.1
+        clinical_evidence_header:add_link(e1101_code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif e1165_code and (not soc and not r4020_code) and elevated_serum_osmolality_dv and not e1101_code then
+        -- #14
+        documented_dx_header:add_link(e1165_code)
+        documented_dx_header:add_link(r4020_code)
+        hhns_alert_passed = true
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Hyperosmolarity without Coma"
+        Result.passed = true
+
+    elseif subtitle == "Possible Type 2 Diabetes Mellitus with Ketoacidosis without Coma" and (e1100_code or e1101_code) then
+        -- #15.1
+        if e1110_code then
+            e1110_code.link_text = "Autoresolved Code - " .. e1110_code.link_text
+            clinical_evidence_header:add_link(e1110_code)
+        end
+        clinical_evidence_header:add_link(e1111_code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif (not soc and not r4020_code) and dka >= 1 and dka_check and unspec_type2_diabetes and not e1110_code and not e1111_code then
+        -- #15
+        documented_dx_header:add_link(unspec_type2_diabetes)
+        dka_alert_passed = true
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Ketoacidosis without Coma"
+        Result.passed = true
+
+    elseif subtitle == "Possible Type 2 Diabetes Mellitus with Hypoglycemai with Coma" and e11641_code then
+        -- #16.1/17.1
+        documented_dx_header:add_link(e11641_code)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif unspec_type2_diabetest and (r4020_code or soc) and #low_blood_glucose_dv > 1 and not e11641_code then
+        -- #16
+        documented_dx_header:add_link(unspec_type2_diabetes)
+        documented_dx_header:add_link(r4020_code)
+        for _, entry in ipairs(low_blood_glucose_dv) do
+            blood_glucose_header:add_link(entry)
+        end
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Hypoglycemia with Coma"
+        Result.passed = true
+
+    elseif e11649_code and (soc or r4020_code) and not e11641_code then
+        -- #17
+        documented_dx_header:add_link(e11649_code)
+        documented_dx_header:add_link(r4020_code)
+        Result.subtitle = "Possible Type 2 Diabetes Mellitus with Hypoglycemia with Coma"
+        Result.passed = true
+
+    elseif unspec_type1_diabetes and unspec_type2_diabetes then
+        -- #18
+        documented_dx_header:add_link(unspec_type1_diabetes)
+        documented_dx_header:add_link(unspec_type2_diabetes)
+        Result.subtitle = "Conflicting Diabetes Type 1 and Diabetes Type 2 Dx"
+        Result.passed = true
     end
 
 
@@ -491,98 +481,96 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Abs
-            if HHNSAlertPassed: r4182Code = codeValue("R41.82", "Altered Level Of Consciousness: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1)
-            if HHNSAlertPassed: alteredAbs = abstractValue("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 2)
-            if HHNSAlertPassed: 
-                if r4182Code is not None:
-                    abs.Links.Add(r4182Code)
-                    if alteredAbs is not None: alteredAbs.Hidden = True; abs.Links.Add(alteredAbs)
-                elif r4182Code is None and alteredAbs is not None:
-                    abs.Links.Add(alteredAbs)
-            if DKAAlertPassed: codeValue("G93.6", "Cerebral Edema: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, abs, True)
-            codeValue("R41.0", "Confusion: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, abs, True)
-            if HHNSAlertPassed: abstractValue("EXTREME_THIRST","Extreme Thirst: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 5, abs, True)
-            if DKAAlertPassed: codeValue("R53.83", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 6, abs, True)
-            abstractValue("FRUITY_BREATH","Fruity Breath '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7, abs, True)
-            codeValue("Z90.410", "History of Pancreatectomy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8, abs, True)
-            codeValue("Z90.411", "History of Partial Pancreatectomy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 9, abs, True)
-            if DKAAlertPassed: codeValue("E87.6", "Hypokalemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 10, abs, True)
-            abstractValue("INCREASED_URINARY_FREQUENCY","Increased Urinary Frequency: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 11, abs, True)
-            if DKAAlertPassed and r824Code is not None: abs.Links.Add(r824Code) #12
-            dvOxygenCheck(dict(maindiscreteDic), dvOxygenTherapy, "Oxygen Therapy: [VALUE] (Result Date: [RESULTDATETIME])", 13, abs, True)
-            if HHNSAlertPassed: codeValue("R63.1", "Polydipsia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 14, abs, True)
-            if HHNSAlertPassed: abstractValue("PSYCHOSIS","Psychosis: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 15, abs, True)
-            abstractValue("SEIZURE", "Seizure: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 15, abs, True)
-            if DKAAlertPassed: abstractValue("SHORTNESS_OF BREATH","Shortness of Breath '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 16, abs, True)
-            if HHNSAlertPassed: codeValue("R47.81", "Slurred Speech: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 17, abs, True)
-            if HHNSAlertPassed: codeValue("R11.10", "Vomiting: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 18, abs, True)
-            if DKAAlertPassed: abstractValue("VOMITING","Vomiting '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 19, abs, True)
-            if HHNSAlertPassed: codeValue("R11.11", "Vomiting without Nausea: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 20, abs, True)
-            --]]
+            -- Clinical Evidence
+            if hhns_alert_passed then
+                local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
+                local altered_abs = links.get_abstraction_value_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
+                if r4182_code then
+                    clinical_evidence_header:add_link(r4182_code)
+                    if altered_abs then
+                        altered_abs.hidden = true
+                        clinical_evidence_header:add_link(altered_abs)
+                    end
+                elseif altered_abs then
+                    clinical_evidence_header:add_link(altered_abs)
+                end
+            end
+            if dka_alert_passed then clinical_evidence_header:add_code_link("G93.6", "Cerebral Edema") end
+            clinical_evidence_header:add_code_link("R41.0", "Confusion")
+            if hhns_alert_passed then clinical_evidence_header:add_abstraction_link("EXTREME_THIRST", "Extreme Thirst") end
+            if dka_alert_passed then clinical_evidence_header:add_code_link("R53.83", "Fatigue") end
+            clinical_evidence_header:add_abstraction_link("FRUITY_BREATH", "Fruity Breath")
+            clinical_evidence_header:add_code_link("Z90.410", "History of Pancreatectomy")
+            clinical_evidence_header:add_code_link("Z90.411", "History of Partial Pancreatectomy")
+            if dka_alert_passed then clinical_evidence_header:add_code_link("E87.6", "Hypokalemia") end
+            clinical_evidence_header:add_abstraction_link("INCREASED_URINARY_FREQUENCY", "Increased Urinary Frequency")
+            if r824_code then clinical_evidence_header:add_link(r824_code) end
+            clinical_evidence_header:add_discrete_value_one_of_link(dv_oxygen_therapy, "Oxygen Therapy", function(dv, num_) return dv.result ~= nil end)
+            if hhns_alert_passed then clinical_evidence_header:add_code_link("R63.1", "Polydipsia") end
+            if hhns_alert_passed then clinical_evidence_header:add_abstraction_link("PSYCHOSIS", "Psychosis") end
+            clinical_evidence_header:add_abstraction_link("SEIZURE", "Seizure")
+            if dka_alert_passed then clinical_evidence_header:add_abstraction_link("SHORTNESS_OF_BREATH", "Shortness of Breath") end
+            if hhns_alert_passed then clinical_evidence_header:add_code_link("R47.81", "Slurred Speech") end
+            if hhns_alert_passed then clinical_evidence_header:add_code_link("R11.10", "Vomiting") end
+            if dka_alert_passed then clinical_evidence_header:add_abstraction_link("VOMITING", "Vomiting") end
+            if hhns_alert_passed then clinical_evidence_header:add_code_link("R11.11", "Vomiting without Nausea") end
 
-            --[[
+            -- Coma
+            if decr_lvl_consciousness_abs then coma_header:add_link(decr_lvl_consciousness_abs) end
+            if glasgow_coma_score_dv then coma_header:add_link(glasgow_coma_score_dv) end
+            if glasgow_coma_score_abs then coma_header:add_link(glasgow_coma_score_abs) end
+            if a5a193_codes then coma_header:add_link(a5a193_codes) end
+            if obtunded_abs then coma_header:add_link(obtunded_abs) end
+            if a0bh18ez_code then coma_header:add_link(a0bh18ez_code) end
+            if r401_code then coma_header:add_link(r401_code) end
 
-            #Coma
-            if decrLvlConsciousnessAbs is not None: coma.Links.Add(decrLvlConsciousnessAbs) #1
-            if glasgowComaScoreDV is not None: coma.Links.Add(glasgowComaScoreDV) #2
-            if glasgowComaScoreAbs is not None: coma.Links.Add(glasgowComaScoreAbs) #3
-            if a5a193Codes is not None: coma.Links.Add(a5a193Codes) #4
-            if obtundedAbs is not None: coma.Links.Add(obtundedAbs) #5
-            if a0bh18ezCode is not None: coma.Links.Add(a0bh18ezCode) #6
-            if r401Code is not None: coma.Links.Add(r401Code) #8
-            --]]
+            -- Labs
+            if dka_alert_passed then
+                laboratory_studies_header:add_discrete_value_one_of_link(dv_acetone, "Acetone", calc_acetone1)
+                laboratory_studies_header:add_discrete_value_one_of_link(dv_anion_gap, "Anion Gap", calc_anion_gap1)
+                laboratory_studies_header:add_abstraction_link_with_value("ANION_GAP", "Anion Gap")
+                laboratory_studies_header:add_link(low_art_blood_ph_dv)
+                laboratory_studies_header:add_link(beta_hydroxybutyrate_dv)
+                laboratory_studies_header:add_link(serum_bicarbonate_dv)
+                laboratory_studies_header:add_abstraction_link_with_value("LOW_SERUM_BICABONATE", "Arterial Blood PH")
+                laboratory_studies_header:add_abstraction_link_with_value("HIGH_BLOOD_GLUCOSE_DKA", "Blood Glucose")
+                laboratory_studies_header:add_abstraction_link_with_value("HIGH_BLOOD_GLUCOSE_DKA", "Blood Glucose")
+            end
+            if hhns_alert_passed then laboratory_studies_header:add_link(elevated_serum_osmolality_dv) end
+            if dka_alert_passed then
+                laboratory_studies_header:add_abstraction_link_with_value("LOW_SERUM_POTASSIUM", "Serum Potassium")
+                laboratory_studies_header:add_link(urine_ketones_dv)
+                laboratory_studies_header:add_link(serum_ketones_dv)
+            end
 
-            --[[
+            -- Labs Subheadings
+            if dka_alert_passed and high_blood_glucose_dka_dv then
+                for _, entry in ipairs(high_blood_glucose_dka_dv) do
+                    blood_glucose_header:add_link(entry)
+                end
+            end
+            if hhns_alert_passed and high_blood_glucose_hhns_dv then
+                for _, entry in ipairs(high_blood_glucose_hhns_dv) do
+                    blood_glucose_header:add_link(entry)
+                end
+            end
 
-            #Labs
-            if DKAAlertPassed: dvValue(dvAcetone, "Acetone: [VALUE] (Result Date: [RESULTDATETIME])", calcAcetone1, 1, labs, True)
-            if DKAAlertPassed: dvValue(dvAnionGap, "Anion Gap: [VALUE] (Result Date: [RESULTDATETIME])", calcAnionGap1, 2, labs, True)
-            if DKAAlertPassed: abstractValue("ANION_GAP","Anion Gap: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 3, labs, True)
-            if DKAAlertPassed and lowArterialBloodPHDV is not None: labs.Links.Add(lowArterialBloodPHDV) #4
-            if DKAAlertPassed and BetaHydroxybutyrateDV is not None: labs.Links.Add(BetaHydroxybutyrateDV) #5
-            if DKAAlertPassed and serumBicarbonateDV is not None: labs.Links.Add(serumBicarbonateDV) #6
-            if DKAAlertPassed: abstractValue("LOW_SERUM_BICABONATE", "Arterial Blood PH: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7, labs, True)
-            if DKAAlertPassed: abstractValue("HIGH_BLOOD_GLUCOSE_DKA", "Blood Glucose: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 8, labs, True)
-            if DKAAlertPassed: abstractValue("HIGH_BLOOD_GLUCOSE_DKA","Blood Glucose: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, labs, True)
-            if HHNSAlertPassed and elevatedSerumOsmolalityDV is not None: labs.Links.Add(elevatedSerumOsmolalityDV) #10
-            if DKAAlertPassed: abstractValue("LOW_SERUM_POTASSIUM","Serum Potassium '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 11, labs, True)
-            if DKAAlertPassed and urineKetonesDV is not None: labs.Links.Add(urineKetonesDV) #12
-            if DKAAlertPassed and serumKetonesDV is not None: labs.Links.Add(serumKetonesDV) #13
-            --]]
+            -- Meds
+            treatment_and_monitoring_header:add_medication_link("Albumin", "")
+            treatment_and_monitoring_header:add_medication_link("Anti-Hypoglycemic Agent", "")
+            treatment_and_monitoring_header:add_medication_link("Dextrose 50%", "")
+            treatment_and_monitoring_header:add_medication_link("Fluid Bolus", "")
+            treatment_and_monitoring_header:add_abstraction_link("FLUID_BOLUS", "Fluid Bolus")
+            treatment_and_monitoring_header:add_medication_link("Insulin", "")
+            treatment_and_monitoring_header:add_abstraction_link("INSULIN_ADMINISTRATION", "Insulin Administration")
+            treatment_and_monitoring_header:add_medication_link("Sodium Bicarbonate", "")
+            treatment_and_monitoring_header:add_abstraction_link("SODIUM_BICARBONATE", "Sodium Bicarbonate")
 
-            --[[
-
-            #Labs Subheadings
-            if DKAAlertPassed and highBloodGlucoseDKADV is not None:
-                for entry in highBloodGlucoseDKADV:
-                    bloodGlucose.Links.Add(entry)
-            if HHNSAlertPassed and highBloodGlucoseHHNSDV is not None:
-                for entry in highBloodGlucoseHHNSDV:
-                    bloodGlucose.Links.Add(entry)
-            --]]
-
-            --[[
-
-            #Meds
-            medValue("Albumin", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 1, meds, True)
-            medValue("Anti-Hypoglycemic Agent", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 2, meds, True)
-            medValue("Dextrose 50%", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 3, meds, True)
-            medValue("Fluid Bolus", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 4, meds, True)
-            abstractValue("FLUID_BOLUS","Fluid Bolus '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 5, meds, True)
-            medValue("Insulin", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 6, meds, True)
-            abstractValue("INSULIN_ADMINISTRATION","Insulin Administration '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7, meds, True)
-            medValue("Sodium Bicarbonate", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 8, meds, True)
-            abstractValue("SODIUM_BICARBONATE","Sodium Bicarbonate '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9, meds, True)
-            --]]
-
-            --[[
-
-            #Vitals
-            if HHNSAlertPassed: dvValue(dvTemperature, "Fever: [VALUE] (Result Date: [RESULTDATETIME])", calcTemperature1, 1, vitals, True)
-            dvValue(dvHeartRate, "Heart Rate: [VALUE] (Result Date: [RESULTDATETIME])", calcHeartRate1, 2, vitals, True)
-            --]]
+            -- Vitals
+            if hhns_alert_passed then
+                vital_signs_intake_header:add_discrete_value_one_of_link(dv_temperature, "Fever", calc_temperature1)
+            end
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate", calc_heart_rate1)
         end
 
 
