@@ -26,5 +26,10 @@
     },
     "diagnostics.disable": [
         "no-unknown"
+    ],
+    "diagnostics.unusedLocalExclude": [
+        "self",
+        "dv_",
+        "num_"
     ]
 }

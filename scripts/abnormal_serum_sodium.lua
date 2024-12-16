@@ -22,16 +22,15 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
---- @diagnostic disable: unused-local
 local blood_glucose_dv_names = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-local blood_glucose_predicate = function(dv, num) return num > 600 end
+local blood_glucose_predicate = function(dv_, num) return num > 600 end
 local blood_glucose_poc_dv_names = { "GLUCOSE ACCUCHECK (mg/dL)" }
-local blood_glucose_poc_predicate = function(dv, num) return num > 600 end
+local blood_glucose_poc_predicate = function(dv_, num) return num > 600 end
 local sodium_dv_names = { "SODIUM (mmol/L)" }
-local sodium_very_low_predicate = function(dv, num) return num < 131 end
-local sodium_low_predicate = function(dv, num) return num < 132 end
-local sodium_high_predicate = function(dv, num) return num > 144 end
-local sodium_very_high_predicate = function(dv, num) return num > 145 end
+local sodium_very_low_predicate = function(dv_, num) return num < 131 end
+local sodium_low_predicate = function(dv_, num) return num < 132 end
+local sodium_high_predicate = function(dv_, num) return num > 144 end
+local sodium_very_high_predicate = function(dv_, num) return num > 145 end
 local dextrose_medication_name = "Dextrose 5% in Water"
 local hypertonic_saline_medication_name = "Hypertonic Saline"
 local hypotonic_solution_medication_name = "Hypotonic Solution"
@@ -42,7 +41,6 @@ local hypernatremia_lacking_supporting_evidence_subtitle = "Hypernatremia Lackin
 local hyponatremia_lacking_supporting_evidence_subtitle = "Hyponatremia Lacking Supporting Evidence"
 local review_high_sodium_link_text = "Possible No High Serum Sodium Levels Were Found Please Review"
 local review_low_sodium_link_text = "Possible No Low Serum Sodium Levels Were Found Please Review"
---- @diagnostic enable: unused-local
 
 
 

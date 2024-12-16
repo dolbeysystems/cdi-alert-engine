@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 -----------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block, unused-function -- Remove once the script is filled out
 
 
 
@@ -18,7 +17,6 @@ local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -27,7 +25,7 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
-local glasgow_coma_scale_predicate = function(dv, num) return num < 15 end
+local glasgow_coma_scale_predicate = function(dv_, num) return num < 15 end
 local heart_rate_dv_name = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -35,13 +33,11 @@ local heart_rate_dv_name = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local heart_rate_predicate = function(dv, num) return num < 60 end
-local immature_reticulocyte_fraction_dv_name = { "" }
-local immature_reticulocyte_fraction_predicate = function(dv, num) return num < 3 end
+local heart_rate_predicate = function(dv_, num) return num < 60 end
 local intracranial_pressure_dv_name = { "ICP cc (mm Hg)" }
-local intracranial_pressure_predicate = function(dv, num) return num > 15 end
+local intracranial_pressure_predicate = function(dv_, num) return num > 15 end
 local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local respiratory_rate_predicate = function(dv, num) return num < 12 end
+local respiratory_rate_predicate = function(dv_, num) return num < 12 end
 
 
 
@@ -49,7 +45,6 @@ local respiratory_rate_predicate = function(dv, num) return num < 12 end
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 
@@ -107,7 +102,7 @@ if not existing_alert or not existing_alert.validated then
         "Operative Note Neurosurgery Physician",
         "Operative Note Neurosurgery HIM",
     }
-    local account_edema_codes = codes.get_account_codes_in_dictionary(Account, compression_code_dictionary)
+    local account_edema_codes = codes.get_account_codes_in_dictionary(Account, edema_code_dictionary)
     local account_compression_codes = codes.get_account_codes_in_dictionary(Account, compression_code_dictionary)
 
 
@@ -149,7 +144,8 @@ if not existing_alert or not existing_alert.validated then
             latest_medical_document_type = document.document_type
         end
     end
-    local latest_medical_document_link = links.get_document_link { documentType = latest_medical_document_type, text = "" }
+    local latest_medical_document_link =
+        links.get_document_link { documentType = latest_medical_document_type, text = "" }
     local mannitol_med_doc_link =
         latest_medical_document_date and
         links.get_medication_link {
@@ -199,7 +195,7 @@ if not existing_alert or not existing_alert.validated then
     -- Vitals
     local intra_pressure_dv =
         links.get_discrete_value_link {
-            discreteValueName = "Intracranial Pressure",
+            discreteValueNames = intracranial_pressure_dv_name,
             text = "Intracranial Pressure",
             predicate = intracranial_pressure_predicate
         }
@@ -292,11 +288,11 @@ if not existing_alert or not existing_alert.validated then
         -- TODO: Left off here
         if mannitol_med_doc_link and latest_medical_document_type then
             documented_dx_header:add_link(mannitol_med_doc_link)
-            documented_dx_header:add_document_link(latest_medical_document_type, latest_medical_document_type)
+            documented_dx_header:add_link(latest_medical_document_link)
         end
         if dexamethasone_med_doc_link and latest_medical_document_type then
             documented_dx_header:add_link(dexamethasone_med_doc_link)
-            documented_dx_header:add_document_link(latest_medical_document_type, latest_medical_document_type)
+            documented_dx_header:add_link(latest_medical_document_link)
         end
         Result.subtitle = "Possible Cerebral Edema Dx"
         Result.passed = true
