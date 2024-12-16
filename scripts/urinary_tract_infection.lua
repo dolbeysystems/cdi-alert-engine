@@ -23,19 +23,17 @@ local headers = require "libs.common.headers" (Account)
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
---- @diagnostic disable: unused-local
-local function numeric_result_predicate(discrete_value, num)
-    return discrete_value.result ~= nil and string.find(discrete_value.name, "%d+") ~= nil
+local function numeric_result_predicate(dv, num_)
+    return dv.result ~= nil and string.find(dv.name, "%d+") ~= nil
 end
 
-local function presence_predicate(discrete_value, num)
-    local normalized_case = string.lower(discrete_value.name)
-    return discrete_value.result ~= nil
+local function presence_predicate(dv, num_)
+    local normalized_case = string.lower(dv.name)
+    return dv.result ~= nil
         and string.find(normalized_case, "negative") == nil
         and string.find(normalized_case, "trace") == nil
         and string.find(normalized_case, "not found") == nil
 end
---- @diagnostic enable: unused-local
 
 
 
@@ -104,8 +102,7 @@ if not existing_alert or not existing_alert.validated then
     local urine_culture = links.get_discrete_value_link {
         discreteValueName = "BACTERIA (/HPF)",
         text = "Urine Culture",
-        ---@diagnostic disable-next-line: unused-local
-        predicate = function(dv, num)
+        predicate = function(dv, num_)
             return dv.result ~= nil and
                 (string.find(dv.result, "positive") ~= nil or string.find(dv.result, "negative") ~= nil)
         end,
@@ -254,15 +251,12 @@ if not existing_alert or not existing_alert.validated then
         clinical_evidence_header:add_link(r8281)
         clinical_evidence_header:add_abstraction_link_with_value("URINARY_PAIN", "Urinary Pain")
         clinical_evidence_header:add_abstraction_link_with_value("UTI_CAUSATIVE_AGENT", "UTI Causative Agent")
-        ---@diagnostic disable-next-line: unused-local
-        clinical_evidence_header:add_discrete_value_link("BLOOD", "Blood in Urine", function(dv, num) return num > 0 end)
+        clinical_evidence_header:add_discrete_value_link("BLOOD", "Blood in Urine", function(dv_, num) return num > 0 end)
 
         -- Why is this discrete value name empty?
-        ---@diagnostic disable-next-line: unused-local
-        laboratory_studies_header:add_discrete_value_link("", "Pus in Urine", function(dv, num) return num > 0 end)
+        laboratory_studies_header:add_discrete_value_link("", "Pus in Urine", function(dv_, num) return num > 0 end)
         laboratory_studies_header:add_link(urine_culture)
-        ---@diagnostic disable-next-line: unused-local
-        laboratory_studies_header:add_discrete_value_link("WBC (10x3/ul)", "WBC", function(dv, num) return num > 11 end)
+        laboratory_studies_header:add_discrete_value_link("WBC (10x3/ul)", "WBC", function(dv_, num) return num > 11 end)
 
         laboratory_studies_header:add_medication_link("Antibiotic", "Antibiotic")
         laboratory_studies_header:add_medication_link("Antibiotic2", "Antibiotic")
@@ -280,26 +274,22 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         vital_signs_header:add_link(altered_level_of_consciousness)
-        ---@diagnostic disable: unused-local
         vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score",
-            function(dv, num) return num < 15 end)
+            function(dv_, num) return num < 15 end)
         vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature",
-            function(dv, num) return num > 38.3 end)
-        ---@diagnostic enable: unused-local
+            function(dv_, num) return num > 38.3 end)
 
         urinary_devices_header:add_link(urine_bacteria)
         urinary_devices_header:add_discrete_value_link("BLOOD", "UA Blood", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("", "UA Gran Cast", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("PROTEIN (mg/dL)", "UA Protein", numeric_result_predicate)
-        ---@diagnostic disable: unused-local
-        urinary_devices_header:add_discrete_value_link("RBC/HPF (/HPF)", "UA RBC", function(dv, num) return num > 3 end)
-        urinary_devices_header:add_discrete_value_link("WBC/HPF (/HPF)", "UA WBC", function(dv, num) return num > 5 end)
-        urinary_devices_header:add_discrete_value_link("", "UA Squamous Epithelias", function(dv, num)
+        urinary_devices_header:add_discrete_value_link("RBC/HPF (/HPF)", "UA RBC", function(dv_, num) return num > 3 end)
+        urinary_devices_header:add_discrete_value_link("WBC/HPF (/HPF)", "UA WBC", function(dv_, num) return num > 5 end)
+        urinary_devices_header:add_discrete_value_link("", "UA Squamous Epithelias", function(dv, num_)
             if dv.result == nil then return false end
             local a, b = string.match(dv.result, "(%d+)-(%d+)")
             return tonumber(a) > 20 or tonumber(b) > 20
         end)
-        ---@diagnostic enable: unused-local
         urinary_devices_header:add_discrete_value_link("HYALINE CASTS (/LPF)", "UA Hyaline Casts", presence_predicate)
         urinary_devices_header:add_discrete_value_link("LEAK ESTERASE", "UA Leak Esterase", presence_predicate)
 

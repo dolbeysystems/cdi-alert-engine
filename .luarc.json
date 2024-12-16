@@ -9,7 +9,7 @@
         "duplicate": "Any",
         "global": "Any",
         "luadoc": "Any",
-        "redefined": "Any",
+        "redefined": "None",
         "strict": "Any",
         "strong": "Any",
         "type-check": "Any",
@@ -26,5 +26,10 @@
     },
     "diagnostics.disable": [
         "no-unknown"
+    ],
+    "diagnostics.unusedLocalExclude": [
+        "self",
+        "dv_",
+        "num_"
     ]
 }

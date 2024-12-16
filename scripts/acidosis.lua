@@ -25,27 +25,26 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
---- @diagnostic disable: unused-local
 local anion_gap_dv_name = { "" }
-local anion_gap1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 14 end
+local anion_gap1_predicate = function(dv_, num) return num > 14 end
 local arterial_blood_ph_dv_name = { "pH" }
-local arterial_blood_ph2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 7.32 end
+local arterial_blood_ph2_predicate = function(dv_, num) return num < 7.32 end
 local base_excess_dv_name = { "BASE EXCESS (mmol/L)" }
-local base_excess1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < -2 end
+local base_excess1_predicate = function(dv_, num) return num < -2 end
 local blood_co2_dv_name = { "CO2 (mmol/L)" }
-local blood_co21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 21 end
-local blood_co22_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 32 end
+local blood_co21_predicate = function(dv_, num) return num < 21 end
+local blood_co22_predicate = function(dv_, num) return num > 32 end
 local blood_glucose_dv_name = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-local blood_glucose1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 250 end
+local blood_glucose1_predicate = function(dv_, num) return num > 250 end
 local blood_glucose_poc_dv_name = { "GLUCOSE ACCUCHECK (mg/dL)" }
-local blood_glucose_poc1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 250 end
+local blood_glucose_poc1_predicate = function(dv_, num) return num > 250 end
 local fio2_dv_name = { "FIO2" }
-local fio21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) <= 100 end
+local fio21_predicate = function(dv_, num) return num <= 100 end
 local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
-local glasgow_coma_scale1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 15 end
+local glasgow_coma_scale1_predicate = function(dv_, num) return num < 15 end
 local hco3_dv_name = { "HCO3 VENOUS (meq/L)" }
-local hco31_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 22 end
-local hco32_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 26 end
+local hco31_predicate = function(dv_, num) return num < 22 end
+local hco32_predicate = function(dv_, num) return num > 26 end
 local heart_rate_dv_name = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -53,43 +52,43 @@ local heart_rate_dv_name = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local heart_rate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 90 end
+local heart_rate1_predicate = function(dv_, num) return num > 90 end
 local map_dv_name = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local map1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 70 end
+local map1_predicate = function(dv_, num) return num < 70 end
 local pao2_dv_name = { "BLD GAS O2 (mmHg)" }
-local pao21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 60 end
+local pao21_predicate = function(dv_, num) return num < 60 end
 local po2_dv_name = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local po21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 80 end
+local po21_predicate = function(dv_, num) return num < 80 end
 local pco2_dv_name = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
-local pco21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 50 end
-local pco22_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 30 end
+local pco21_predicate = function(dv_, num) return num > 50 end
+local pco22_predicate = function(dv_, num) return num < 30 end
 local ph_dv_name = { "pH (VENOUS)", "pH VENOUS" }
-local ph2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 7.30 end
+local ph2_predicate = function(dv_, num) return num < 7.30 end
 local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local respiratory_rate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 20 end
-local respiratory_rate2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 12 end
+local respiratory_rate1_predicate = function(dv_, num) return num > 20 end
+local respiratory_rate2_predicate = function(dv_, num) return num < 12 end
 local sbp_dv_name = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local sbp1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 90 end
+local sbp1_predicate = function(dv_, num) return num < 90 end
 local serum_blood_urea_nitrogen_dv_name = { "BUN (mg/dL)" }
-local serum_blood_urea_nitrogen1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 23 end
+local serum_blood_urea_nitrogen1_predicate = function(dv_, num) return num > 23 end
 local serum_bicarbonate_dv_name = { "HCO3 (meq/L)", "HCO3 (mmol/L)" }
-local serum_bicarbonate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 26 end
-local serum_bicarbonate3_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 22 end
+local serum_bicarbonate1_predicate = function(dv_, num) return num > 26 end
+local serum_bicarbonate3_predicate = function(dv_, num) return num < 22 end
 local serum_chloride_dv_name = { "CHLORIDE (mmol/L)" }
-local serum_chloride1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 107 end
+local serum_chloride1_predicate = function(dv_, num) return num > 107 end
 local serum_creatinine_dv_name = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
-local serum_creatinine1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 1.3 end
+local serum_creatinine1_predicate = function(dv_, num) return num > 1.3 end
 local serum_lactate_dv_name = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
-local serum_lactate1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) >= 4 end
-local serum_lactate2_predicate = function(dv, num)
-    return discrete.get_dv_value_number(dv) > 2 and discrete.get_dv_value_number(dv) < 4
+local serum_lactate1_predicate = function(dv_, num) return num >= 4 end
+local serum_lactate2_predicate = function(dv_, num)
+    return num > 2 and num < 4
 end
 local spo2_dv_name = { "Pulse Oximetry(Num) (%)" }
-local spo21_predicate = function(dv, num) return discrete.get_dv_value_number(dv) < 90 end
+local spo21_predicate = function(dv_, num) return num < 90 end
 local venous_blood_co2_dv_name = { "BLD GAS CO2 VEN (mmHg)" }
-local venous_blood_co2_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 55 end
+local venous_blood_co2_predicate = function(dv_, num) return num > 55 end
 local serum_ketone_dv_name = { "KETONES (mg/dL)" }
-local serum_ketone1_predicate = function(dv, num) return discrete.get_dv_value_number(dv) > 0 end
+local serum_ketone1_predicate = function(dv_, num) return num > 0 end
 local urine_ketones_dv_name = { "UR KETONES (mg/dL)", "KETONES (mg/dL)" }
 
 local possible_acute_respiratory_acidosis_subtitle = "Possible Acute Respiratory Acidosis"
@@ -98,7 +97,6 @@ local respiratory_acidosis_lacking_evidence_subtitle = (
 )
 local possible_lactic_acidosis_subtitle = "Possible Lactic Acidosis"
 local possible_acidosis_subtitle = "Possible Acidosis"
---- @diagnostic enable: unused-local
 
 
 
@@ -558,7 +556,7 @@ if not existing_alert or not existing_alert.validated then
             if not blood_glucose_dv_link then
                 laboratory_studies_header:add_link(blood_glucose_dv_link)
             else
-                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_dv_name, "Blood Glucose", blood_glucose_poc1_predicate)
+                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_poc_dv_name, "Blood Glucose", blood_glucose_poc1_predicate)
             end
 
             laboratory_studies_header:add_abstraction_link("POSITIVE_KETONES_IN_URINE", "Positive Ketones In Urine")
@@ -585,8 +583,7 @@ if not existing_alert or not existing_alert.validated then
             laboratory_studies_header:add_discrete_value_one_of_link(
                 urine_ketones_dv_name,
                 "Urine Ketones",
-                ---@diagnostic disable-next-line: unused-local
-                function(dv, num)
+                function(dv, num_)
                     return dv.result ~= nil and dv.result:lower():find("positive") ~= nil
                 end
             )

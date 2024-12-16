@@ -25,47 +25,46 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
---- @diagnostic disable: unused-local
 local dv_blood_loss = { "" }
-local calc_blood_loss1 = function(dv, num) return num > 300 end
+local calc_blood_loss1 = function(dv_, num) return num > 300 end
 local dv_folate = { "" }
-local calc_folate1 = function(dv, num) return num < 7.0 end
+local calc_folate1 = function(dv_, num) return num < 7.0 end
 local dv_hematocrit = { "HEMATOCRIT (%)", "HEMATOCRIT" }
-local calc_hematocrit3 = function(dv, num) return num < 30 end
+local calc_hematocrit3 = function(dv_, num) return num < 30 end
 local dv_hemoglobin = { "HEMOGLOBIN", "HEMOGLOBIN (g/dL)" }
-local calc_hemoglobin1 = function(dv, num) return num < 13.5 end
-local calc_hemoglobin2 = function(dv, num) return num < 12.5 end
-local calc_hemoglobin3 = function(dv, num) return num < 10.0 end
+local calc_hemoglobin1 = function(dv_, num) return num < 13.5 end
+local calc_hemoglobin2 = function(dv_, num) return num < 12.5 end
+local calc_hemoglobin3 = function(dv_, num) return num < 10.0 end
 local dv_map = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local calc_map1 = function(dv, num) return num < 70 end
+local calc_map1 = function(dv_, num) return num < 70 end
 local dv_mch = { "MCH (pg)" }
-local calc_mch1 = function(dv, num) return num < 25 end
+local calc_mch1 = function(dv_, num) return num < 25 end
 local dv_mchc = { "MCHC (g/dL)" }
-local calc_mchc1 = function(dv, num) return num < 32 end
+local calc_mchc1 = function(dv_, num) return num < 32 end
 local dv_mcv = { "MCV (fL)" }
-local calc_mcv1 = function(dv, num) return num < 80 end
+local calc_mcv1 = function(dv_, num) return num < 80 end
 local dv_rbc = { "RBC  (10X6/uL)" }
-local calc_rbc1 = function(dv, num) return num < 3.9 end
+local calc_rbc1 = function(dv_, num) return num < 3.9 end
 local dv_rdw = { "RDW CV (%)" }
-local calc_rdw1 = function(dv, num) return num < 11 end
+local calc_rdw1 = function(dv_, num) return num < 11 end
 local dv_red_blood_cell_transfusion = { "" }
 local dv_reticulocyte_count = { "" }
-local calc_reticulocyte_count1 = function(dv, num) return num < 0.5 end
+local calc_reticulocyte_count1 = function(dv_, num) return num < 0.5 end
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local calc_sbp1 = function(dv, num) return num < 90 end
+local calc_sbp1 = function(dv_, num) return num < 90 end
 local dv_serum_ferritin = { "FERRITIN (ng/mL)" }
-local calc_serum_ferritin1 = function(dv, num) return num < 22 end
+local calc_serum_ferritin1 = function(dv_, num) return num < 22 end
 local dv_serum_iron = { "IRON TOTAL (ug/dL)" }
-local calc_serum_iron1 = function(dv, num) return num < 65 end
+local calc_serum_iron1 = function(dv_, num) return num < 65 end
 local dv_total_iron_binding_capacity = { "IRON BINDING" }
-local calc_total_iron_binding_capacity1 = function(dv, num) return num < 246 end
+local calc_total_iron_binding_capacity1 = function(dv_, num) return num < 246 end
 local dv_transferrin = { "TRANSFERRIN" }
-local calc_transferrin1 = function(dv, num) return num < 200 end
+local calc_transferrin1 = function(dv_, num) return num < 200 end
 local dv_vitamin_b12 = { "VITAMIN B12 (pg/mL)" }
-local calc_vitamin_b12_1 = function(dv, num) return num < 180 end
+local calc_vitamin_b12_1 = function(dv_, num) return num < 180 end
 local dv_wbc = { "WBC (10x3/ul)" }
-local calc_wbc1 = function(dv, num) return num < 4.5 end
-local calc_gt_zero = function(dv, num) return num > 0 end
+local calc_wbc1 = function(dv_, num) return num < 4.5 end
+local calc_gt_zero = function(dv_, num) return num > 0 end
 
 local link_text_possible_no_lows = "Possible No Low Hemoglobin, Low Hematocrit or Anemia Treatment"
 local link_text_possible_no_signs_of_bleeding = "Possible No Sign of Bleeding Please Review"
@@ -76,7 +75,6 @@ local link_text_possible_no_lows_present = false
 local link_text_possible_no_signs_of_bleeding_present = false
 local link_text_possible_no_matching_hemoglobin_present = false
 local link_text_possible_no_anemia_treatment_present = false
---- @diagnostic enable: unused-local
 
 
 

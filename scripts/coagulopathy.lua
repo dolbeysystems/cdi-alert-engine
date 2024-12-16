@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 -----------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -26,33 +23,31 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
-local auto_evidence_text = "Autoresolved Evidence - "
-local auto_code_text = "Autoresolved Code - "
 local activated_clotting_time_dv_name = { "" }
-local activated_clotting_time_predicate = function(dv, num) return num > 120 end
+local activated_clotting_time_predicate = function(dv_, num) return num > 120 end
 local cryoprecipitate_discrete_value = { "" }
 local ddimer_discrete_value = { "D-DIMER (mg/L FEU)" }
-local ddimer_predicate_1 = function(dv, num) return num >= 4 end
-local ddimer_predicate_2 = function(dv, num) return 0.48 <= num < 4 end
+local ddimer_predicate_1 = function(dv_, num) return num >= 4 end
+local ddimer_predicate_2 = function(dv_, num) return 0.48 <= num < 4 end
 local fibrinogen_discrete_value = { "FIBRINOGEN (mg/dL)" }
-local calc_fibrinogen1 = function(dv, num) return num < 200 end
+local calc_fibrinogen1 = function(dv_, num) return num < 200 end
 local dv_homocysteine_levels = { "" }
-local calc_homocysteine_levels1 = function(dv, num) return num > 15 end
+local calc_homocysteine_levels1 = function(dv_, num) return num > 15 end
 local dv_inr = { "INR" }
-local calc_inr3 = function(dv, num) return num > 1.3 end
+local calc_inr3 = function(dv_, num) return num > 1.3 end
 local dv_plasma_transfusion = { "Volume (mL)-Transfuse Plasma (mL)" }
 local dv_partial_thromboplastin_time = { "PTT (SEC)" }
-local calc_partial_thromboplastin_time1 = function(dv, num) return num > 30.5 end
+local calc_partial_thromboplastin_time1 = function(dv_, num) return num > 30.5 end
 local dv_platelet_count = { "PLATELET COUNT (10x3/uL)" }
-local calc_platelet_count1 = function(dv, num) return num < 150 end
+local calc_platelet_count1 = function(dv_, num) return num < 150 end
 local dv_platelet_transfusion = { "" }
 local dv_protein_c_resistance = { "" }
-local calc_protein_c_resistance1 = function(dv, num) return num < 2.3 end
+local calc_protein_c_resistance1 = function(dv_, num) return num < 2.3 end
 local dv_prothrombin_time = { "PROTIME (SEC)" }
-local calc_prothrombin_time1 = function(dv, num) return num > 13.0 end
+local calc_prothrombin_time1 = function(dv_, num) return num > 13.0 end
 local dv_thrombin_time = { "THROMBIN CLOTTING TM" }
-local calc_thrombin_time1 = function(dv, num) return num > 14 end
-local calc_any1 = function(dv, num) return num > 0 end
+local calc_thrombin_time1 = function(dv_, num) return num > 14 end
+local calc_any1 = function(dv_, num) return num > 0 end
 
 
 
@@ -60,7 +55,6 @@ local calc_any1 = function(dv, num) return num > 0 end
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 

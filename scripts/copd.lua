@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -20,7 +19,6 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
-local lists = require("libs.common.lists")
 local cdi_alert_link = require "cdi.link"
 
 
@@ -39,20 +37,18 @@ local dv_oxygen_therapy = { "DELIVERY" }
 local dv_respiratory_pattern = { "" }
 local dv_fi_o2 = { "FI02" }
 local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
-local calc_heart_rate1 = function(dv, num) return num > 90 end
+local calc_heart_rate1 = function(dv_, num) return num > 90 end
 local dv_oxygen_flow_rate = { "Oxygen Flow Rate (L/min)" }
-local calc_oxygen_flow_rate1 = function(dv, num) return num > 2 end
+local calc_oxygen_flow_rate1 = function(dv_, num) return num > 2 end
 local dv_pa_o2 = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local calc_pa_o2_1 = function(dv, num) return num < 60 end
+local calc_pa_o2_1 = function(dv_, num) return num < 60 end
 local dv_pa_o2_fi_o2 = { "PO2/FiO2 (mmHg)" }
 local calc_pa_o2_fi_o2_1 = 300
-local dv_pa_op = { "" }
-local calc_pa_op_1 = function(dv, num) return num > 18 end
 local dv_pleural_fluid_culture = { "" }
 local dv_respiratory_rate = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local calc_respiratory_rate1 = function(dv, num) return num > 20 end
+local calc_respiratory_rate1 = function(dv_, num) return num > 20 end
 local dv_sp_o2 = { "Pulse Oximetry(Num) (%)" }
-local calc_sp_o2_1 = function(dv, num) return num < 90 end
+local calc_sp_o2_1 = function(dv_, num) return num < 90 end
 local dv_sputum_culture = { "" }
 
 
@@ -111,12 +107,12 @@ local function get_pa_o2_fi_o2_links()
     }
 
     if #pa_o2_fi_o2_ratio_links == 0 then
-        -- Method #1 - Look for calculated discrete values
+        -- Method #1 - Look for site calculated discrete values
         pa_o2_fi_o2_ratio_links = links.get_discrete_value_links {
             discreteValueNames = dv_pa_o2_fi_o2,
             text = "PaO2/FiO2",
             predicate = function(dv, num)
-                return dates.date_is_less_than_x_days_ago(dv.result_date, 1) and num < 300
+                return dates.date_is_less_than_x_days_ago(dv.result_date, 1) and num < calc_pa_o2_fi_o2_1
             end,
             seq = 2
         }
@@ -204,7 +200,6 @@ local function get_pa_o2_fi_o2_links()
     if #pa_o2_fi_o2_ratio_links == 0 then
         -- Method #4 - Look through Oxygen values for matching PaO2 values
         for _, oxygen_pair in ipairs(oxygen_pairs) do
-            local date = oxygen_pair.first.result_date
             local oxygen_flow_rate_value = discrete.get_dv_value_number(oxygen_pair.first)
             local oxygen_therapy_value = oxygen_pair.second.result
             --- @type number?
@@ -252,7 +247,6 @@ local function get_pa_o2_fi_o2_links()
     if #pa_o2_fi_o2_ratio_links == 0 then
         -- Method #5 - Look through Oxygen values for matching SpO2 values
         for _, oxygen_pair in ipairs(oxygen_pairs) do
-            local date = oxygen_pair.first.result_date
             local oxygen_flow_rate_value = discrete.get_dv_value_number(oxygen_pair.first)
             local oxygen_therapy_value = oxygen_pair.second.result
             --- @type number?
@@ -335,9 +329,6 @@ local function get_pa_o2_sp_o2_links()
         return link
     end
 
-    -- DV1     DV2     DV3              DV4
-    -- dvSPO2, dvPaO2, dvOxygenTherapy, dvRespiratoryRate
-    -- w       x       y                z
     local sp_o2_discrete_values = {}
     local pa_o2_discrete_values = {}
     local o2_therapy_discrete_values = {}
@@ -551,10 +542,8 @@ local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 local link_text_1 = "Possible Missing Signs of Low Oxygen"
 local link_text_2 = "Possible Missing Signs of Respiratory Distress"
-local link_text_3 = "Possible Missing COPD Exacerbation Treatment Medication"
 local link_text_1_found = false
 local link_text_2_found = false
-local link_text_3_found = false
 
 if existing_alert then
     for _, lnk in ipairs(existing_alert.links) do
@@ -562,8 +551,6 @@ if existing_alert then
             link_text_1_found = true
         elseif lnk.link_text == link_text_2 then
             link_text_2_found = true
-        elseif lnk.link_text == link_text_3 then
-            link_text_3_found = true
         end
     end
 end
@@ -592,10 +579,12 @@ if not existing_alert or not existing_alert.validated then
     local pa_o2_fi_o2_header = headers.make_header_builder("PaO2/FiO2", 11)
 
     local function compile_links()
-        oxygenation_ventilation_header:add_link(pa_o2_header:build(true))
-        oxygenation_ventilation_header:add_link(sp_o2_header:build(true))
-        oxygenation_ventilation_header:add_link(oxygen_therapy_header:build(true))
-        oxygenation_ventilation_header:add_link(respiratory_rate_header:build(true))
+        o2_indicators_header:add_link(pa_o2_header:build(true))
+        o2_indicators_header:add_link(sp_o2_header:build(true))
+        o2_indicators_header:add_link(oxygen_therapy_header:build(true))
+        o2_indicators_header:add_link(respiratory_rate_header:build(true))
+
+        laboratory_studies_header:add_link(o2_indicators_header:build(true))
 
         calculated_po2_fio2_header:add_link(pa_o2_fi_o2_header:build(true))
 
@@ -613,16 +602,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.links = result_links
     end
-
-
-
-    --------------------------------------------------------------------------------
-    --- Alert Variables 
-    --------------------------------------------------------------------------------
-    local alert_code_dictionary = {
-
-    }
-    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
 
 
@@ -936,7 +915,7 @@ if not existing_alert or not existing_alert.validated then
         clinical_evidence_header:add_discrete_value_one_of_link(
             dv_breath_sounds,
             "Breath Sounds",
-            function(dv, num) return not string.match(dv.result, "clear") end
+            function(dv, num_) return not string.match(dv.result, "clear") end
         )
         clinical_evidence_header:add_code_links(
             { "J96.01", "J96.2", "J96.21", "J96.22" },
@@ -954,7 +933,7 @@ if not existing_alert or not existing_alert.validated then
         clinical_evidence_header:add_discrete_value_one_of_link(
             dv_respiratory_pattern,
             "Respiratory Pattern",
-            function(dv, num) return not string.match(dv.result, "regular") end
+            function(dv, num_) return not string.match(dv.result, "regular") end
         )
 
         -- Document Links
@@ -968,43 +947,43 @@ if not existing_alert or not existing_alert.validated then
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_mrsa_screen,
             "MRSA Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_sars_covid,
             "Covid 19 Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_sars_covid_antigen,
             "Covid 19 Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_pneumococcal_antigen,
             "Strept Pneumonia Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_influenze_screen_a,
             "Influenza A Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_influenze_screen_b,
             "Influenza B Screen",
-            function(dv, num) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
+            function(dv, num_) return string.match(dv.result, "positive") or string.match(dv.result, "detected") end
         )
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_pleural_fluid_culture,
             "Pleural Fluid Culture",
-            function(dv, num) return string.match(dv.result, "positive") end
+            function(dv, num_) return string.match(dv.result, "positive") end
         )
         laboratory_studies_header:add_abstraction_link("POSITIVE_PLEURAL_FLUID_CULTURE", "Positive Pleural Fluid Culture")
         laboratory_studies_header:add_discrete_value_one_of_link(
             dv_sputum_culture,
             "Sputum Culture",
-            function(dv, num) return string.match(dv.result, "positive") end
+            function(dv, num_) return string.match(dv.result, "positive") end
         )
         laboratory_studies_header:add_abstraction_link("POSITIVE_SPUTUM_CULTURE", "Positive Sputum Culture")
 
@@ -1016,7 +995,7 @@ if not existing_alert or not existing_alert.validated then
         oxygenation_ventilation_header:add_discrete_value_one_of_link(
             dv_oxygen_therapy,
             "Oxygen Therapy",
-            function(dv, num)
+            function(dv, num_)
                 return not string.match(dv.result, "room air") and not string.match(dv.result, "RA")
             end
         )

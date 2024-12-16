@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block, unused-function -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require "libs.common.alerts" (Account)
 local links = require "libs.common.basic_links" (Account)
 local codes = require "libs.common.codes" (Account)
-local dates = require("libs.common.dates")
-local discrete = require "libs.common.discrete_values" (Account)
 local headers = require "libs.common.headers" (Account)
 
 --------------------------------------------------------------------------------
@@ -181,7 +178,6 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local hemorrhagic_stroke_codes = links.get_code_links { codes = { "I61.2", "I61.8", "I61.9" }, text = "Unspecified Hemorrhagic Stroke Dx Missing Location" }
     local cerebral_infarction_codes = links.get_code_links {
         codes = {
             "I63.51", "I63.511", "I63.512", "I63.513", "I63.521", "I63.522", "I63.523", "I63.531",
@@ -480,14 +476,14 @@ if not existing_alert or not existing_alert.validated then
                     { "BP Arterial Diastolic cc (mm Hg)", "DBP 3.5 (No Calculation) (mmhg)",
                         "DBP 3.5 (No Calculation) (mm Hg)" },
                     "DBP: [VALUE] (Result Date: [RESULTDATETIME])",
-                    function(dv, number)
+                    function(dv_, number)
                         return number > 110
                     end
                 )
                 vital_signs_header:add_discrete_value_link(
                     "SBP 3.5 (No Calculation) (mm Hg)",
                     "SBP: [VALUE] (Result Date: [RESULTDATETIME])",
-                    function(dv, number)
+                    function(dv_, number)
                         return number > 180
                     end
                 )

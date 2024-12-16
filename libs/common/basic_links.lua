@@ -563,8 +563,7 @@ return function(Account)
         local merged_links = {}
 
         --- @type fun(a: CdiAlertLink, b: CdiAlertLink): boolean
-        --- @diagnostic disable-next-line: unused-local
-        local comparison_fn = function(a, b) return false end
+        local comparison_fn = function(a, b) return a.code == b.code end
 
         if #old_links == 0 then
             return new_links

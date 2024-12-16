@@ -24,7 +24,6 @@ local discrete = require("libs.common.discrete_values")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
---- @diagnostic disable: unused-local
 local heart_rate_dv_names = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -32,27 +31,26 @@ local heart_rate_dv_names = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local high_heart_rate_predicate = function(dv, num) return num > 90 end
-local low_heart_rate_predicate = function(dv, num) return num < 60 end
+local high_heart_rate_predicate = function(dv_, num) return num > 90 end
+local low_heart_rate_predicate = function(dv_, num) return num < 60 end
 local hematocrit_dv_names = { "HEMATOCRIT (%)", "HEMATOCRIT" }
-local female_low_hematocrit_predicate = function(dv, num) return num < 34 end
-local male_low_hematocrit_predicate = function(dv, num) return num < 40 end
+local female_low_hematocrit_predicate = function(dv_, num) return num < 34 end
+local male_low_hematocrit_predicate = function(dv_, num) return num < 40 end
 local hemogloblin_dv_names = { "HEMOGLOBIN (g/dL)", "HEMOGLOBIN" }
-local male_low_hemoglobin_predicate = function(dv, num) return num < 13.5 end
-local female_low_hemoglobin_predicate = function(dv, num) return num < 11.6 end
+local male_low_hemoglobin_predicate = function(dv_, num) return num < 13.5 end
+local female_low_hemoglobin_predicate = function(dv_, num) return num < 11.6 end
 local map_dv_names = { "MAP Non-Invasive (Calculated) (mmHg)", "MPA Invasive (mmHg)" }
-local low_map_predicate = function(dv, num) return num < 70 end
+local low_map_predicate = function(dv_, num) return num < 70 end
 local oxygen_dv_names = { "DELIVERY" }
 local pao2_dv_names = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local low_pao21_predicate = function(dv, num) return num < 80 end
+local low_pao21_predicate = function(dv_, num) return num < 80 end
 local sbp_dv_names = { "SBP 3.5 (No Calculation) (mmHg)" }
-local low_sbp_predicate = function(dv, num) return num < 90 end
-local high_sbp_predicate = function(dv, num) return num > 180 end
+local low_sbp_predicate = function(dv_, num) return num < 90 end
+local high_sbp_predicate = function(dv_, num) return num > 180 end
 local spo2_dv_names = { "Pulse Oximetry(Num) (%)" }
-local low_spo21_predicate = function(dv, num) return num < 90 end
+local low_spo21_predicate = function(dv_, num) return num < 90 end
 local troponin_dv_names = { "TROPONIN, HIGH SENSITIVITY (ng/L)" }
-local high_troponin_predicate = function(dv, num) return num > 59 end
---- @diagnostic enable: unused-local
+local high_troponin_predicate = function(dv_, num) return num > 59 end
 
 
 
@@ -511,8 +509,7 @@ then
             oxygenation_ventillation_header:add_discrete_value_one_of_link(
                 oxygen_dv_names,
                 "Oxygen Therapy",
-                ---@diagnostic disable-next-line: unused-local
-                function(dv, num)
+                function(dv, num_)
                     return dv.result:find("%bRoom Air%b") ~= nil and dv.result:find("%bRA%b") == nil
                 end
             )

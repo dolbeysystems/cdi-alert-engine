@@ -23,9 +23,8 @@ local headers = require "libs.common.headers" (Account)
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
---- @diagnostic disable: unused-local
 local ciwa_score_dv_name = "alcohol CIWA Calc score 1112"
-local ciwa_score_dv_predicate = function(dv, num) return num > 9 end
+local ciwa_score_dv_predicate = function(dv_, num) return num > 9 end
 local methadone_medication_name = "Methadone"
 local suboxone_medication_name = "Suboxone"
 local benzodiazepine_medication_name = "Benzodiazepine"
@@ -39,7 +38,6 @@ local pain_document_types = {
 }
 local opioid_dependence_subtitle = "Possible Opioid Dependence"
 local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
---- @diagnostic enable: unused-local
 
 
 
