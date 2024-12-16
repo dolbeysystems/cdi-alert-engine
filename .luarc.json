@@ -9,7 +9,7 @@
         "duplicate": "Any",
         "global": "Any",
         "luadoc": "Any",
-        "redefined": "Any",
+        "redefined": "None",
         "strict": "Any",
         "strong": "Any",
         "type-check": "Any",
