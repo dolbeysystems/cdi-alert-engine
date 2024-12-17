@@ -47,8 +47,6 @@ local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
 local calc_glasgow_coma_scale1 = function(dv_, num) return num < 8 end
 local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
 local calc_heart_rate1 = function(dv_, num) return num > 90 end
-local dv_hemoglobin_a1c = { "HEMOGLOBIN A1C (%)" }
-local calc_hemoglobin_a1c1 = function(dv_, num) return num > 0 end
 local dv_serum_bicarbonate = { "HCO3 (meq/L)", "HCO3 (mmol/L)", "HCO3 VENOUS (meq/L)" }
 local calc_serum_bicarbonate1 = function(dv_, num) return num < 22 end
 local dv_serum_ketone = { "" }
@@ -127,7 +125,7 @@ if not existing_alert or not existing_alert.validated then
 
     -- Coma
     local decr_lvl_consciousness_abs = links.get_abstraction_value_link { code = "DECREASED_LEVEL_OF_CONSCIOUSNESS", text = "Decreased Level of Consciousness" }
-    local glasgow_coma_score_dv = links.get_discrete_value_link { discreteValueNames = dv_glasgow_coma_scale, text = "Glasgow Coma Score" }
+    local glasgow_coma_score_dv = links.get_discrete_value_link { discreteValueNames = dv_glasgow_coma_scale, text = "Glasgow Coma Score", predicate = calc_glasgow_coma_scale1 }
     local glasgow_coma_score_abs = links.get_abstraction_value_link { code = "LOW_GLASGOW_COMA_SCORE_SEVERE", text = "Glasgow Coma Score" }
     local a5a193_codes = links.get_multi_code_link { codes = { "5A1935Z", "5A1945Z", "5A1955Z" }, text = "Invasive Mechanical Ventilation" }
     local obtunded_abs = links.get_abstraction_value_link { code = "OBTUNDED", text = "Obtunded" }
@@ -449,7 +447,7 @@ if not existing_alert or not existing_alert.validated then
         Result.validated = true
         Result.passed = true
 
-    elseif unspec_type2_diabetest and (r4020_code or soc) and #low_blood_glucose_dv > 1 and not e11641_code then
+    elseif unspec_type2_diabetes and (r4020_code or soc) and #low_blood_glucose_dv > 1 and not e11641_code then
         -- #16
         documented_dx_header:add_link(unspec_type2_diabetes)
         documented_dx_header:add_link(r4020_code)

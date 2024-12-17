@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -26,10 +23,10 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
-local dv_braden_risk_assessment_score = { "3.5 Activity (Braden Scale)" }
-local calc_braden_risk_assessment_score1 = function(_dv, num) return num < 2 end
-local dv_braden_mobility_score = { "3.5 Mobility" }
-local calc_braden_mobility_score1 = function(_dv, num) return num < 2 end
+local braden_risk_assessment_score_dv_names = { "3.5 Activity (Braden Scale)" }
+local braden_risk_assessment_score_predicate = function(dv_, num) return num < 2 end
+local braden_mobility_score_dv_names = { "3.5 Mobility" }
+local braden_mobility_score_predicated = function(dv_, num) return num < 2 end
 
 
 --------------------------------------------------------------------------------
@@ -85,12 +82,14 @@ if not existing_alert or not existing_alert.validated then
         text = "Braden Risk Assessment Score"
     }
     local braden_risk_assessment_score_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_braden_risk_assessment_score,
-        text = "Braden Scale Activity Score"
+        discreteValueNames = braden_risk_assessment_score_dv_names,
+        text = "Braden Scale Activity Score",
+        predicate = braden_risk_assessment_score_predicate
     }
     local braden_risk_mobility_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_braden_mobility_score,
-        text = "Braden Scale Mobility Score"
+        discreteValueNames = braden_mobility_score_dv_names,
+        text = "Braden Scale Mobility Score",
+        predicate = braden_mobility_score_predicated
     }
     local complete_assistance_adls_abs = links.get_abstraction_link {
         code = "COMPLETE_ASSISTANCE_WITH_ADLS",
@@ -301,71 +300,51 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    --[[
-    #Main Algorithm
-    if spinalCodes is not None and extremitiesAbs is not None or r532Code is not None and subtitle == "Possible Functional Quadriplegia Dx":
-        if spinalCodes is not None: updateLinkText(spinalCodes, autoCodeText); dc.Links.Add(spinalCodes)
-        if extremitiesAbs is not None: updateLinkText(extremitiesAbs, autoCodeText); abs.Links.Add(extremitiesAbs)
-        if r532Code is not None: updateLinkText(r532Code, autoCodeText); dc.Links.Add(r532Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
-        result.Validated = True
-        AlertPassed = True
-    --]]
     -- Main Algorithm
     if spinal_codes and extremities_abs or r532_code and subtitle == "Possible Functional Quadriplegia Dx" then
         if spinal_codes then
             spinal_codes.link_text = "Autoresolved Code - " .. spinal_codes.link_text
-            links.add_to_document(spinal_codes)
+            documented_dx_header:add_link(spinal_codes)
         end
         if extremities_abs then
             extremities_abs.link_text = "Autoresolved Code - " .. extremities_abs.link_text
-            links.add_to_abstraction(extremities_abs)
+            clinical_evidence_header:add_link(extremities_abs)
         end
         if r532_code then
             r532_code.link_text = "Autoresolved Code - " .. r532_code.link_text
-            links.add_to_document(r532_code)
+            documented_dx_header:add_link(r532_code)
         end
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
         Result.validated = true
         Result.passed = true
 
-    --[[
-    elif spinalCodes is None and r532Code is None and extremitiesAbs is None and (z7401Code is not None or (CI >= 2 and codePresent >= 1)):
-        result.Subtitle = "Possible Functional Quadriplegia Dx"
-        AlertPassed = True
+    elseif not spinal_codes and r532_code and not extremities_abs and (z7401_code or (ci >= 2 and codes_present >= 1)) then
+        Result.subtitle = "Possible Functional Quadriplegia Dx"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif r532Code is not None and spinalCodes is not None:
-        dc.Links.Add(r532Code)
-        dc.Links.Add(spinalCodes)
-        result.Subtitle = "Possible Conflicting Functional Quadriplegia Dx with Spinal Cord Injury Dx, Seek Clarification"
-        AlertPassed = True
+    elseif r532_code and spinal_codes then
+        documented_dx_header:add_link(r532_code)
+        documented_dx_header:add_link(spinal_codes)
+        Result.subtitle = "Possible Conflicting Functional Quadriplegia Dx with Spinal Cord Injury Dx, Seek Clarification"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif subtitle == "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence" and (z7401Code is not None or (CI > 0 and codePresent > 0)):
-        if z7401Code is not None: updateLinkText(z7401Code, autoEvidenceText); abs.Links.Add(z7401Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
-        result.Validated = True
-        AlertPassed = True
+    elseif subtitle == "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence" and (z7401_code or (ci > 0 and codes_present > 0)) then
+        if z7401_code then
+            z7401_code.link_text = "Autoresolved Evidence - " .. z7401_code.link_text
+            clinical_evidence_header:add_link(z7401_code)
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
+        Result.validated = true
+        Result.passed = true
 
-    --]]
-    --[[
-    elif spinalCodes is None and r532Code is not None and z7401Code is None and CI == 0 and codePresent == 0:
-        if extremitiesAbs is not None: abs.Links.Add(extremitiesAbs)
-        result.Subtitle = "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence"
-        AlertPassed = True
-
-    --]]
-    --[[
-    else:
-        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-        result.Passed = False
-    --]]
+    elseif spinal_codes and r532_code and not z7401_code and ci == 0 and codes_present == 0 then
+        if extremities_abs then
+            clinical_evidence_header:add_link(extremities_abs)
+        end
+        Result.subtitle = "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence"
+        Result.passed = true
     end
 
 
@@ -375,27 +354,25 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Abstractions
-            if assistanceADLSAbs is not None: abs.Links.Add(assistanceADLSAbs) #1
-            #2 
-            if z7401Code is not None: abs.Links.Add(z7401Code) #3
-            #4-6
-            abstractValue("CHAIRFAST", "Chairfast '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7)
-            #8-9
-            codeValue("3E0G76Z", "Enteral Nutrition: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 10, abs, True)
-            #11
-            codeValue("R15.9", "Fecal Incontinence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 12, abs, True)
-            #13-14
-            codeValue("R39.81", "Functional Urinary Incontinence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 15, abs, True)
-            codeValue("3E0H76Z", "J Tube Nutrition: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 16, abs, True)
-            #17
-            codeValue("N31.9", "Neurogenic Bladder: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 18, abs, True)
-            codeValue("R29.6", "Recurrent Falls: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 19, abs, True)
-            #20-25
-            codeValue("R53.1", "Weakness: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 26, abs, True)
-            #27
-            --]]
+            -- Abstractions
+            clinical_evidence_header:add_link(assistance_adls_abs)
+            -- #2
+            clinical_evidence_header:add_link(z7401_code)
+            -- #4-6
+            clinical_evidence_header:add_abstraction_link("CHAIRFAST", "Chairfast")
+            -- #8-9
+            clinical_evidence_header:add_code_link("3E0G76Z", "Enteral Nutrition")
+            -- #11
+            clinical_evidence_header:add_code_link("R15.9", "Fecal Incontinence")
+            -- #13-14
+            clinical_evidence_header:add_code_link("R39.81", "Functional Urinary Incontinence")
+            clinical_evidence_header:add_code_link("3E0H76Z", "J Tube Nutrition")
+            -- #17
+            clinical_evidence_header:add_code_link("N31.9", "Neurogenic Bladder")
+            clinical_evidence_header:add_code_link("R29.6", "Recurrent Falls")
+            -- #20-25
+            clinical_evidence_header:add_code_link("R53.1", "Weakness")
+            -- #27
         end
 
 
