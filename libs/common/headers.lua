@@ -15,7 +15,7 @@ return function(Account)
     --- @field build (fun (self: header_builder, require_links: boolean): CdiAlertLink)
     --- @field add_link (fun (self: header_builder, link: CdiAlertLink?))
     --- @field add_links (fun (self: header_builder, lnks: CdiAlertLink[]))
-    --- @field add_text_link (fun (self: header_builder, text: string))
+    --- @field add_text_link (fun (self: header_builder, text: string, validated: boolean?))
     --- @field add_document_link (fun (self: header_builder, document_type: string, description: string))
     --- @field add_code_link (fun (self: header_builder, code: string, description: string))
     --- @field add_code_links (fun (self: header_builder, codes: string[], description: string))
@@ -66,8 +66,9 @@ return function(Account)
 
             --- @param self header_builder
             --- @param text string
-            add_text_link = function(self, text)
-                local link = links_lib.make_header_link(text)
+            --- @param validated boolean?
+            add_text_link = function(self, text, validated)
+                local link = links_lib.make_header_link(text, validated)
                 if link then
                     link.sequence = self.sequence_counter
                     self.sequence_counter = self.sequence_counter + 1
