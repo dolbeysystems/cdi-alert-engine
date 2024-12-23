@@ -351,27 +351,6 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    --[[
-    #Main Algorithm
-    #1
-    if (CMS40 or CMS41 or CMS42 or CMS43 or CMS440 or CMS441 or CMS45):
-        if e40CC[0] is not None and CMS40: dc.Links.Add(e40CC[0])
-        if e41CC[0] is not None and CMS41: dc.Links.Add(e41CC[0])
-        if e42CC[0] is not None and CMS42: dc.Links.Add(e42CC[0])
-        if e43CC[0] is not None and CMS43: dc.Links.Add(e43CC[0])
-        if e440CC[0] is not None and CMS440: dc.Links.Add(e440CC[0])
-        if e441CC[0] is not None and CMS441: dc.Links.Add(e441CC[0])
-        if e45CC[0] is not None and CMS45: dc.Links.Add(e45CC[0])
-        if e40CC[1] is False: dc.Links.Add(e40CC[0])
-        if e41CC[1] is False: dc.Links.Add(e41CC[0])
-        if e42CC[1] is False: dc.Links.Add(e42CC[0])
-        if e43CC[1] is False: dc.Links.Add(e43CC[0])
-        if e440CC[1] is False: dc.Links.Add(e440CC[0])
-        if e441CC[1] is False: dc.Links.Add(e441CC[0])
-        if e45CC[1] is False: dc.Links.Add(e45CC[0])
-        result.Subtitle = "Conflicting Malnutrition Severity (Provider/RDN)"
-        AlertPassed = True 
-    --]]
     -- Main Algorithm
     -- #1
     if cms40 or cms41 or cms42 or cms43 or cms440 or cms441 or cms45 then
@@ -393,102 +372,119 @@ if not existing_alert or not existing_alert.validated then
 
         Result.subtitle = "Conflicting Malnutrition Severity (Provider/RDN)"
         Result.passed = true
-    --[[
-    #2  
-    elif codesExist > 1:
-        for code in codeList:
-            desc = codeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            dc.Links.Add(tempCode)
-        result.Subtitle = "Conflicting Malnutrition Dx " + str1
-        if validated:
-            result.Outcome = ""
-            result.Reason = "Previously Autoresolved"
-            result.Validated = False
-        AlertPassed = True
-    --]]
-    --[[
-    #3.1
-    elif subtitle == "Malnutrition Missing Acuity" and codesExist == 1:
-        for code in codeList:
-            desc = codeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            if tempCode is not None:
-                dc.Links.Add(tempCode)
+    elseif #account_alert_codes > 1 then
+        for _, code in ipairs(account_alert_codes) do
+            local desc = alert_code_dictionary[code]
+            local temp_code = links.get_code_link { code = code, text = desc }
+            clinical_evidence_header:add_link(temp_code)
+        end
+        Result.subtitle = "Conflicting Malnutrition Dx" .. table.concat(account_alert_codes, ", ")
+        if existing_alert and existing_alert.validated then
+            Result.outcome = ""
+            Result.reason = "Previously Autoresolved"
+            Result.validated = false
+        end
+        Result.passed = true
+
+    elseif subtitle == "Malnutrition Missing Acuity" and #account_alert_codes == 1 then
+        for _, code in ipairs(account_alert_codes) do
+            local desc = alert_code_dictionary[code]
+            local temp_code = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. desc }
+            if temp_code then
+                clinical_evidence_header:add_link(temp_code)
                 break
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    #3
-    elif triggerAlert and codesExist == 0 and e46Code is not None:
-        if e46Code is not None: dc.Links.Add(e46Code)
-        result.Subtitle = "Malnutrition Missing Acuity"
-        AlertPassed = True
-    --]]
-    --[[
-    #4.1
-    elif (
-        subtitle == "Possible Malnutrition" and
-        autoCC == True and 
-        (codesExist > 0 or e46Code is not None)
-    ):
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    #4
-    elif (
-        triggerAlert and
-        (e40CC[0] is not None and e40CC[1] is False) or
-        (e41CC[0] is not None and e41CC[1] is False) or
-        (e42CC[0] is not None and e42CC[1] is False) or
-        (e43CC[0] is not None and e43CC[1] is False) or
-        (e440CC[0] is not None and e440CC[1] is False) or
-        (e441CC[0] is not None and e441CC[1] is False) or
-        (e45CC[0] is not None and e45CC[1] is False) or
-        (e46CC[0] is not None and e46CC[1] is False)
-    ):
-        if e40CC[0] is not None and e40CC[1] is False: dc.Links.Add(e40CC[0])
-        if e41CC[0] is not None and e41CC[1] is False: dc.Links.Add(e41CC[0])
-        if e42CC[0] is not None and e42CC[1] is False: dc.Links.Add(e42CC[0])
-        if e43CC[0] is not None and e43CC[1] is False: dc.Links.Add(e43CC[0])
-        if e440CC[0] is not None and e440CC[1] is False: dc.Links.Add(e440CC[0])
-        if e441CC[0] is not None and e441CC[1] is False: dc.Links.Add(e441CC[0])
-        if e45CC[0] is not None and e45CC[1] is False: dc.Links.Add(e45CC[0])
-        if e46CC[0] is not None and e46CC[1] is False: dc.Links.Add(e46CC[0])
-        result.Subtitle = "Possible Malnutrition"
-        AlertPassed = True
-    --]]
-    --[[
-    #5.1
-    elif (
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif trigger_alert and #account_alert_codes == 0 and e46_code then
+        clinical_evidence_header:add_link(e46_code)
+        Result.subtitle = "Malnutrition Missing Acuity"
+        Result.passed = true
+
+    elseif subtitle == "Possible Malnutrition" and auto_cc and (#account_alert_codes > 0 or e46_code) then
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif trigger_alert and
+        (e40 and not e40_non_cc) or
+        (e41 and not e41_non_cc) or
+        (e42 and not e42_non_cc) or
+        (e43 and not e43_non_cc) or
+        (e440 and not e440_non_cc) or
+        (e441 and not e441_non_cc) or
+        (e45 and not e45_non_cc) or
+        (e46 and not e46_non_cc)
+    then
+        if e40 and not e40_non_cc then clinical_evidence_header:add_link(e40) end
+        if e41 and not e41_non_cc then clinical_evidence_header:add_link(e41) end
+        if e42 and not e42_non_cc then clinical_evidence_header:add_link(e42) end
+        if e43 and not e43_non_cc then clinical_evidence_header:add_link(e43) end
+        if e440 and not e440_non_cc then clinical_evidence_header:add_link(e440) end
+        if e441 and not e441_non_cc then clinical_evidence_header:add_link(e441) end
+        if e45 and not e45_non_cc then clinical_evidence_header:add_link(e45) end
+        if e46 and not e46_non_cc then clinical_evidence_header:add_link(e46) end
+        Result.subtitle = "Possible Malnutrition"
+        Result.passed = true
+
+    elseif
         subtitle == "Possible Low BMI" and
-        ((r627Code is not None or r634Code is not None or r64Code is not None or r636Code is not None or t730xxxaCode is not None or e46Code is not None) or
-        (malnutritionCodes is not None and autoCC))
-    ):
-        if r627Code is not None: updateLinkText(r627Code, "Autoresolved Specified Code - "); dc.Links.Add(r627Code)
-        if r634Code is not None: updateLinkText(r634Code, "Autoresolved Specified Code - "); dc.Links.Add(r634Code)
-        if r64Code is not None: updateLinkText(r64Code, "Autoresolved Specified Code - "); dc.Links.Add(r64Code)
-        if r636Code is not None: updateLinkText(r636Code, "Autoresolved Specified Code - "); dc.Links.Add(r636Code)
-        if t730xxxaCode is not None: updateLinkText(t730xxxaCode, "Autoresolved Specified Code - "); dc.Links.Add(t730xxxaCode)
-        if malnutritionCodes is not None: updateLinkText(malnutritionCodes, "Autoresolved Specified Code - "); dc.Links.Add(malnutritionCodes)
-        if e46Code is not None: updateLinkText(e46Code, "Autoresolved Specified Code - "); dc.Links.Add(e46Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one or more Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-    --]]
-    --[[
-    #5
-    elif triggerAlert and (lowBMIDV is not None or lowBMIAbs is not None) and r627Code is None and e46Code is None and r634Code is None and r64Code is None and r636Code is None and t730xxxaCode is None and malnutritionCodes is None:
-        result.Subtitle = "Possible Low BMI"
-        AlertPassed = True
-    --]]
+        (
+            (r627_code or r634_code or r64_code or r636_code or t730xxxa_code or e46_code) or
+            (malnutrition_codes and auto_cc)
+        )
+    then
+        if r627_code then
+            r627_code.link_text = "Autoresolved Specified Code - " .. r627_code.link_text
+            clinical_evidence_header:add_link(r627_code)
+        end
+        if r634_code then
+            r634_code.link_text = "Autoresolved Specified Code - " .. r634_code.link_text
+            clinical_evidence_header:add_link(r634_code)
+        end
+        if r64_code then
+            r64_code.link_text = "Autoresolved Specified Code - " .. r64_code.link_text
+            clinical_evidence_header:add_link(r64_code)
+        end
+        if r636_code then
+            r636_code.link_text = "Autoresolved Specified Code - " .. r636_code.link_text
+            clinical_evidence_header:add_link(r636_code)
+        end
+        if t730xxxa_code then
+            t730xxxa_code.link_text = "Autoresolved Specified Code - " .. t730xxxa_code.link_text
+            clinical_evidence_header:add_link(t730xxxa_code)
+        end
+        if malnutrition_codes then
+            malnutrition_codes.link_text = "Autoresolved Specified Code - " .. malnutrition_codes.link_text
+            clinical_evidence_header:add_link(malnutrition_codes)
+        end
+        if e46_code then
+            e46_code.link_text = "Autoresolved Specified Code - " .. e46_code.link_text
+            clinical_evidence_header:add_link(e46_code)
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one or more Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif
+        trigger_alert and
+        (low_bmi_dv or low_bmi_abs) and
+        not r627_code and
+        not e46_code and
+        not r634_code and
+        not r64_code and
+        not r636_code and
+        not t730xxxa_code and
+        not malnutrition_codes
+    then
+        Result.subtitle = "Possible Low BMI"
+        Result.passed = true
     end
 
 
@@ -498,140 +494,198 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Negations
-            transferrinNegation = multiCodeValue(["K72.0", "K72.00", "K72.01", "K72.1", "K72.10", "K72.11", "K72.9", "K72.90",
-                                              "K72.91", "K74.4", "K74.5", "K74.6", "K74.60", "D59.13", "D59.19", "D59.2",
-                                              "D59.3", "D59.30", "D59.31", "D59.32", "D59.39", "D59.4", "D59.5", "D59.6",
-                                              "D59.8", "D59.9"],
-                                            "Transferrin Negation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            lymphocyteCountNegation = multiCodeValue(["D60.0", "D60.1", "D60.8", "D60.9", "D61", "D61.0", "D61.01", "D61.09",
-                                                  "D61.1", "D61.2", "D61.3", "D61.8", "D61.81", "D61.810", "D61.811",
-                                                  "D61.818", "D61.82", "D61.89", "D61.9"],
-                                                "Lymphocyte Count Negation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            --]]
-            --[[
-            #Abstractions
-            #1-2
-            prefixCodeValue("^E54\.", "Ascorbic Acid Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, abs, True)
-            #4
-            if lowBMIDV is not None: abs.Links.Add(lowBMIDV) #5
-            else: dvValue(dvBMI, "BMI: [VALUE] (Result Date: [RESULTDATETIME])", calcBMI2, 5)
-            if lowBMIAbs is not None: abs.Links.Add(lowBMIAbs) #6
-            abstractValue("DECREASED_FUNCTIONAL_CAPACITY", "Decreased Functional Capacity '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 7, abs, True)
-            prefixCodeValue("^E53\.", "Deficiency of other B group Vitamins: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8, abs, True)
-            prefixCodeValue("^E61\.", "Deficiency of other Nutrient Elements: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 9, abs, True)
-            abstractValue("DIARRHEA", "Diarrhea '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 10, abs, True)
-            codeValue("E58", "Dietary Calcium Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 11, abs, True)
-            codeValue("E59", "Dietary Selenium Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 12, abs, True)
-            codeValue("E60", "Dietary Zinc Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 13, abs, True)
-            multiCodeValue(["R13.10", "R13.11", "R13.12", "R13.13", "R13.14", "R13.19"], "Dysphagia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 14, abs, True)
-            codeValue("R53.83", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 15, abs, True)
-            abstractValue("FEELING_COLD", "Feeling Cold '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 16, abs, True)
-            abstractValue("FRAIL", "Frail '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 17, abs, True)
-            --]]
-            --[[
-            #18-19
-            abstractValue("HEIGHT", "Height: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 20, abs, True)
-            #21-26
-            abstractValue("LOW_FOOD_INTAKE", "Low Food Intake '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 27, abs, True)
-            abstractValue("MALNOURISHED_SIGN", "Malnourished Sign '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 28, abs, True)
-            abstractValue("MALNUTRITION_RISK_FACTORS", "Malnutrition Risk Factors '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 29, abs, True)
-            --]]
-            --[[
-            #30
-            abstractValue("MODERATE_MALNUTRITION", "Moderate Malnutrition '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 31, abs, True)
-            prefixCodeValue("^E52\.", "Niacin Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 32, abs, True)
-            #33
-            prefixCodeValue("^E63\.", "Other Nutritional Deficiencies: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 34, abs, True)
-            prefixCodeValue("^E56\.", "Other Vitamin Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 35, abs, True)
-            --]]
-            --[[
-            #36-39
-            abstractValue("SEVERE_MALNUTRTION", "Severe Malnutrition '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 40, abs, True)
-            codeValue("T73.0XXA", "Starvation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 41, abs, True)
-            prefixCodeValue("^E51\.", "Thiamine Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 42, abs, True)
-            --]]
-            --[[
-            #43-45
-            prefixCodeValue("^E50\.", "Vitamin A Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 46, abs, True)
-            prefixCodeValue("^E55\.", "Vitamin D Deficiency: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 47, abs, True)
-            codeValue("R11.10", "Vomiting: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 48, abs, True)
-            abstractValue("WEAKNESS", "Weakness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 49, abs, True)
-            abstractValue("WEIGHT", "Weight '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 50, abs, True)
-            --]]
-            --[[
-            #Labs
-            if lymphocyteCountNegation is None:
-                dvValue(dvLymphocyteCount, "Lymphocyte Count: [VALUE] (Result Date: [RESULTDATETIME])", calcLymphocyteCount1, 1, labs, True)
-            --]]
-            --[[
-            dvValue(dvSerumCalcium, "Serum Calcium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumCalcium1, 2, labs, True)
-            dvValue(dvSerumCalcium, "Serum Calcium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumCalcium2, 3, labs, True)
-            dvValue(dvSerumChloride, "Serum Chloride: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumChloride1, 4, labs, True)
-            dvValue(dvSerumChloride, "Serum Chloride: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumChloride2, 4, labs, True)
-            dvValue(dvSerumMagnesium, "Serum Magnesium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumMagnesium1, 5, labs, True)
-            dvValue(dvSerumMagnesium, "Serum Magnesium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumMagnesium2, 5, labs, True)
-            dvValue(dvSerumPhosphate, "Serum Phosphate: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumPhosphate1, 6, labs, True)
-            dvValue(dvSerumPhosphate, "Serum Phosphate: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumPhosphate2, 6, labs, True)
-            dvValue(dvSerumPotassium, "Serum Potassium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumPotassium1, 7, labs, True)
-            dvValue(dvSerumPotassium, "Serum Potassium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumPotassium2, 7, labs, True)
-            dvValue(dvSerumSodium, "Serum Sodium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumSodium1, 8, labs, True)
-            dvValue(dvSerumSodium, "Serum Sodium: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumSodium2, 8, labs, True)
-            dvValue(dvTotalCholesterol, "Total Cholesterol: [VALUE] (Result Date: [RESULTDATETIME])", calcTotalCholesterol1, 9, labs, True)
-            --]]
-            --[[
-            if transferrinNegation is None:
-                dvValue(dvTransferrin, "Transferrin: [VALUE] (Result Date: [RESULTDATETIME])", calcTransferrin1, 10, labs, True)
-            --]]
-            --[[
-            #Treatment
-            abstractValue("DIET", "Diet '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 1, treatment, True)
-            codeValue("3E0G76Z", "Enteral Nutrition: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, treatment, True)
-            codeValue("3E0H76Z", "J Tube Nutrition: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, treatment, True)
-            abstractValue("NUTRITIONAL_SUPPLEMENT", "Nutritional Supplement: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 4, treatment, True)
-            abstractValue("PARENTERAL_NUTRITION", "Parenteral Nutrition '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 5, treatment, True)
-            --]]
-            --[[
-            #Risk Factors
-            codeValue("B20", "AIDS/HIV: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, risk, True)
-            prefixCodeValue("^F10\.1", "Alcohol Abuse: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, risk, True)
-            prefixCodeValue("^F10\.2", "Alcohol Dependence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, risk, True)
-            prefixCodeValue("^K70\.", "Alcoholic Liver Disease: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, risk, True)
-            codeValue("R63.0", "Anorexia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, risk, True)
-            abstractValue("CANCER", "Cancer '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 5, risk, True)
-            --]]
-            --[[
-            codeValue("K90.0", "Celiac Disease: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 6, risk, True)
-            prefixCodeValue("^Z51\.1", "Chemotherapy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 7, risk, True)
-            prefixCodeValue("^Z79\.63", "Chemotherapy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8, risk, True)
-            codeValue("3E04305", "Chemotherapy Administration: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 9, risk, True)
-            codeValue("N52.9", "Colitis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 10, risk, True)
-            prefixCodeValue("^K50\.", "Crohns Disease: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 11, risk, True)
-            prefixCodeValue("^E84\.", "Cystic Fibrosis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 12, risk, True)
-            prefixCodeValue("^K57\.", "Diverticulitis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 13, risk, True)
-            --]]
-            --[[
-            multiCodeValue(["F50.00", "F50.01", "F50.02", "F50.2", "F50.82", "F50.9"], "Eating Disorder: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 14, risk, True)
-            codeValue("I50.84", "End Stage Heart Failure: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 15, risk, True)
-            codeValue("N18.6", "End-Stage Renal Disease: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 16, risk, True)
-            codeValue("K56.7", "Ileus: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 17, risk, True)
-            multiCodeValue(["K90.89", "K90.9"], "Intestinal Malabsorption: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 18, risk, True)
-            prefixCodeValue("^K56\.6", "Intestinal Obstructions: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 19, risk, True)
-            --]]
-            --[[
-            abstractValue("MENTAL_HEALTH_DISORDER", "Mental Health Disorder '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 20, risk, True)
-            prefixCodeValue("^Z79\.62", "On Immunosuppressants: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 21, risk, True)
-            abstractValue("POOR_DENTITION", "Poor Dentition '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 22, risk, True)
-            --]]
-            --[[
-            prefixCodeValue("^F01\.C", "Severe Dementia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 23, risk, True)
-            prefixCodeValue("^F02\.C", "Severe Dementia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 24, risk, True)
-            prefixCodeValue("^F03\.C", "Severe Dementia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 25, risk, True)
-            prefixCodeValue("^K90\.82", "Short Bowel Syndrome: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 26, risk, True)
-            abstractValue("SOCIAL_FACTOR", "Social Factor '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 27, risk, True)
-            prefixCodeValue("^K51\.", "Ulcerative Colitis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 28, risk, True)
-            --]]
+            -- Negations
+            local transferrin_negation = links.get_code_links {
+                codes = {
+                    "K72.0", "K72.00", "K72.01", "K72.1", "K72.10", "K72.11", "K72.9", "K72.90",
+                    "K72.91", "K74.4", "K74.5", "K74.6", "K74.60", "D59.13", "D59.19", "D59.2",
+                    "D59.3", "D59.30", "D59.31", "D59.32", "D59.39", "D59.4", "D59.5", "D59.6",
+                    "D59.8", "D59.9"
+                },
+                text = "Transferrin Negation"
+            }
+            local lymphocyte_count_negation = links.get_code_links {
+                codes = {
+                    "D60.0", "D60.1", "D60.8", "D60.9", "D61", "D61.0", "D61.01", "D61.09",
+                    "D61.1", "D61.2", "D61.3", "D61.8", "D61.81", "D61.810", "D61.811",
+                    "D61.818", "D61.82", "D61.89", "D61.9"
+                },
+                text = "Lymphocyte Count Negation"
+            }
+
+            -- Abstractions
+            -- 1-2
+            clinical_evidence_header:add_code_prefix_link("E54%.", "Ascorbic Acid Deficiency")
+            -- 4
+            if low_bmi_dv then
+                clinical_evidence_header:add_link(low_bmi_dv) -- 5
+            else
+                clinical_evidence_header:add_link(low_bmi_abs)
+            end
+            if low_bmi_abs then
+                clinical_evidence_header:add_link(low_bmi_abs) -- 6
+            end
+            clinical_evidence_header:add_abstraction_link("DECREASED_FUNCTIONAL_CAPACITY", "Decreased Functional Capacity") 
+            clinical_evidence_header:add_code_prefix_link("E53%.", "Deficiency of other B group Vitamins")
+            clinical_evidence_header:add_code_prefix_link("E61%.", "Deficiency of other Nutrient Elements")
+            clinical_evidence_header:add_abstraction_link("DIARRHEA", "Diarrhea")
+            clinical_evidence_header:add_code_link("E58", "Dietary Calcium Deficiency")
+            clinical_evidence_header:add_code_link("E59", "Dietary Selenium Deficiency")
+            clinical_evidence_header:add_code_link("E60", "Dietary Zinc Deficiency")
+            clinical_evidence_header:add_code_links({ "R13.10", "R13.11", "R13.12", "R13.13", "R13.14", "R13.19" }, "Dysphagia")
+            clinical_evidence_header:add_code_link("R53.83", "Fatigue")
+            clinical_evidence_header:add_abstraction_link("FEELING_COLD", "Feeling Cold")
+            clinical_evidence_header:add_abstraction_link("FRAIL", "Frail")
+
+            -- 18-19
+            clinical_evidence_header:add_abstraction_link("HEIGHT", "Height")
+            clinical_evidence_header:add_abstraction_link("LOW_FOOD_INTAKE", "Low Food Intake")
+
+            -- 21-26
+            clinical_evidence_header:add_abstraction_link("MALNOURISHED_SIGN", "Malnourished Sign")
+            clinical_evidence_header:add_abstraction_link("MALNUTRITION_RISK_FACTORS", "Malnutrition Risk Factors")
+
+            -- 30
+            clinical_evidence_header:add_abstraction_link("MODERATE_MALNUTRITION", "Moderate Malnutrition")
+            clinical_evidence_header:add_code_prefix_link("E52%.", "Niacin Deficiency")
+
+            -- 33
+            clinical_evidence_header:add_code_prefix_link("E63%.", "Other Nutritional Deficiencies")
+            clinical_evidence_header:add_code_prefix_link("E56%.", "Other Vitamin Deficiency")
+
+            -- 36-39
+            clinical_evidence_header:add_abstraction_link("SEVERE_MALNUTRTION", "Severe Malnutrition")
+            clinical_evidence_header:add_code_link("T73.0XXA", "Starvation")
+            clinical_evidence_header:add_code_prefix_link("E51%.", "Thiamine Deficiency")
+
+            -- 43-45
+            clinical_evidence_header:add_code_prefix_link("E50%.", "Vitamin A Deficiency")
+            clinical_evidence_header:add_code_prefix_link("E55%.", "Vitamin D Deficiency")
+            clinical_evidence_header:add_code_link("R11.10", "Vomiting")
+            clinical_evidence_header:add_abstraction_link("WEAKNESS", "Weakness")
+            clinical_evidence_header:add_abstraction_link("WEIGHT", "Weight")
+
+            -- Labs
+            if lymphocyte_count_negation then
+                laboratory_studies_header:add_discrete_value_one_of_link(
+                    dv_lymphocyte_count,
+                    "Lymphocyte Count",
+                    calc_lymphocyte_count1
+                )
+            end
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_calcium,
+                "Serum Calcium",
+                calc_serum_calcium1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_calcium,
+                "Serum Calcium",
+                calc_serum_calcium2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_chloride,
+                "Serum Chloride",
+                calc_serum_chloride1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_chloride,
+                "Serum Chloride",
+                calc_serum_chloride2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_magnesium,
+                "Serum Magnesium",
+                calc_serum_magnesium1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_magnesium,
+                "Serum Magnesium",
+                calc_serum_magnesium2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_phosphate,
+                "Serum Phosphate",
+                calc_serum_phosphate1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_phosphate,
+                "Serum Phosphate",
+                calc_serum_phosphate2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_potassium,
+                "Serum Potassium",
+                calc_serum_potassium1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_potassium,
+                "Serum Potassium",
+                calc_serum_potassium2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_sodium,
+                "Serum Sodium",
+                calc_serum_sodium1
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_serum_sodium,
+                "Serum Sodium",
+                calc_serum_sodium2
+            )
+            laboratory_studies_header:add_discrete_value_one_of_link(
+                dv_total_cholesterol,
+                "Total Cholesterol",
+                calc_total_cholesterol1
+            )
+            if transferrin_negation then
+                laboratory_studies_header:add_discrete_value_one_of_link(
+                    dv_transferrin,
+                    "Transferrin",
+                    calc_transferrin1
+                )
+            end
+
+            -- Treatment
+            treatment_and_monitoring_header:add_abstraction_link("DIET", "Diet")
+            treatment_and_monitoring_header:add_code_link("3E0G76Z", "Enteral Nutrition")
+            treatment_and_monitoring_header:add_code_link("3E0H76Z", "J Tube Nutrition")
+            treatment_and_monitoring_header:add_abstraction_link("NUTRITIONAL_SUPPLEMENT", "Nutritional Supplement")
+            treatment_and_monitoring_header:add_abstraction_link("PARENTERAL_NUTRITION", "Parenteral Nutrition")
+
+            -- Risk Factors
+            risk_factor_header:add_code_link("B20", "AIDS/HIV")
+            risk_factor_header:add_code_prefix_link("F10%.1", "Alcohol Abuse")
+            risk_factor_header:add_code_prefix_link("F10%.2", "Alcohol Dependence")
+            risk_factor_header:add_code_prefix_link("K70%.", "Alcoholic Liver Disease")
+            risk_factor_header:add_code_link("R63.0", "Anorexia")
+            risk_factor_header:add_abstraction_link("CANCER", "Cancer")
+            risk_factor_header:add_code_link("K90.0", "Celiac Disease")
+            risk_factor_header:add_code_prefix_link("Z51%.1", "Chemotherapy")
+            risk_factor_header:add_code_prefix_link("Z79%.63", "Chemotherapy")
+            risk_factor_header:add_code_link("3E04305", "Chemotherapy Administration")
+            risk_factor_header:add_code_link("N52.9", "Colitis")
+            risk_factor_header:add_code_prefix_link("K50%.", "Crohns Disease")
+            risk_factor_header:add_code_prefix_link("E84%.", "Cystic Fibrosis")
+            risk_factor_header:add_code_prefix_link("K57%.", "Diverticulitis")
+            risk_factor_header:add_code_links(
+                { "F50.00", "F50.01", "F50.02", "F50.2", "F50.82", "F50.9" },
+                "Eating Disorder"
+            )
+            risk_factor_header:add_code_link("I50.84", "End Stage Heart Failure")
+            risk_factor_header:add_code_link("N18.6", "End-Stage Renal Disease")
+            risk_factor_header:add_code_link("K56.7", "Ileus")
+            risk_factor_header:add_code_links({ "K90.89", "K90.9" }, "Intestinal Malabsorption")
+            risk_factor_header:add_code_prefix_link("K56%.6", "Intestinal Obstructions")
+            risk_factor_header:add_abstraction_link("MENTAL_HEALTH_DISORDER", "Mental Health Disorder")
+            risk_factor_header:add_code_prefix_link("Z79%.62", "On Immunosuppressants")
+            risk_factor_header:add_abstraction_link("POOR_DENTITION", "Poor Dentition")
+            risk_factor_header:add_code_prefix_link("F01%.C", "Severe Dementia")
+            risk_factor_header:add_code_prefix_link("F02%.C", "Severe Dementia")
+            risk_factor_header:add_code_prefix_link("F03%.C", "Severe Dementia")
+            risk_factor_header:add_code_prefix_link("K90%.82", "Short Bowel Syndrome")
+            risk_factor_header:add_abstraction_link("SOCIAL_FACTOR", "Social Factor")
+            risk_factor_header:add_code_prefix_link("K51%.", "Ulcerative Colitis")
         end
 
 
