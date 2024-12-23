@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 local lists = require("libs.common.lists")
 local cdi_alert_link = require "cdi.link"
@@ -95,8 +92,6 @@ local dv_total_cholesterol = { "CHOLESTEROL (mg/dL)", "CHOLESTEROL" }
 local calc_total_cholesterol1 = function(dv_, num) return num < 200 end
 local dv_transferrin = { "TRANSFERRIN" }
 local calc_transferrin1 = function(dv_, num) return num < 215 end
-local dv_weightkg = { "Weight lbs 3.5 (kg)" }
-local dv_weight_lbs = { "Weight lbs 3.5 (lb)" }
 
 
 
@@ -202,9 +197,7 @@ if not existing_alert or not existing_alert.validated then
     local cms42 = false
     local cms43 = false
     local cms440 = false
-    local ms441 = false
     local cms45 = false
-    local cms46 = false
 
 
 
@@ -520,12 +513,16 @@ if not existing_alert or not existing_alert.validated then
             if low_bmi_dv then
                 clinical_evidence_header:add_link(low_bmi_dv) -- 5
             else
-                clinical_evidence_header:add_link(low_bmi_abs)
+                clinical_evidence_header:add_discrete_value_one_of_link(
+                    dv_bmi,
+                    "BMI",
+                    calc_bmi2
+                )
             end
             if low_bmi_abs then
                 clinical_evidence_header:add_link(low_bmi_abs) -- 6
             end
-            clinical_evidence_header:add_abstraction_link("DECREASED_FUNCTIONAL_CAPACITY", "Decreased Functional Capacity") 
+            clinical_evidence_header:add_abstraction_link("DECREASED_FUNCTIONAL_CAPACITY", "Decreased Functional Capacity")
             clinical_evidence_header:add_code_prefix_link("E53%.", "Deficiency of other B group Vitamins")
             clinical_evidence_header:add_code_prefix_link("E61%.", "Deficiency of other Nutrient Elements")
             clinical_evidence_header:add_abstraction_link("DIARRHEA", "Diarrhea")

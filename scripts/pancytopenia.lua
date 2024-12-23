@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,10 +16,8 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
-local blood = require("libs.common.blood")(Account)
 
 
 
@@ -119,27 +116,27 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     -- Negations
     local d62_code =
-        links.get_code_link { code = "D62", linkTemplate = "Acute Posthemorrhagic Anemia" }
+        links.get_code_link { code = "D62", text = "Acute Posthemorrhagic Anemia" }
     local hemorrhage_abs =
-        links.get_abstract_value_link { abstractValue = "HEMORRHAGE", linkTemplate = "Hemorrhage" }
+        links.get_abstract_value_link { abstractValue = "HEMORRHAGE", text = "Hemorrhage" }
 
     -- Documented Dx
     local d61810_code =
-        links.get_code_link { code = "D61.810", linkTemplate = "Antineoplastic chemotherapy induced pancytopenia" }
+        links.get_code_link { code = "D61.810", text = "Antineoplastic chemotherapy induced pancytopenia" }
     local d61811_code =
-        links.get_code_link { code = "D61.811", linkTemplate = "Other drug-induced pancytopenia" }
+        links.get_code_link { code = "D61.811", text = "Other drug-induced pancytopenia" }
     local d61818_code =
-        links.get_code_link { code = "D61.818", linkTemplate = "Other pancytopenia" }
+        links.get_code_link { code = "D61.818", text = "Other pancytopenia" }
 
     -- Abs
     local a3e04305_code =
-        links.get_code_link { code = "3E04305", linkTemplate = "Chemotherapy Medication Administration" }
+        links.get_code_link { code = "3E04305", text = "Chemotherapy Medication Administration" }
     local current_chemotherapy_abs =
         links.get_abstract_value_link { abstractValue = "CURRENT_CHEMOTHERAPY", linkTemplate = "Current Chemotherapy" }
 
     -- Meds
     local z5111_code =
-        links.get_code_link { code = "Z51.11", linkTemplate = "Antineoplastic Chemotherapy" }
+        links.get_code_link { code = "Z51.11", text = "Antineoplastic Chemotherapy" }
 
     -- Hemoglobin/Hematocrit
     local low_hemoglobin_multi_dv = discrete.get_discrete_value_pairs_as_link_pairs {
@@ -154,7 +151,7 @@ if not existing_alert or not existing_alert.validated then
     -- Platlet
     local low_platelet_dv = links.get_discrete_value_links {
         discreteValueNames = dv_platelet_count,
-        linkTemplate = "Platelet Count",
+        text = "Platelet Count",
         predicate = calc_platelet_count1,
         max_per_value = 10
     }
@@ -162,7 +159,7 @@ if not existing_alert or not existing_alert.validated then
     -- WBC
     local low_wbc_dv = links.get_discrete_value_links {
         discreteValueNames = dv_wbc,
-        linkTemplate = "WBC",
+        text = "WBC",
         predicate = calc_wbc1,
         max_per_value = 10
     }

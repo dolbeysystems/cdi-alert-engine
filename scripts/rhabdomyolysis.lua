@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -269,16 +266,21 @@ if not existing_alert or not existing_alert.validated then
             laboratory_studies_header:add_discrete_value_one_of_link(dv_ckmb, "CK-MB", calc_ckmb1)
             laboratory_studies_header:add_discrete_value_one_of_link(dv_ckmb_index, "CK-MB Index", calc_ckmb_index1)
             laboratory_studies_header:add_link(kinase_dv)
-            laboratory_studies_header:add_discrete_value_one_of_link(
-                dv_serum_blood_urea_nitrogen,
-                "Serum Blood Urea Nitrogen",
-                calc_serum_blood_urea_nitrogen1
-            )
-            laboratory_studies_header:add_discrete_value_one_of_link(
-                dv_serum_creatinine,
-                "Serum Creatinine",
-                calc_serum_creatinine1
-            )
+
+            if not negation_kidney_failure then
+                laboratory_studies_header:add_discrete_value_one_of_link(
+                    dv_serum_blood_urea_nitrogen,
+                    "Serum Blood Urea Nitrogen",
+                    calc_serum_blood_urea_nitrogen1
+                )
+            end
+            if not negation_kidney_failure then
+                laboratory_studies_header:add_discrete_value_one_of_link(
+                    dv_serum_creatinine,
+                    "Serum Creatinine",
+                    calc_serum_creatinine1
+                )
+            end
             laboratory_studies_header:add_discrete_value_one_of_link(
                 dv_serum_potassium,
                 "Serum Potassium",

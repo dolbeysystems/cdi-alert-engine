@@ -8,7 +8,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,9 +16,6 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
-local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 

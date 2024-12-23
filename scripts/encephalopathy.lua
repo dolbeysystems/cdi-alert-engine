@@ -20,6 +20,7 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local cdi_alert_link = require "cdi.link"
 
 
 
@@ -47,8 +48,8 @@ local calc_dbp1 = function(dv_, num) return num > 110 end
 local dv_ethanol_level = { "ALCOHOL,ETHYL UR" }
 local calc_ethanol_level1 = function(dv_, num) return num > 0.2 end
 local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
-local calc_glasgow_coma_scale1 = function(dv_, num) return num > 14 end
-local calc_glasgow_coma_scale2 = function(dv_, num) return num < 12 end
+local num_glasgow_coma_scale1 = 14
+local num_glasgow_coma_scale2 = 12
 local dv_pa_o2 = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
 local calc_pa_o21 = function(dv_, num) return num < 80 end
 local dv_p_co2 = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
@@ -95,6 +96,135 @@ local dv_glasgow_verbal = { "3.5 Neuro Glasgow Verbal (Adult)" }
 local dv_glasgow_motor = { "3.5 Neuro Glasgow Motor" }
 local dv_oxygen_therapy = { "O2 Device" }
 local dv_ua_bacteria = { "UA Bacteria (/HPF)" }
+
+
+
+--------------------------------------------------------------------------------
+--- Script Functions
+--------------------------------------------------------------------------------
+--- @param value number
+--- @param consecutive boolean
+--- @return CdiAlertLink[]
+local function glasgow_linked_values(value, consecutive)
+    local clean_numbers = function(num) return tonumber(string.gsub(num, "[<>]", "")) end
+    local twelve_hour_check = function(date_string, oxygen_dvs_)
+        local date_int = dates.date_string_to_int(date_string)
+        for _, dv in ipairs(oxygen_dvs_) do
+            local dv_date_int = dates.date_string_to_int(dv.result_date)
+            local start_date = dv_date_int - (12 * 3600)
+            local end_date = dv_date_int - (12 * 3600)
+            if start_date <= date_int and date_int <= end_date then
+                return false
+            end
+        end
+        return true
+    end
+    local score_dvs = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_glasgow_coma_scale,
+        predicate = function(dv_, num) return num ~= nil end
+    }
+    local eye_dvs = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_glasgow_eye_opening,
+        predicate = function(dv, num_) return dv.result ~= nil end
+    }
+    local verbal_dvs = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_glasgow_verbal,
+        predicate = function(dv, num_) return dv.result ~= nil end
+    }
+    local motor_dvs = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_glasgow_motor,
+        predicate = function(dv, num_) return dv.result ~= nil end
+    }
+    local oxygen_dvs = discrete.get_ordered_discrete_values {
+        discreteValueNames = dv_oxygen_therapy,
+        predicate = function(dv, num_) return string.find(dv.result, "vent") ~= nil or string.find(dv.result, "Vent") ~= nil end
+    }
+
+    local matched_list = {}
+    local matching_date = nil
+    local matching_date1 = nil
+    local matching_date2 = nil
+    local a = #score_dvs
+    local b = #eye_dvs
+    local c = #verbal_dvs
+    local d = #motor_dvs
+    local e = #oxygen_dvs
+
+    if consecutive then
+        local w = a - 1
+        local x = b - 1
+        local y = c - 1
+        local z = d - 1
+        if a >= 1 then
+            for item in ipairs(score_dvs) do
+                if
+                    a > 0 and b > 0 and c > 0 and d > 0 and w > 0 and x > 0 and y > 0 and z > 0 and
+                    eye_dvs[b].result ~= 'Oriented' and clean_numbers(score_dvs[a].result) <= value and
+                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(eye_dvs[b].result_date) and
+                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(verbal_dvs[c].result_date) and
+                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(motor_dvs[d].result_date) and
+                    twelve_hour_check(score_dvs[a].result_date, oxygen_dvs) and
+                    eye_dvs[x].result ~= 'Oriented' and clean_numbers(score_dvs[w].result) <= value and
+                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(eye_dvs[x].result_date) and
+                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(verbal_dvs[y].result_date) and
+                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(motor_dvs[z].result_date) and
+                    twelve_hour_check(score_dvs[w].result_date, oxygen_dvs)
+                then
+                    matching_date1 = score_dvs[a].result_date
+                    matching_date2 = score_dvs[w].result_date
+                    local link1 = cdi_alert_link()
+                    link1.discrete_value_id = score_dvs[a].unique_id
+                    link1 = 
+
+                    --[[
+                    matchedList.append(dataConversion(None, matchingDate1 + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
+                    matchedList.append(dataConversion(None, matchingDate2 + " Total GCS = " + str(discreteDic[w].Result) + " (Eye Opening: " + str(discreteDic1[x].Result) + ", Verbal Response: " + str(discreteDic2[y].Result) + ", Motor Response: " + str(discreteDic3[z].Result) + ")", None, discreteDic[w]._id, glasgow, 0, False))
+                    --]]
+                    return matched_list
+                else
+                    a = a - 1
+                    b = b - 1
+                    c = c - 1
+                    d = d - 1
+                    w = w - 1
+                    x = x - 1
+                    y = y - 1
+                    z = z - 1
+                end
+            end
+        else
+            for item in ipairs(score_dvs) do
+                if a > 0 and b > 0 and c > 0 and d > 0 then
+                    --[[
+                    if discreteDic2[c].Result != 'Oriented' and float(cleanNumbers(discreteDic[a].Result)) <= float(value) and discreteDic[a].ResultDate == discreteDic1[b].ResultDate == discreteDic2[c].ResultDate == discreteDic3[d].ResultDate and twelveHourCheck(discreteDic[a].ResultDate, discreteDic4) is True:
+                        matchingDate = datetimeFromUtcToLocal(discreteDic[a].ResultDate)
+                        matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
+                        matchedList.append(dataConversion(None, matchingDate + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
+                        return matchedList
+                    else:
+                        a = a - 1; b = b - 1; c = c - 1; d = d - 1
+                    --]]
+                end
+            end
+        end
+    else
+        for item in ipairs(score_dvs) do
+            if a > 0 and b > 0 and c > 0 and d > 0 then
+                --[[
+                if discreteDic2[c].Result != 'Oriented' and float(cleanNumbers(discreteDic[a].Result)) <= float(value) and discreteDic[a].ResultDate == discreteDic1[b].ResultDate == discreteDic2[c].ResultDate == discreteDic3[d].ResultDate and twelveHourCheck(discreteDic[a].ResultDate, discreteDic4) is True:
+                    matchingDate = datetimeFromUtcToLocal(discreteDic[a].ResultDate)
+                    matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
+                    matchedList.append(dataConversion(None, matchingDate + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
+                    return matchedList
+                else:
+                    a = a - 1; b = b - 1; c = c - 1; d = d - 1
+                --]]
+            end
+        end
+    end
+
+    return matched_list
+end
 
 
 

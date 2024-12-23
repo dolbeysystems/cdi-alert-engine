@@ -65,7 +65,7 @@ return function(Account)
     --- @field discreteValueName? string The name of the discrete value to search for
     --- @field discreteValueNames? string[] The names of the discrete values to search for
     --- @field daysBack number? The number of days back to search for discrete values (default 7)
-    --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
+    --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
     --- Get all discrete values in the account that match some criteria and are ordered by date
@@ -85,7 +85,12 @@ return function(Account)
         for _, dv_name in ipairs(discrete_value_names) do
             local discrete_values_for_name = account:find_discrete_values(dv_name)
             for i = 1, #discrete_values_for_name do
-                if module.DateIsLessThanXDaysAgo(discrete_values_for_name[i].result_date, days_back) and (predicate == nil or predicate(discrete_values_for_name[i])) then
+                local dv = discrete_values_for_name[i]
+                local result_as_number =
+                    dv.result and
+                    tonumber(string.gsub(dv.result, "[<>]", "")) or
+                    nil
+                if module.DateIsLessThanXDaysAgo(discrete_values_for_name[i].result_date, days_back) and (predicate == nil or predicate(dv, result_as_number)) then
                     table.insert(discrete_values, discrete_values_for_name[i])
                 end
             end

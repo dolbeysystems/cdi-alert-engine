@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -16,9 +15,6 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
-local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -67,34 +63,6 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
-    local caution_code_doc = {
-        "Conference Note Wound/Skin/Ostomy Registered Nurse",
-        "Progress Notes Burn/Wound Nursing Assistant",
-        "Conference Note Burn/Wound Registered Nurse",
-        "Consult Note Wound/Skin/Ostomy Registered Nurse",
-        "Consult Follow-up Wound/Skin/Ostomy Registered Nurse",
-        "Addendum Note Wound Registered Nurse",
-        "Progress Notes Burn/Wound Registered Nurse",
-        "Addendum Note Wound/Skin/Ostomy Registered Nurse",
-        "Progress Notes Burn/Wound MA Student",
-        "Result Encounter Note Wound Registered Nurse",
-        "Addendum Note Burn/Wound Certified-MA",
-        "Handoff Burn/Wound Registered Nurse",
-        "Addendum Note Burn/Wound Registered Nurse",
-        "Code Blue Burn/Wound Registered Nurse",
-        "Addendum Note Burn/Wound Medical Assistant",
-        "Wound Care Note",
-        "Wound Care Progress Note",
-        "Miscellaneous Wound Registered Nurse",
-        "Wound/Skin/Ostomy Registered Nurse",
-        "Nursing Shift Summary Wound/Skin/Ostomy Registered Nurse",
-        "RN Care Note Wound Registered Nurse",
-        "Progress Notes Wound Registered Nurse",
-        "Progress Notes Wound/Skin/Ostomy Registered Nurse",
-        "Progress Notes Burn/Wound Registered Nurse",
-        "Progress Notes Burn/Wound Licensed Nurse",
-        "Consult Note Wound/Skin/Ostomy Registered Nurse"
-    }
     local unspec = 0
 
 
