@@ -1,4 +1,20 @@
 ##################################################################################################################
+#Determine if alert was triggered before and if lacking had been triggered
+for alert in account.MatchedCriteriaGroups or []:
+    if alert.CriteriaGroup == 'Pneumonia':
+        alertTriggered = True
+        validated = alert.IsValidated
+        outcome = alert.Outcome
+        subtitle = alert.Subtitle
+        reason = alert.Reason
+        if outcome == 'AUTORESOLVED' or reason == 'Previously Autoresolved':
+            triggerAlert = False
+        for alertLink in alert.Links:
+            if alertLink.LinkText == 'Documentation Includes':
+                for links in alertLink.Links:
+                    if re.search(r'\bAssigned\b', links.LinkText, re.IGNORECASE):
+                        assignedCode = True
+        break
 #Evaluation Script - Pneumonia
 #
 #This script checks an account to see if it matches criteria to be alerted for Pneumonia
