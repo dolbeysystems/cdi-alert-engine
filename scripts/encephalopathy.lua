@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -86,7 +85,6 @@ local dv_c_blood = { "" }
 local dv_c_urine = { "BACTERIA (/HPF)" }
 local dv_cannabinoid_screen = { "CANNABINOIDS UR", "Cannabinoids (THC) UR" }
 local dv_cocaine_screen = { "COCAINE URINE", "COCAINE UR CONF" }
-local dv_fentanyl_screen = { "FENTANYL URINE", "FENTANYL UR" }
 local dv_methadone_screen = { "METHADONE URINE", "METHADONE UR" }
 local dv_opiate_screen = { "OPIATES URINE", "OPIATES UR" }
 local dv_oxycodone_screen = { "OXYCODONE UR", "OXYCODONE URINE" }
@@ -106,19 +104,6 @@ local dv_ua_bacteria = { "UA Bacteria (/HPF)" }
 --- @param consecutive boolean
 --- @return CdiAlertLink[]
 local function glasgow_linked_values(value, consecutive)
-    local clean_numbers = function(num) return tonumber(string.gsub(num, "[<>]", "")) end
-    local twelve_hour_check = function(date_string, oxygen_dvs_)
-        local date_int = dates.date_string_to_int(date_string)
-        for _, dv in ipairs(oxygen_dvs_) do
-            local dv_date_int = dates.date_string_to_int(dv.result_date)
-            local start_date = dv_date_int - (12 * 3600)
-            local end_date = dv_date_int - (12 * 3600)
-            if start_date <= date_int and date_int <= end_date then
-                return false
-            end
-        end
-        return true
-    end
     local score_dvs = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_glasgow_coma_scale,
         predicate = function(dv_, num) return num ~= nil end
@@ -141,88 +126,115 @@ local function glasgow_linked_values(value, consecutive)
     }
 
     local matched_list = {}
-    local matching_date = nil
-    local matching_date1 = nil
-    local matching_date2 = nil
     local a = #score_dvs
     local b = #eye_dvs
     local c = #verbal_dvs
     local d = #motor_dvs
-    local e = #oxygen_dvs
+    local w = a - 1
+    local x = b - 1
+    local y = c - 1
+    local z = d - 1
+
+    local clean_numbers = function(num) return tonumber(string.gsub(num, "[<>]", "")) end
+    local twelve_hour_check = function(date_string, oxygen_dvs_)
+        local date_int = dates.date_string_to_int(date_string)
+        for _, dv in ipairs(oxygen_dvs_) do
+            local dv_date_int = dates.date_string_to_int(dv.result_date)
+            local start_date = dv_date_int - (12 * 3600)
+            local end_date = dv_date_int - (12 * 3600)
+            if start_date <= date_int and date_int <= end_date then
+                return false
+            end
+        end
+        return true
+    end
+    local function get_start_link()
+        if
+            a > 0 and b > 0 and c > 0 and d > 0 and
+            eye_dvs[b].result ~= 'Oriented' and
+            clean_numbers(score_dvs[a].result) <= value and
+            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(eye_dvs[b].result_date) and
+            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(verbal_dvs[c].result_date) and
+            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(motor_dvs[d].result_date) and
+            twelve_hour_check(score_dvs[a].result_date, oxygen_dvs)
+        then
+            local matching_date = score_dvs[a].result_date
+            local link = cdi_alert_link()
+            link.discrete_value_id = score_dvs[a].unique_id
+            link.link_text =
+                matching_date ..
+                " Total GCS = " .. score_dvs[a].result ..
+                " (Eye Opening: " .. eye_dvs[b].result ..
+                ", Verbal Response: " .. verbal_dvs[c].result ..
+                ", Motor Response: " .. motor_dvs[d].result .. ")"
+            return link
+        end
+        return nil
+    end
+
+    local function get_last_link()
+        if
+            w > 0 and x > 0 and y > 0 and z > 0 and
+            eye_dvs[x].result ~= 'Oriented' and
+            clean_numbers(score_dvs[w].result) <= value and
+            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(eye_dvs[x].result_date) and
+            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(verbal_dvs[y].result_date) and
+            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(motor_dvs[z].result_date) and
+            twelve_hour_check(score_dvs[w].result_date, oxygen_dvs)
+        then
+            local matching_date = score_dvs[w].result_date
+            local link = cdi_alert_link()
+            link.discrete_value_id = score_dvs[w].unique_id
+            link.link_text =
+                matching_date ..
+                " Total GCS = " .. score_dvs[w].result ..
+                " (Eye Opening: " .. eye_dvs[x].result ..
+                ", Verbal Response: " .. verbal_dvs[y].result ..
+                ", Motor Response: " .. motor_dvs[z].result .. ")"
+            return link
+        end
+        return nil
+    end
 
     if consecutive then
-        local w = a - 1
-        local x = b - 1
-        local y = c - 1
-        local z = d - 1
         if a >= 1 then
-            for item in ipairs(score_dvs) do
-                if
-                    a > 0 and b > 0 and c > 0 and d > 0 and w > 0 and x > 0 and y > 0 and z > 0 and
-                    eye_dvs[b].result ~= 'Oriented' and clean_numbers(score_dvs[a].result) <= value and
-                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(eye_dvs[b].result_date) and
-                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(verbal_dvs[c].result_date) and
-                    dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(motor_dvs[d].result_date) and
-                    twelve_hour_check(score_dvs[a].result_date, oxygen_dvs) and
-                    eye_dvs[x].result ~= 'Oriented' and clean_numbers(score_dvs[w].result) <= value and
-                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(eye_dvs[x].result_date) and
-                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(verbal_dvs[y].result_date) and
-                    dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(motor_dvs[z].result_date) and
-                    twelve_hour_check(score_dvs[w].result_date, oxygen_dvs)
-                then
-                    matching_date1 = score_dvs[a].result_date
-                    matching_date2 = score_dvs[w].result_date
-                    local link1 = cdi_alert_link()
-                    link1.discrete_value_id = score_dvs[a].unique_id
-                    link1 = 
+            for _ in 1, #score_dvs do
+                local start_link = get_start_link()
+                local last_link = get_last_link()
 
-                    --[[
-                    matchedList.append(dataConversion(None, matchingDate1 + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
-                    matchedList.append(dataConversion(None, matchingDate2 + " Total GCS = " + str(discreteDic[w].Result) + " (Eye Opening: " + str(discreteDic1[x].Result) + ", Verbal Response: " + str(discreteDic2[y].Result) + ", Motor Response: " + str(discreteDic3[z].Result) + ")", None, discreteDic[w]._id, glasgow, 0, False))
-                    --]]
+                if start_link ~= nil and last_link ~= nil then
+                    table.insert(matched_list, start_link)
+                    table.insert(matched_list, last_link)
                     return matched_list
                 else
-                    a = a - 1
-                    b = b - 1
-                    c = c - 1
-                    d = d - 1
-                    w = w - 1
-                    x = x - 1
-                    y = y - 1
-                    z = z - 1
+                    a = a - 1; b = b - 1; c = c - 1; d = d - 1;
+                    w = w - 1; x = x - 1; y = y - 1; z = z - 1;
                 end
             end
         else
-            for item in ipairs(score_dvs) do
-                if a > 0 and b > 0 and c > 0 and d > 0 then
-                    --[[
-                    if discreteDic2[c].Result != 'Oriented' and float(cleanNumbers(discreteDic[a].Result)) <= float(value) and discreteDic[a].ResultDate == discreteDic1[b].ResultDate == discreteDic2[c].ResultDate == discreteDic3[d].ResultDate and twelveHourCheck(discreteDic[a].ResultDate, discreteDic4) is True:
-                        matchingDate = datetimeFromUtcToLocal(discreteDic[a].ResultDate)
-                        matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-                        matchedList.append(dataConversion(None, matchingDate + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
-                        return matchedList
-                    else:
-                        a = a - 1; b = b - 1; c = c - 1; d = d - 1
-                    --]]
+            for _ in 1, #score_dvs do
+                local start_link = get_start_link()
+
+                if start_link ~= nil then
+                    table.insert(matched_list, start_link)
+                    return matched_list
+                else
+                    a = a - 1; b = b - 1; c = c - 1; d = d - 1;
                 end
             end
         end
     else
-        for item in ipairs(score_dvs) do
-            if a > 0 and b > 0 and c > 0 and d > 0 then
-                --[[
-                if discreteDic2[c].Result != 'Oriented' and float(cleanNumbers(discreteDic[a].Result)) <= float(value) and discreteDic[a].ResultDate == discreteDic1[b].ResultDate == discreteDic2[c].ResultDate == discreteDic3[d].ResultDate and twelveHourCheck(discreteDic[a].ResultDate, discreteDic4) is True:
-                    matchingDate = datetimeFromUtcToLocal(discreteDic[a].ResultDate)
-                    matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-                    matchedList.append(dataConversion(None, matchingDate + " Total GCS = " + str(discreteDic[a].Result) + " (Eye Opening: " + str(discreteDic1[b].Result) + ", Verbal Response: " + str(discreteDic2[c].Result) + ", Motor Response: " + str(discreteDic3[d].Result) + ")", None, discreteDic[a]._id, glasgow, 0, False))
-                    return matchedList
-                else:
-                    a = a - 1; b = b - 1; c = c - 1; d = d - 1
-                --]]
+        for _ in 1, #score_dvs do
+            local start_link = get_start_link()
+
+            if start_link ~= nil then
+                table.insert(matched_list, start_link)
+                return matched_list
+            else
+                a = a - 1; b = b - 1; c = c - 1; d = d - 1;
             end
         end
     end
-
     return matched_list
 end
 
@@ -626,27 +638,27 @@ if not existing_alert or not existing_alert.validated then
 
     -- Vitals
     local vital_vars = {}
-    vital_vars.diastolic_hypertensive_crisis_discrete_value_names = links.get_discrete_value_one_of_link {
+    vital_vars.diastolic_hypertensive_crisis_discrete_value_names = links.get_discrete_value_link {
         discreteValueNames = dv_dbp,
         text = "Diastolic Blood Pressure",
         predicate = calc_dbp1
     }
-    vital_vars.systolic_hypertensive_crisis_discrete_value_names = links.get_discrete_value_one_of_link {
+    vital_vars.systolic_hypertensive_crisis_discrete_value_names = links.get_discrete_value_link {
         discreteValueNames = dv_sbp,
         text = "Systolic Blood Pressure",
         predicate = calc_sbp1
     }
-    vital_vars.low_pulse_oximetry_discrete_value_names = links.get_discrete_value_one_of_link {
+    vital_vars.low_pulse_oximetry_discrete_value_names = links.get_discrete_value_link {
         discreteValueNames = dv_sp_o2,
         text = "Sp02",
         predicate = calc_sp_o21
     }
-    vital_vars.high_temp_discrete_value_names = links.get_discrete_value_one_of_link {
+    vital_vars.high_temp_discrete_value_names = links.get_discrete_value_link {
         discreteValueNames = dv_temperature,
         text = "Temperature",
         predicate = calc_temperature1
     }
-    vital_vars.temp2_discrete_value_names = links.get_discrete_value_one_of_link {
+    vital_vars.temp2_discrete_value_names = links.get_discrete_value_link {
         discreteValueNames = dv_temperature,
         text = "Temperature",
         predicate = calc_temperature2
@@ -719,318 +731,501 @@ if not existing_alert or not existing_alert.validated then
     }
 
     -- Neurologic Change Indicators Count
+    local nci = 0
     if documented_dx_vars.psychosis_abs then
         clinical_evidence_header:add_link(documented_dx_vars.psychosis_abs)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.r410_code then
         clinical_evidence_header:add_link(documented_dx_vars.r410_code)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.r4182_code then
         clinical_evidence_header:add_link(documented_dx_vars.r4182_code)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.obtunded_abs then
         clinical_evidence_header:add_link(documented_dx_vars.obtunded_abs)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.r401_code then
         clinical_evidence_header:add_link(documented_dx_vars.r401_code)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.coma_abs then
         clinical_evidence_header:add_link(documented_dx_vars.coma_abs)
-        NCI = NCI + 1
+        nci = nci + 1
     end
     if documented_dx_vars.ch_baseline_mental_status_abs then
         clinical_evidence_header:add_link(documented_dx_vars.ch_baseline_mental_status_abs)
-        NCI = NCI + 1
+        nci = nci + 1
     end
 
-    --[[
-    #Abstracting Glasgow based on NCI score
-    glasgowComaScorediscreteValueNames = []
-    if (Dementia1 is not None or Dementia2 is not None or Dementia3 is not None or alzheimersNeg is not None) and chBaselineMenStatusAbs is None:
-        if NCI > 0:
-            glasgowComaScorediscreteValueNames = GlasgowLinkedValues(dict(maindiscreteDic), dvGlasgowComaScale, dvGlasgowEyeOpening, dvGlasgowVerbal, dvGlasgowMotor, dvOxygenTherapy, calcGlasgowComaScale2, False)
-        elif NCI == 0:
-            glasgowComaScorediscreteValueNames = GlasgowLinkedValues(dict(maindiscreteDic), dvGlasgowComaScale, dvGlasgowEyeOpening, dvGlasgowVerbal, dvGlasgowMotor, dvOxygenTherapy, calcGlasgowComaScale2, True)
+    -- Abstracting glasgow based on NCI score
+    local glasgow_coma_score_links =
+        glasgow_linked_values(
+            (
+                negation_vars.dementia1 or
+                negation_vars.dementia2 or
+                negation_vars.dementia3 or
+                negation_vars.alzheimers_neg and
+                negation_vars.ch_baseline_mental_status_abs == nil
+            ) and num_glasgow_coma_scale2 or num_glasgow_coma_scale1,
+            nci == 0
+        )
 
-    else:
-        if NCI > 0:
-            glasgowComaScorediscreteValueNames = GlasgowLinkedValues(dict(maindiscreteDic), dvGlasgowComaScale, dvGlasgowEyeOpening, dvGlasgowVerbal, dvGlasgowMotor, dvOxygenTherapy, calcGlasgowComaScale1, False)
-        elif NCI == 0:
-            glasgowComaScorediscreteValueNames = GlasgowLinkedValues(dict(maindiscreteDic), dvGlasgowComaScale, dvGlasgowEyeOpening, dvGlasgowVerbal, dvGlasgowMotor, dvOxygenTherapy, calcGlasgowComaScale1, True)
-    --]]
+    -- Clinical Indicators Count
+    local ci = 0
+    if lab_sub_vars.serum_ammonia_dvs then
+        ci = ci + 1
+    end
+    if vital_vars.high_temp_discrete_value_names or vital_vars.temp2_discrete_value_names then
+        vital_signs_intake_header:add_link(vital_vars.high_temp_discrete_value_names)
+        ci = ci + 1
+    end
+    if abg_vars.low_arterial_blood_ph_dvs then
+        ci = ci + 1
+    end
+    if lab_vars.positive_cerebrospinal_fluid_culture_abs then
+        laboratory_studies_header:add_link(lab_vars.positive_cerebrospinal_fluid_culture_abs)
+        ci = ci + 1
+    end
+    if lab_sub_vars.serum_sodium1_dvs or lab_sub_vars.serum_sodium2_dvs then
+        ci = ci + 1
+    end
+    if lab_vars.uremia_abs then
+        laboratory_studies_header:add_link(lab_vars.uremia_abs)
+        ci = ci + 1
+    end
+    if vital_vars.diastolic_hypertensive_crisis_discrete_value_names or vital_vars.systolic_hypertensive_crisis_discrete_value_names then
+        vital_signs_intake_header:add_link(vital_vars.diastolic_hypertensive_crisis_discrete_value_names)
+        vital_signs_intake_header:add_link(vital_vars.systolic_hypertensive_crisis_discrete_value_names)
+        ci = ci + 1
+    end
+    if lab_sub_vars.serum_calcium1_dvs or lab_sub_vars.serum_calcium2_dvs then
+        ci = ci + 1
+    end
+    if documented_dx_vars.cerebral_edema_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.cerebral_edema_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.cerebral_ischemia_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.cerebral_ischemia_abs)
+        ci = ci + 1
+    end
+    if abg_vars.pao2_dvs or lab_vars.r0902_code then
+        vital_signs_intake_header:add_link(lab_vars.r0902_code)
+        ci = ci + 1
+    end
+    if vital_vars.low_pulse_oximetry_discrete_value_names then
+        vital_signs_intake_header:add_link(vital_vars.low_pulse_oximetry_discrete_value_names)
+        ci = ci + 1
+    end
+    if lab_sub_vars.high_blood_glucose_dvs or lab_sub_vars.high_blood_glucose_poc_dvs or lab_vars.e162_code or lab_sub_vars.low_blood_glucose_dvs or lab_sub_vars.low_blood_glucose_poc_dvs then
+        laboratory_studies_header:add_link(lab_vars.e162_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.opioid_withdrawal_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.opioid_withdrawal_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.sepsis_code then
+        clinical_evidence_header:add_link(documented_dx_vars.sepsis_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.alcohol_withdrawal_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.alcohol_withdrawal_abs)
+        ci = ci + 1
+    end
+    if
+        documented_dx_vars.acute_subacute_hepatic_fail_code or
+        documented_dx_vars.alcohol_heptac_fail_code or
+        documented_dx_vars.chronic_hepatic_failure_code or
+        documented_dx_vars.hepatic_failure_code or
+        documented_dx_vars.k712_code or
+        documented_dx_vars.toxic_liver_disease_code
+    then
 
-    -- TODO: Stopped here due to needing to look into the GlasgowLinkedValues function
-
-
-    --[[
-    #Clinical Indicators Count
-    if serumAmmoniaDV is not None: CI += 1
-    if highTempDV is not None or temp2DV is not None:
-        if highTempDV is not None: vitals.Links.Add(highTempDV)
-        CI += 1
-    if lowArterialBloodPHDV is not None: CI += 1
-    if positiveCerebrospinalFluidCultureAbs is not None: labs.Links.Add(positiveCerebrospinalFluidCultureAbs); CI += 1
-    if serumSodium1DV is not None or serumSodium2DV is not None:
-        CI += 1
-    if uremiaAbs is not None: labs.Links.Add(uremiaAbs); CI += 1
-    if (
-        diastolicHyperTensiveCrisisDV is not None or
-        systolicHyperTensiveCrisisDV is not None
-    ):
-        if diastolicHyperTensiveCrisisDV is not None: vitals.Links.Add(diastolicHyperTensiveCrisisDV)
-        if systolicHyperTensiveCrisisDV is not None: vitals.Links.Add(systolicHyperTensiveCrisisDV)
-        CI += 1
-    if serumCalcium1DV is not None or serumCalcium2DV is not None:
-        CI += 1
-    if cerebralEdemaAbs is not None: abs.Links.Add(cerebralEdemaAbs); CI += 1
-    if cerebralIschemiaAbs is not None: abs.Links.Add(cerebralIschemiaAbs); CI += 1
-    if pao2DV is not None or r0902Code is not None:
-        if r0902Code is not None: vitals.Links.Add(r0902Code)
-        CI += 1
-    if lowPulseOximetryDV is not None: vitals.Links.Add(lowPulseOximetryDV); CI += 1
-    if (
-        (highBloodGlucoseDV is not None or
-        highBloodGlucosePOCDV is not None or
-        e162Code is not None) or
-        (lowBloodGlucoseDV is not None or
-        lowBloodGlucosePOCDV is not None)
-    ):
-        if e162Code is not None: labs.Links.Add(e162Code)
-        CI += 1
-    if opioidWithdrawalAbs is not None: abs.Links.Add(opioidWithdrawalAbs); CI += 1
-    if sepsisCode is not None: abs.Links.Add(sepsisCode); CI += 1
-    if alcoholWithdrawalAbs is not None: abs.Links.Add(alcoholWithdrawalAbs); CI += 1
-    if (
-        acuteSubacuteHepaticFailCode is not None or
-        AlcoholHeptacFailCode is not None or
-        chronicHepaticFailureCode is not None or
-        hepaticFailureCode is not None or
-        k712Code is not None or
-        toxicLiverDiseaseCode is not None
-    ):
-        if acuteSubacuteHepaticFailCode is not None: abs.Links.Add(acuteSubacuteHepaticFailCode)
-        if AlcoholHeptacFailCode is not None: abs.Links.Add(AlcoholHeptacFailCode)
-        if chronicHepaticFailureCode is not None: abs.Links.Add(chronicHepaticFailureCode)
-        if hepaticFailureCode is not None: abs.Links.Add(hepaticFailureCode)
-        if k712Code is not None: abs.Links.Add(k712Code)
-        if toxicLiverDiseaseCode is not None: abs.Links.Add(toxicLiverDiseaseCode)
-        CI += 1
-    if highSerumBloodUreaNitrogenDV is not None: CI += 1
-    if opiodidOverdoseAbs is not None: abs.Links.Add(opiodidOverdoseAbs); CI += 1
-    if stimulantIntoxication is not None: abs.Links.Add(stimulantIntoxication); CI += 1
-    if f1510Code is not None: abs.Links.Add(f1510Code); CI += 1
-    if heavyMetalPoisioningAbs is not None: abs.Links.Add(heavyMetalPoisioningAbs); CI += 1
-    if infectionAbs is not None: abs.Links.Add(infectionAbs); CI += 1
-    if acuteKidneyFailureAbs is not None: abs.Links.Add(acuteKidneyFailureAbs); CI += 1
-    if encephalopathyMedicationAbs is not None: meds.Links.Add(encephalopathyMedicationAbs); CI += 1
-    if antiviralAbs is not None or antiviralMed is not None:
-        if antiviralMed is not None: meds.Links.Add(antiviralMed)
-        if antiviralAbs is not None: meds.Links.Add(antiviralAbs)
-        CI += 1
-    if antifungalAbs is not None or antifungalMed is not None:
-        if antifungalMed is not None: meds.Links.Add(antifungalMed)
-        if antifungalAbs is not None: meds.Links.Add(antifungalAbs)
-        CI += 1
-    if antibioticAbs is not None or antibioticMed is not None or antibiotic2Abs is not None or antibiotic2Med is not None:
-        if antibioticMed is not None: meds.Links.Add(antibioticMed)
-        if antibioticAbs is not None: meds.Links.Add(antibioticAbs)
-        if antibiotic2Med is not None: meds.Links.Add(antibiotic2Med)
-        if antibiotic2Abs is not None: meds.Links.Add(antibiotic2Abs)
-        CI += 1
-    if anticonvulsantMed is not None or anticonvulsantAbs is not None:
-        if anticonvulsantMed is not None: meds.Links.Add(anticonvulsantMed)
-        if anticonvulsantAbs is not None: meds.Links.Add(anticonvulsantAbs)
-        CI += 1
-    if dextroseMed is not None: meds.Links.Add(dextroseMed); CI += 1
-    if g0481Code is not None: abs.Links.Add(g0481Code); CI += 1
-    if i160Code is not None: abs.Links.Add(i160Code); CI += 1
-    if typeIDiabeticKeto is not None: abs.Links.Add(typeIDiabeticKeto); CI += 1
-    if typeIIDiabeticKeto is not None: abs.Links.Add(typeIIDiabeticKeto); CI += 1
-    if e1100Code is not None: abs.Links.Add(e1100Code); CI += 1
-    if e1101Code is not None: abs.Links.Add(e1101Code); CI += 1
-    if f101Codes is not None: abs.Links.Add(f101Codes); CI += 1
-    if f102Codes is not None: abs.Links.Add(f102Codes); CI += 1
-    if s07Codes is not None: abs.Links.Add(s07Codes); CI += 1
-    if influenzaAAbs is not None: abs.Links.Add(influenzaAAbs); CI += 1
-    if e8841Code is not None: abs.Links.Add(e8841Code); CI += 1
-    if e8840Code is not None: abs.Links.Add(e8840Code); CI += 1
-    if e035Code is not None: abs.Links.Add(e035Code); CI += 1
-    if f29Code is not None: abs.Links.Add(f29Code); CI += 1
-    if severeMalnutrition is not None: abs.Links.Add(severeMalnutrition); CI += 1
-    if s06Codes is not None: abs.Links.Add(s06Codes); CI += 1
-    if cbloodDV is not None: CI += 1
-    if uaBacteriaDV is not None: CI += 1
-    if urineDV is not None: CI += 1
-    if serumCreatinine1DV is not None: CI += 1
-    if pco2DV is not None: CI += 1
-    if (
-        t36Codes is not None or 
-        t37Codes is not None or 
-        t38Codes is not None or 
-        t39Codes is not None or 
-        t40Codes is not None or 
-        t41Codes is not None or 
-        t42Codes is not None or 
-        t43Codes is not None or 
-        t44Codes is not None or 
-        t45Codes is not None or 
-        t46Codes is not None or 
-        t47Codes is not None or 
-        t48Codes is not None or 
-        t49Codes is not None or 
-        t50Codes is not None
-    ):
-        CI += 1
-        if t36Codes is not None: abs.Links.Add(t36Codes)
-        if t37Codes is not None: abs.Links.Add(t37Codes)
-        if t38Codes is not None: abs.Links.Add(t38Codes)
-        if t39Codes is not None: abs.Links.Add(t39Codes)
-        if t40Codes is not None: abs.Links.Add(t40Codes)
-        if t41Codes is not None: abs.Links.Add(t41Codes)
-        if t42Codes is not None: abs.Links.Add(t42Codes)
-        if t43Codes is not None: abs.Links.Add(t43Codes)
-        if t44Codes is not None: abs.Links.Add(t44Codes)
-        if t45Codes is not None: abs.Links.Add(t45Codes)
-        if t46Codes is not None: abs.Links.Add(t46Codes)
-        if t47Codes is not None: abs.Links.Add(t47Codes)
-        if t48Codes is not None: abs.Links.Add(t48Codes)
-        if t49Codes is not None: abs.Links.Add(t49Codes)
-        if t50Codes is not None: abs.Links.Add(t50Codes)
-    if t51Codes is not None: CI += 1; abs.Links.Add(t51Codes)
-    if t58Codes is not None: CI += 1; abs.Links.Add(t58Codes)
-    if t57Codes is not None: CI += 1; abs.Links.Add(t57Codes)
-    if t56Codes is not None: CI += 1; abs.Links.Add(t56Codes)
-    if amphetamineDrug is not None: drug.Links.Add(amphetamineDrug); CI += 1
-    if barbiturateDrug is not None: drug.Links.Add(barbiturateDrug); CI += 1
-    if benzodiazepineDrug is not None: drug.Links.Add(benzodiazepineDrug); CI += 1
-    if buprenorphineDrug is not None: drug.Links.Add(buprenorphineDrug); CI += 1
-    if cannabinoidDrug is not None: drug.Links.Add(cannabinoidDrug); CI += 1
-    if cocaineDrug is not None: drug.Links.Add(cocaineDrug); CI += 1
-    if methadoneDrug is not None: drug.Links.Add(methadoneDrug); CI += 1
-    if opiateDrug is not None: drug.Links.Add(opiateDrug); CI += 1
-    if oxycodoneDrug is not None: drug.Links.Add(oxycodoneDrug); CI += 1
-    if ethanolDV is not None: labs.Links.Add(ethanolDV); CI += 1
-    if i63Codes is not None: abs.Links.Add(i63Codes); CI += 1
-    --]]
+        clinical_evidence_header:add_link(documented_dx_vars.acute_subacute_hepatic_fail_code)
+        clinical_evidence_header:add_link(documented_dx_vars.alcohol_heptac_fail_code)
+        clinical_evidence_header:add_link(documented_dx_vars.chronic_hepatic_failure_code)
+        clinical_evidence_header:add_link(documented_dx_vars.hepatic_failure_code)
+        clinical_evidence_header:add_link(documented_dx_vars.k712_code)
+        clinical_evidence_header:add_link(documented_dx_vars.toxic_liver_disease_code)
+        ci = ci + 1
+    end
+    if lab_sub_vars.high_serum_blood_urea_nitrogen_dvs then
+        ci = ci + 1
+    end
+    if documented_dx_vars.opiodid_overdose_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.opiodid_overdose_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.stimulant_intoxication then
+        clinical_evidence_header:add_link(documented_dx_vars.stimulant_intoxication)
+        ci = ci + 1
+    end
+    if documented_dx_vars.f1510_code then
+        clinical_evidence_header:add_link(documented_dx_vars.f1510_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.heavy_metal_poisioning_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.heavy_metal_poisioning_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.infection_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.infection_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.acute_kidney_failure_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.acute_kidney_failure_abs)
+        ci = ci + 1
+    end
+    if medication_vars.encephalopathy_medication_abs then
+        treatment_and_monitoring_header:add_link(medication_vars.encephalopathy_medication_abs)
+        ci = ci + 1
+    end
+    if medication_vars.antiviral_med or medication_vars.antiviral_abs then
+        treatment_and_monitoring_header:add_link(medication_vars.antiviral_med)
+        treatment_and_monitoring_header:add_link(medication_vars.antiviral_abs)
+        ci = ci + 1
+    end
+    if medication_vars.antifungal_med or medication_vars.antifungal_abs then
+        treatment_and_monitoring_header:add_link(medication_vars.antifungal_med)
+        treatment_and_monitoring_header:add_link(medication_vars.antifungal_abs)
+        ci = ci + 1
+    end
+    if medication_vars.antibiotic_med or medication_vars.antibiotic_abs or medication_vars.antibiotic2_med or medication_vars.antibiotic2_abs then
+        treatment_and_monitoring_header:add_link(medication_vars.antibiotic_med)
+        treatment_and_monitoring_header:add_link(medication_vars.antibiotic_abs)
+        treatment_and_monitoring_header:add_link(medication_vars.antibiotic2_med)
+        treatment_and_monitoring_header:add_link(medication_vars.antibiotic2_abs)
+        ci = ci + 1
+    end
+    if medication_vars.anticonvulsant_med or medication_vars.anticonvulsant_abs then
+        treatment_and_monitoring_header:add_link(medication_vars.anticonvulsant_med)
+        treatment_and_monitoring_header:add_link(medication_vars.anticonvulsant_abs)
+        ci = ci + 1
+    end
+    if medication_vars.dextrose_med then
+        treatment_and_monitoring_header:add_link(medication_vars.dextrose_med)
+        ci = ci + 1
+    end
+    if documented_dx_vars.g0481_code then
+        clinical_evidence_header:add_link(documented_dx_vars.g0481_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.i160_code then
+        clinical_evidence_header:add_link(documented_dx_vars.i160_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.type_i_diabetic_keto then
+        clinical_evidence_header:add_link(documented_dx_vars.type_i_diabetic_keto)
+        ci = ci + 1
+    end
+    if documented_dx_vars.type_ii_diabetic_keto then
+        clinical_evidence_header:add_link(documented_dx_vars.type_ii_diabetic_keto)
+        ci = ci + 1
+    end
+    if documented_dx_vars.e1100_code then
+        clinical_evidence_header:add_link(documented_dx_vars.e1100_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.e1101_code then
+        clinical_evidence_header:add_link(documented_dx_vars.e1101_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.f101_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.f101_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.f102_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.f102_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.s07_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.s07_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.influenza_a_abs then
+        clinical_evidence_header:add_link(documented_dx_vars.influenza_a_abs)
+        ci = ci + 1
+    end
+    if documented_dx_vars.e8841_code then
+        clinical_evidence_header:add_link(documented_dx_vars.e8841_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.e8840_code then
+        clinical_evidence_header:add_link(documented_dx_vars.e8840_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.e035_code then
+        clinical_evidence_header:add_link(documented_dx_vars.e035_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.f29_code then
+        clinical_evidence_header:add_link(documented_dx_vars.f29_code)
+        ci = ci + 1
+    end
+    if documented_dx_vars.severe_malnutrition then
+        clinical_evidence_header:add_link(documented_dx_vars.severe_malnutrition)
+        ci = ci + 1
+    end
+    if documented_dx_vars.s06_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.s06_codes)
+        ci = ci + 1
+    end
+    if lab_vars.cblood_dv then
+        ci = ci + 1
+    end
+    if lab_vars.ua_bacteria_dv then
+        ci = ci + 1
+    end
+    if lab_vars.urine_dv then
+        ci = ci + 1
+    end
+    if lab_sub_vars.serum_creatinine1_dvs then
+        ci = ci + 1
+    end
+    if abg_vars.pco2_dvs then
+        ci = ci + 1
+    end
+    if
+        documented_dx_vars.t36_codes or
+        documented_dx_vars.t37_codes or
+        documented_dx_vars.t38_codes or
+        documented_dx_vars.t39_codes or
+        documented_dx_vars.t40_codes or
+        documented_dx_vars.t41_codes or
+        documented_dx_vars.t42_codes or
+        documented_dx_vars.t43_codes or
+        documented_dx_vars.t44_codes or
+        documented_dx_vars.t45_codes or
+        documented_dx_vars.t46_codes or
+        documented_dx_vars.t47_codes or
+        documented_dx_vars.t48_codes or
+        documented_dx_vars.t49_codes or
+        documented_dx_vars.t50_codes
+    then
+        clinical_evidence_header:add_link(documented_dx_vars.t36_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t37_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t38_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t39_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t40_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t41_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t42_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t43_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t44_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t45_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t46_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t47_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t48_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t49_codes)
+        clinical_evidence_header:add_link(documented_dx_vars.t50_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.t51_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.t51_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.t58_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.t58_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.t57_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.t57_codes)
+        ci = ci + 1
+    end
+    if documented_dx_vars.t56_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.t56_codes)
+        ci = ci + 1
+    end
+    if drug_vars.amphetamine_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.amphetamine_drug)
+        ci = ci + 1
+    end
+    if drug_vars.barbiturate_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.barbiturate_drug)
+        ci = ci + 1
+    end
+    if drug_vars.benzodiazepine_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.benzodiazepine_drug)
+        ci = ci + 1
+    end
+    if drug_vars.buprenorphine_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.buprenorphine_drug)
+        ci = ci + 1
+    end
+    if drug_vars.cannabinoid_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.cannabinoid_drug)
+        ci = ci + 1
+    end
+    if drug_vars.cocaine_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.cocaine_drug)
+        ci = ci + 1
+    end
+    if drug_vars.methadone_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.methadone_drug)
+        ci = ci + 1
+    end
+    if drug_vars.opiate_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.opiate_drug)
+        ci = ci + 1
+    end
+    if drug_vars.oxycodone_drug then
+        treatment_and_monitoring_header:add_link(drug_vars.oxycodone_drug)
+        ci = ci + 1
+    end
+    if lab_vars.ethanol_dv then
+        laboratory_studies_header:add_link(lab_vars.ethanol_dv)
+        ci = ci + 1
+    end
+    if documented_dx_vars.i63_codes then
+        clinical_evidence_header:add_link(documented_dx_vars.i63_codes)
+        ci = ci + 1
+    end
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    --[[
-    if triggerAlert and subtitle == "Encephalopathy Dx Documented Possibly Lacking Supporting Evidence" and codesExist == 1 and (NCI > 0 or glasgowComaScoreDV):
-        if glasgowComaScoreDV:
-            dc.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, False))
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Glascow Coma Score or NCI Existing on the Account"
-        result.Validated = True
-        AlertConditions = True
+    if
+        existing_alert and
+        subtitle == "Encephalopathy Dx Documented Possibly Lacking Supporting Evidence" and
+        #account_alert_codes == 1 and
+        (nci > 0 or #glasgow_coma_score_links > 0)
+    then
+        if documented_dx_vars.r4182_code then
+            documented_dx_vars.r4182_code.link_text = "Autoclosed Due To - " .. documented_dx_vars.r4182_code.link_text
+            documented_dx_header:add_link(documented_dx_vars.r4182_code)
+        end
+        if #glasgow_coma_score_links > 0 then
+            documented_dx_header:add_text_link("AutoClosed due to most recent Glasgow Coma Score")
+            documented_dx_header:add_text_link("No Documented Signs of Alerted Mental Status")
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Glascow Coma Score or NCI Existing on the Account"
+        Result.validated = true
+        Result.passed = true
 
-    elif triggerAlert and codesExist == 1 and r4182Code is None and glasgowComaScoreDV is None and NCI == 0:
-        for code in codeList:
-            desc = codeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            if tempCode is not None:
-                dc.Links.Add(tempCode)
+    elseif existing_alert and #account_alert_codes == 1 and documented_dx_vars.r4182_code == nil and #glasgow_coma_score_links == 0 and nci == 0 then
+        for _, code in ipairs(account_alert_codes) do
+            local desc = alert_code_dictionary[code]
+            local temp_code = links.get_code_link { code = code, text = desc }
+            if temp_code then
+                documented_dx_header:add_link(temp_code)
                 break
-        if not glasgowComaScoreDV: dc.Links.Add(MatchedCriteriaLink(LinkText1, None, None, None, True))
-        result.Subtitle = "Encephalopathy Dx Documented Possibly Lacking Supporting Evidence"
-        AlertPassed = True
-    
-    elif (
+            end
+        end
+        if #glasgow_coma_score_links == 0 then
+            documented_dx_header:add_text_link("No Documented Signs of Alerted Mental Status")
+        end
+        Result.subtitle = "Encephalopathy Dx Documented Possibly Lacking Supporting Evidence"
+        Result.passed = true
+
+    elseif
         subtitle == "Hepatic Encephalopathy Documented, but No Evidence of Liver Failure Found" and
-        (liverNeg1 is not None or liverNeg2 is not None or liverNeg3 is not None or
-        liverNeg4 is not None or liverNeg5 is not None or liverNeg6 is not None or
-        liverNeg7 is not None) and
-        k7682Code is not None
-    ):
-        if liverNeg1 is not None: dc.Links.Add(liverNeg1)
-        if liverNeg2 is not None: dc.Links.Add(liverNeg2)
-        if liverNeg3 is not None: dc.Links.Add(liverNeg3)
-        if liverNeg4 is not None: dc.Links.Add(liverNeg4)
-        if liverNeg5 is not None: dc.Links.Add(liverNeg5)
-        if liverNeg6 is not None: dc.Links.Add(liverNeg6)
-        if liverNeg7 is not None: dc.Links.Add(liverNeg7)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to Liver Disease/Failure DX Code Existing On Account."
-        result.Validated = True
-        AlertConditions = True
+        (
+            documented_dx_vars.liver_neg1 or
+            documented_dx_vars.liver_neg2 or
+            documented_dx_vars.liver_neg3 or
+            documented_dx_vars.liver_neg4 or
+            documented_dx_vars.liver_neg5 or
+            documented_dx_vars.liver_neg6 or
+            documented_dx_vars.liver_neg7
+        ) and
+        documented_dx_vars.k7682_code
+    then
+        documented_dx_header:add_link(documented_dx_vars.liver_neg1)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg2)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg3)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg4)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg5)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg6)
+        documented_dx_header:add_link(documented_dx_vars.liver_neg7)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to Liver Disease/Failure DX Code Existing On Account."
+        Result.validated = true
+        Result.passed = true
 
-    elif (
-        triggerAlert and
-        k7682Code is not None and
-        (liverNeg1 is None and liverNeg2 is None and liverNeg3 is None and
-         liverNeg4 is None and liverNeg5 is None and liverNeg6 is None and
-         liverNeg7 is None)
-    ):
-        dc.Links.Add(k7682Code)
-        result.Subtitle = "Hepatic Encephalopathy Documented, but No Evidence of Liver Failure Found"
-        AlertPassed = True    
-                
-    elif codesExist > 1 and not (g928Code is not None and g9341Code is not None) or codesExist > 2:
-        for code in codeList:
-            desc = codeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            dc.Links.Add(tempCode)
-        if validated:
-            result.Validated = False
-            result.Outcome = ""
-            result.Reason = "Previously Autoresolved"
-        result.Subtitle = "Encephalopathy Conflicting Dx " + str1
-        AlertPassed = True
-        
-    elif codesExist == 1 or severeAlzheimersAbs is not None or severeDementiaAbs is not None:
-        db.LogEvaluationScriptMessage("One specific code was on the chart, alert failed. " + str(alertTriggered) + " " + str(account._id), scriptName, scriptInstance, "Debug")
-        if alertTriggered:
-            for code in codeList:
-                desc = codeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
+    elseif
+        existing_alert and
+        documented_dx_vars.k7682_code and
+        (
+            not documented_dx_vars.liver_neg1 and
+            not documented_dx_vars.liver_neg2 and
+            not documented_dx_vars.liver_neg3 and
+            not documented_dx_vars.liver_neg4 and
+            not documented_dx_vars.liver_neg5 and
+            not documented_dx_vars.liver_neg6 and
+            not documented_dx_vars.liver_neg7
+        )
+    then
+        documented_dx_header:add_link(documented_dx_vars.k7682_code)
+        Result.subtitle = "Hepatic Encephalopathy Documented, but No Evidence of Liver Failure Found"
+        Result.passed = true
+
+    elseif #account_alert_codes > 1 and not (documented_dx_vars.g928_code and documented_dx_vars.g9341_code) or #account_alert_codes > 2 then
+        for _, code in ipairs(account_alert_codes) do
+            local desc = alert_code_dictionary[code]
+            local temp_code = links.get_code_link { code = code, text = desc }
+            if temp_code then
+                documented_dx_header:add_link(temp_code)
+            end
+        end
+        if existing_alert and existing_alert.validated then
+            Result.validated = false
+            Result.outcome = ""
+            Result.reason = "Previously Autoresolved"
+        end
+        Result.subtitle = "Encephalopathy Conflicting Dx " .. table.concat(account_alert_codes, ", ")
+        Result.passed = true
+
+    elseif #account_alert_codes == 1 or documented_dx_vars.severe_alzheimers_abs or documented_dx_vars.severe_dementia_abs then
+        if existing_alert then
+            for _, code in ipairs(account_alert_codes) do
+                local desc = alert_code_dictionary[code]
+                local temp_code = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. desc }
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
                     break
-            if severeAlzheimersAbs is not None: dc.Links.Add(severeAlzheimersAbs)
-            if severeDementiaAbs is not None: dc.Links.Add(severeDementiaAbs)
-            result.Outcome = "AUTORESOLVED"
-            result.Reason = "Autoresolved due to one Specified Code on the Account"
-            result.Validated = True
-            AlertConditions = True
-            db.LogEvaluationScriptMessage("Alert Autoclosed due to one specific code" + str(account._id), scriptName, scriptInstance, "Debug")
-        else: result.Passed = False
+                end
+            end
+            documented_dx_header:add_link(documented_dx_vars.severe_alzheimers_abs)
+            documented_dx_header:add_link(documented_dx_vars.severe_dementia_abs)
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one Specified Code on the Account"
+            Result.validated = true
+            Result.passed = true
+        else
+            Result.passed = false
+        end
 
-    elif triggerAlert and g9340Code is not None:
-        dc.Links.Add(g9340Code)
-        result.Subtitle = "Unspecified Encephalopathy Dx"
-        AlertPassed = True
+    elseif existing_alert and documented_dx_vars.g9340_code then
+        documented_dx_header:add_link(documented_dx_vars.g9340_code)
+        Result.subtitle = "Unspecified Encephalopathy Dx"
+        Result.passed = true
 
-    elif triggerAlert and (len(glasgowComaScoreDV) > 2 or (len(glasgowComaScoreDV) == 1 and NCI > 0)) and CI > 0:
-        result.Subtitle = "Possible Encephalopathy Dx"
-        AlertPassed = True
+    elseif existing_alert and #glasgow_coma_score_links > 2 or (#glasgow_coma_score_links == 1 and nci > 0) and ci > 0 then
+        Result.subtitle = "Possible Encephalopathy Dx"
+        Result.passed = true
 
-    elif (
-        len(glasgowComaScoreDV) > 0 or
-        (NCI >= 1 and Dementia1 is None and Dementia2 is None and Dementia3 is None and alzheimersNeg is None) or
-        (chBaselineMenStatusAbs is not None and (Dementia1 is not None or Dementia2 is not None or Dementia3 is not None or alzheimersNeg is not None))
-    ):
-        if (chBaselineMenStatusAbs is not None and (Dementia1 is not None or Dementia2 is not None or Dementia3 is not None or alzheimersNeg is not None)):
-            if chBaselineMenStatusAbs is not None: dc.Links.Add(chBaselineMenStatusAbs)
-            if Dementia1 is not None: dc.Links.Add(Dementia1)
-            if Dementia2 is not None: dc.Links.Add(Dementia2)
-            if Dementia3 is not None: dc.Links.Add(Dementia3)
-            if alzheimersNeg is not None: dc.Links.Add(alzheimersNeg)
-        result.Subtitle = "Altered Mental Status"
-        AlertPassed = True
-        
-    else:
-        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-        result.Passed = False
-
-    --]]
+    elseif
+        #glasgow_coma_score_links > 0 or
+        (nci >= 1 and not (documented_dx_vars.dementia1 or documented_dx_vars.dementia2 or documented_dx_vars.dementia3 or documented_dx_vars.alzheimers_neg)) or
+        (documented_dx_vars.ch_baseline_mental_status_abs and (documented_dx_vars.dementia1 or documented_dx_vars.dementia2 or documented_dx_vars.dementia3 or documented_dx_vars.alzheimers_neg))
+    then
+        if documented_dx_vars.ch_baseline_mental_status_abs and (documented_dx_vars.dementia1 or documented_dx_vars.dementia2 or documented_dx_vars.dementia3 or documented_dx_vars.alzheimers_neg) then
+            documented_dx_header:add_link(documented_dx_vars.ch_baseline_mental_status_abs)
+            documented_dx_header:add_link(documented_dx_vars.dementia1)
+            documented_dx_header:add_link(documented_dx_vars.dementia2)
+            documented_dx_header:add_link(documented_dx_vars.dementia3)
+            documented_dx_header:add_link(documented_dx_vars.alzheimers_neg)
+        end
+        Result.subtitle = "Altered Mental Status"
+        Result.passed = true
+    end
 
 
     if Result.passed then
@@ -1038,137 +1233,169 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Abs
-            #1
-            codeValue("R94.01", "Abnormal Electroencephalogram (EEG): [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, abs, True)
-            abstractValue("ACE_CONSULT", "ACE Consult '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 3, abs, True)
-            #4-5
-            abstractValue("AGITATION", "Agitation '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 6, abs, True)
-            #7-12
-            alteredAbs = abstractValue("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 13)
-            if r4182Code is not None:
-                if alteredAbs is not None: alteredAbs.Hidden = True; abs.Links.Add(alteredAbs)
-            elif r4182Code is None and alteredAbs is not None:
-                abs.Links.Add(alteredAbs)
-            codeValue("R47.01", "Aphasia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 14, abs, True)
-            codeValue("R18.8", "Ascities: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 15, abs, True)
-            abstractValue("ATAXIA", "Ataxia '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 16, abs, True)
-            #17-22
-            abstractValue("COMBATIVE", "Combativeness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 23, abs, True)
-            #24-25
-            codeValue("E86.0", "Dehydration: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 26, abs, True)
-            codeValue("F07.81", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 27, abs, True)
-            codeValue("R44.3", "Hallucinations: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 28, abs, True)
-            #29-30
-            codeValue("E87.0", "Hypernatremia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 31, abs, True)
-            #32-35
-            codeValue("R17", "Jaundice: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 36, abs, True)
-            codeValue("R53.83", "Lethargy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 37, abs, True)
-            #38-43
-            abstractValue("ONE_TO_ONE_SUPERVISION", "One to one supervision: '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 44, abs, True)
-            #45-61
-            abstractValue("POSSIBLE_ENCEPHALOPATHY", "Possible Encephalopathy '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 62, abs, True)
-            #63-64
-            abstractValue("RESTLESSNESS", "Restlessness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 65, abs, True)
-            codeValue("R10.811", "Right Upper Quadrant Tenderness: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 66, abs, True)
-            abstractValue("SEIZURE", "Seizure '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 67, abs, True)
-            #68-69
-            codeValue("R47.81", "Slurred Speech: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 70, abs, True)
-            codeValue("R40.0", "Somnolence: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 71, abs, True)
-            #72-74
-            abstractValue("SUNDOWNING", "Sundowning '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 75, abs, True)
-            #76-85
-            codeValue("S09.90", "Unspecified Injury of Head: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 86, abs, True)
-            #Document Links
-            documentLink("CT Head WO", "CT Head WO", 0, ctHeadBrainLinks, True)
-            documentLink("CT Head Stroke Alert", "CT Head Stroke Alert", 0, ctHeadBrainLinks, True)
-            documentLink("CTA Head-Neck", "CTA Head-Neck", 0, ctHeadBrainLinks, True)
-            documentLink("CTA Head", "CTA Head", 0, ctHeadBrainLinks, True)
-            documentLink("CT Head  WWO", "CT Head  WWO", 0, ctHeadBrainLinks, True)
-            documentLink("CT Head  W", "CT Head  W", 0, ctHeadBrainLinks, True)
-            documentLink("MRI Brain WWO", "MRI Brain WWO", 0, mriBrainLinks, True)
-            documentLink("MRI Brain  W and W/O Contrast", "MRI Brain  W and W/O Contrast", 0, mriBrainLinks, True)
-            documentLink("WO", "WO", 0, mriBrainLinks, True)
-            documentLink("MRI Brain W/O Contrast", "MRI Brain W/O Contrast", 0, mriBrainLinks, True)
-            documentLink("MRI Brain W/O Con", "MRI Brain W/O Con", 0, mriBrainLinks, True)
-            documentLink("MRI Brain  W and W/O Con", "MRI Brain  W and W/O Con", 0, mriBrainLinks, True)
-            documentLink("MRI Brain  W", "MRI Brain  W", 0, mriBrainLinks, True)
-            documentLink("MRI Brain  W/ Contrast", "MRI Brain  W/ Contrast", 0, mriBrainLinks, True)
-            documentLink("EEG Report", "EEG Report", 0, eegLinks, True)
-            documentLink("EEG", "EEG", 0, eegLinks, True)
-            #Labs
-            dvValue(dvAlkalinePhos, "Alkaline Phos: [VALUE] (Result Date: [RESULTDATETIME])", calcAlkalinePhos1, 1, labs, True)
-            dvValue(dvBilirubinTotal, "Bilirubin Total: [VALUE] (Result Date: [RESULTDATETIME])", calcBilirubinTotal1, 2, labs, True)
-            if cbloodDV is not None: labs.Links.Add(cbloodDV) #3
-            #4-8
-            if uaBacteriaDV is not None: labs.Links.Add(uaBacteriaDV) #9
-            if urineDV is not None: labs.Links.Add(urineDV) #10
-            #Meds
-            medValue("Anti-Hypoglycemic Agent", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 1, meds, True)
-            #2-11
-            medValue("Benzodiazepine", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 12, meds, True)
-            abstractValue("BENZODIAZEPINE", "Benzodiazepine '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 13, meds, True)
-            #14-15
-            medValue("Haloperidol", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 16, meds, True)
-            abstractValue("HALOPERIDOL", "Haloperidol '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 17, meds, True)
-            medValue("Lactulose", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 18, meds, True)
-            abstractValue("LACTULOSE", "Lactulose '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 19, meds, True)
-            #Vitals
-            multiCodeValue(["F10.220", "F10.221", "F10.229"], "Acute Alcohol Intoxication: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, vitals, True)
-            #2-5
-            if temp2DV is not None: vitals.Links.Add(temp2DV) #6
+            -- Clinical Indicators
+            -- 1
+            clinical_evidence_header:add_code_link("R94.01", "Abnormal Electroencephalogram (EEG)")
+            clinical_evidence_header:add_abstraction_link("ACE_CONSULT", "ACE Consult")
+            -- 4-5
+            clinical_evidence_header:add_abstraction_link("AGITATION", "Agitation")
+            -- 7-12
+            local altered_abs = clinical_evidence_header:add_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
+            if documented_dx_vars.r4182_code then
+                if altered_abs then
+                    altered_abs.hidden = true
+                    clinical_evidence_header:add_link(altered_abs)
+                end
+            elseif altered_abs then
+                clinical_evidence_header:add_link(altered_abs)
+            end
+            clinical_evidence_header:add_code_link("R47.01", "Aphasia")
+            clinical_evidence_header:add_code_link("R18.8", "Ascities")
+            clinical_evidence_header:add_abstraction_link("ATAXIA", "Ataxia")
+            -- 17-22
+            clinical_evidence_header:add_abstraction_link("COMBATIVE", "Combativeness")
+            -- 24-25
+            clinical_evidence_header:add_code_link("E86.0", "Dehydration")
+            clinical_evidence_header:add_code_link("F07.81", "Fatigue")
+            clinical_evidence_header:add_code_link("R44.3", "Hallucinations")
+            -- 29-30
+            clinical_evidence_header:add_code_link("E87.0", "Hypernatremia")
+            -- 32-35
+            clinical_evidence_header:add_code_link("R17", "Jaundice")
+            clinical_evidence_header:add_code_link("R53.83", "Lethargy")
+            -- 38-43
+            clinical_evidence_header:add_abstraction_link("ONE_TO_ONE_SUPERVISION", "One to one supervision")
+            -- 45-61
+            clinical_evidence_header:add_abstraction_link("POSSIBLE_ENCEPHALOPATHY", "Possible Encephalopathy")
+            -- 63-64
+            clinical_evidence_header:add_abstraction_link("RESTLESSNESS", "Restlessness")
+            clinical_evidence_header:add_code_link("R10.811", "Right Upper Quadrant Tenderness")
+            clinical_evidence_header:add_abstraction_link("SEIZURE", "Seizure")
+            -- 68-69
+            clinical_evidence_header:add_code_link("R47.81", "Slurred Speech")
+            clinical_evidence_header:add_code_link("R40.0", "Somnolence")
+            -- 72-74
+            clinical_evidence_header:add_abstraction_link("SUNDOWNING", "Sundowning")
+            -- 76-85
+            clinical_evidence_header:add_code_link("S09.90", "Unspecified Injury of Head")
 
-            #Glasgow
-            if len(glasgowComaScoreDV) > 0:
-                for entry in glasgowComaScoreDV:
-                    glasgow.Links.Add(entry)
-            if glasgowComaScoreDV is None:
-                abstractValue("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 0, glasgow, True)
-            #Sub category links
-            if highBloodGlucoseDV is not None:
-                for entry in highBloodGlucoseDV:
-                    glucose.Links.Add(entry)
-            if highBloodGlucosePOCDV is not None:
-                for entry in highBloodGlucosePOCDV:
-                    glucose.Links.Add(entry)
-            if lowBloodGlucoseDV is not None:
-                for entry in lowBloodGlucoseDV:
-                    glucose.Links.Add(entry)
-            if lowBloodGlucosePOCDV is not None:
-                for entry in lowBloodGlucosePOCDV:
-                    glucose.Links.Add(entry)
-            if serumAmmoniaDV is not None:
-                for entry in serumAmmoniaDV:
-                    ammonia.Links.Add(entry)
-            if highSerumBloodUreaNitrogenDV is not None:
-                for entry in highSerumBloodUreaNitrogenDV:
-                    bun.Links.Add(entry)
-            if serumCalcium1DV is not None:
-                for entry in serumCalcium1DV:
-                    calcium.Links.Add(entry)
-            if serumCalcium2DV is not None:
-                for entry in serumCalcium2DV:
-                    calcium.Links.Add(entry)
-            if serumCreatinine1DV is not None:
-                for entry in serumCreatinine1DV:
-                    creatinine.Links.Add(entry)
-            if serumSodium1DV is not None:
-                for entry in serumSodium1DV:
-                    sodium.Links.Add(entry)
-            if serumSodium2DV is not None:
-                for entry in serumSodium2DV:
-                    sodium.Links.Add(entry)
-            if lowArterialBloodPHDV is not None:
-                for entry in lowArterialBloodPHDV:
-                    ph.Links.Add(entry)
-            if pao2DV is not None:
-                for entry in pao2DV:
-                    p02.Links.Add(entry)
-            if pco2DV is not None:
-                for entry in pco2DV:
-                    pco2.Links.Add(entry)
-            --]]
+            -- Document Links
+            ct_head_brain_header:add_document_link("CT Head WO", "CT Head WO")
+            ct_head_brain_header:add_document_link("CT Head Stroke Alert", "CT Head Stroke Alert")
+            ct_head_brain_header:add_document_link("CTA Head-Neck", "CTA Head-Neck")
+            ct_head_brain_header:add_document_link("CTA Head", "CTA Head")
+            ct_head_brain_header:add_document_link("CT Head  WWO", "CT Head  WWO")
+            ct_head_brain_header:add_document_link("CT Head  W", "CT Head  W")
+            mri_brain_header:add_document_link("MRI Brain WWO", "MRI Brain WWO")
+            mri_brain_header:add_document_link("MRI Brain  W and W/O Contrast", "MRI Brain  W and W/O Contrast")
+            mri_brain_header:add_document_link("WO", "WO")
+            mri_brain_header:add_document_link("MRI Brain W/O Contrast", "MRI Brain W/O Contrast")
+            mri_brain_header:add_document_link("MRI Brain W/O Con", "MRI Brain W/O Con")
+            mri_brain_header:add_document_link("MRI Brain  W and W/O Con", "MRI Brain  W and W/O Con")
+            mri_brain_header:add_document_link("MRI Brain  W", "MRI Brain  W")
+            mri_brain_header:add_document_link("MRI Brain  W/ Contrast", "MRI Brain  W/ Contrast")
+            eeg_header:add_document_link("EEG Report", "EEG Report")
+            eeg_header:add_document_link("EEG", "EEG")
+
+            -- Labs
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_alkaline_phos, "Alkaline Phos", calc_alkaline_phos1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_bilirubin_total, "Bilirubin Total", calc_bilirubin_total1)
+            laboratory_studies_header:add_link(lab_vars.cblood_dv)
+
+            -- Meds
+            treatment_and_monitoring_header:add_medication_link("Anti-Hypoglycemic Agent", "Anti-Hypoglycemic Agent")
+            -- 2-11
+            treatment_and_monitoring_header:add_medication_link("Benzodiazepine", "Benzodiazepine")
+            treatment_and_monitoring_header:add_abstraction_link("BENZODIAZEPINE", "Benzodiazepine")
+            -- 14-15
+            treatment_and_monitoring_header:add_medication_link("Haloperidol", "Haloperidol")
+            treatment_and_monitoring_header:add_abstraction_link("HALOPERIDOL", "Haloperidol")
+            treatment_and_monitoring_header:add_medication_link("Lactulose", "Lactulose")
+            treatment_and_monitoring_header:add_abstraction_link("LACTULOSE", "Lactulose")
+
+            -- Vitals
+            vital_signs_intake_header:add_code_links({ "F10.220", "F10.221", "F10.229" }, "Acute Alcohol Intoxication")
+            -- 2-5
+            vital_signs_intake_header:add_link(vital_vars.temp2_discrete_value_names)
+
+            -- Glasgow
+            if #glasgow_coma_score_links > 0 then
+                for _, entry in ipairs(glasgow_coma_score_links) do
+                    glasgow_header:add_link(entry)
+                end
+            else
+                glasgow_header:add_abstraction_link("LOW_GLASGOW_COMA_SCORE", "Glasgow Coma Score")
+            end
+            if lab_sub_vars.high_blood_glucose_dvs then
+                for _, entry in ipairs(lab_sub_vars.high_blood_glucose_dvs) do
+                    glucose_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.high_blood_glucose_poc_dvs then
+                for _, entry in ipairs(lab_sub_vars.high_blood_glucose_poc_dvs) do
+                    glucose_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.low_blood_glucose_dvs then
+                for _, entry in ipairs(lab_sub_vars.low_blood_glucose_dvs) do
+                    glucose_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.low_blood_glucose_poc_dvs then
+                for _, entry in ipairs(lab_sub_vars.low_blood_glucose_poc_dvs) do
+                    glucose_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_ammonia_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_ammonia_dvs) do
+                    ammonia_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.high_serum_blood_urea_nitrogen_dvs then
+                for _, entry in ipairs(lab_sub_vars.high_serum_blood_urea_nitrogen_dvs) do
+                    bun_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_calcium1_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_calcium1_dvs) do
+                    calcium_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_calcium2_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_calcium2_dvs) do
+                    calcium_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_creatinine1_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_creatinine1_dvs) do
+                    creatinine_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_sodium1_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_sodium1_dvs) do
+                    sodium_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.serum_sodium2_dvs then
+                for _, entry in ipairs(lab_sub_vars.serum_sodium2_dvs) do
+                    sodium_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.low_arterial_blood_ph_dvs then
+                for _, entry in ipairs(lab_sub_vars.low_arterial_blood_ph_dvs) do
+                    ph_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.pao2_dvs then
+                for _, entry in ipairs(lab_sub_vars.pao2_dvs) do
+                    pao2_header:add_link(entry)
+                end
+            end
+            if lab_sub_vars.pco2_dvs then
+                for _, entry in ipairs(lab_sub_vars.pco2_dvs) do
+                    pco2_header:add_link(entry)
+                end
+            end
         end
 
 
