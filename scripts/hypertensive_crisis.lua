@@ -54,8 +54,17 @@ local dv_ts_cocaine = { "COCAINE URINE", "COCAINE UR CONF" }
 --------------------------------------------------------------------------------
 --- Script Specific Functions
 --------------------------------------------------------------------------------
---[[
-def linkedGreaterValues(dvDic, DV1, DV2, value, value2): 120, 180
+local function linked_greater_values()
+    local dv1 = dv_dbp
+    local dv2 = dv_sbp
+    local value = 80
+    local value2 = 120
+
+    local s = 0
+    local d = 0
+    local x = 0
+    local a = 0
+    --[[
     discreteDic = {}
     discreteDic2 = {}
     discreteDic3 = {}
@@ -124,9 +133,15 @@ def linkedGreaterValues(dvDic, DV1, DV2, value, value2): 120, 180
     if len(matchedDBPList) == 0:
         matchedDBPList = [False]
     return [matchedSBPList, matchedDBPList]
---]]
---[[
-def nonLinkedGreaterValues(dvDic, DV1, DV2, value, value2):
+    --]]
+end
+
+local function non_linked_greater_values()
+    local dv1 = dv_dbp
+    local dv2 = dv_sbp
+    local value = 80
+    local value2 = 120
+    --[[
     discreteDic = {}
     discreteDic2 = {}
     discreteDic3 = {}
@@ -184,9 +199,11 @@ def nonLinkedGreaterValues(dvDic, DV1, DV2, value, value2):
     if d > 0 or s > 0:            
         bpSingleLineLookup(dict(dvDic), dict(discreteDic2), dict(discreteDic3))
     return 
---]]
---[[
-def bpSingleLineLookup(dvDic, sbpDic, dbpDic):
+    --]]
+end
+
+local function bp_single_line_lookup(sbpDic, dbpDic)
+    --[[
     discreteDic1 = {}
     discreteDic2 = {}
     dbpDv = None
@@ -236,7 +253,9 @@ def bpSingleLineLookup(dvDic, sbpDic, dbpDic):
             mapDv = 'XX'
         matchedList.append(dataConversion(matchingDate, "[RESULTDATETIME] HR = " + str(hrDv) + ", BP = " + str(sbpDic[item].Result) + "/" + str(dbpDv) + ", MAP = " + str(mapDv), None, sbpDic[item]._id, vitals, 0, True))
     return 
---]]
+    --]]
+end
+
 
 
 --------------------------------------------------------------------------------
