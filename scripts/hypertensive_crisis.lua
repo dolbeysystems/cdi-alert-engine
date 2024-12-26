@@ -20,6 +20,7 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local cdi_alert_link = require "cdi.link"
 
 
 
@@ -52,88 +53,158 @@ local dv_ts_cocaine = { "COCAINE URINE", "COCAINE UR CONF" }
 
 
 --------------------------------------------------------------------------------
+--- Header Variables and Helper Functions
+--------------------------------------------------------------------------------
+local result_links = {}
+local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+local alert_trigger_header = headers.make_header_builder("Alert Trigger", 2)
+local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 3)
+local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake", 4)
+local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 5)
+local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 6)
+
+
+
+--------------------------------------------------------------------------------
 --- Script Specific Functions
 --------------------------------------------------------------------------------
+--- @param sbp_dic DiscreteValue[]
+--- @param dbp_dic DiscreteValue[]
+local function bp_single_line_lookup(sbp_dic, dbp_dic)
+    local map_discrete_values = discrete.get_ordered_discrete_values(dv_map)
+    local heart_rate_discrete_values = discrete.get_ordered_discrete_values(dv_heart_rate)
+    local dbp_dv = nil
+    local hr_dv = nil
+    local map_dv = nil
+    local matching_date = nil
+    local h = #heart_rate_discrete_values
+    local m = #map_discrete_values
+    local matched_list = {}
+    local dvr = nil
+
+    for _, item in ipairs(sbp_dic) do
+        dbp_dv = nil
+        hr_dv = nil
+        map_dv = nil
+        matching_date = dates.date_string_to_int(item.result_date)
+        if m > 0 then
+            for _, item1 in map_discrete_values do
+                if dates.date_string_to_int(item1.result_date) == matching_date then
+                    map_dv = item1.result
+                    break
+                end
+            end
+        end
+        if h > 0 then
+            for _, item2 in heart_rate_discrete_values do
+                if dates.date_string_to_int(item2.result_date) == matching_date then
+                    hr_dv = item2.result
+                    break
+                end
+            end
+        end
+        for _, item3 in ipairs(dbp_dic) do
+            if dates.date_string_to_int(item3.result_date) == matching_date then
+                dbp_dv = item3.result
+                break
+            end
+        end
+
+        if not dbp_dv then dbp_dv = "XX" end
+        if not hr_dv then hr_dv = "XX" end
+        if not map_dv then map_dv = "XX" end
+
+        local link = cdi_alert_link()
+        link.discrete_value_id = item.unique_id
+        link.link_text =
+            item.result_date .. " HR = " .. hr_dv .. ", BP = " .. item.result .. "/" .. dbp_dv .. ", MAP = " .. map_dv
+        vital_signs_intake_header:add_link(link)
+    end
+end
+
 local function linked_greater_values()
-    local dv1 = dv_dbp
-    local dv2 = dv_sbp
     local value = 80
     local value2 = 120
 
+    local dbp_discrete_values = discrete.get_ordered_discrete_values(dv_dbp)
+    local sbp_discrete_values = discrete.get_ordered_discrete_values(dv_sbp)
+    local discrete_dic3 = {}
+    local discrete_dic4 = {}
+    local matched_dbp_list = {}
+    local matched_sbp_list = {}
+
+
     local s = 0
     local d = 0
-    local x = 0
-    local a = 0
-    --[[
-    discreteDic = {}
-    discreteDic2 = {}
-    discreteDic3 = {}
-    discreteDic4 = {}
-    s = 0
-    d = 0
-    x = 0
-    a = 0
-    matchedSBPList = []
-    matchedDBPList = []
-    DateList = []
-    DateList2 = []
+    local x = #dbp_discrete_values
+    local a = #sbp_discrete_values
+    local date_list = {}
+    local date_list2 = {}
 
-    for dv in dvDic or []:
-        dvr = cleanNumbers(dvDic[dv]['Result'])
-        if dvDic[dv]['Name'] in DV1 and dvr is not None:
-                x += 1
-                discreteDic[x] = dvDic[dv]
-        elif dvDic[dv]['Name'] in DV2 and dvr is not None:
-                a += 1
-                discreteDic2[a] = dvDic[dv]
+    if x >= 2 and a >= 2 then
+        for _, item in ipairs(dbp_discrete_values) do
+            local x_item = dbp_discrete_values[x]
+            local a_item = sbp_discrete_values[a]
 
-    if x >= 2 and a >= 2:
-        for item in discreteDic:
-            if x <= 0 or a <= 0:
+            local x_date = dates.date_string_to_int(x_item.result_date)
+            local a_date = dates.date_string_to_int(a_item.result_date)
+
+            if s <= 0 or a <= 0 then
                 break
-            elif (
-                discreteDic[x].ResultDate == discreteDic2[a].ResultDate and
-                float(cleanNumbers(discreteDic[x].Result)) > float(value) and 
-                float(cleanNumbers(discreteDic2[a].Result)) > float(value2) and
-                discreteDic[x].ResultDate not in DateList and 
-                discreteDic2[a].ResultDate not in DateList2
-            ):
-                DateList.append(discreteDic[x].ResultDate)
-                d += 1
-                discreteDic4[d] = discreteDic[x]
-                s += 1
-                discreteDic3[s] = discreteDic2[a]
-                matchedDBPList.append(discreteDic[x].Result)
-                matchedSBPList.append(discreteDic2[a].Result)
-                x = x - 1; a = a - 1
-            elif discreteDic[x].ResultDate != discreteDic2[a].ResultDate:
-                for item in discreteDic2:
-                    if discreteDic[x].ResultDate == discreteDic2[item].ResultDate:
-                        if (    
-                            float(cleanNumbers(discreteDic[x].Result)) > float(value) and 
-                            float(cleanNumbers(discreteDic2[item].Result)) > float(value2) and
-                            discreteDic[x].ResultDate not in DateList and 
-                            discreteDic2[item].ResultDate not in DateList2
-                        ):
-                            DateList.append(discreteDic[x].ResultDate)
-                            d += 1
-                            discreteDic4[d] = discreteDic[x]
-                            s += 1
-                            discreteDic3[s] = discreteDic2[a]
-                            matchedDBPList.append(discreteDic[x].Result)
-                            matchedSBPList.append(discreteDic2[item].Result)
-                            x = x - 1; a = a - 1
-            else:
-                x = x - 1; a = a - 1
-    
-    if d > 0 and s > 0:            
-        bpSingleLineLookup(dict(dvDic), dict(discreteDic3), dict(discreteDic4))
-    if len(matchedSBPList) == 0:
-        matchedSBPList = [False]
-    if len(matchedDBPList) == 0:
-        matchedDBPList = [False]
-    return [matchedSBPList, matchedDBPList]
-    --]]
+            elseif
+                x_date == a_date and
+                x_item.result > value and
+                a_item.result > value2 and
+                not date_list[x_date] and
+                not date_list2[a_date]
+            then
+                date_list[x_date] = true
+                d = d + 1
+                discrete_dic4[d] = x_item
+                s = s + 1
+                discrete_dic3[s] = a_item
+                table.insert(matched_dbp_list, x_item.result)
+                table.insert(matched_sbp_list, a_item.result)
+                x = x - 1
+                a = a - 1
+            elseif x_date ~= a_date then
+                for _, item2 in ipairs(sbp_discrete_values) do
+                    if x_item.result_date == item2.result_date then
+                        if
+                            tonumber(x_item.result) > value and
+                            tonumber(item2.result) > value2 and
+                            not date_list[x_date] and
+                            not date_list2[a_date]
+                        then
+                            date_list[x_date] = true
+                            d = d + 1
+                            discrete_dic4[d] = x_item
+                            s = s + 1
+                            discrete_dic3[s] = item2
+                            table.insert(matched_dbp_list, x_item.result)
+                            table.insert(matched_sbp_list, item2.result)
+                            x = x - 1
+                            a = a - 1
+                        end
+                    end
+                end
+            else
+                x = x - 1
+                a = a - 1
+            end
+        end
+    end
+
+    if d > 0 and s > 0 then
+        bp_single_line_lookup(discrete_dic3, discrete_dic4)
+    end
+    if #matched_sbp_list == 0 then
+        matched_sbp_list = { false }
+    end
+    if #matched_dbp_list == 0 then
+        matched_dbp_list = { false }
+    end
+    return matched_sbp_list, matched_dbp_list
 end
 
 local function non_linked_greater_values()
@@ -141,6 +212,7 @@ local function non_linked_greater_values()
     local dv2 = dv_sbp
     local value = 80
     local value2 = 120
+    
     --[[
     discreteDic = {}
     discreteDic2 = {}
@@ -202,60 +274,6 @@ local function non_linked_greater_values()
     --]]
 end
 
-local function bp_single_line_lookup(sbpDic, dbpDic)
-    --[[
-    discreteDic1 = {}
-    discreteDic2 = {}
-    dbpDv = None
-    hrDv = None
-    mapDv = None
-    matchingDate = None
-    h = 0; m = 0
-    matchedList = []
-    dvr = None
-    #Pull all values for discrete values we need
-    for dv in dvDic or []:
-        dvr = cleanNumbers(dvDic[dv]['Result'])
-        if dvDic[dv]['Name'] in dvMAP and dvr is not None:
-            #Mean Arterial Blood Pressure
-            m += 1
-            discreteDic1[m] = dvDic[dv]
-        elif dvDic[dv]['Name'] in dvHeartRate and dvr is not None:
-            #Heart Rate
-            h += 1
-            discreteDic2[h] = dvDic[dv]
-
-    for item in sbpDic:
-        dbpDv = None
-        hrDv = None
-        mapDv = None
-        matchingDate = sbpDic[item].ResultDate
-        if m > 0:
-            for item1 in discreteDic1:
-                if discreteDic1[item1].ResultDate == matchingDate:
-                    mapDv = discreteDic1[item1].Result
-                    break
-        if h > 0:
-            for item2 in discreteDic2:
-                if discreteDic2[item2].ResultDate == matchingDate:
-                    hrDv = discreteDic2[item2].Result
-                    break
-        for item3 in dbpDic:
-            if dbpDic[item3].ResultDate == matchingDate:
-                dbpDv = dbpDic[item3].Result
-                break
-
-        if dbpDv is None:
-            dbpDv = 'XX'
-        if hrDv is None:
-            hrDv = 'XX'
-        if mapDv is None:
-            mapDv = 'XX'
-        matchedList.append(dataConversion(matchingDate, "[RESULTDATETIME] HR = " + str(hrDv) + ", BP = " + str(sbpDic[item].Result) + "/" + str(dbpDv) + ", MAP = " + str(mapDv), None, sbpDic[item]._id, vitals, 0, True))
-    return 
-    --]]
-end
-
 
 
 --------------------------------------------------------------------------------
@@ -267,17 +285,6 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 if not existing_alert or not existing_alert.validated then
-    --------------------------------------------------------------------------------
-    --- Header Variables and Helper Functions
-    --------------------------------------------------------------------------------
-    local result_links = {}
-    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
-    local alert_trigger_header = headers.make_header_builder("Alert Trigger", 2)
-    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 3)
-    local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake", 4)
-    local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 5)
-    local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 6)
-
     local function compile_links()
         table.insert(result_links, documented_dx_header:build(true))
         table.insert(result_links, alert_trigger_header:build(true))
