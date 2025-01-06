@@ -58,6 +58,20 @@ function module.date_is_less_than_x_days_ago(date_string, days)
 end
 
 --------------------------------------------------------------------------------
+--- Get the date of a certain number of days ago
+---
+--- @param days number The number of days ago
+---
+--- @return number - the date as an integer
+--------------------------------------------------------------------------------
+function module.days_ago(days)
+    --- @diagnostic disable-next-line: param-type-mismatch
+    local now_utc = os.time(os.date("!*t"))
+    local days_in_seconds = days * 24 * 60 * 60
+    return now_utc - days_in_seconds
+end
+
+--------------------------------------------------------------------------------
 --- Check if a date is less than a certain number of minutes ago
 ---
 --- @param date_string string The date string to check
