@@ -37,7 +37,7 @@ local dv_serum_blood_urea_nitrogen = { "BUN (mg/dL)" }
 local calc_serum_blood_urea_nitrogen1 = 23
 local dv_serum_creatinine = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
 local calc_serum_creatinine1 = 1.02
-local calc_serum_creatinine2 = 1.50
+local calc_serum_creatinine2 = function(dv_, num) return num > 1.50 end
 local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)", "TEMPERATURE (C)" }
 local calc_temperature1 = function(dv_, num) return num > 38.3 end
 local dv_urine_sodium = { "URINE SODIUM (mmol/L)" }
@@ -185,65 +185,85 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text, 
         end
     end
 
-    --[[
-    #Check 3
-    if x > 1:
-        abstraction = dvValueMulti(dict(maindiscreteDic), dvSerumCreatinine, "Serum Creatinine: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumCreatinine2, gt, 2, creatinine, False, 10)
-        if len(abstraction or noLabs) > 1:
-            db.LogEvaluationScriptMessage("Creatinine Check 3 Passed " + str(account._id), scriptName, scriptInstance, "Debug")
-            return abstraction
-    return None
-    --]]
+    -- Check 3
+    if x > 1 then
+        local abstraction = links.get_discrete_value_link {
+            discreteValueNames = dv_serum_creatinine,
+            text = "Serum Creatinine",
+            predicate = calc_serum_creatinine2,
+        }
+    end
     return nil
 end
 
 local function is_value_greater_than_three_days(discrete_value_name, value, link_text, category, sequence)
     sequence = sequence or 1
-    --[[
-    dayOne = System.DateTime.Now.AddDays(-1)
-    dayTwo = System.DateTime.Now.AddDays(-2)
-    dayThree = System.DateTime.Now.AddDays(-3)
-    dayFour = System.DateTime.Now.AddDays(-4)
-    discreteDic1 = {}
-    discreteDic2 = {}
-    discreteDic3 = {}
-    discreteDic4 = {}
-    w = 0
-    x = 0
-    y = 0
-    z = 0
-    abstraction = []
-    --]]
-    --[[
-    for dv in dvDic or []:
-        dvr = cleanNumbers(dvDic[dv]['Result'])
-        if dvDic[dv]['Name'] in discreteValueName and dvDic[dv]['Result'] is not None: convertedResult = dvr
-        else: convertedResult = None
-        if convertedResult is not None and convertedResult > value and dvDic[dv]['ResultDate'] <= dayOne:
-            discreteDic1[w] = dvDic[dv]
-        elif convertedResult is not None and convertedResult > value and dayTwo <= dvDic[dv]['ResultDate'] <= dayOne:
-            discreteDic2[x] = dvDic[dv]
-        elif convertedResult is not None and convertedResult > value and dayThree <= dvDic[dv]['ResultDate'] <= dayTwo:
-            discreteDic3[y] = dvDic[dv]
-        elif convertedResult is not None and convertedResult > value and dayFour <= dvDic[dv]['ResultDate'] <= dayThree:
-            discreteDic4[z] = dvDic[dv]
-    --]]
-    --[[
-    if (
-        (w > 0 and x > 0 and y > 0) or
-        (x > 0 and y > 0 and z > 0)
-    ):
-        if w > 0:
-            abstraction.append(dataConversion(discreteDic1[w].ResultDate, linkText, discreteDic1[w].Result, discreteDic1[w].UniqueId or discreteDic1[w]._id, category, sequence, False))
-        if x > 0:
-            abstraction.append(dataConversion(discreteDic2[x].ResultDate, linkText, discreteDic2[x].Result, discreteDic2[x].UniqueId or discreteDic2[x]._id, category, sequence, False))
-        if y > 0:
-            abstraction.append(dataConversion(discreteDic3[y].ResultDate, linkText, discreteDic3[y].Result, discreteDic3[y].UniqueId or discreteDic3[y]._id, category, sequence, False))
-        if z > 0:
-            abstraction.append(dataConversion(discreteDic4[z].ResultDate, linkText, discreteDic4[z].Result, discreteDic4[z].UniqueId or discreteDic4[z]._id, category, sequence, False))
+    local day_one = dates.days_ago(1)
+    local day_two = dates.days_ago(2)
+    local day_three = dates.days_ago(3)
+    local day_four = dates.days_ago(4)
+    local discrete_dic_1 = {}
+    local discrete_dic_2 = {}
+    local discrete_dic_3 = {}
+    local discrete_dic_4 = {}
+    local w = 0
+    local x = 0
+    local y = 0
+    local z = 0
+    local abstraction = {}
+
+    local discrete_values = Account.find_discrete_values(discrete_value_name)
+
+    for _, dv in ipairs(discrete_values) do
+        local dvr = discrete.get_dv_value_number(dv)
+        local date = dates.date_string_to_int(dv.result_date)
+        if dvr and dvr > value and date <= day_one then
+            discrete_dic_1[w] = dv
+        elseif dvr and dvr > value and day_two <= date and date <= day_one then
+            discrete_dic_2[x] = dv
+        elseif dvr and dvr > value and day_three <= date and date <= day_two then
+            discrete_dic_3[y] = dv
+        elseif dvr and dvr > value and day_four <= date and date <= day_three then
+            discrete_dic_4[z] = dv
+        end
+    end
+
+    if (w > 0 and x > 0 and y > 0) or (x > 0 and y > 0 and z > 0) then
+        if w > 0 then
+            local link = cdi_alert_link()
+            link.discrete_value_id = discrete_dic_1[w].unique_id
+            link.discrete_value_name = discrete_dic_1[w].name
+            link.sequence = sequence
+            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_dic_1[w], nil)
+            table.insert(abstraction, link)
+        end
+        if x > 0 then
+            local link = cdi_alert_link()
+            link.discrete_value_id = discrete_dic_2[x].unique_id
+            link.discrete_value_name = discrete_dic_2[x].name
+            link.sequence = sequence
+            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_dic_2[x], nil)
+            table.insert(abstraction, link)
+        end
+        if y > 0 then
+            local link = cdi_alert_link()
+            link.discrete_value_id = discrete_dic_3[y].unique_id
+            link.discrete_value_name = discrete_dic_3[y].name
+            link.sequence = sequence
+            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_dic_3[y], nil)
+            table.insert(abstraction, link)
+        end
+        if z > 0 then
+            local link = cdi_alert_link()
+            link.discrete_value_id = discrete_dic_4[z].unique_id
+            link.discrete_value_name = discrete_dic_4[z].name
+            link.sequence = sequence
+            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_dic_4[z], nil)
+            table.insert(abstraction, link)
+        end
         return abstraction
-    return None
-    --]]
+    end
+    return nil
 end
 
 local function dv_urine_check(discrete_value_name, link_text, sequence, category, abstract)
