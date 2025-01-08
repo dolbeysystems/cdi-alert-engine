@@ -47,7 +47,7 @@ return function(Account)
     --- Check if a discrete value matches a predicate
     ---
     --- @param discrete_value DiscreteValue The discrete value to check
-    --- @param predicate fun(number):boolean The predicate to check the result against
+    --- @param predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
     ---
     --- @return boolean - true if the date is less than the number of hours ago, false otherwise
     --------------------------------------------------------------------------------
@@ -56,7 +56,11 @@ return function(Account)
         if result == nil then
             return false
         else
-            return predicate(result)
+            if predicate == nil then
+                return true
+            else
+                return predicate(discrete_value, result)
+            end
         end
     end
 
@@ -153,7 +157,7 @@ return function(Account)
     --- @field discreteValueName? string The name of the discrete value to search for
     --- @field discreteValueNames? string[] The names of the discrete values to search for
     --- @field date string The date to search for the nearest discrete value to
-    --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
+    --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
     --- Get the discrete value nearest to a date
@@ -185,7 +189,11 @@ return function(Account)
             local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
 
             local diff = math.abs(os.difftime(date, discrete_value_date))
-            if diff < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            local result_as_number =
+                discrete_values_for_name[i].result and
+                tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
+                nil
+            if diff < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i], result_as_number)) then
                 nearest = discrete_values_for_name[i]
                 nearest_diff = diff
             end
@@ -197,7 +205,7 @@ return function(Account)
     --- @field account Account? Account object (uses global account if not provided)
     --- @field discreteValueName string The name of the discrete value to search for
     --- @field date string The date to search for the nearest discrete value to
-    --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
+    --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
     --- Get the next nearest discrete value to a date
@@ -221,8 +229,12 @@ return function(Account)
         local nearest_diff = math.huge
         for i = 1, #discrete_values_for_name do
             local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
+            local result_as_number =
+                discrete_values_for_name[i].result and
+                tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
+                nil
 
-            if discrete_value_date > date and discrete_value_date - date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            if discrete_value_date > date and discrete_value_date - date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i], result_as_number)) then
                 nearest = discrete_values_for_name[i]
                 nearest_diff = discrete_value_date - date
             end
@@ -234,7 +246,7 @@ return function(Account)
     --- @field account Account? Account object (uses global account if not provided)
     --- @field discreteValueName string The name of the discrete value to search for
     --- @field date string The date to search for the nearest discrete value to
-    --- @field predicate (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter discrete values
+    --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
     --- Get the previous nearest discrete value to a date
@@ -258,8 +270,12 @@ return function(Account)
         local nearest_diff = math.huge
         for i = 1, #discrete_values_for_name do
             local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
+            local result_as_number =
+                discrete_values_for_name[i].result and
+                tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
+                nil
 
-            if discrete_value_date < date and date - discrete_value_date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i])) then
+            if discrete_value_date < date and date - discrete_value_date < nearest_diff and (predicate == nil or predicate(discrete_values_for_name[i], result_as_number)) then
                 nearest = discrete_values_for_name[i]
                 nearest_diff = date - discrete_value_date
             end
@@ -390,9 +406,9 @@ return function(Account)
     --- @field discreteValueName1 string? The name of the first discrete value
     --- @field discreteValueName2 string? The name of the second discrete value
     --- @field maxDiff number? The maximum difference in time between the two values
-    --- @field predicate1 (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter the first discrete values
-    --- @field predicate2 (fun(discrete_value: DiscreteValue):boolean)? Predicate function to filter the second discrete values
-    --- @field joinPredicate (fun(first: DiscreteValue, second: DiscreteValue):boolean)? Predicate function to filter the pairs
+    --- @field predicate1 (fun(discrete_value: DiscreteValue, num: number):boolean)? Predicate function to filter the first discrete values
+    --- @field predicate2 (fun(discrete_value: DiscreteValue, num: number):boolean)? Predicate function to filter the second discrete values
+    --- @field joinPredicate (fun(first: DiscreteValue, second: DiscreteValue, first_num: number, second_num: number):boolean)? Predicate function to filter the pairs
     --- @field max number? The maximum number of pairs to return
 
     --------------------------------------------------------------------------------
@@ -425,7 +441,8 @@ return function(Account)
         --- @type DiscreteValue[]
         local first_values = {}
         for _, dv in ipairs(first_values_unfiltered) do
-            if predicate1(dv) then
+            local result_as_number = module.get_dv_value_number(dv)
+            if predicate1(dv, result_as_number) then
                 table.insert(first_values, dv)
             end
         end
@@ -433,14 +450,15 @@ return function(Account)
         local pairs = {}
 
         for _, first_value in ipairs(first_values) do
+            local first_num = module.get_dv_value_number(first_value)
             local second_value = module.get_discrete_value_nearest_to_date {
                 account = account,
                 discreteValueNames = discrete_value_names2,
                 date = first_value.result_date,
-                predicate = function(second_value)
+                predicate = function(second_value, second_num)
                     return (
                         math.abs(dates.date_string_to_int(first_value.result_date) - dates.date_string_to_int(second_value.result_date)) <= max_diff
-                    ) and predicate2(second_value) and join_predicate(first_value, second_value)
+                    ) and predicate2(second_value, second_num) and join_predicate(first_value, second_value, first_num, second_num)
                 end
             }
             if second_value then
