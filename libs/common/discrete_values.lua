@@ -406,9 +406,9 @@ return function(Account)
     --- @field discreteValueName1 string? The name of the first discrete value
     --- @field discreteValueName2 string? The name of the second discrete value
     --- @field maxDiff number? The maximum difference in time between the two values
-    --- @field predicate1 (fun(discrete_value: DiscreteValue, num: number):boolean)? Predicate function to filter the first discrete values
-    --- @field predicate2 (fun(discrete_value: DiscreteValue, num: number):boolean)? Predicate function to filter the second discrete values
-    --- @field joinPredicate (fun(first: DiscreteValue, second: DiscreteValue, first_num: number, second_num: number):boolean)? Predicate function to filter the pairs
+    --- @field predicate1 (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter the first discrete values
+    --- @field predicate2 (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter the second discrete values
+    --- @field joinPredicate (fun(first: DiscreteValue, second: DiscreteValue, first_num: number?, second_num: number?):boolean)? Predicate function to filter the pairs
     --- @field max number? The maximum number of pairs to return
 
     --------------------------------------------------------------------------------

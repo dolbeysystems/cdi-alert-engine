@@ -182,12 +182,11 @@ def sirsLookup(dvDic, dvSirsMatches):
             matchingDate = datetimeFromUtcToLocal(date)
             matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
             matchedList.append(dataConversion(None, matchingDate + " Temp = " + str(tempDv) + ", HR = " + str(hrDv) + ", RR = " + str(respDv), None, id, vitals, 0, True))
-                
+ 
     if matchedList is not None:
         return matchedList
     else:
-        return None     
-
+        return None
 --]]
 --[[
 def sirsLookupLacking(dvDic, sirsMatchID):
@@ -602,7 +601,7 @@ if not existing_alert or not existing_alert.validated then
             if float(sirsResult) < float(calcPCO2):
                 pCO2 += 1
                 pco2Dict[pCO2] = mainSIRSDVDic[dv]        
-                
+
     #SIRS determine if SIRS is triggered
     sirsLookupDict = {}
     sirsX = 0
@@ -611,7 +610,7 @@ if not existing_alert or not existing_alert.validated then
     noHeart = None
     noTemp = None
     noWBC = None
-    
+
     if resp > 0:
         if (
             negationsRespiratoryCheck is None and

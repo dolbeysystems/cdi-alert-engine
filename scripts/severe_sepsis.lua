@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -16,7 +15,6 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
-local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
@@ -35,7 +33,6 @@ local dv_dbp = { "BP Arterial Diastolic cc (mm Hg)", "DBP 3.5 (No Calculation) (
     "DBP 3.5 (No Calculation) (mm Hg)" }
 
 local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
-local calc_glasgow_coma_scale_1 = function(dv_, num) return num < 15 end
 local calc_glasgow_coma_scale_2 = function(dv_, num) return num < 12 end
 
 local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)",
@@ -46,8 +43,6 @@ local calc_map_1 = function(dv_, num) return num < 60 end
 
 local dv_platelet_count = { "PLATELET COUNT (10x3/uL)" }
 local calc_platelet_count_severe_sepsis_1 = function(dv_, num) return num <= 100 end
-local calc_platelet_count_1 = function(dv_, num) return num < 150 end
-local calc_platelet_count_2 = function(dv_, num) return num < 100 end
 
 local dv_po2_fio2 = { "PO2/FiO2 (mmHg)" }
 local calc_po2_fio2_1 = function(dv_, num) return num <= 300 end
@@ -66,7 +61,7 @@ local dv_serum_creatinine = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
 local calc_serum_creatinine_1 = function(dv_, num) return num > 1.3 end
 
 local dv_serum_lactate = { "LACTIC ACID (mmol/L)", "LACTATE (mmol/L)" }
-local calc_serum_lactate_1 = 4
+local calc_serum_lactate_1 = function(dv_, num) return num >= 4 end
 local calc_serum_lactate_2 = function(dv_, num) return 2 <= num and num < 4 end
 
 local dv_spo2 = { "Pulse Oximetry(Num) (%)" }
@@ -154,7 +149,7 @@ local function anesthesia_med_predicate(mv)
 end
 
 
-local function dv_value_multi_min(dv_dic)
+local function dv_value_multi_min()
     local map_dvs = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_map,
     }
@@ -184,11 +179,8 @@ local function dv_value_multi_min(dv_dic)
         end
     end
 
-    local s = #sbp_dvs
     local d = #dbp_dvs
-    local m = #map_dvs
     local h = #hr_dvs
-    local sm = #combined_map_sbp_dvs
 
     local matched_sbp_list = {}
     local matched_map_list = {}
@@ -202,9 +194,13 @@ local function dv_value_multi_min(dv_dic)
             local map_dv = nil
             local sbp_dv = nil
             local id = nil
-            
+
             local matching_date = dates.date_string_to_int(item.result_date)
-            if lists.includes(dv_sbp, item.name) and item.unique_id and not lists.includes(abstracted_list, item.unique_id) then
+            if
+                lists.includes(dv_sbp, item.name) and
+                item.unique_id and
+                not lists.includes(abstracted_list, item.unique_id)
+            then
                 sbp_dv = item.result
                 table.insert(abstracted_list, item.unique_id)
                 id = item.unique_id
@@ -212,7 +208,7 @@ local function dv_value_multi_min(dv_dic)
                 local link = cdi_alert_link()
                 link.discrete_value_id = id
                 link.discrete_value_name = item.name
-                
+
                 link.link_text = links.replace_link_place_holders(
                     "Systolic Blood Pressure: [VALUE] (Result Date: [RESULTDATETIME])",
                     nil, nil, item, nil
@@ -220,13 +216,20 @@ local function dv_value_multi_min(dv_dic)
                 table.insert(matched_sbp_list, link)
 
                 for _, item1 in map_dvs do
-                    if dates.date_string_to_int(item1.result_date) == matching_date and lists.includes(dv_map, item1.name) then
+                    if
+                        dates.date_string_to_int(item1.result_date) == matching_date and
+                        lists.includes(dv_map, item1.name)
+                    then
                         map_dv = item1.result
                         table.insert(abstracted_list, item1.unique_id)
                         break
                     end
                 end
-            elseif lists.includes(dv_map, item.name) and discrete.get_dv_value_number(item) < calc_map_1 and not lists.includes(abstracted_list, item.unique_id) then
+            elseif
+                lists.includes(dv_map, item.name) and
+                discrete.get_dv_value_number(item) < calc_map_1 and
+                not lists.includes(abstracted_list, item.unique_id)
+            then
                 map_dv = item.result
                 id = item.unique_id
                 table.insert(abstracted_list, item.unique_id)
@@ -240,7 +243,10 @@ local function dv_value_multi_min(dv_dic)
                 table.insert(matched_map_list, link)
 
                 for item in sbp_dvs do
-                    if dates.date_string_to_int(item.result_date) == matching_date and lists.includes(dv_sbp, item.name) then
+                    if
+                        dates.date_string_to_int(item.result_date) == matching_date and
+                        lists.includes(dv_sbp, item.name)
+                    then
                         sbp_dv = item.result
                         table.insert(abstracted_list, item.unique_id)
                         break
@@ -272,7 +278,7 @@ local function dv_value_multi_min(dv_dic)
             if id and matching_date then
                 local link = cdi_alert_link()
                 link.discrete_value_id = id
-                link.link_text = 
+                link.link_text =
                     "[RESULTDATETIME] HR = " .. tostring(hr_dv) ..
                     ", BP = " .. tostring(sbp_dv) .. "/" .. tostring(dbp_dv) ..
                     ", MAP = " + tostring(map_dv)
@@ -312,54 +318,14 @@ end
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
-    --- Alert Variables
-    --------------------------------------------------------------------------------
-    local alert_code_dictionary = {
-        ["A40.0"] = "Sepsis Due To Streptococcus, Group A",
-        ["A40.1"] = "Sepsis due to Streptococcus, Group B",
-        ["A40.3"] = "Sepsis due to Streptococcus Pneumoniae",
-        ["A40.8"] = "Other Streptococcal Sepsis",
-        ["A40.9"] = "Streptococcal Sepsis, Unspecified",
-        ["A41.01"] = "Sepsis due to Methicillin Susceptible Staphylococcus Aureus",
-        ["A41.02"] = "Sepsis due To Methicillin Resistant Staphylococcus Aureus",
-        ["A41.1"] = "Sepsis due to Other Specified Staphylococcus",
-        ["A41.2"] = "Sepsis due to Unspecified Staphylococcus",
-        ["A41.3"] = "Sepsis due to Hemophilus Influenzae",
-        ["A41.4"] = "Sepsis due to Anaerobes",
-        ["A41.50"] = "Gram-Negative Sepsis, Unspecified",
-        ["A41.51"] = "Sepsis due to Escherichia Coli [E. Coli]",
-        ["A41.52"] = "Sepsis due to Pseudomonas",
-        ["A41.53"] = "Sepsis due to Serratia",
-        ["A41.54"] = "Sepsis Due to Acinetobacter Baumannii",
-        ["A41.59"] = "Other Gram-Negative Sepsis",
-        ["A41.81"] = "Sepsis due to Enterococcus",
-        ["A41.89"] = "Other Specified Sepsis ",
-        ["A42.7"] = "Actinomycotic Sepsis",
-        ["A22.7"] = "Anthrax Sepsis",
-        ["B37.7"] = "Candidal Sepsis",
-        ["A26.7"] = "Erysipelothrix Sepsis",
-        ["A54.86"] = "Gonococcal Sepsis",
-        ["B00.7"] = "Herpesviral Sepsis",
-        ["A32.7"] = "Listerial Sepsis",
-        ["A24.1"] = "Melioidosis Sepsis",
-        ["A20.7"] = "Septicemic Plague",
-        ["T81.44XA"] = "Sepsis Following A Procedure",
-        ["T81.44XD"] = "Sepsis Following A Procedure",
-        ["T81.44XS"] = "Sepsis Following a Procedure, Sequela"
-    }
-    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
-
-
-
-    --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negations
     local liver_cirrhosis_check = links.get_code_link {
         codes = {
             "K70.0", "K70.10", "K70.11", "K70.2", "K70.30", "K70.31", "K70.40", "K70.41", "K70.9", "K74.60", "K72.1",
-            "K71", "K71.0", "K71.10", "K71.11", "K71.2", "K71.3", "K71.4", "K71.50", "K71.51", "K71.6", "K71.7", "K71.8",
-            "K71.9", "K72.10", "K72.11", "K73.0", "K73.1", "K73.2", "K73.8", "K73.9", "R18.0"
+            "K71", "K71.0", "K71.10", "K71.11", "K71.2", "K71.3", "K71.4", "K71.50", "K71.51", "K71.6", "K71.7",
+            "K71.8", "K71.9", "K72.10", "K72.11", "K73.0", "K73.1", "K73.2", "K73.8", "K73.9", "R18.0"
         },
         text = "Liver Cirrhosis",
     }
@@ -384,8 +350,8 @@ if not existing_alert or not existing_alert.validated then
     local sepsis_code = links.get_code_link {
         codes = {
             "A40.0", "A40.1", "A40.3", "A40.8", "A40.9", " A41.01", "A41.02", "A41.1", "A41.2", "A41.3", "A41.4",
-            "A41.9", "A41.50", "A41.51", "A41.52", "A41.53", "A41.54", "A41.59", "A41.8", "A41.81", "A41.89", "A42.7", "A22.7", "B37.7",
-            "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "T81.44XA", "T81.44XD", "T81.44XS"
+            "A41.9", "A41.50", "A41.51", "A41.52", "A41.53", "A41.54", "A41.59", "A41.8", "A41.81", "A41.89", "A42.7",
+            "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "T81.44XA", "T81.44XD", "T81.44XS"
         },
         text = "Sepsis Dx",
     }
@@ -399,11 +365,19 @@ if not existing_alert or not existing_alert.validated then
     if not dopamine then
         dopamine = links.get_abstraction_link { text = "Dopamine", code = "DOPAMINE" }
     end
-    local epinephrine = links.get_anesthesia_medication_link { cat = "Epinephrine", text = "Epinephrine, Dosage" }
+    local epinephrine = links.get_medication_link {
+        cat = "Epinephrine", text = "Epinephrine, Dosage",
+        predicate = anesthesia_med_predicate,
+    }
+
     if not epinephrine then
         epinephrine = links.get_abstraction_link { text = "Epinephrine", code = "EPINEPHRINE" }
     end
-    local levophed = links.get_anesthesia_medication_link { cat = "Levophed", text = "Levophed, Dosage" }
+    local levophed = links.get_medication_link {
+        cat = "Levophed",
+        text = "Levophed, Dosage",
+        predicate = anesthesia_med_predicate,
+    }
     if not levophed then
         levophed = links.get_abstraction_link { text = "Levophed", code = "LEVOPHED" }
     end
@@ -411,16 +385,24 @@ if not existing_alert or not existing_alert.validated then
     if not milrinone then
         milrinone = links.get_abstraction_link { text = "Milrinone", code = "MILRINONE" }
     end
-    local neosynephrine = links.get_anesthesia_medication_link {
+    local neosynephrine = links.get_medication_link {
         cat = "Neosynephrine",
-        text = "Neosynephrine, Dosage"
+        text = "Neosynephrine, Dosage",
+        predicate = anesthesia_med_predicate
     }
     if not neosynephrine then
         neosynephrine = links.get_abstraction_link { text = "Neosynephrine", code = "NEOSYNEPHRINE" }
     end
 
-    local vasoactive_medication_abs = links.get_abstraction_link { text = "Vasoactive Medication", code = "VASOACTIVE_MEDICATION" }
-    local vasopressin = links.get_anesthesia_medication_link { cat = "Vasopressin", text = "Vasopressin, Dosage" }
+    local vasoactive_medication_abs = links.get_abstraction_link {
+        text = "Vasoactive Medication",
+        code = "VASOACTIVE_MEDICATION",
+    }
+    local vasopressin = links.get_medication_link {
+        cat = "Vasopressin",
+        text = "Vasopressin, Dosage",
+        predicate = anesthesia_med_predicate
+    }
     if not vasopressin then
         vasopressin = links.get_abstraction_link { text = "Vasopressin", code = "VASOPRESSIN" }
     end

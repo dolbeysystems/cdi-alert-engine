@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -17,8 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -34,8 +31,6 @@ local dv_influenze_screen_a = { "Influenza A" }
 local dv_influenze_screen_b = { "Influenza B" }
 local dv_oxygen_therapy = { "DELIVERY" }
 local dv_rsv = { "Respiratory syncytial virus" }
-local dv_oxygen_flow_rate = { "Resp O2 Delivery Flow Num" }
-local dv_respiratory_pattern = { "" }
 local dv_c_reactive_protein = { "C REACTIVE PROTEIN (mg/dL)" }
 local calc_creactive_protein1 = function(dv_, num) return num > 0.3 end
 local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
@@ -60,103 +55,6 @@ local calc_wbc2 = function(dv_, num) return num < 4.5 end
 
 
 --------------------------------------------------------------------------------
---- Script Specific Functions
---------------------------------------------------------------------------------
---[[
-def dvOxygenCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-    abstraction = None
-    for dv in dvDic or []:
-        if (
-            dvDic[dv]['Name'] in discreteValueName and
-            dvDic[dv]['Result'] is not None and
-            not re.search(r'\bRoom Air\b', dvDic[dv]['Result'], re.IGNORECASE) and
-            not re.search(r'\bRA\b', dvDic[dv]['Result'], re.IGNORECASE)
-        ):
-            if abstract:
-                dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
-                return True
-            else:
-                abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
-                return abstraction
-    return abstraction
-
-def dvPositiveCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-    abstraction = None
-    for dv in dvDic or []:
-        if (
-            dvDic[dv]['Name'] in discreteValueName and
-            dvDic[dv]['Result'] is not None and
-            (re.search(r'\bpositive\b', dvDic[dv]['Result'], re.IGNORECASE) is not None or
-            re.search(r'\bDetected\b', dvDic[dv]['Result'], re.IGNORECASE) is not None)
-        ):
-            if abstract:
-                dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
-                return True
-            else:
-                abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
-                return abstraction
-    return abstraction
-
-def ivMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
-    for mv in medDic or []:
-        if (
-            medDic[mv]['Route'] is not None and
-            medDic[mv]['Category'] == med_name and
-            (re.search(r'\bIntravenous\b', medDic[mv]['Route'], re.IGNORECASE) or
-            re.search(r'\bIV Push\b', medDic[mv]['Route'], re.IGNORECASE)) and
-            (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
-        ):
-            if abstract == True:
-                medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
-                return True
-            elif abstract == False:
-                abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
-                return abstraction
-    return None
-
-def antiboticMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
-    for mv in medDic or []:
-        if (
-            medDic[mv]['Route'] is not None and
-            medDic[mv]['Category'] == med_name and
-            (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-            re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
-        ):
-            if abstract == True:
-                medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
-                return True
-            elif abstract == False:
-                abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
-                return abstraction
-    return None
-
-def medDataConversion(datetime, linkText, med, id, dosage, route, category, sequence, abstract=True):
-    date_time = datetimeFromUtcToLocal(datetime)
-    date_time = date_time.ToString("MM/dd/yyyy, HH:mm")
-    linkText = linkText.replace("[STARTDATE]", date_time)
-    linkText = linkText.replace("[MEDICATION]", med)
-    linkText = linkText.replace("[DOSAGE]", dosage)
-    if route is not None: linkText = linkText.replace("[ROUTE]", route)
-    else: linkText = linkText.replace(", Route [ROUTE]", "")
-    if abstract == True:
-        abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
-        abstraction.MedicationId = id
-        category.Links.Add(abstraction)
-    elif abstract == False:
-        abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
-        abstraction.MedicationId = id
-        return abstraction
-    return
---]]
-
-
-
---------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
@@ -164,8 +62,10 @@ local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 -- Alert trigger
-local unspecified_codes = links.get_code_links {
-    codes = { "J12.89", "J12.9", "J16.8", "J18", "J18.0", "J18.1", "J18.2", "J18.8", "J18.9", "J15.69", "J15.8", "J15.9" },
+local unspecified_codes = links.get_code_link {
+    codes = {
+        "J12.89", "J12.9", "J16.8", "J18", "J18.0", "J18.1", "J18.2", "J18.8", "J18.9", "J15.69", "J15.8", "J15.9"
+    },
     text = "Unspecified Pneumonia Dx",
 }
 
@@ -183,7 +83,8 @@ if not existing_alert or not existing_alert.validated then
     local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 6)
     local ct_chest_header = headers.make_header_builder("CT Chest", 7)
     local chest_x_ray_header = headers.make_header_builder("Chest X-Ray", 8)
-    local speech_and_language_pathologist_header = headers.make_header_builder("Speech and Language Pathologist Notes", 9)
+    local speech_and_language_pathologist_header =
+        headers.make_header_builder("Speech and Language Pathologist Notes", 9)
     local pneumonia_panel_header = headers.make_header_builder("Pneumonia Panel", 10)
 
     local function compile_links()
@@ -260,21 +161,10 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local assigned_code = false
-    local alert_triggered = existing_alert ~= nil
     local trigger_alert =
         existing_alert == nil or
         (existing_alert.outcome ~= "AUTORESOLVED" and existing_alert.reason ~= "Previously Autoresolved")
 
-    for _, alert_link in ipairs(existing_alert and existing_alert.links or {}) do
-        if alert_link.link_text == "Documentation Includes" then
-            for _, link in ipairs(alert_link.links) do
-                if link.link_text == "Assigned" then
-                    assigned_code = true
-                end
-            end
-        end
-    end
 
     -- Conflicting Codes Gram Negative Bacteria
     local j156_code =
@@ -287,7 +177,10 @@ if not existing_alert or not existing_alert.validated then
     local b440_code = links.get_code_link { code = "B44.0", text = "Aspergillosis Pneumonia" }
     local b4411_code = links.get_code_link { code = "B44.11", text = "Aspergillosis Pneumonia Other" }
     local b583_code = links.get_code_link { code = "B58.3", text = "Toxoplasmosis Pneumonia" }
-    local b59_code = links.get_code_link { code = "B59", text = "Pneumonia due to Pneumocystis Carinii, Pneumonia due to Pneumocystis Jiroveci" }
+    local b59_code = links.get_code_link {
+        code = "B59",
+        text = "Pneumonia due to Pneumocystis Carinii, Pneumonia due to Pneumocystis Jiroveci"
+    }
     local j150_code = links.get_code_link { code = "J15.0", text = "Pneumonia due to Klebsiella Pneumoniae" }
     local j151_code = links.get_code_link { code = "J15.1", text = "Pneumonia due to Pseudomonas" }
     local j155_code = links.get_code_link { code = "J15.5", text = "Pneumonia due to Escherichia coli" }
@@ -303,8 +196,14 @@ if not existing_alert or not existing_alert.validated then
     local a420_code = links.get_code_link { code = "A42.0", text = "Actinomycosis Pneumonia" }
     local a430_code = links.get_code_link { code = "A43.0", text = "Nocardiosis Pneumonia" }
     local j13_code = links.get_code_link { code = "J13", text = "Pneumonia due to Streptococcus pneumoniae" }
-    local j15211_code = links.get_code_link { code = "J15.211", text = "Pneumonia due to Methicillin susceptible Staphylococcus aureus" }
-    local j15212_code = links.get_code_link { code = "J15.212", text = "Pneumonia due to Methicillin resistant Staphylococcus aureus" }
+    local j15211_code = links.get_code_link {
+        code = "J15.211",
+        text = "Pneumonia due to Methicillin susceptible Staphylococcus aureus"
+    }
+    local j15212_code = links.get_code_link {
+        code = "J15.212",
+        text = "Pneumonia due to Methicillin resistant Staphylococcus aureus"
+    }
     local j153_code = links.get_code_link { code = "J15.3", text = "Pneumonia due to streptococcus, group B" }
     local j154_code = links.get_code_link { code = "J15.4", text = "Pneumonia due to Other Streptococci" }
 
@@ -329,11 +228,11 @@ if not existing_alert or not existing_alert.validated then
     local j1569_code = links.get_code_link { code = "J15.69", text = "Pneumonia due to Other Gram-Negative Bacteria" }
     local j158_code = links.get_code_link { code = "J15.8", text = "Pneumonia Due To Other Specified Bacteria" }
     local j690_code = links.get_code_link { code = "J69.0", text = "Aspiration Pneumonia" }
-    local j691_code = links.get_code_link { code = "J69.1", text = "Pneumonitis Due To Inhalation Of Oils And Essences" }
-    local j698_code = links.get_code_link { code = "J69.8", text = "Pneumonitis Due To Inhalation Of Other Solids And Liquids" }
+    local j691_code =
+        links.get_code_link { code = "J69.1", text = "Pneumonitis Due To Inhalation Of Oils And Essences" }
+    local j698_code =
+        links.get_code_link { code = "J69.8", text = "Pneumonitis Due To Inhalation Of Other Solids And Liquids" }
 
-    -- Negations
-    local z7969_code = links.get_code_link { code = "Z79.69", text = "Unspecified Immunomodulators and Immunosuppressants" }
     -- Alert Trigger
     local t17_gastic_codes = links.get_code_link {
         codes = { "T17.310", "T17.308" },
@@ -362,7 +261,8 @@ if not existing_alert or not existing_alert.validated then
     local r059_code = links.get_code_link { code = "R05.9", text = "Cough" }
     local crackles_abs = links.get_abstraction_link { code = "CRACKLES", text = "Crackles" }
     local r131_codes = links.get_code_link { code = "^R13.1", text = "Dysphagia" }
-    local swallow_study_abs = links.get_abstraction_link { code = "FAILED_SWALLOW_STUDY", text = "Failed Swallow study" }
+    local swallow_study_abs =
+        links.get_abstraction_link { code = "FAILED_SWALLOW_STUDY", text = "Failed Swallow study" }
     local glascow_coma_scale_dv = links.get_discrete_value_link {
         discreteValues = dv_glasgow_coma_scale,
         text = "Glascow Coma Scale",
@@ -428,7 +328,7 @@ if not existing_alert or not existing_alert.validated then
             return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
         end
     }
-    local p_a02_dv = links.get_discrete_value_link {
+    local pa_o2_dv = links.get_discrete_value_link {
         discreteValues = dv_pa_o2,
         text = "pa02",
         predicate = calc_pa_o21,
@@ -448,7 +348,11 @@ if not existing_alert or not existing_alert.validated then
             return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
         end
     }
-    local procalcitonin_dv = links.get_disc_value_link { discreteValues = dv_procalcitonin, text = "Procalcitonin" }
+    local procalcitonin_dv = links.get_disc_value_link {
+        discreteValues = dv_procalcitonin,
+        text = "Procalcitonin",
+        predicate = calc_procalcitonin1,
+    }
     local resp_culture_dv = links.get_discrete_value_link {
         discreteValues = dv_resp_culture,
         text = "Respiratory Culture",
@@ -490,8 +394,28 @@ if not existing_alert or not existing_alert.validated then
     }
 
     -- Meds
-    local antibiotic_med = links.get_medication_link { cat = "Antibiotic", text = "Antibiotic" }
-    local antibiotic2_med = links.get_medication_link { cat = "Antibiotic2", text = "Antibiotic2" }
+    local antibiotic_med = links.get_medication_link {
+        cat = "Antibiotic",
+        text = "Antibiotic",
+        predicate = function(med)
+            return med.route:lower():find("Eye") == nil or
+                med.route:lower():find("topical") == nil or
+                med.route:lower():find("ocular") == nil or
+                med.route:lower():find("ophthalmic") == nil
+        end
+    }
+    local antibiotic2_med = links.get_medication_link {
+        cat = "Antibiotic2",
+        text = "Antibiotic2",
+        predicate = function(med)
+            return med.route:lower():find("Intravenous") ~= nil or
+                med.route:lower():find("IV push") ~= nil or
+                med.route:lower():find("Eye") == nil or
+                med.route:lower():find("topical") == nil or
+                med.route:lower():find("ocular") == nil or
+                med.route:lower():find("ophthalmic") == nil
+        end
+    }
     local antibiotic_abs = links.get_abstraction_link { code = "ANTIBIOTIC", text = "Antibiotic" }
     local antibiotic2_abs = links.get_abstraction_link { code = "ANTIBIOTIC_2", text = "Antibiotic2" }
     local antifungal_med = links.get_medication_link { cat = "Antifungal", text = "Antifungal" }
@@ -560,6 +484,23 @@ if not existing_alert or not existing_alert.validated then
         ci = ci + 1
         if glascow_coma_scale_dv then laboratory_studies_header:add_link(glascow_coma_scale_dv) end
         if glascow_coma_scale_abs then laboratory_studies_header:add_link(glascow_coma_scale_abs) end
+    end
+    if r4182_code or altered_abs then
+        if r4182_code then
+            clinical_evidence_header:add_link(r4182_code)
+            if altered_abs then
+                altered_abs.hidden = true
+                clinical_evidence_header:add_link(altered_abs)
+            end
+        elseif not r4182_code and altered_abs then
+            clinical_evidence_header:add_link(altered_abs)
+        end
+        ci = ci + 1
+    end
+    if pa_o2_dv or r0902_code then
+        ci = ci + 1
+        laboratory_studies_header:add_link(pa_o2_dv)
+        laboratory_studies_header:add_link(r0902_code)
     end
     if r059_code then
         clinical_evidence_header:add_link(r059_code)
@@ -715,193 +656,355 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    --[[
-    #Main Algorithm
-    if triggerAlert and (unspecCodes is not None or codesExist == 1) and ((admitSource == "TH" or admitSource == "TE" or admitSource == "TA") and admitTrans is not None):
-        if codesExist == 1:
-            for code in codeList:
-                desc = codeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
+    -- Main Algorithm 
+    local unspecified_dx = false
+    if
+        trigger_alert and
+        (account_alert_codes or gram_negative > 0 or gram_positive > 0) and
+        (
+            (Account.admit_source == "TH" or Account.admit_source == "TE" or Account.admit_source == "TA") and
+            not admit_trans
+        )
+    then
+        if #account_alert_codes == 1 then
+            for _, code in account_alert_codes do
+                local desc = alert_code_dictionary[code]
+                local temp_code = links.get_code_link {
+                    code = code,
+                    text = desc .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+                }
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
                     break
-        if unspecCodes is not None: dc.Links.Add(unspecCodes)
-        if admitTrans is not None: dc.Links.Add(MatchedCriteriaLink("Admit Source: " + str(admitTrans), None, None, None))
-        result.Subtitle = "Possible Hospital Acquired Pneumonia"
-        AlertConditions = True
-        result.Passed = True
+                end
+            end
+        end
+        documented_dx_header:add_link(unspecified_codes)
+        documented_dx_header:add_text_link("Admit Source: " .. admit_trans)
+        Result.subtitle = "Possible Hospital Acquired Pneumonia"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif codesExist == 1:
-        db.LogEvaluationScriptMessage("One specific code was on the chart, alert failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-        if alertTriggered:
-            for code in codeList:
-                desc = codeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code  - " + desc + ": [CODE] '[PHRASE]' '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
+    elseif #account_alert_codes == 1 then
+        if existing_alert then
+            for _, code in account_alert_codes do
+                local desc = alert_code_dictionary[code]
+                local temp_code = links.get_code_link {
+                    code = code,
+                    text = "Autoresolved Specified Code  - " .. desc
+                }
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
                     break
-            result.Outcome = "AUTORESOLVED"
-            result.Reason = "Autoresolved due to one Specified Code on the Account"
-            result.Validated = True
-            AlertConditions = True
-        else: result.Passed = False
+                end
+            end
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one Specified Code on the Account"
+            Result.validated = true
+            Result.passed = true
+        else
+            Result.passed = false
+        end
 
-    --]]
-    --[[
-    elif (
-        #1
-        ((j156Code is not None and (fullSpec > 0 or gramPositive > 0 or gramNegative > 2)) or (j156Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
-        #2
-        ((j159Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or (j159Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
-        #3
-        ((j15211Code is not None and j1521Code is None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or
-        (j15211Code is None and j1521Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or
-        (j15211Code is not None and j1521Code is not None and (fullSpec > 0 or gramPositive > 3 or gramNegative > 0))) or
-        #4
-        ((j158Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or (j158Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
-        #5
-        (fullSpec > 1)
-    ):
-        if b012Code is not None: dc.Links.Add(b012Code); str0 = str0 + b012Code.Code + ", "
-        if b052Code is not None: dc.Links.Add(b052Code); str0 = str0 + b052Code.Code + ", "
-        if b0681Code is not None: dc.Links.Add(b0681Code); str0 = str0 + b0681Code.Code + ", "
-        if b250Code is not None: dc.Links.Add(b250Code); str0 = str0 + b250Code.Code + ", "
-        if b371Code is not None: dc.Links.Add(b371Code); str0 = str0 + b371Code.Code + ", "
-        if b380Code is not None: dc.Links.Add(b380Code); str0 = str0 + b380Code.Code + ", "
-        if b390Code is not None: dc.Links.Add(b390Code); str0 = str0 + b390Code.Code + ", "
-        if b441Code is not None: dc.Links.Add(b441Code); str0 = str0 + b441Code.Code + ", "
-        if b7781Code is not None: dc.Links.Add(b7781Code); str0 = str0 + b7781Code.Code + ", "
-        if j120Code is not None: dc.Links.Add(j120Code); str0 = str0 + j120Code.Code + ", "
-        if j121Code is not None: dc.Links.Add(j121Code); str0 = str0 + j121Code.Code + ", "
-        if j122Code is not None: dc.Links.Add(j122Code); str0 = str0 + j122Code.Code + ", "
-        if j123Code is not None: dc.Links.Add(j123Code); str0 = str0 + j123Code.Code + ", "
-        if j1281Code is not None: dc.Links.Add(j1281Code); str0 = str0 + j1281Code.Code + ", "
-        if j1282Code is not None: dc.Links.Add(j1282Code); str0 = str0 + j1282Code.Code + ", "
-        if j14Code is not None: dc.Links.Add(j14Code); str0 = str0 + j14Code.Code + ", "
-        if j1520Code is not None: dc.Links.Add(j1520Code); str0 = str0 + j1520Code.Code + ", "
-        if j1569Code is not None: dc.Links.Add(j1569Code); str0 = str0 + j1569Code.Code + ", "
-        if j158Code is not None: dc.Links.Add(j158Code); str0 = str0 + j158Code.Code + ", "
-        if j690Code is not None: dc.Links.Add(j690Code); str0 = str0 + j690Code.Code + ", "
-        if j691Code is not None: dc.Links.Add(j691Code); str0 = str0 + j691Code.Code + ", "
-        if j698Code is not None: dc.Links.Add(j698Code); str0 = str0 + j698Code.Code + ", "
-        if j159Code is not None: dc.Links.Add(j159Code); str0 = str0 + j159Code.Code + ", "
-        if j152Code is not None: dc.Links.Add(j152Code); str0 = str0 + j152Code.Code + ", "
-        if j1521Code is not None: dc.Links.Add(j1521Code); str0 = str0 + j1521Code.Code + ", "
-        if a221Code is not None: dc.Links.Add(a221Code); str0 = str0 + a221Code.Code + ", "
-        if a420Code is not None: dc.Links.Add(a420Code); str0 = str0 + a420Code.Code + ", "
-        if a430Code is not None: dc.Links.Add(a430Code); str0 = str0 + a430Code.Code + ", "
-        if j13Code is not None: dc.Links.Add(j13Code); str0 = str0 + j13Code.Code + ", "
-        if j15211Code is not None: dc.Links.Add(j15211Code); str0 = str0 + j15211Code.Code + ", "
-        if j15212Code is not None: dc.Links.Add(j15212Code); str0 = str0 + j15212Code.Code + ", "
-        if j153Code is not None: dc.Links.Add(j153Code); str0 = str0 + j153Code.Code + ", "
-        if j154Code is not None: dc.Links.Add(j154Code); str0 = str0 + j154Code.Code + ", "
-        if j156Code is not None: dc.Links.Add(j156Code); str0 = str0 + j156Code.Code + ", "
-        if a0103Code is not None: dc.Links.Add(a0103Code); str0 = str0 + a0103Code.Code + ", "
-        if a0222Code is not None: dc.Links.Add(a0222Code); str0 = str0 + a0222Code.Code + ", "
-        if a212Code is not None: dc.Links.Add(a212Code); str0 = str0 + a212Code.Code + ", "
-        if a5484Code is not None: dc.Links.Add(a5484Code); str0 = str0 + a5484Code.Code + ", "
-        if a698Code is not None: dc.Links.Add(a698Code); str0 = str0 + a698Code.Code + ", "
-        if b440Code is not None: dc.Links.Add(b440Code); str0 = str0 + b440Code.Code + ", "
-        if b4411Code is not None: dc.Links.Add(b4411Code); str0 = str0 + b4411Code.Code + ", "
-        if b583Code is not None: dc.Links.Add(b583Code); str0 = str0 + b583Code.Code + ", "
-        if b59Code is not None: dc.Links.Add(b59Code); str0 = str0 + b59Code.Code + ", "
-        if j150Code is not None: dc.Links.Add(j150Code); str0 = str0 + j150Code.Code + ", "
-        if j151Code is not None: dc.Links.Add(j151Code); str0 = str0 + j151Code.Code + ", "
-        if j155Code is not None: dc.Links.Add(j155Code); str0 = str0 + j155Code.Code + ", "
-        if j1561Code is not None: dc.Links.Add(j1561Code); str0 = str0 + j1561Code.Code + ", "
-        if j157Code is not None: dc.Links.Add(j157Code); str0 = str0 + j157Code.Code + ", "
-        if j160Code is not None: dc.Links.Add(j160Code); str0 = str0 + j160Code.Code + ", "
-        result.Subtitle = "Pneumonia Conflicting Dx" + str0
-        if validated:
-            result.Validated = False
-            result.Outcome = ""
-            result.Reason = "Previously Autoresolved"
-        AlertPassed = True
+    elseif
+        (
+            (j156_code and (full_spec > 0 or gram_positive > 0 or gram_negative > 2)) or
+            (j156_code and full_spec > 0 and (gram_positive > 0 or gram_negative > 0))
+        ) or
+        (
+            (j159_code and (full_spec > 0 or gram_positive > 2 or gram_negative > 0)) or
+            (j159_code and full_spec > 0 and (gram_positive > 0 or gram_negative > 0))
+        ) or
+        (
+            (j15211_code and not j1521_code and (full_spec > 0 or gram_positive > 2 or gram_negative > 0)) or
+            (not j15211_code and j1521_code and (full_spec > 0 or gram_positive > 2 or gram_negative > 0)) or
+            (j15211_code and j1521_code and (full_spec > 0 or gram_positive > 3 or gram_negative > 0))
+        ) or
+        (
+            (j158_code and (full_spec > 0 or gram_positive > 2 or gram_negative > 0)) or
+            (j158_code and full_spec > 0 and (gram_positive > 0 or gram_negative > 0))
+        ) or
+        (full_spec > 1)
+    then
+        local code_list_string = ": "
 
-    --]]
-    --[[
-    elif triggerAlert and unspecCodes is not None and (aspirationAbs is not None or T17GasticCodes is not None or T17FoodCodes is not None):
-        if unspecCodes is not None: dc.Links.Add(unspecCodes)
-        if aspirationAbs is not None: dc.Links.Add(aspirationAbs)
-        if T17GasticCodes is not None: dc.Links.Add(T17GasticCodes)
-        if T17FoodCodes is not None: dc.Links.Add(T17FoodCodes)
-        result.Subtitle = "Possible Aspiration Pneumonia"
-        AlertPassed = True
+        if b012_code then
+            code_list_string = code_list_string .. b012_code.code .. ", "
+            documented_dx_header:add_link(b012_code)
+        end
+        if b052_code then
+            code_list_string = code_list_string .. b052_code.code .. ", "
+            documented_dx_header:add_link(b052_code)
+        end
+        if b0681_code then
+            code_list_string = code_list_string .. b0681_code.code .. ", "
+            documented_dx_header:add_link(b0681_code)
+        end
+        if b250_code then
+            code_list_string = code_list_string .. b250_code.code .. ", "
+            documented_dx_header:add_link(b250_code)
+        end
+        if b371_code then
+            code_list_string = code_list_string .. b371_code.code .. ", "
+            documented_dx_header:add_link(b371_code)
+        end
+        if b380_code then
+            code_list_string = code_list_string .. b380_code.code .. ", "
+            documented_dx_header:add_link(b380_code)
+        end
+        if b390_code then
+            code_list_string = code_list_string .. b390_code.code .. ", "
+            documented_dx_header:add_link(b390_code)
+        end
+        if b441_code then
+            code_list_string = code_list_string .. b441_code.code .. ", "
+            documented_dx_header:add_link(b441_code)
+        end
+        if b7781_code then
+            code_list_string = code_list_string .. b7781_code.code .. ", "
+            documented_dx_header:add_link(b7781_code)
+        end
+        if j120_code then
+            code_list_string = code_list_string .. j120_code.code .. ", "
+            documented_dx_header:add_link(j120_code)
+        end
+        if j121_code then
+            code_list_string = code_list_string .. j121_code.code .. ", "
+            documented_dx_header:add_link(j121_code)
+        end
+        if j122_code then
+            code_list_string = code_list_string .. j122_code.code .. ", "
+            documented_dx_header:add_link(j122_code)
+        end
+        if j123_code then
+            code_list_string = code_list_string .. j123_code.code .. ", "
+            documented_dx_header:add_link(j123_code)
+        end
+        if j1281_code then
+            code_list_string = code_list_string .. j1281_code.code .. ", "
+            documented_dx_header:add_link(j1281_code)
+        end
+        if j1282_code then
+            code_list_string = code_list_string .. j1282_code.code .. ", "
+            documented_dx_header:add_link(j1282_code)
+        end
+        if j14_code then
+            code_list_string = code_list_string .. j14_code.code .. ", "
+            documented_dx_header:add_link(j14_code)
+        end
+        if j1520_code then
+            code_list_string = code_list_string .. j1520_code.code .. ", "
+            documented_dx_header:add_link(j1520_code)
+        end
+        if j1569_code then
+            code_list_string = code_list_string .. j1569_code.code .. ", "
+            documented_dx_header:add_link(j1569_code)
+        end
+        if j158_code then
+            code_list_string = code_list_string .. j158_code.code .. ", "
+            documented_dx_header:add_link(j158_code)
+        end
+        if j690_code then
+            code_list_string = code_list_string .. j690_code.code .. ", "
+            documented_dx_header:add_link(j690_code)
+        end
+        if j691_code then
+            code_list_string = code_list_string .. j691_code.code .. ", "
+            documented_dx_header:add_link(j691_code)
+        end
+        if j698_code then
+            code_list_string = code_list_string .. j698_code.code .. ", "
+            documented_dx_header:add_link(j698_code)
+        end
+        if j159_code then
+            code_list_string = code_list_string .. j159_code.code .. ", "
+            documented_dx_header:add_link(j159_code)
+        end
+        if j152_code then
+            code_list_string = code_list_string .. j152_code.code .. ", "
+            documented_dx_header:add_link(j152_code)
+        end
+        if j1521_code then
+            code_list_string = code_list_string .. j1521_code.code .. ", "
+            documented_dx_header:add_link(j1521_code)
+        end
+        if a221_code then
+            code_list_string = code_list_string .. a221_code.code .. ", "
+            documented_dx_header:add_link(a221_code)
+        end
+        if a420_code then
+            code_list_string = code_list_string .. a420_code.code .. ", "
+            documented_dx_header:add_link(a420_code)
+        end
+        if a430_code then
+            code_list_string = code_list_string .. a430_code.code .. ", "
+            documented_dx_header:add_link(a430_code)
+        end
+        if j13_code then
+            code_list_string = code_list_string .. j13_code.code .. ", "
+            documented_dx_header:add_link(j13_code)
+        end
+        if j15211_code then
+            code_list_string = code_list_string .. j15211_code.code .. ", "
+            documented_dx_header:add_link(j15211_code)
+        end
+        if j15212_code then
+            code_list_string = code_list_string .. j15212_code.code .. ", "
+            documented_dx_header:add_link(j15212_code)
+        end
+        if j153_code then
+            code_list_string = code_list_string .. j153_code.code .. ", "
+            documented_dx_header:add_link(j153_code)
+        end
+        if j154_code then
+            code_list_string = code_list_string .. j154_code.code .. ", "
+            documented_dx_header:add_link(j154_code)
+        end
+        if j156_code then
+            code_list_string = code_list_string .. j156_code.code .. ", "
+            documented_dx_header:add_link(j156_code)
+        end
+        if a0103_code then
+            code_list_string = code_list_string .. a0103_code.code .. ", "
+            documented_dx_header:add_link(a0103_code)
+        end
+        if a0222_code then
+            code_list_string = code_list_string .. a0222_code.code .. ", "
+            documented_dx_header:add_link(a0222_code)
+        end
+        if a212_code then
+            code_list_string = code_list_string .. a212_code.code .. ", "
+            documented_dx_header:add_link(a212_code)
+        end
+        if a5484_code then
+            code_list_string = code_list_string .. a5484_code.code .. ", "
+            documented_dx_header:add_link(a5484_code)
+        end
+        if a698_code then
+            code_list_string = code_list_string .. a698_code.code .. ", "
+            documented_dx_header:add_link(a698_code)
+        end
+        if b440_code then
+            code_list_string = code_list_string .. b440_code.code .. ", "
+            documented_dx_header:add_link(b440_code)
+        end
+        if b4411_code then
+            code_list_string = code_list_string .. b4411_code.code .. ", "
+            documented_dx_header:add_link(b4411_code)
+        end
+        if b583_code then
+            code_list_string = code_list_string .. b583_code.code .. ", "
+            documented_dx_header:add_link(b583_code)
+        end
+        if b59_code then
+            code_list_string = code_list_string .. b59_code.code .. ", "
+            documented_dx_header:add_link(b59_code)
+        end
+        if j150_code then
+            code_list_string = code_list_string .. j150_code.code .. ", "
+            documented_dx_header:add_link(j150_code)
+        end
+        if j151_code then
+            code_list_string = code_list_string .. j151_code.code .. ", "
+            documented_dx_header:add_link(j151_code)
+        end
+        if j155_code then
+            code_list_string = code_list_string .. j155_code.code .. ", "
+            documented_dx_header:add_link(j155_code)
+        end
+        if j1561_code then
+            code_list_string = code_list_string .. j1561_code.code .. ", "
+            documented_dx_header:add_link(j1561_code)
+        end
+        if j157_code then
+            code_list_string = code_list_string .. j157_code.code .. ", "
+            documented_dx_header:add_link(j157_code)
+        end
+        if j160_code then
+            code_list_string = code_list_string .. j160_code.code .. ", "
+            documented_dx_header:add_link(j160_code)
+        end
+        Result.subtitle = "Pneumonia Conflicting Dx" .. code_list_string
+        if existing_alert and existing_alert.validated then
+            Result.validated = false
+            Result.outcome = ""
+            Result.reason = "Previously Autoresolved"
+        end
 
-    --]]
-    --[[
-    elif (
-        unspecCodes is not None and
-        (r845Code is not None or
-        CBloodDV is not None or
-        RespCultureDV is not None or
-        MRSASCreenDV is not None or
-        sARSCOVIDDV is not None or
-        InfluenzeScreenADV is not None or
-        InfluenzeScreenBDV is not None or
-        rSVDV is not None or
-        viralPneumoniaOrganismAbs is not None or
-        bacterialPneumoniaOrganismAbs is not None or
-        fungalPneumoniaOrganismAbs is not None or
-        drug.Links)
-    ):
-        dc.Links.Add(unspecCodes)
-        if r845Code is not None: dc.Links.Add(r845Code)
-        if CBloodDV is not None: dc.Links.Add(CBloodDV)
-        if RespCultureDV is not None: dc.Links.Add(RespCultureDV)
-        if MRSASCreenDV is not None: dc.Links.Add(MRSASCreenDV)
-        if sARSCOVIDDV is not None: dc.Links.Add(sARSCOVIDDV)
-        if InfluenzeScreenADV is not None: dc.Links.Add(InfluenzeScreenADV)
-        if InfluenzeScreenBDV is not None: dc.Links.Add(InfluenzeScreenBDV)
-        if rSVDV is not None: dc.Links.Add(rSVDV)
-        result.Subtitle = "Pneumonia Dx Unspecified"
-        AlertPassed = True
-        UnspecDX = True
+    elseif trigger_alert and unspecified_codes and (aspiration_abs or t17_gastic_codes or t17_food_codes) then
+        documented_dx_header:add_link(unspecified_codes)
+        documented_dx_header:add_link(aspiration_abs)
+        documented_dx_header:add_link(t17_gastic_codes)
+        documented_dx_header:add_link(t17_food_codes)
+        Result.subtitle = "Possible Aspiration Pneumonia"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif triggerAlert and unspecCodes is None and CI >= 2 and irregularRadRepPneumoniaAbs is not None and (aspirationAbs is not None or T17GasticCodes is not None or T17FoodCodes is not None):
-        dc.Links.Add(irregularRadRepPneumoniaAbs)
-        if aspirationAbs is not None: dc.Links.Add(aspirationAbs)
-        if T17GasticCodes is not None: dc.Links.Add(T17GasticCodes)
-        if T17FoodCodes is not None: dc.Links.Add(T17FoodCodes)
-        result.Subtitle = "Possible Aspiration Pneumonia"
-        AlertConditions = True
-        result.Passed = True
+    elseif
+        unspecified_codes and
+        (
+            r845_code or
+            c_blood_dv or
+            resp_culture_dv or
+            mrsa_screen_dv or
+            sars_covid_dv or
+            influenze_screen_a_dv or
+            influenze_screen_b_dv or
+            rsv_dv or
+            viral_pneumonia_organism_abs or
+            bacterial_pneumonia_organism_abs or
+            fungal_pneumonia_organism_abs or
+            #pneumonia_panel_header.links > 0
+        )
+    then
+        documented_dx_header:add_link(unspecified_codes)
+        documented_dx_header:add_link(r845_code)
+        documented_dx_header:add_link(c_blood_dv)
+        documented_dx_header:add_link(resp_culture_dv)
+        documented_dx_header:add_link(mrsa_screen_dv)
+        documented_dx_header:add_link(sars_covid_dv)
+        documented_dx_header:add_link(influenze_screen_a_dv)
+        documented_dx_header:add_link(influenze_screen_b_dv)
+        documented_dx_header:add_link(rsv_dv)
+        Result.subtitle = "Pneumonia Dx Unspecified"
+        Result.passed = true
+        unspecified_dx = true
 
-    --]]
-    --[[
-    elif unspecCodes is not None and antibiotic2Med is not None:
-        dc.Links.Add(unspecCodes)
-        result.Subtitle = "Possible Complex Pneumonia"
-        AlertConditions = True
-        result.Passed = True
+    elseif
+        trigger_alert and
+        not unspecified_codes and
+        ci >= 2 and
+        irregular_rad_rep_pneumonia_abs and
+        (aspiration_abs or t17_gastic_codes or t17_food_codes)
+    then
+        documented_dx_header:add_link(irregular_rad_rep_pneumonia_abs)
+        documented_dx_header:add_link(aspiration_abs)
+        documented_dx_header:add_link(t17_gastic_codes)
+        documented_dx_header:add_link(t17_food_codes)
+        Result.subtitle = "Possible Aspiration Pneumonia"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif subtitle == "Possible Pneumonia Dx" and unspecCodes is not None:
-        updateLinkText(unspecCodes, autoCodeText); dc.Links.Add(unspecCodes)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
+    elseif unspecified_codes and antibiotic2_med then
+        documented_dx_header:add_link(unspecified_codes)
+        Result.subtitle = "Possible Complex Pneumonia"
+        Result.passed = true
 
-    --]]
-    --[[
-    elif triggerAlert and CI >= 2 and TI >= 1 and irregularRadRepPneumoniaAbs is not None and unspecCodes is None:
-        dc.Links.Add(irregularRadRepPneumoniaAbs)
-        result.Subtitle = "Possible Pneumonia Dx"
-        AlertConditions = True
-        result.Passed = True
+    elseif subtitle == "Possible Pneumonia Dx" and unspecified_codes then
+        unspecified_codes.link_text = "Autoresolved Code - " .. unspecified_codes.link_text
+        documented_dx_header:add_link(unspecified_codes)
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
 
-    --]]
-    --[[
-    else:
-        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
-        result.Passed = False
-    --]]
+    elseif
+        trigger_alert and
+        ci >= 2 and
+        ti >= 1 and
+        (irregular_rad_rep_pneumonia_abs or unspecified_codes)
+    then
+        documented_dx_header:add_link(irregular_rad_rep_pneumonia_abs)
+        Result.subtitle = "Possible Pneumonia Dx"
+        Result.passed = true
+    end
 
 
     if Result.passed then
@@ -909,36 +1012,45 @@ if not existing_alert or not existing_alert.validated then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Abs
-            abstractValue("RESPIRATORY_BREATH_SOUNDS", "Respiratory Breath Sounds '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 17, abs, True)
-            #Document Links
-            documentLink("Chest  3 View", "Chest  3 View", 0, chestXRayLinks, True)
-            documentLink("Chest  PA and Lateral", "Chest  PA and Lateral", 0, chestXRayLinks, True)
-            documentLink("Chest  Portable", "Chest  Portable", 0, chestXRayLinks, True)
-            documentLink("Chest PA and Lateral", "Chest PA and Lateral", 0, chestXRayLinks, True)
-            documentLink("Chest  1 View", "Chest  1 View", 0, chestXRayLinks, True)
-            documentLink("CT Thorax W", "CT Thorax W", 0, ctChestLinks, True)
-            documentLink("CTA Thorax Aorta", "CTA Thorax Aorta", 0, ctChestLinks, True)
-            documentLink("CT Thorax WO-Abd WO-Pel WO", "CT Thorax WO-Abd WO-Pel WO", 0, ctChestLinks, True)
-            documentLink("CT Thorax WO", "CT Thorax WO", 0, ctChestLinks, True)
-            documentLink("OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive", "OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive", 0, speechLinks, True)
-            documentLink("OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice", "OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice", 0, speechLinks, True)
-            documentLink("OP SLP Evaluation - Language -Motor Speech-Dysphagia", "OP SLP Evaluation - Language -Motor Speech-Dysphagia", 0, speechLinks, True)
-            documentLink("OP SLP Evaluation - Motor Speech-Dysphagia", "OP SLP Evaluation - Motor Speech-Dysphagia", 0, speechLinks, True)
-            --]]
-            --[[
-            #Labs
-            if r845Code is not None and UnspecDX == False: labs.Links.Add(r845Code) #16
-            #Oxygen
-            multiCodeValue(["5A0935A", "5A0945A", "5A0955A"], "Flow Nasal Oxygen: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, oxygen, True)
-            codeValue("5A1945Z", "Mechanical Ventilation 24 to 96 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, oxygen, True)
-            codeValue("5A1955Z", "Mechanical Ventilation Greater than 96 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, oxygen, True)
-            codeValue("Z99.1", "Mechanical Ventilation/Invasive Ventilation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, oxygen, True)
-            codeValue("5A1935Z", "Mechanical Ventilation Less than 24 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 5, oxygen, True)
-            abstractValue("NON_INVASIVE_VENTILATION", "Non-Invasive Ventilation '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 6, oxygen, True)
-            #7-8
-            --]]
+            -- Clinical Evidence
+            clinical_evidence_header:add_abstraction_link("RESPIRATORY_BREATH_SOUNDS", "Respiratory Breath Sounds")
+            -- Document Links
+            chest_x_ray_header:add_document_link("Chest  3 View", "Chest  3 View")
+            chest_x_ray_header:add_document_link("Chest  PA and Lateral", "Chest  PA and Lateral")
+            chest_x_ray_header:add_document_link("Chest  Portable", "Chest  Portable")
+            chest_x_ray_header:add_document_link("Chest PA and Lateral", "Chest PA and Lateral")
+            chest_x_ray_header:add_document_link("Chest  1 View", "Chest  1 View")
+            ct_chest_header:add_document_link("CT Thorax W", "CT Thorax W")
+            ct_chest_header:add_document_link("CTA Thorax Aorta", "CTA Thorax Aorta")
+            ct_chest_header:add_document_link("CT Thorax WO-Abd WO-Pel WO", "CT Thorax WO-Abd WO-Pel WO")
+            ct_chest_header:add_document_link("CT Thorax WO", "CT Thorax WO")
+            speech_and_language_pathologist_header:add_document_link(
+                "OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive",
+                "OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive"
+            )
+            speech_and_language_pathologist_header:add_document_link(
+                "OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice",
+                "OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice"
+            )
+            speech_and_language_pathologist_header:add_document_link(
+                "OP SLP Evaluation - Language -Motor Speech-Dysphagia",
+                "OP SLP Evaluation - Language -Motor Speech-Dysphagia"
+            )
+            speech_and_language_pathologist_header:add_document_link(
+                "OP SLP Evaluation - Motor Speech-Dysphagia",
+                "OP SLP Evaluation - Motor Speech-Dysphagia"
+            )
+
+            -- Laboratory Studies
+            if r845_code and not unspecified_dx then laboratory_studies_header:add_link(r845_code) end
+            -- Oxygen Ventilation
+            oxygen_ventilation_header:add_code_links({ "5A0935A", "5A0945A", "5A0955A" }, "Flow Nasal Oxygen")
+            oxygen_ventilation_header:add_code_link("5A1945Z", "Mechanical Ventilation 24 to 96 hours")
+            oxygen_ventilation_header:add_code_link("5A1955Z", "Mechanical Ventilation Greater than 96 hours")
+            oxygen_ventilation_header:add_code_link("Z99.1", "Mechanical Ventilation/Invasive Ventilation")
+            oxygen_ventilation_header:add_code_link("5A1935Z", "Mechanical Ventilation Less than 24 hours")
+            oxygen_ventilation_header:add_abstraction_link("NON_INVASIVE_VENTILATION", "Non-Invasive Ventilation")
+            -- 7-8
         end
 
 
@@ -949,3 +1061,4 @@ if not existing_alert or not existing_alert.validated then
         compile_links()
     end
 end
+

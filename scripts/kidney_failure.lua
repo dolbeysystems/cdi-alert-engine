@@ -7,7 +7,6 @@
 --- Version: 1.0
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
----@diagnostic disable: unused-local, empty-block -- Remove once the script is filled out
 
 
 
@@ -46,7 +45,6 @@ local calc_urine_sodium1 = function(dv_, num) return num > 40 end
 local calc_urine_sodium2 = function(dv_, num) return num < 20 end
 local dv_urinary = { "" }
 local calc_urinary1 = function(dv_, num) return num > 0 end
-local dv_height = { "" }
 
 
 
@@ -101,10 +99,9 @@ end
 --- @param discrete_value_name string[] Discrete value names for urine
 --- @param abs_value_name string Abstraction value name
 --- @param link_text string Link text
---- @param category? header_builder Header builder
---- @param sequence? number Sequence
 --- @return CdiAlertLink[]?
-local function creatinine_check(discrete_value_name, abs_value_name, link_text, category, sequence)
+local function creatinine_check(discrete_value_name, abs_value_name, link_text)
+    local sequence = 1
     local abstractions = Account:find_code_references(abs_value_name)
     local abs_value = abstractions and abstractions[1] and tonumber(abstractions[1].code_reference.value) or nil
     local discrete_values = discrete.get_ordered_discrete_values { discreteValueNames = discrete_value_name }
@@ -211,27 +208,21 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text, 
 
     -- Check 3
     if x > 1 then
-        local abstraction = links.get_discrete_value_link {
+        local abstractions = links.get_discrete_value_links {
             discreteValueNames = dv_serum_creatinine,
             text = "Serum Creatinine",
             predicate = calc_serum_creatinine2,
         }
-    end
-    if #abstraction > 0 then
-        return abstraction
-    else
-        return nil
+        if #abstractions > 0 then return abstractions end
     end
 end
 
 --- @param discrete_value_name string[] Discrete value names for urine
 --- @param value number Value
 --- @param link_text string Link text
---- @param category header_builder? Header builder
---- @param sequence number? Sequence
 --- @return CdiAlertLink[]?
-local function is_value_greater_than_three_days(discrete_value_name, value, link_text, category, sequence)
-    sequence = sequence or 1
+local function is_value_greater_than_three_days(discrete_value_name, value, link_text)
+    local sequence = 1
     local day_one = dates.days_ago(1)
     local day_two = dates.days_ago(2)
     local day_three = dates.days_ago(3)
@@ -300,119 +291,6 @@ local function is_value_greater_than_three_days(discrete_value_name, value, link
     return nil
 end
 
---- @param discrete_value_name string[] Discrete value names for urine
---- @param link_text string Link text
---- @param sequence? number Sequence
---- @param category? header_builder Header builder
---- @param abstract? boolean
---- @return CdiAlertLink?
-local function dv_urine_check(discrete_value_name, link_text, sequence, category, abstract)
-    sequence = sequence or 0
-    abstract = abstract or false
-    local abstraction = nil
-
-    return links.get_discrete_value_link {
-        discreteValueNames = discrete_value_name,
-        text = link_text,
-        predicate = function(dv, num)
-            return num ~= nil
-        end,
-        category = category,
-        sequence = sequence,
-    }
-end
-
---- @param discrete_value_name string[] Discrete value names for urine
---- @param link_text string Link text
---- @param sequence? number Sequence
---- @param category? header_builder Header builder
---- @param abstract? boolean
---- @return CdiAlertLink?
-local function dv_urine_check_two(discrete_value_name, link_text, sequence, category, abstract)
-    sequence = sequence or 0
-    abstract = abstract or false
-
-    return links.get_discrete_value_link {
-        discreteValueNames = discrete_value_name,
-        text = link_text,
-        predicate = function(dv, num)
-            return dv.result ~= nil and not string.match(dv.result, "0-5")
-        end,
-        category = category,
-        sequence = sequence,
-    }
-end
-
---- @param discrete_value_name string[] Discrete value names for urine
---- @param link_text string Link text
---- @param sequence? number Sequence
---- @param category? header_builder Header builder
---- @param abstract? boolean
---- @return CdiAlertLink?
-local function dv_urine_check_three(discrete_value_name, link_text, sequence, category, abstract)
-    sequence = sequence or 0
-    abstract = abstract or false
-    return links.get_discrete_value_link {
-        discreteValueNames = discrete_value_name,
-        text = link_text,
-        predicate = function(dv, num)
-            return dv.result ~= nil and not string.match(dv.result, "0-4")
-        end,
-        category = category,
-        sequence = sequence,
-    }
-end
-
---- @param discrete_value_name string[] Discrete value names for urine
---- @param link_text string Link text
---- @param sequence? number Sequence
---- @param category? header_builder Header builder
---- @param abstract? boolean
---- @return CdiAlertLink?
-local function dv_urine_check_four(discrete_value_name, link_text, sequence, category, abstract)
-    sequence = sequence or 0
-    abstract = abstract or false
-    return links.get_discrete_value_link {
-        discreteValueNames = discrete_value_name,
-        text = link_text,
-        predicate = function(dv, num)
-            local parts = dv.result:gmatch("[^\\-]")
-            return dv.result ~= nil and
-                ((#parts > 0 and tonumber(parts[1]) > 20) or (#parts > 1 and tonumber(parts[2]) > 20))
-        end,
-        sequence = sequence,
-    }
-end
-
---- @param height string[] Discrete value names for height
---- @param urine string[] Discrete value names for urine
---- @param gender string Patient gender from account
---- @param category header_builder Header builder
---- @return boolean
-local function ideal_urine_calc(height, urine, gender, category)
-    local height_dic = discrete.get_ordered_discrete_values { discreteValueNames = height }
-    local urine_dic = discrete.get_ordered_discrete_values { discreteValueNames = urine }
-    local x = #urine_dic
-    local y = #height_dic
-
-    if x > 0 and y > 0 then
-        if gender == "F" then
-            local output = (((tonumber(height_dic[y].Result) - 105.0) * 0.5) * 24)
-            if tonumber(urine_dic[x].Result) < tonumber(output) then
-                category:add_text_link("Possible Low Urine Output")
-                return true
-            end
-        elseif gender == "M" then
-            local output = (((tonumber(height_dic[y].Result) - 105.0) * 0.5) * 24)
-            if tonumber(urine_dic[x].Result) < tonumber(output) then
-                category:add_text_link("Possible Low Urine Output")
-                return true
-            end
-        end
-    end
-    return false
-end
-
 --- @param dv1 string[] Discrete value names
 --- @param sequence number Sequence
 --- @param category header_builder Header builder
@@ -421,6 +299,7 @@ local function dv_look_up_all_values_single_line(dv1, sequence, category, link_t
     category.add_link(
         discrete.get_dv_values_as_single_link {
             discreteValueNames = dv1,
+            linkText = link_text,
             sequence = sequence,
         }
     )
@@ -488,14 +367,6 @@ then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negations
-    local negation_kidney_failure = links.get_code_links {
-        codes =
-        {
-            "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6",
-            "N18.9"
-        },
-        text = "Kidney Failure Codes"
-    }
     local n181_code = links.get_code_link { code = "N18.1", text = "Chronic Kidney Disease, Stage 1" }
     local n182_code = links.get_code_link { code = "N18.2", text = "Chronic Kidney Disease, Stage 2 (Mild)" }
     local n1830_code = links.get_code_link { code = "N18.30", text = "Chronic Kidney Disease, Stage 3 Unspecified" }
@@ -514,11 +385,6 @@ then
         links.get_discrete_value_link {
             discreteValueNames = dv_serum_creatinine,
             text = "Serum Creatinine",
-        }
-    local acute_chronic_unspecified_kidney_failure_abs =
-        links.get_abstract_value_link {
-            abstractValueName = "ACUTE_ON_CHRONIC_KIDNEY_FAILURE",
-            text = "Acute and Chronic Unspecified Kidney Failure Present",
         }
     local baseline_creatinine_abs =
         links.get_abstract_value_link {
@@ -549,8 +415,6 @@ then
     }
 
     -- Vitals
-    local urine_calc = ideal_urine_calc(dv_height, dv_urinary, "F", vital_signs_intake_header)
-
     local check3 = false
     local other_checks = false
 
