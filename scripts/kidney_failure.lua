@@ -34,9 +34,9 @@ local calc_map1 = function(dv_, num) return num < 70 end
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
 local calc_sbp1 = function(dv_, num) return num < 90 end
 local dv_serum_blood_urea_nitrogen = { "BUN (mg/dL)" }
-local calc_serum_blood_urea_nitrogen1 = 23
+local calc_serum_blood_urea_nitrogen1 = function(dv_, num) return num > 23 end
 local dv_serum_creatinine = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
-local calc_serum_creatinine1 = 1.02
+local calc_serum_creatinine1 = function(dv_, num) return num > 1.02 end
 local calc_serum_creatinine2 = function(dv_, num) return num > 1.50 end
 local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)",
     "TEMPERATURE (C)" }
@@ -133,9 +133,10 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text, 
             if dates.date_string_to_int(discrete_value.result_date) >= date_limit then
                 for _, discrete_value_2 in ipairs(discrete_values) do
                     local id2 = discrete_value_2.unique_id
+                    local date2 = dates.date_string_to_int(discrete_value_2.result_date)
                     if
-                        dates.date_string_to_int(discrete_value_2.result_date) >= date_limit and
-                        dates.date_string_to_int(discrete_value_2.result_date) >= dates.date_string_to_int(discrete_value.result_date) and
+                        date2 >= date_limit and
+                        date2 >= dates.date_string_to_int(discrete_value.result_date) and
                         id2 ~= id1 and
                         discrete.get_dv_value_number(discrete_value_2) > 1.0
                     then
@@ -151,13 +152,15 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text, 
                             link.discrete_value_id = discrete_value_2.unique_id
                             link.discrete_value_name = discrete_value_2.name
                             if sequence then link.sequence = sequence end
-                            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_value_2, nil)
+                            link.link_text =
+                                links.replace_link_place_holders(link_text, nil, nil, discrete_value_2, nil)
                             table.insert(abstraction, link)
                             local link = cdi_alert_link()
                             link.discrete_value_id = discrete_value.unique_id
                             link.discrete_value_name = discrete_value.name
                             if sequence then link.sequence = sequence end
-                            link.link_text = links.replace_link_place_holders(link_text, nil, nil, discrete_value, nil)
+                            link.link_text =
+                                links.replace_link_place_holders(link_text, nil, nil, discrete_value, nil)
                             table.insert(abstraction, link)
                         end
                     end
@@ -173,8 +176,21 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text, 
 
             for _, item2 in ipairs(discrete_values) do
                 local id2 = discrete_value.unique_id
-                if dates.date_string_to_int(item2.result_date) >= dates.date_string_to_int(discrete_value.result_date) and id2 ~= id1 then
-                    if value_comparison(discrete.get_dv_value_number(discrete_value), discrete.get_dv_value_number(item2), abs_value, 2) then
+                if
+                    (
+                        dates.date_string_to_int(item2.result_date) >=
+                        dates.date_string_to_int(discrete_value.result_date)
+                    ) and
+                    id2 ~= id1
+                then
+                    if
+                        value_comparison(
+                            discrete.get_dv_value_number(discrete_value),
+                            discrete.get_dv_value_number(item2),
+                            abs_value,
+                            2
+                        )
+                    then
                         local link = cdi_alert_link()
                         link.discrete_value_id = item2.unique_id
                         link.discrete_value_name = item2.name
@@ -526,7 +542,7 @@ then
         text = "Dialysis Dependent",
     }
     -- Labs
-    local gfr_dv = links.get_discrete_value_link {
+    local gfr_dv = links.get_discrete_value_links {
         discreteValueNames = dv_glomerular_filtration_rate,
         text = "Glomerular Filtration",
         predicate = calc_glomerular_filtration_rate1,
@@ -550,6 +566,8 @@ then
         end
     end
 
+    local creatinine_spec_check = false
+
 
 
     --------------------------------------------------------------------------------
@@ -572,8 +590,12 @@ then
     elseif #account_spec_codes > 1 then
         -- 2
         if not gfr_dv then
-            gfr_header:add_discrete_value_one_of_link(dv_glomerular_filtration_rate, "Glomerular Filtration",
-                calc_glomerular_filtration_rate1)
+            gfr_header:add_discrete_value_many_links(
+                dv_glomerular_filtration_rate,
+                "Glomerular Filtration",
+                10,
+                calc_glomerular_filtration_rate1
+            )
         end
         for _, code in ipairs(account_spec_codes) do
             local desc = spec_code_dic[code]
@@ -600,7 +622,8 @@ then
         Result.passed = true
 
     elseif
-        existing_alert and (existing_alert.outcome == 'AUTORESOLVED' or existing_alert.reason == 'Previously Autoresolved') and
+        existing_alert and
+        (existing_alert.outcome == 'AUTORESOLVED' or existing_alert.reason == 'Previously Autoresolved') and
         (n189_code or n181_code or n182_code or n1830_code or n1831_code or n1832_code or n184_code or n185_code) and
         dialysis_dependent_abs and
         #account_chro_codes < 2 and
@@ -618,7 +641,11 @@ then
         Result.subtitle = "Possible End-Stage Renal Disease"
         Result.passed = true
 
-    elseif #account_chro_codes > 0 and #account_spec_codes > 0 and subtitle == "Acute Kidney Failure Unspecified Present Possible ATN" then
+    elseif
+        #account_chro_codes > 0 and
+        #account_spec_codes > 0 and
+        subtitle == "Acute Kidney Failure Unspecified Present Possible ATN"
+    then
         -- 4.1
         if #account_chro_codes > 0 then
             for _, code in ipairs(account_chro_codes) do
@@ -645,7 +672,12 @@ then
         Result.validated = true
         Result.passed = true
 
-    elseif n179_code and high_serum_creatinine_multi_day_dv and #account_chro_codes == 0 and #account_spec_codes == 0 then
+    elseif
+        n179_code and
+        high_serum_creatinine_multi_day_dv and
+        #account_chro_codes == 0 and
+        #account_spec_codes == 0
+    then
         -- 4
         if high_serum_creatinine_multi_day_dv then
             for _, entry in ipairs(high_serum_creatinine_multi_day_dv) do
@@ -662,7 +694,10 @@ then
         Result.subtitle = "Acute Kidney Failure Unspecified Present Possible ATN"
         Result.passed = true
 
-    elseif subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and creatinine_multi_dv then
+    elseif
+        subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and
+        creatinine_multi_dv
+    then
         -- 5.1
         if high_serum_creatinine_multi_day_dv then
             for _, entry in ipairs(high_serum_creatinine_multi_day_dv) do
@@ -681,7 +716,8 @@ then
 
     elseif
         (n179_code or n17_codes) and
-        not n181_code and not n182_code and not n1830_code and not n1831_code and not n1832_code and not n184_code and not n185_code and not n186_code and
+        not n181_code and not n182_code and not n1830_code and not n1831_code and
+        not n1832_code and not n184_code and not n185_code and not n186_code and
         not creatinine_multi_dv
     then
         -- 5
@@ -689,171 +725,211 @@ then
         documented_dx_header:add_link(n17_codes)
         Result.subtitle = "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence"
         Result.passed = true
-    elseif subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and (high_serum_creatinine_multi_day_dv or creatinine_check_dv) then
+
+    elseif
+        subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and
+        (high_serum_creatinine_multi_day_dv or creatinine_check_dv)
+    then
         -- 6.1
         if high_serum_creatinine_multi_day_dv then
             for _, entry in ipairs(high_serum_creatinine_multi_day_dv) do
                 creatinine_header:add_link(entry)
             end
         end
-        --[[
-        #6.1
-        if highSerumCreatinineMultiDayDV is not None:
-            for entry in highSerumCreatinineMultiDayDV:
-                creatinine.Links.Add(entry)
-        if creatinineCheckDV is not None:
-            for entry in creatinineCheckDV:
-                creatinine.Links.Add(entry)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
+        if creatinine_check_dv then
+            for _, entry in ipairs(creatinine_check_dv) do
+                creatinine_header:add_link(entry)
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
     elseif (n179_code or n17_codes) and not high_serum_creatinine_multi_day_dv and not creatinine_check_dv then
-        --[[
-        #6
-        if n179Code is not None: dc.Links.Add(n179Code)
-        if n17Codes is not None: dc.Links.Add(n17Codes)
-        result.Subtitle = "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence"
-        AlertPassed = True
-        --]]
+        -- 6
+        documented_dx_header:add_link(n179_code)
+        documented_dx_header:add_link(n17_codes)
+        Result.subtitle = "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence"
+        Result.passed = true
+
     elseif #account_chro_codes > 0 and subtitle == "CKD No Stage Documented" then
-        --[[
-        #7.1
-        for code in chroCodeList:
-            desc = chroCodeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            if tempCode is not None:
-                dc.Links.Add(tempCode)
+        -- 7.1
+        for _, code in ipairs(account_chro_codes) do
+            local desc = chro_code_dic[code]
+            local temp_code = codes.get_first_code_link(code, desc)
+            if temp_code then
+                links.add_link(temp_code)
                 break
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
     elseif n189_code and #account_chro_codes == 0 and gfr_dv then
-        --[[
-        #7
-        dc.Links.Add(n189Code)
-        result.Subtitle = "CKD No Stage Documented"
-        AlertPassed = True
-        --]]
-    elseif subtitle == "Kidney Failure Dx Missing Acuity" and (n179_code or #account_chro_codes > 0 or #account_spec_codes > 0) then
-        --[[
-        #8.1
-        if n179Code is not None: updateLinkText(n179Code, autoCodeText); dc.Links.Add(n179Code)
-        if chroCodesExist > 0:
-            for code in chroCodeList:
-                desc = chroCodeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
-                    break
-        if specCodesExist > 0:
-            for code in specCodeList:
-                desc = specCodeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
-                    break
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
-    elseif n19_code and #account_chro_codes == 0 and #account_spec_codes == 0 then
-        --[[
-        #8
-        dc.Links.Add(n19Code)
-        result.Subtitle = "Kidney Failure Dx Missing Acuity"
-        AlertPassed = True
-        --]]
-    elseif (#account_spec_codes > 0 or n179_code or #account_chro_codes == 1) and subtitle == "Possible Acute Kidney Failure/AKI" then
-        --[[
-        #9.1
-        if chroCodesExist > 0:
-            for code in chroCodeList:
-                desc = chroCodeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
-                    break
-        if specCodesExist > 0:
-            for code in specCodeList:
-                desc = specCodeDic[code]
-                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-                if tempCode is not None:
-                    dc.Links.Add(tempCode)
-                    break
-        if n179Code is not None: updateLinkText(n179Code, autoCodeText); dc.Links.Add(n179Code)
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
-    elseif not n19_code and #account_chro_codes == 0 and #account_spec_codes == 0 and not n179_code and not n189_code and creatinine_check_dv then
-        --[[
-        #9
-        if creatinineCheckDV is not None:
-            for entry in creatinineCheckDV:
-                creatinine.Links.Add(entry)
-        creatinineSpecCheck = True
-        result.Subtitle = "Possible Acute Kidney Failure/AKI"
-        AlertPassed = True
-        --]]
-    elseif (#account_spec_codes > 0 or n179_code) and subtitle == "Possible Chronic Kidney Failure with Superimposed AKI" then
-        --[[
-        #10.1
-        for code in chroCodeList:
-            desc = chroCodeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            if tempCode is not None:
-                dc.Links.Add(tempCode)
-                break
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
+        -- 7
+        documented_dx_header:add_link(n189_code)
+        Result.subtitle = "CKD No Stage Documented"
+        Result.passed = true
+
     elseif
-        #account_chro_codes == 1 and not n186_code and #account_spec_codes == 0 and not n179_code and creatinine_check_dv and (check3 == false or other_checks == true) and baseline_creatinine_abs
+        subtitle == "Kidney Failure Dx Missing Acuity" and
+        (n179_code or #account_chro_codes > 0 or #account_spec_codes > 0)
     then
-        --[[
-        #10
-        if baselineCreatinineAbs is not None: dc.Links.Add(baselineCreatinineAbs)
-        for code in chroCodeList:
-            desc = chroCodeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            dc.Links.Add(tempCode)
-        if creatinineCheckDV is not None:
-            for entry in creatinineCheckDV:
-                creatinine.Links.Add(entry)
-        creatinineSpecCheck = True
-        result.Subtitle = "Possible Chronic Kidney Failure with Superimposed AKI"
-        AlertPassed = True
-        --]]
-    elseif subtitle == "Conflicting AKI and Renal Insufficiency Dx, Clarification Needed" and #account_spec_codes > 0 then
-        --[[
-        #11.1
-        for code in specCodeList:
-            desc = specCodeDic[code]
-            tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code - " + desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
-            if tempCode is not None:
-                dc.Links.Add(tempCode)
+        -- 8.1
+        if n179_code then
+            n179_code.link_text = "Autoresolved Specified Code - " .. n179_code.link_text
+            documented_dx_header:add_link(n179_code)
+        end
+        if #account_chro_codes > 0 then
+            for _, code in ipairs(account_chro_codes) do
+                local desc = chro_code_dic[code]
+                local temp_code = codes.get_first_code_link(code, desc)
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
+                    break
+                end
+            end
+        end
+        if #account_spec_codes > 0 then
+            for _, code in ipairs(account_spec_codes) do
+                local desc = spec_code_dic[code]
+                local temp_code = codes.get_first_code_link(code, desc)
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
+                    break
+                end
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif n19_code and #account_chro_codes == 0 and #account_spec_codes == 0 then
+        -- 8
+        documented_dx_header:add_link(n19_code)
+        Result.subtitle = "Kidney Failure Dx Missing Acuity"
+        Result.passed = true
+
+    elseif
+        (#account_spec_codes > 0 or n179_code or #account_chro_codes == 1) and
+        subtitle == "Possible Acute Kidney Failure/AKI"
+    then
+        -- 9.1
+        if #account_chro_codes > 0 then
+            for _, code in ipairs(account_chro_codes) do
+                local desc = chro_code_dic[code]
+                local temp_code = codes.get_first_code_link(code, desc)
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
+                    break
+                end
+            end
+        end
+        if #account_spec_codes > 0 then
+            for _, code in ipairs(account_spec_codes) do
+                local desc = spec_code_dic[code]
+                local temp_code = codes.get_first_code_link(code, desc)
+                if temp_code then
+                    documented_dx_header:add_link(temp_code)
+                    break
+                end
+            end
+        end
+        if n179_code then
+            n179_code.link_text = "Autoresolved Specified Code - " .. n179_code.link_text
+            documented_dx_header:add_link(n179_code)
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif
+        not n19_code and
+        #account_chro_codes == 0 and
+        #account_spec_codes == 0 and
+        not n179_code and not n189_code and
+        creatinine_check_dv
+    then
+        -- 9
+        if creatinine_check_dv then
+            for _, entry in ipairs(creatinine_check_dv) do
+                creatinine_header:add_link(entry)
+            end
+        end
+        creatinine_spec_check = true
+        Result.subtitle = "Possible Acute Kidney Failure/AKI"
+        Result.passed = true
+
+    elseif
+        (#account_spec_codes > 0 or n179_code) and
+        subtitle == "Possible Chronic Kidney Failure with Superimposed AKI"
+    then
+        -- 10.1
+        for _, code in ipairs(account_chro_codes) do
+            local desc = chro_code_dic[code]
+            local temp_code = codes.get_first_code_link(code, desc)
+            if temp_code then
+                documented_dx_header:add_link(temp_code)
                 break
-        result.Outcome = "AUTORESOLVED"
-        result.Reason = "Autoresolved due to one Specified Code on the Account"
-        result.Validated = True
-        AlertConditions = True
-        --]]
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
+    elseif
+        #account_chro_codes == 1 and
+        not n186_code and #account_spec_codes == 0 and
+        not n179_code and creatinine_check_dv and
+        (check3 == false or other_checks == true) and
+        baseline_creatinine_abs
+    then
+        -- 10
+        if baseline_creatinine_abs then creatinine_header:add_link(baseline_creatinine_abs) end
+        for _, code in ipairs(account_chro_codes) do
+            local desc = chro_code_dic[code]
+            local temp_code = codes.get_first_code_link(code, desc)
+            documented_dx_header:add_link(temp_code)
+        end
+        if creatinine_check_dv then
+            for _, entry in ipairs(creatinine_check_dv) do
+                creatinine_header:add_link(entry)
+            end
+        end
+        creatinine_spec_check = true
+        Result.subtitle = "Possible Chronic Kidney Failure with Superimposed AKI"
+        Result.passed = true
+
+    elseif
+        subtitle == "Conflicting AKI and Renal Insufficiency Dx, Clarification Needed" and
+        #account_spec_codes > 0
+    then
+        -- 11.1
+        for _, code in ipairs(account_spec_codes) do
+            local desc = spec_code_dic[code]
+            local temp_code = codes.get_first_code_link(code, "Autoresolved Specified Code - " .. desc)
+            if temp_code then
+                documented_dx_header:add_link(temp_code)
+                break
+            end
+        end
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the Account"
+        Result.validated = true
+        Result.passed = true
+
     elseif acute_kidney_injury_abs and acute_renal_insufficiency_abs and #account_spec_codes == 0 then
-        --[[
-        #11
-        if acuteKidneyInjuryAbs is not None: dc.Links.Add(acuteKidneyInjuryAbs)
-        if acuteRenalInsufficiencyAbs is not None: dc.Links.Add(acuteRenalInsufficiencyAbs)
-        AlertPassed = True
-        result.Subtitle = "Conflicting AKI and Renal Insufficiency Dx, Clarification Needed"
-        --]]
+        -- 11
+        if acute_kidney_injury_abs then documented_dx_header:add_link(acute_kidney_injury_abs) end
+        if acute_renal_insufficiency_abs then documented_dx_header:add_link(acute_renal_insufficiency_abs) end
+        Result.subtitle = "Conflicting AKI and Renal Insufficiency Dx, Clarification Needed"
+        Result.passed = true
     end
 
 
@@ -862,124 +938,177 @@ then
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            --[[
-            #Abs
-            codeValue("R82.998", "Abnormal Urine Findings: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, abs, True)
-            codeValue("D62", "Acute Blood Loss Anemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, abs, True)
-            prefixCodeValue("^N00\.", "Acute Nephritic Syndrome: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, abs, True)
-            codeValue("N10", "Acute Pyelonephritis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, abs, True)
-            codeValue("T39.5X5A", "Adverse effect from Aminoglycoside [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 5, abs, True)
-            codeValue("T39.395A", "Adverse effect from NSAID: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 6, abs, True)
-            codeValue("T39.0X5A", "Adverse effect from Sulfonamide [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 7, abs, True)
-            r4182Code = codeValue("R41.82", "Altered Level Of Consciousness: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 8)
-            alteredAbs = abstractValue("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 9)
-            --]]
-            --[[
-            if r4182Code is not None:
-                abs.Links.Add(r4182Code)
-                if alteredAbs is not None: alteredAbs.Hidden = True; abs.Links.Add(alteredAbs)
-            elif r4182Code is None and alteredAbs is not None:
-                abs.Links.Add(alteredAbs)
-            codeValue("R60.1", "Anasarca: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 10, abs, True)
-            codeValue("N26.1", "Atrophic Kidneys: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 11, abs, True)
-            abstractValue("AZOTEMIA", "Azotemia: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 12, abs, True)
-            codeValue("R57.0", "Cardiogenic Shock: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 13, abs, True)
-            codeValue("5A1D90Z", "Continuous, Hemodialysis Greater than 18 Hours Per Day: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 14, abs, True)
-            codeValue("N14.11", "Contrast Induced Nephropathy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 15, abs, True)
-            codeValue("T50.8X5A", "Contrast Nephropathy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 16, abs, True)
-            --]]
-            --[[
-            #17
-            abstractValue("DECOMPENSATED_HEART_FAILURE", "Decompensated Heart Failure '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 18, abs, True)
-            codeValue("E86.0", "Dehydration: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 19, abs, True)
-            codeValue("R41.0", "Disorientation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 20, abs, True)
-            codeValue("R53.83", "Fatigue: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 21, abs, True)
-            abstractValue("FLANK_PAIN", "Flank Pain '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 22, abs, True)
-            codeValue("E87.70", "Fluid Overloaded: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 23, abs, True)
-            codeValue("M32.14", "Glomerular Disease in SLE: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 24, abs, True)
-            multiCodeValue(["D59.30", "D59.31", "D59.32", "D59.39"], "Hemolytic-Uremic Syndrome: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 25, abs, True)
-            codeValue("R31.0", "Hematuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 26, abs, True)
-            abstractValue("HEMORRHAGE", "Hemorrhage: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 27, abs, True)
-            --]]
-            --[[
-            codeValue("Z94.0", "History of Kidney Transplant: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 28, abs, True)
-            codeValue("B20", "HIV: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 29, abs, True)
-            abstractValue("HYDRONEPHROSIS", "Hydronephrosis '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 30, abs, True)
-            codeValue("N13.4", "Hydroureter: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 31, abs, True)
-            codeValue("E86.1", "Hypovolemia: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 32, abs, True)
-            codeValue("R57.1", "Hypovolemic Shock: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 33, abs, True)
-            abstractValue("INCREASED_URINARY_FREQUENCY", "Increased Urinary Frequency '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 34, abs, True)
-            codeValue("5A1D70Z", "Intermittent Hemodialysis Less than 6 Hours Per Day: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 35, abs, True)
-            abstractValue("KIDNEY_STONES", "Kidney Stones '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 36, abs, True)
-            codeValue("N20.2", "Kidney and Ureter Stone: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 37, abs, True)
-            codeValue("N15.9", "Kidney Infection: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 38, abs, True)
-            --]]
-            --[[
-            abstractValue("LOSS_OF_APPETITE", "Loss of Appetite'[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 39, abs, True)
-            abstractValue("LOWER_EXTREMITY_EDEMA", "Lower Extremity Edema '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 40, abs, True)
-            codeValue("N14.3", "Nephropathy induced by Heavy Metals: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 41, abs, True)
-            codeValue("N14.2", "Nephropathy induced by Unspecified Drug: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 42, abs, True)
-            prefixCodeValue("^N04\.", "Nephrotic Syndrome: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 43, abs, True)
-            multiCodeValue(["T39.5X1A", "T39.5X2A", "T39.5X3A", "T39.5X4A"], "Poisoning by Aminoglycoside [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 44, abs, True)
-            multiCodeValue(["T39.391A", "T39.392A", "T39.393A", "T39.394A"], "Poisoning by NSAID: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 45, abs, True)
-            multiCodeValue(["T39.0X1A", "T39.0X2A", "T39.0X3A", "T39.0X4A"], "Poisoning by Sulfonamide [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 46, abs, True)
-            codeValue("5A1D80Z", "Prolonged Intermittent Hemodialysis 6-18 Hours Per Day: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 47, abs, True)
-            codeValue("R80.9", "Proteinuria: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 48, abs, True)
-            codeValue("M62.82", "Rhabdomyolysis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 49, abs, True)
-            prefixCodeValue("^A40\.", "Sepsis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 50, abs, True)
-            --]]
-            --[[
-            prefixCodeValue("^A41\.", "Sepsis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 51, abs, True)
-            multiCodeValue(["R57.8", "R57.9"], "Shock: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 52, abs, True)
-            abstractValue("SHORTNESS_OF_BREATH", "Shortness of Breath '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 53, abs, True)
-            codeValue("N14.4", "Toxic Nephropathy: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 54, abs, True)
-            codeValue("N12", "Tubulo-Interstital Nephritis: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 55, abs, True)
-            codeValue("M32.15", "Tubulo-Interstitial Nephropathy in SLE: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 56, abs, True)
-            codeValue("N20.1", "Ureter Stone: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 57, abs, True)
-            abstractValue("URINE_OUTPUT", "Urine Output: [ABSTRACTVALUE] ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 58, abs, True)
-            codeValue("E86.9", "Volume Depletion: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 59, abs, True)
-            codeValue("R11.10", "Vomiting: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 60, abs, True)
-            codeValue("R11.11", "Vomiting without Nausea: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 61, abs, True)
-            codeValue("R28.0", "Ischemia/Infarction of Kidney: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 62, abs, True)
-            abstractValue("URINARY_PAIN", "Urinary Pain '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 63, abs, True)
-            --]]
-            --[[
-            #Labs
-            abstractValue("BASELINE_CREATININE", "Baseline Creatinine: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 1, labs, True)
-            abstractValue("BASELINE_GLOMERULAR_FILTRATION_RATE", "Baseline Glomerular Filtration Rate '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 2, labs, True)
-            dvValue(dvUrineSodium, "Urine Sodium Concentration: [VALUE] (Result Date: [RESULTDATETIME])", calcUrineSodium2, 3, labs, True)
-            dvValue(dvUrineSodium, "Urine Sodium Concentration: [VALUE] (Result Date: [RESULTDATETIME])", calcUrineSodium1, 4, labs, True)
-            #Lab Sub Categorys
-            dvLookUpAllValuesSingleLine(dict(maindiscreteDic), dvSerumCreatinine, 0, creatinine, "Serum Creatinine: (DATE1 - DATE2) - ")
-            if creatinineSpecCheck is False:
-                dvValueMulti(dict(maindiscreteDic), dvSerumCreatinine, "Serum Creatinine: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumCreatinine1, gt, 1, creatinine, True, 10)
-            dvLookUpAllValuesSingleLine(dict(maindiscreteDic), dvGlomerularFiltrationRate, 0, gfr, "Glomerular Filtration: (DATE1 - DATE2) - ")
-            if gfrDV is not None:
-                for entry in gfrDV:
-                    gfr.Links.Add(entry) #1
-            dvLookUpAllValuesSingleLine(dict(maindiscreteDic), dvSerumBloodUreaNitrogen, 0, bun, "Serum Blood Urea Nitrogen: (DATE1 - DATE2) - ")
-            dvValueMulti(dict(maindiscreteDic), dvSerumBloodUreaNitrogen, "Serum Blood Urea Nitrogen: [VALUE] (Result Date: [RESULTDATETIME])", calcSerumBloodUreaNitrogen1, gt, 1, bun, True, 10)
-            --]]
-            --[[
-            #Meds
-            medValue("Albumin", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 1, treatment, True)
-            abstractValue("AVOID_NEPHROTOXIC_AGENT", "Avoid Nephrotoxic Agent: [ABSTRACTVALUE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 2, treatment, True)
-            medValue("Bumetanide", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 3, treatment, True)
-            abstractValue("BUMETANIDE", "Bumetanide '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 4, treatment, True)
-            medValue("Diuretic", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 5, treatment, True)
-            abstractValue("DIURETIC", "Diuretic '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 6, treatment, True)
-            medValue("Fluid Bolus", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 7, treatment, True)
-            abstractValue("FLUID_BOLUS", "Fluid Bolus '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 8, treatment, True)
-            medValue("Furosemide", "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])", 9, treatment, True)
-            abstractValue("FUROSEMIDE", "Furosemide '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 10, treatment, True)
-            --]]
-            --[[
-            #Vitals
-            dvValue(dvTemperature, "Temperature: [VALUE] (Result Date: [RESULTDATETIME])", calcTemperature1, 1, vitals, True)
-            dvValue(dvMAP, "Mean Arterial Pressure: [VALUE] (Result Date: [RESULTDATETIME])", calcMAP1, 2, vitals, True)
-            dvValue(dvUrinary, "Urine Output: [VALUE] (Result Date: [RESULTDATETIME])", calcUrinary1, 3, vitals, True)
-            dvValue(dvSBP, "Systolic Blood Pressure: [VALUE] (Result Date: [RESULTDATETIME])", calcSBP1, 4, vitals, True)
-            --]]
+            -- Clinical Evidence
+            clinical_evidence_header:add_code_link("R82.998", "Abnormal Urine Findings")
+            clinical_evidence_header:add_code_link("D62", "Acute Blood Loss Anemia")
+            clinical_evidence_header:add_code_prefix_link("^N00%.", "Acute Nephritic Syndrome")
+            clinical_evidence_header:add_code_link("N10", "Acute Pyelonephritis")
+            clinical_evidence_header:add_code_link("T39.5X5A", "Adverse effect from Aminoglycoside")
+            clinical_evidence_header:add_code_link("T39.395A", "Adverse effect from NSAID")
+            clinical_evidence_header:add_code_link("T39.0X5A", "Adverse effect from Sulfonamide")
+            clinical_evidence_header:add_abstraction_link(
+                "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                "Altered Level Of Consciousness"
+            )
+            local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
+            local altered_abs = links.get_abstract_value_link {
+                abstractValueName = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                text = "Altered Level Of Consciousness",
+            }
+            if r4182_code then
+                clinical_evidence_header:add_link(r4182_code)
+                if altered_abs then
+                    altered_abs.hidden = true
+                    clinical_evidence_header:add_link(altered_abs)
+                end
+            elseif altered_abs then
+                clinical_evidence_header:add_link(altered_abs)
+            end
+
+            clinical_evidence_header:add_code_link("R60.1", "Anasarca")
+            clinical_evidence_header:add_code_link("N26.1", "Atrophic Kidneys")
+            clinical_evidence_header:add_abstraction_link("AZOTEMIA", "Azotemia")
+            clinical_evidence_header:add_code_link("R57.0", "Cardiogenic Shock")
+            clinical_evidence_header:add_code_link("5A1D90Z", "Continuous, Hemodialysis Greater than 18 Hours Per Day")
+            clinical_evidence_header:add_code_link("N14.11", "Contrast Induced Nephropathy")
+            clinical_evidence_header:add_code_link("T50.8X5A", "Contrast Nephropathy")
+
+            -- 17
+            clinical_evidence_header:add_abstraction_link("DECOMPENSATED_HEART_FAILURE", "Decompensated Heart Failure")
+            clinical_evidence_header:add_code_link("E86.0", "Dehydration")
+            clinical_evidence_header:add_code_link("R41.0", "Disorientation")
+            clinical_evidence_header:add_code_link("R53.83", "Fatigue")
+            clinical_evidence_header:add_abstraction_link("FLANK_PAIN", "Flank Pain")
+            clinical_evidence_header:add_code_link("E87.70", "Fluid Overloaded")
+            clinical_evidence_header:add_code_link("M32.14", "Glomerular Disease in SLE")
+            clinical_evidence_header:add_code_links(
+                { "D59.30", "D59.31", "D59.32", "D59.39" },
+                "Hemolytic-Uremic Syndrome"
+            )
+            clinical_evidence_header:add_code_link("R31.0", "Hematuria")
+            clinical_evidence_header:add_abstraction_link("HEMORRHAGE", "Hemorrhage")
+            clinical_evidence_header:add_code_link("Z94.0", "History of Kidney Transplant")
+            clinical_evidence_header:add_code_link("B20", "HIV")
+            clinical_evidence_header:add_abstraction_link("HYDRONEPHROSIS", "Hydronephrosis")
+            clinical_evidence_header:add_code_link("N13.4", "Hydroureter")
+            clinical_evidence_header:add_code_link("E86.1", "Hypovolemia")
+            clinical_evidence_header:add_code_link("R57.1", "Hypovolemic Shock")
+            clinical_evidence_header:add_abstraction_link("INCREASED_URINARY_FREQUENCY", "Increased Urinary Frequency")
+            clinical_evidence_header:add_code_link("5A1D70Z", "Intermittent Hemodialysis Less than 6 Hours Per Day")
+            clinical_evidence_header:add_abstraction_link("KIDNEY_STONES", "Kidney Stones")
+            clinical_evidence_header:add_code_link("N20.2", "Kidney and Ureter Stone")
+            clinical_evidence_header:add_code_link("N15.9", "Kidney Infection")
+            clinical_evidence_header:add_abstraction_link("LOSS_OF_APPETITE", "Loss of Appetite")
+            clinical_evidence_header:add_abstraction_link("LOWER_EXTREMITY_EDEMA", "Lower Extremity Edema")
+            clinical_evidence_header:add_code_link("N14.3", "Nephropathy induced by Heavy Metals")
+            clinical_evidence_header:add_code_link("N14.2", "Nephropathy induced by Unspecified Drug")
+            clinical_evidence_header:add_code_prefix_link("^N04%.", "Nephrotic Syndrome")
+            clinical_evidence_header:add_code_links(
+                { "T39.5X1A", "T39.5X2A", "T39.5X3A", "T39.5X4A" },
+                "Poisoning by Aminoglycoside"
+            )
+            clinical_evidence_header:add_code_links(
+                { "T39.391A", "T39.392A", "T39.393A", "T39.394A" },
+                "Poisoning by NSAID"
+            )
+            clinical_evidence_header:add_code_links(
+                { "T39.0X1A", "T39.0X2A", "T39.0X3A", "T39.0X4A" },
+                "Poisoning by Sulfonamide"
+            )
+            clinical_evidence_header:add_code_link("5A1D80Z", "Prolonged Intermittent Hemodialysis 6-18 Hours Per Day")
+            clinical_evidence_header:add_code_link("R80.9", "Proteinuria")
+            clinical_evidence_header:add_code_link("M62.82", "Rhabdomyolysis")
+            clinical_evidence_header:add_code_prefix_link("^A40%.", "Sepsis")
+            clinical_evidence_header:add_code_prefix_link("^A41%.", "Sepsis")
+            clinical_evidence_header:add_code_links({ "R57.8", "R57.9" }, "Shock")
+            clinical_evidence_header:add_abstraction_link("SHORTNESS_OF_BREATH", "Shortness of Breath")
+            clinical_evidence_header:add_code_link("N14.4", "Toxic Nephropathy")
+            clinical_evidence_header:add_code_link("N12", "Tubulo-Interstital Nephritis")
+            clinical_evidence_header:add_code_link("M32.15", "Tubulo-Interstitial Nephropathy in SLE")
+            clinical_evidence_header:add_code_link("N20.1", "Ureter Stone")
+            clinical_evidence_header:add_abstraction_link("URINE_OUTPUT", "Urine Output")
+            clinical_evidence_header:add_code_link("E86.9", "Volume Depletion")
+            clinical_evidence_header:add_code_link("R11.10", "Vomiting")
+            clinical_evidence_header:add_code_link("R11.11", "Vomiting without Nausea")
+            clinical_evidence_header:add_code_link("R28.0", "Ischemia/Infarction of Kidney")
+            clinical_evidence_header:add_abstraction_link("URINARY_PAIN", "Urinary Pain")
+            -- Labs
+            clinical_evidence_header:add_abstraction_link("BASELINE_CREATININE", "Baseline Creatinine")
+            clinical_evidence_header:add_abstraction_link(
+                "BASELINE_GLOMERULAR_FILTRATION_RATE",
+                "Baseline Glomerular Filtration Rate"
+            )
+            clinical_evidence_header:add_discrete_value_many_links(
+                dv_urine_sodium,
+                "Urine Sodium Concentration",
+                10,
+                calc_urine_sodium2
+            )
+            clinical_evidence_header:add_discrete_value_many_links(
+                dv_urine_sodium,
+                "Urine Sodium Concentration",
+                10,
+                calc_urine_sodium1
+            )
+            -- Lab Sub Categories
+            dv_look_up_all_values_single_line(
+                dv_serum_creatinine,
+                0,
+                creatinine_header,
+                "Serum Creatinine: (DATE1 - DATE2) - "
+            )
+            if not creatinine_spec_check then
+                creatinine_header:add_discrete_value_many_links(
+                    dv_serum_creatinine,
+                    "Serum Creatinine",
+                    10,
+                    calc_serum_creatinine1
+                )
+            end
+            dv_look_up_all_values_single_line(
+                dv_glomerular_filtration_rate,
+                0,
+                gfr_header,
+                "Glomerular Filtration: (DATE1 - DATE2) - "
+            )
+            if gfr_dv then
+                for _, entry in ipairs(gfr_dv) do
+                    gfr_header:add_link(entry)
+                end
+            end
+            dv_look_up_all_values_single_line(
+                dv_serum_blood_urea_nitrogen,
+                0,
+                bun_header,
+                "Serum Blood Urea Nitrogen: (DATE1 - DATE2) - "
+            )
+            bun_header:add_discrete_value_many_links(
+                dv_serum_blood_urea_nitrogen,
+                "Serum Blood Urea Nitrogen",
+                10,
+                calc_serum_blood_urea_nitrogen1
+            )
+
+            -- Meds
+            treatment_and_monitoring_header:add_medication_link("Albumin", "Albumin")
+            treatment_and_monitoring_header:add_abstraction_link_with_value(
+                "AVOID_NEPHROTOXIC_AGENT",
+                "Avoid Nephrotoxic Agent"
+            )
+            treatment_and_monitoring_header:add_medication_link("Bumetanide", "Bumetanide")
+            treatment_and_monitoring_header:add_abstraction_link("BUMETANIDE", "Bumetanide")
+            treatment_and_monitoring_header:add_medication_link("Diuretic", "Diuretic")
+            treatment_and_monitoring_header:add_abstraction_link("DIURETIC", "Diuretic")
+            treatment_and_monitoring_header:add_medication_link("Fluid Bolus", "Fluid Bolus")
+            treatment_and_monitoring_header:add_abstraction_link("FLUID_BOLUS", "Fluid Bolus")
+            treatment_and_monitoring_header:add_medication_link("Furosemide", "Furosemide")
+            treatment_and_monitoring_header:add_abstraction_link("FUROSEMIDE", "Furosemide")
+
+            -- Vitals
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_temperature, "Temperature", calc_temperature1)
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_map, "Mean Arterial Pressure", calc_map1)
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_urinary, "Urine Output", calc_urinary1)
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_sbp, "Systolic Blood Pressure", calc_sbp1)
         end
 
 

@@ -26,6 +26,133 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
+local dv_c_blood = { "" }
+local dv_resp_culture = { "" }
+local dv_mrsa_screen = { "MRSA DNA" }
+local dv_sars_covid = { "SARS-CoV2 (COVID-19)" }
+local dv_influenze_screen_a = { "Influenza A" }
+local dv_influenze_screen_b = { "Influenza B" }
+local dv_oxygen_therapy = { "DELIVERY" }
+local dv_rsv = { "Respiratory syncytial virus" }
+local dv_oxygen_flow_rate = { "Resp O2 Delivery Flow Num" }
+local dv_respiratory_pattern = { "" }
+local dv_c_reactive_protein = { "C REACTIVE PROTEIN (mg/dL)" }
+local calc_creactive_protein1 = function(dv_, num) return num > 0.3 end
+local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
+local calc_glasgow_coma_scale1 = function(dv_, num) return num < 15 end
+local dv_interleukin6 = { "INTERLEUKIN 6" }
+local calc_interleukin61 = function(dv_, num) return num > 7.0 end
+local dv_pa_o2 = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
+local calc_pa_o21 = function(dv_, num) return num < 80 end
+local dv_pleural_fluid_culture = { "" }
+local dv_procalcitonin = { "PROCALCITONIN (ng/mL)" }
+local calc_procalcitonin1 = function(dv_, num) return num > 0.50 end
+local dv_respiratory_rate = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
+local calc_respiratory_rate1 = function(dv_, num) return num > 20 end
+local dv_sputum_culture = { "" }
+local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)",
+    "TEMPERATURE (C)" }
+local calc_temperature1 = function(dv_, num) return num > 38.3 end
+local dv_wbc = { "WBC (10x3/ul)" }
+local calc_wbc1 = function(dv_, num) return num > 11 end
+local calc_wbc2 = function(dv_, num) return num < 4.5 end
+
+
+
+--------------------------------------------------------------------------------
+--- Script Specific Functions
+--------------------------------------------------------------------------------
+--[[
+def dvOxygenCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
+    abstraction = None
+    for dv in dvDic or []:
+        if (
+            dvDic[dv]['Name'] in discreteValueName and
+            dvDic[dv]['Result'] is not None and
+            not re.search(r'\bRoom Air\b', dvDic[dv]['Result'], re.IGNORECASE) and
+            not re.search(r'\bRA\b', dvDic[dv]['Result'], re.IGNORECASE)
+        ):
+            if abstract:
+                dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
+                return True
+            else:
+                abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
+                return abstraction
+    return abstraction
+
+def dvPositiveCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
+    abstraction = None
+    for dv in dvDic or []:
+        if (
+            dvDic[dv]['Name'] in discreteValueName and
+            dvDic[dv]['Result'] is not None and
+            (re.search(r'\bpositive\b', dvDic[dv]['Result'], re.IGNORECASE) is not None or
+            re.search(r'\bDetected\b', dvDic[dv]['Result'], re.IGNORECASE) is not None)
+        ):
+            if abstract:
+                dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
+                return True
+            else:
+                abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
+                return abstraction
+    return abstraction
+
+def ivMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
+    for mv in medDic or []:
+        if (
+            medDic[mv]['Route'] is not None and
+            medDic[mv]['Category'] == med_name and
+            (re.search(r'\bIntravenous\b', medDic[mv]['Route'], re.IGNORECASE) or
+            re.search(r'\bIV Push\b', medDic[mv]['Route'], re.IGNORECASE)) and
+            (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
+        ):
+            if abstract == True:
+                medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
+                return True
+            elif abstract == False:
+                abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
+                return abstraction
+    return None
+
+def antiboticMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
+    for mv in medDic or []:
+        if (
+            medDic[mv]['Route'] is not None and
+            medDic[mv]['Category'] == med_name and
+            (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
+            re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
+        ):
+            if abstract == True:
+                medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
+                return True
+            elif abstract == False:
+                abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
+                return abstraction
+    return None
+
+def medDataConversion(datetime, linkText, med, id, dosage, route, category, sequence, abstract=True):
+    date_time = datetimeFromUtcToLocal(datetime)
+    date_time = date_time.ToString("MM/dd/yyyy, HH:mm")
+    linkText = linkText.replace("[STARTDATE]", date_time)
+    linkText = linkText.replace("[MEDICATION]", med)
+    linkText = linkText.replace("[DOSAGE]", dosage)
+    if route is not None: linkText = linkText.replace("[ROUTE]", route)
+    else: linkText = linkText.replace(", Route [ROUTE]", "")
+    if abstract == True:
+        abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
+        abstraction.MedicationId = id
+        category.Links.Add(abstraction)
+    elif abstract == False:
+        abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
+        abstraction.MedicationId = id
+        return abstraction
+    return
+--]]
 
 
 
@@ -36,6 +163,11 @@ local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
+-- Alert trigger
+local unspecified_codes = links.get_code_links {
+    codes = { "J12.89", "J12.9", "J16.8", "J18", "J18.0", "J18.1", "J18.2", "J18.8", "J18.9", "J15.69", "J15.8", "J15.9" },
+    text = "Unspecified Pneumonia Dx",
+}
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
@@ -123,181 +255,690 @@ if not existing_alert or not existing_alert.validated then
     }
     local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
-    -- def dvOxygenCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-    --     abstraction = None
-    --     for dv in dvDic or []:
-    --         if (
-    --             dvDic[dv]['Name'] in discreteValueName and
-    --             dvDic[dv]['Result'] is not None and
-    --             not re.search(r'\bRoom Air\b', dvDic[dv]['Result'], re.IGNORECASE) and
-    --             not re.search(r'\bRA\b', dvDic[dv]['Result'], re.IGNORECASE)
-    --         ):
-    --             if abstract:
-    --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
-    --                 return True
-    --             else:
-    --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
-    --                 return abstraction
-    --     return abstraction
 
-    -- def dvPositiveCheck(dvDic, discreteValueName, linkText, sequence=0, category=None, abstract=False):
-    --     abstraction = None
-    --     for dv in dvDic or []:
-    --         if (
-    --             dvDic[dv]['Name'] in discreteValueName and
-    --             dvDic[dv]['Result'] is not None and
-    --             (re.search(r'\bpositive\b', dvDic[dv]['Result'], re.IGNORECASE) is not None or
-    --             re.search(r'\bDetected\b', dvDic[dv]['Result'], re.IGNORECASE) is not None)
-    --         ):
-    --             if abstract:
-    --                 dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, True)
-    --                 return True
-    --             else:
-    --                 abstraction = dataConversion(dvDic[dv]['ResultDate'], linkText, dvDic[dv]['Result'], dvDic[dv]['UniqueId'] or dvDic[dv]['_id'], category, sequence, False)
-    --                 return abstraction
-    --     return abstraction
-
-    -- def ivMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
-    --     for mv in medDic or []:
-    --         if (
-    --             medDic[mv]['Route'] is not None and
-    --             medDic[mv]['Category'] == med_name and
-    --             (re.search(r'\bIntravenous\b', medDic[mv]['Route'], re.IGNORECASE) or
-    --             re.search(r'\bIV Push\b', medDic[mv]['Route'], re.IGNORECASE)) and
-    --             (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
-    --         ):
-    --             if abstract == True:
-    --                 medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
-    --                 return True
-    --             elif abstract == False:
-    --                 abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
-    --                 return abstraction
-    --     return None
-
-    -- def antiboticMedValue(medDic, med_name, link_text, sequence=0, category=None, abstract=False):
-    --     for mv in medDic or []:
-    --         if (
-    --             medDic[mv]['Route'] is not None and
-    --             medDic[mv]['Category'] == med_name and
-    --             (re.search(r'\bEye\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\btopical\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\bocular\b', medDic[mv]['Route'], re.IGNORECASE) is None and
-    --             re.search(r'\bophthalmic\b', medDic[mv]['Route'], re.IGNORECASE) is None)
-    --         ):
-    --             if abstract == True:
-    --                 medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence)
-    --                 return True
-    --             elif abstract == False:
-    --                 abstraction = medDataConversion(medDic[mv]['StartDate'], link_text, medDic[mv]['Medication'], medDic[mv]['ExternalId'], medDic[mv]['Dosage'], medDic[mv]['Route'], category, sequence, abstract)
-    --                 return abstraction
-    --     return None
-
-    -- def medDataConversion(datetime, linkText, med, id, dosage, route, category, sequence, abstract=True):
-    --     date_time = datetimeFromUtcToLocal(datetime)
-    --     date_time = date_time.ToString("MM/dd/yyyy, HH:mm")
-    --     linkText = linkText.replace("[STARTDATE]", date_time)
-    --     linkText = linkText.replace("[MEDICATION]", med)
-    --     linkText = linkText.replace("[DOSAGE]", dosage)
-    --     if route is not None: linkText = linkText.replace("[ROUTE]", route)
-    --     else: linkText = linkText.replace(", Route [ROUTE]", "")
-    --     if abstract == True:
-    --         abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
-    --         abstraction.MedicationId = id
-    --         category.Links.Add(abstraction)
-    --     elif abstract == False:
-    --         abstraction = MatchedCriteriaLink(linkText, None, None, None, True, None, None, sequence)
-    --         abstraction.MedicationId = id
-    --         return abstraction
-    --     return
 
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
+    local assigned_code = false
+    local alert_triggered = existing_alert ~= nil
+    local trigger_alert =
+        existing_alert == nil or
+        (existing_alert.outcome ~= "AUTORESOLVED" and existing_alert.reason ~= "Previously Autoresolved")
 
-    local unspecified_codes = links.get_code_links {
-        codes = { "J12.89", "J12.9", "J16.8", "J18", "J18.0", "J18.1", "J18.2", "J18.8", "J18.9", "J15.69", "J15.8", "J15.9" },
-        text = "Unspecified Pneumonia Dx",
+    for _, alert_link in ipairs(existing_alert and existing_alert.links or {}) do
+        if alert_link.link_text == "Documentation Includes" then
+            for _, link in ipairs(alert_link.links) do
+                if link.link_text == "Assigned" then
+                    assigned_code = true
+                end
+            end
+        end
+    end
+
+    -- Conflicting Codes Gram Negative Bacteria
+    local j156_code =
+        links.get_code_link { code = "J15.6", text = "Pneumonia due to Other Gram-negative bacteria" }
+    local a0103_code = links.get_code_link { code = "A01.03", text = "Typhoid Pneumonia" }
+    local a0222_code = links.get_code_link { code = "A02.22", text = "Salmonella Pneumonia" }
+    local a212_code = links.get_code_link { code = "A21.2", text = "Tularemia Pneumonia" }
+    local a5484_code = links.get_code_link { code = "A54.84", text = "Gonococcal Pneumonia" }
+    local a698_code = links.get_code_link { code = "A69.8", text = "Spirochetal Pneumonia" }
+    local b440_code = links.get_code_link { code = "B44.0", text = "Aspergillosis Pneumonia" }
+    local b4411_code = links.get_code_link { code = "B44.11", text = "Aspergillosis Pneumonia Other" }
+    local b583_code = links.get_code_link { code = "B58.3", text = "Toxoplasmosis Pneumonia" }
+    local b59_code = links.get_code_link { code = "B59", text = "Pneumonia due to Pneumocystis Carinii, Pneumonia due to Pneumocystis Jiroveci" }
+    local j150_code = links.get_code_link { code = "J15.0", text = "Pneumonia due to Klebsiella Pneumoniae" }
+    local j151_code = links.get_code_link { code = "J15.1", text = "Pneumonia due to Pseudomonas" }
+    local j155_code = links.get_code_link { code = "J15.5", text = "Pneumonia due to Escherichia coli" }
+    local j1561_code = links.get_code_link { code = "J15.61", text = "Pneumonia due to Acinetobacter Baumannii" }
+    local j157_code = links.get_code_link { code = "J15.7", text = "Pneumonia due to Mycoplasma pneumoniae" }
+    local j160_code = links.get_code_link { code = "J16.0", text = "Chlamydial pneumonia" }
+
+    -- Conflicting Codes Gram Postive Bacteria
+    local j159_code = links.get_code_link { code = "J15.9", text = "Pneumonia due to due to gram-positive bacteria" }
+    local j152_code = links.get_code_link { code = "J15.2", text = "Pneumonia due to staphylococcus" }
+    local j1521_code = links.get_code_link { code = "J15.21", text = "Pneumonia due to staphylococcus aureus" }
+    local a221_code = links.get_code_link { code = "A22.1", text = "Anthrax Pneumonia" }
+    local a420_code = links.get_code_link { code = "A42.0", text = "Actinomycosis Pneumonia" }
+    local a430_code = links.get_code_link { code = "A43.0", text = "Nocardiosis Pneumonia" }
+    local j13_code = links.get_code_link { code = "J13", text = "Pneumonia due to Streptococcus pneumoniae" }
+    local j15211_code = links.get_code_link { code = "J15.211", text = "Pneumonia due to Methicillin susceptible Staphylococcus aureus" }
+    local j15212_code = links.get_code_link { code = "J15.212", text = "Pneumonia due to Methicillin resistant Staphylococcus aureus" }
+    local j153_code = links.get_code_link { code = "J15.3", text = "Pneumonia due to streptococcus, group B" }
+    local j154_code = links.get_code_link { code = "J15.4", text = "Pneumonia due to Other Streptococci" }
+
+    -- Conflicting Codes Other Full Spec Codes
+    local b012_code = links.get_code_link { code = "B01.2", text = "Varicella Pneumonia" }
+    local b052_code = links.get_code_link { code = "B05.2", text = "Measles Complicated By Pneumonia" }
+    local b0681_code = links.get_code_link { code = "B06.81", text = "Rubella Pneumonia" }
+    local b250_code = links.get_code_link { code = "B25.0", text = "Cytomegaloviral Pneumonitis" }
+    local b371_code = links.get_code_link { code = "B37.1", text = "Pulmonary Candidiasis" }
+    local b380_code = links.get_code_link { code = "B38.0", text = "Acute Pulmonary Coccidioidomycosis" }
+    local b390_code = links.get_code_link { code = "B39.0", text = "Acute Pulmonary Histoplasmosis Capsulati" }
+    local b441_code = links.get_code_link { code = "B44.1", text = "Other Pulmonary Aspergillosis" }
+    local b7781_code = links.get_code_link { code = "B77.81", text = "Ascariasis Pneumonia" }
+    local j120_code = links.get_code_link { code = "J12.0", text = "Adenoviral Pneumonia" }
+    local j121_code = links.get_code_link { code = "J12.1", text = "Respiratory Syncytial Virus Pneumonia" }
+    local j122_code = links.get_code_link { code = "J12.2", text = "Parainfluenza Virus Pneumonia" }
+    local j123_code = links.get_code_link { code = "J12.3", text = "Human Metapneumovirus Pneumonia" }
+    local j1281_code = links.get_code_link { code = "J12.81", text = "Pneumonia Due To SARS-Associated Coronavirus" }
+    local j1282_code = links.get_code_link { code = "J12.82", text = "Pneumonia Due To Coronavirus Disease 2019" }
+    local j14_code = links.get_code_link { code = "J14", text = "Pneumonia Due To Hemophilus Influenzae" }
+    local j1520_code = links.get_code_link { code = "J15.20", text = "Pneumonia Due To Staphylococcus, Unspecified" }
+    local j1569_code = links.get_code_link { code = "J15.69", text = "Pneumonia due to Other Gram-Negative Bacteria" }
+    local j158_code = links.get_code_link { code = "J15.8", text = "Pneumonia Due To Other Specified Bacteria" }
+    local j690_code = links.get_code_link { code = "J69.0", text = "Aspiration Pneumonia" }
+    local j691_code = links.get_code_link { code = "J69.1", text = "Pneumonitis Due To Inhalation Of Oils And Essences" }
+    local j698_code = links.get_code_link { code = "J69.8", text = "Pneumonitis Due To Inhalation Of Other Solids And Liquids" }
+
+    -- Negations
+    local z7969_code = links.get_code_link { code = "Z79.69", text = "Unspecified Immunomodulators and Immunosuppressants" }
+    -- Alert Trigger
+    local t17_gastic_codes = links.get_code_link {
+        codes = { "T17.310", "T17.308" },
+        text = "Gastric Contents in Larynx",
     }
+    local t17_food_codes = links.get_code_link {
+        codes = { "T17.320", "T17.328" },
+        text = "Food in Larynx",
+    }
+
+    -- Clinical Evidence
+    local abnormal_sputum_abs = links.get_abstraction_link {
+        code = "ABNORMAL_SPUTUM",
+        text = "Abnormal Sputum",
+    }
+    local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness" }
+    local altered_abs = links.get_abstraction_link {
+        code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+        text = "Altered Level of Consciousness",
+    }
+    local aspiration_abs = links.get_abstraction_link { code = "ASPIRATION", text = "Aspiration" }
+    local bacterial_pneumonia_organism_abs = links.get_abstraction_link {
+        code = "BACTERIAL_PNEUMONIA_ORGANISM",
+        text = "Possible Bacterial Pneumonia Organism",
+    }
+    local r059_code = links.get_code_link { code = "R05.9", text = "Cough" }
+    local crackles_abs = links.get_abstraction_link { code = "CRACKLES", text = "Crackles" }
+    local r131_codes = links.get_code_link { code = "^R13.1", text = "Dysphagia" }
+    local swallow_study_abs = links.get_abstraction_link { code = "FAILED_SWALLOW_STUDY", text = "Failed Swallow study" }
+    local glascow_coma_scale_dv = links.get_discrete_value_link {
+        discreteValues = dv_glasgow_coma_scale,
+        text = "Glascow Coma Scale",
+        predicate = calc_glasgow_coma_scale1,
+    }
+    local glascow_coma_scale_abs = links.get_abstraction_value_link {
+        code = "GLASCOW_COMA_SCALE",
+        text = "Glascow Coma Scale",
+    }
+    local gag_reflex_abs = links.get_abstraction_link { code = "IMPAIRED_GAG_REFLEX", text = "Impaired Gag Reflex" }
+    local irregular_rad_rep_pneumonia_abs = links.get_abstraction_link {
+        code = "IRREGULAR_RADIOLOGY_REPORT_PNEUMONIA",
+        text = "Irregular Radiology Report Lungs",
+    }
+    local pleural_rub_abs = links.get_abstraction_link { code = "PLEURAL_RUB", text = "Pleural Rub" }
+    local fungal_pneumonia_organism_abs = links.get_abstraction_link {
+        code = "FUNGAL_PNEUMONIA_ORGANISM",
+        text = "Possible Fungal Pneumonia Organism",
+    }
+    local viral_pneumonia_organism_abs = links.get_abstraction_link {
+        code = "VIRAL_PNEUMONIA_ORGANISM",
+        text = "Possible Viral Pneumonia Organism",
+    }
+    local rhonchi_abs = links.get_abstraction_link { code = "RHONCHI", text = "Rhonchi" }
+    local sob_abs = links.get_abstraction_link { code = "SHORTNESS_OF_BREATH", text = "Shortness of Breath" }
+    local accessory_muscles_abs = links.get_abstraction_link {
+        code = "USE_OF_ACCESSORY_MUSCLES",
+        text = "Use of Accessory Muscles",
+    }
+    local wheezing_abs = links.get_abstraction_link { code = "WHEEZING", text = "Wheezing" }
+
+    -- Labs
+    local c_blood_dv = links.get_discrete_value_link {
+        discreteValues = dv_c_blood,
+        text = "Blood Culture",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+
+    }
+    local c_reactive_protein_elev_dv = links.get_discrete_value_link {
+        discreteValues = dv_c_reactive_protein,
+        text = "C Reactive Protein",
+        predicate = calc_creactive_protein1,
+    }
+    local sars_covid_dv = links.get_discrete_value_link {
+        discreteValues = dv_sars_covid,
+        text = "Covid 19 Screen",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local r0902_code = links.get_code_link { code = "R09.02", text = "Hypoxemia" }
+    local interleukin6_elev_dv = links.get_discrete_value_link {
+        discreteValues = dv_interleukin6,
+        text = "Interleukin 6",
+        predicate = calc_interleukin61,
+    }
+    local mrsa_screen_dv = links.get_discrete_value_link {
+        discreteValues = dv_mrsa_screen,
+        text = "MRSA Screen",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local p_a02_dv = links.get_discrete_value_link {
+        discreteValues = dv_pa_o2,
+        text = "pa02",
+        predicate = calc_pa_o21,
+    }
+    local pleural_fluid_culture_dv = links.get_discrete_value_link {
+        discreteValues = dv_pleural_fluid_culture,
+        text = "Positive Pleural Fluid Culture",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local r845_code = links.get_code_link { code = "R84.5", text = "Positive Respiratory Culture" }
+    local positive_sputum_culture_dv = links.get_discrete_value_link {
+        discreteValues = dv_sputum_culture,
+        text = "Positive Sputum Culture",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local procalcitonin_dv = links.get_disc_value_link { discreteValues = dv_procalcitonin, text = "Procalcitonin" }
+    local resp_culture_dv = links.get_discrete_value_link {
+        discreteValues = dv_resp_culture,
+        text = "Respiratory Culture",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local influenze_screen_a_dv = links.get_discrete_value_link {
+        discreteValues = dv_influenze_screen_a,
+        text = "Respiratory Pathogen Panel (Influenza A)",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local influenze_screen_b_dv = links.get_discrete_value_link {
+        discreteValues = dv_influenze_screen_b,
+        text = "Respiratory Pathogen Panel (Influenza B)",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    local rsv_dv = links.get_discrete_value_link {
+        discreteValues = dv_rsv,
+        text = "Respiratory Pathogen Panel (RSV)",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("positive") ~= nil or dv.result:lower():find("detected") ~= nil
+        end
+    }
+    -- 16
+    local high_wbc_dv = links.get_discrete_value_link {
+        discreteValues = dv_wbc,
+        text = "White Blood Cell Count",
+        predicate = calc_wbc1,
+    }
+    local low_wbc_dv = links.get_discrete_value_link {
+        discreteValues = dv_wbc,
+        text = "White Blood Cell Count",
+        predicate = calc_wbc2,
+    }
+
+    -- Meds
+    local antibiotic_med = links.get_medication_link { cat = "Antibiotic", text = "Antibiotic" }
+    local antibiotic2_med = links.get_medication_link { cat = "Antibiotic2", text = "Antibiotic2" }
+    local antibiotic_abs = links.get_abstraction_link { code = "ANTIBIOTIC", text = "Antibiotic" }
+    local antibiotic2_abs = links.get_abstraction_link { code = "ANTIBIOTIC_2", text = "Antibiotic2" }
+    local antifungal_med = links.get_medication_link { cat = "Antifungal", text = "Antifungal" }
+    local antifungal_abs = links.get_abstraction_link { code = "ANTIFUNGAL", text = "Antifungal" }
+    local antiviral_med = links.get_medication_link { cat = "Antiviral", text = "Antiviral" }
+    local antiviral_abs = links.get_abstraction_link { code = "ANTIVIRAL", text = "Antiviral" }
+
+    -- Oxygen
+    local oxygen_therapy = links.get_discrete_value_link {
+        discreteValues = dv_oxygen_therapy,
+        text = "Oxygen Therapy",
+        predicate = function(dv, num_)
+            return dv.result:lower():find("room air") ~= nil or dv.result:lower():find("RA") ~= nil
+        end
+    }
+    local oxygen_therapy_abs = links.get_abstraction_link { code = "OXYGEN_THERAPY", text = "Oxygen Therapy" }
+
+    -- Vitals
+    local respiratory_rate_dv = links.get_discrete_value_link {
+        discreteValues = dv_respiratory_rate,
+        text = "Respiratory Rate",
+        predicate = calc_respiratory_rate1,
+    }
+    local high_temp_dv = links.get_discrete_value_link {
+        discreteValues = dv_temperature,
+        text = "Temperature",
+        predicate = calc_temperature1,
+    }
+
+    -- Checking Clinical Indicators
+    local ci = 0
+    if bacterial_pneumonia_organism_abs then
+        clinical_evidence_header:add_link(bacterial_pneumonia_organism_abs)
+        ci = ci + 1
+    end
+    if viral_pneumonia_organism_abs then
+        clinical_evidence_header:add_link(viral_pneumonia_organism_abs)
+        ci = ci + 1
+    end
+    if fungal_pneumonia_organism_abs then
+        clinical_evidence_header:add_link(fungal_pneumonia_organism_abs)
+        ci = ci + 1
+    end
+    if high_temp_dv then
+        ci = ci + 1
+        vital_signs_header:add_link(high_temp_dv)
+    end
+    if high_wbc_dv or low_wbc_dv then
+        ci = ci + 1
+        if high_wbc_dv then laboratory_studies_header:add_link(high_wbc_dv) end
+        if low_wbc_dv then laboratory_studies_header:add_link(low_wbc_dv) end
+    end
+    if interleukin6_elev_dv then
+        laboratory_studies_header:add_link(interleukin6_elev_dv)
+        ci = ci + 1
+    end
+    if c_reactive_protein_elev_dv then
+        laboratory_studies_header:add_link(c_reactive_protein_elev_dv)
+        ci = ci + 1
+    end
+    if procalcitonin_dv then
+        laboratory_studies_header:add_link(procalcitonin_dv)
+        ci = ci + 1
+    end
+    if glascow_coma_scale_dv or glascow_coma_scale_abs then
+        ci = ci + 1
+        if glascow_coma_scale_dv then laboratory_studies_header:add_link(glascow_coma_scale_dv) end
+        if glascow_coma_scale_abs then laboratory_studies_header:add_link(glascow_coma_scale_abs) end
+    end
+    if r059_code then
+        clinical_evidence_header:add_link(r059_code)
+        ci = ci + 1
+    end
+    if sob_abs then
+        clinical_evidence_header:add_link(sob_abs)
+        ci = ci + 1
+    end
+    if respiratory_rate_dv then
+        ci = ci + 1
+        vital_signs_header:add_link(respiratory_rate_dv)
+    end
+    if crackles_abs then
+        clinical_evidence_header:add_link(crackles_abs)
+        ci = ci + 1
+    end
+    if rhonchi_abs then
+        clinical_evidence_header:add_link(rhonchi_abs)
+        ci = ci + 1
+    end
+    if abnormal_sputum_abs then
+        clinical_evidence_header:add_link(abnormal_sputum_abs)
+        ci = ci + 1
+    end
+    if pleural_rub_abs then
+        clinical_evidence_header:add_link(pleural_rub_abs)
+        ci = ci + 1
+    end
+    if positive_sputum_culture_dv then
+        ci = ci + 1
+        laboratory_studies_header:add_link(positive_sputum_culture_dv)
+    end
+    if pleural_fluid_culture_dv then
+        ci = ci + 1
+        laboratory_studies_header:add_link(pleural_fluid_culture_dv)
+    end
+    if oxygen_therapy or oxygen_therapy_abs then
+        if oxygen_therapy then oxygen_ventilation_header:add_link(oxygen_therapy) end
+        if oxygen_therapy_abs then oxygen_ventilation_header:add_link(oxygen_therapy_abs) end
+        ci = ci + 1
+    end
+    if r131_codes then
+        clinical_evidence_header:add_link(r131_codes)
+        ci = ci + 1
+    end
+    if swallow_study_abs then
+        clinical_evidence_header:add_link(swallow_study_abs)
+        ci = ci + 1
+    end
+    if gag_reflex_abs then
+        clinical_evidence_header:add_link(gag_reflex_abs)
+        ci = ci + 1
+    end
+    if accessory_muscles_abs then
+        clinical_evidence_header:add_link(accessory_muscles_abs)
+        ci = ci + 1
+    end
+    if wheezing_abs then
+        clinical_evidence_header:add_link(wheezing_abs)
+        ci = ci + 1
+    end
+    if irregular_rad_rep_pneumonia_abs then
+        clinical_evidence_header:add_link(irregular_rad_rep_pneumonia_abs)
+        ci = ci + 1
+    end
+
+    -- Treatment Indicators
+    local ti = 0
+    if antiviral_abs or antiviral_med then
+        if antiviral_abs then treatment_and_monitoring_header:add_link(antiviral_abs) end
+        if antiviral_med then treatment_and_monitoring_header:add_link(antiviral_med) end
+        ti = ti + 1
+    end
+    if antibiotic_abs or antibiotic_med or antibiotic2_med or antibiotic2_abs then
+        if antibiotic_abs then treatment_and_monitoring_header:add_link(antibiotic_abs) end
+        if antibiotic_med then treatment_and_monitoring_header:add_link(antibiotic_med) end
+        if antibiotic2_med then treatment_and_monitoring_header:add_link(antibiotic2_med) end
+        if antibiotic2_abs then treatment_and_monitoring_header:add_link(antibiotic2_abs) end
+        ti = ti + 1
+    end
+    if antifungal_abs or antifungal_med then
+        if antifungal_abs then treatment_and_monitoring_header:add_link(antifungal_abs) end
+        if antifungal_med then treatment_and_monitoring_header:add_link(antifungal_med) end
+        ti = ti + 1
+    end
+
+    local gram_negative =
+        a0103_code and 1 or 0 +
+        a0222_code and 1 or 0 +
+        a212_code and 1 or 0 +
+        a5484_code and 1 or 0 +
+        a698_code and 1 or 0 +
+        b440_code and 1 or 0 +
+        b4411_code and 1 or 0 +
+        b583_code and 1 or 0 +
+        b59_code and 1 or 0 +
+        j150_code and 1 or 0 +
+        j151_code and 1 or 0 +
+        j155_code and 1 or 0 +
+        j1561_code and 1 or 0 +
+        j157_code and 1 or 0 +
+        j160_code and 1 or 0
+
+    local gram_positive =
+        j159_code and 1 or 0 +
+        j152_code and 1 or 0 +
+        j1521_code and 1 or 0 +
+        a221_code and 1 or 0 +
+        a420_code and 1 or 0 +
+        a430_code and 1 or 0 +
+        j13_code and 1 or 0 +
+        j15211_code and 1 or 0 +
+        j15212_code and 1 or 0 +
+        j153_code and 1 or 0 +
+        j154_code and 1 or 0
+
+    local full_spec =
+        b012_code and 1 or 0 +
+        b052_code and 1 or 0 +
+        b0681_code and 1 or 0 +
+        b250_code and 1 or 0 +
+        b371_code and 1 or 0 +
+        b380_code and 1 or 0 +
+        b390_code and 1 or 0 +
+        b441_code and 1 or 0 +
+        b7781_code and 1 or 0 +
+        j120_code and 1 or 0 +
+        j121_code and 1 or 0 +
+        j122_code and 1 or 0 +
+        j123_code and 1 or 0 +
+        j1281_code and 1 or 0 +
+        j1282_code and 1 or 0 +
+        j14_code and 1 or 0 +
+        j1520_code and 1 or 0 +
+        j1569_code and 1 or 0 +
+        j158_code and 1 or 0 +
+        j690_code and 1 or 0 +
+        j691_code and 1 or 0 +
+        j698_code and 1 or 0
+
+    -- Admit Source Translation
+    local admit_trans = nil
+    if Account.admit_source == "4" then
+        admit_trans = "Transferred from Another Hospital"
+    elseif Account.admit_source == "5" then
+        admit_trans = "Transfer from Skilled Nursing"
+    elseif Account.admit_source == "6" then
+        admit_trans = "Transfer from Another Health Care Center"
+    end
+
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
+    --[[
+    #Main Algorithm
+    if triggerAlert and (unspecCodes is not None or codesExist == 1) and ((admitSource == "TH" or admitSource == "TE" or admitSource == "TA") and admitTrans is not None):
+        if codesExist == 1:
+            for code in codeList:
+                desc = codeDic[code]
+                tempCode = accountContainer.GetFirstCodeLink(code, desc + ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
+                if tempCode is not None:
+                    dc.Links.Add(tempCode)
+                    break
+        if unspecCodes is not None: dc.Links.Add(unspecCodes)
+        if admitTrans is not None: dc.Links.Add(MatchedCriteriaLink("Admit Source: " + str(admitTrans), None, None, None))
+        result.Subtitle = "Possible Hospital Acquired Pneumonia"
+        AlertConditions = True
+        result.Passed = True
 
-    -- TODO: I don't know how to translate this
-    -- #Determine if alert was triggered before and if lacking had been triggered
-    -- for alert in account.MatchedCriteriaGroups or []:
-    --     if alert.CriteriaGroup == 'Pneumonia':
-    --         alertTriggered = True
-    --         validated = alert.IsValidated
-    --         outcome = alert.Outcome
-    --         subtitle = alert.Subtitle
-    --         reason = alert.Reason
-    --         if outcome == 'AUTORESOLVED' or reason == 'Previously Autoresolved':
-    --             triggerAlert = False
-    --         for alertLink in alert.Links:
-    --             if alertLink.LinkText == 'Documentation Includes':
-    --                 for links in alertLink.Links:
-    --                     if re.search(r'\bAssigned\b', links.LinkText, re.IGNORECASE):
-    --                         assignedCode = True
-    --         break
+    --]]
+    --[[
+    elif codesExist == 1:
+        db.LogEvaluationScriptMessage("One specific code was on the chart, alert failed. " + str(account._id), scriptName, scriptInstance, "Debug")
+        if alertTriggered:
+            for code in codeList:
+                desc = codeDic[code]
+                tempCode = accountContainer.GetFirstCodeLink(code, "Autoresolved Specified Code  - " + desc + ": [CODE] '[PHRASE]' '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])")
+                if tempCode is not None:
+                    dc.Links.Add(tempCode)
+                    break
+            result.Outcome = "AUTORESOLVED"
+            result.Reason = "Autoresolved due to one Specified Code on the Account"
+            result.Validated = True
+            AlertConditions = True
+        else: result.Passed = False
 
-    -- Why greater than 1??
-    if #account_alert_codes > 1 or #unspecified_codes > 0 then
-        -- Concatenate antibiotic categories. Lua doesn't have a function for this.
-        local antibiotics = Account:find_medications("Antibiotic")
-        for _, antibiotic in ipairs(Account:find_medications("Antibiotic2")) do
-            table.insert(antibiotics, antibiotic)
-        end
+    --]]
+    --[[
+    elif (
+        #1
+        ((j156Code is not None and (fullSpec > 0 or gramPositive > 0 or gramNegative > 2)) or (j156Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
+        #2
+        ((j159Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or (j159Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
+        #3
+        ((j15211Code is not None and j1521Code is None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or
+        (j15211Code is None and j1521Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or
+        (j15211Code is not None and j1521Code is not None and (fullSpec > 0 or gramPositive > 3 or gramNegative > 0))) or
+        #4
+        ((j158Code is not None and (fullSpec > 0 or gramPositive > 2 or gramNegative > 0)) or (j158Code is None and fullSpec > 0 and (gramPositive > 0 or gramNegative > 0))) or
+        #5
+        (fullSpec > 1)
+    ):
+        if b012Code is not None: dc.Links.Add(b012Code); str0 = str0 + b012Code.Code + ", "
+        if b052Code is not None: dc.Links.Add(b052Code); str0 = str0 + b052Code.Code + ", "
+        if b0681Code is not None: dc.Links.Add(b0681Code); str0 = str0 + b0681Code.Code + ", "
+        if b250Code is not None: dc.Links.Add(b250Code); str0 = str0 + b250Code.Code + ", "
+        if b371Code is not None: dc.Links.Add(b371Code); str0 = str0 + b371Code.Code + ", "
+        if b380Code is not None: dc.Links.Add(b380Code); str0 = str0 + b380Code.Code + ", "
+        if b390Code is not None: dc.Links.Add(b390Code); str0 = str0 + b390Code.Code + ", "
+        if b441Code is not None: dc.Links.Add(b441Code); str0 = str0 + b441Code.Code + ", "
+        if b7781Code is not None: dc.Links.Add(b7781Code); str0 = str0 + b7781Code.Code + ", "
+        if j120Code is not None: dc.Links.Add(j120Code); str0 = str0 + j120Code.Code + ", "
+        if j121Code is not None: dc.Links.Add(j121Code); str0 = str0 + j121Code.Code + ", "
+        if j122Code is not None: dc.Links.Add(j122Code); str0 = str0 + j122Code.Code + ", "
+        if j123Code is not None: dc.Links.Add(j123Code); str0 = str0 + j123Code.Code + ", "
+        if j1281Code is not None: dc.Links.Add(j1281Code); str0 = str0 + j1281Code.Code + ", "
+        if j1282Code is not None: dc.Links.Add(j1282Code); str0 = str0 + j1282Code.Code + ", "
+        if j14Code is not None: dc.Links.Add(j14Code); str0 = str0 + j14Code.Code + ", "
+        if j1520Code is not None: dc.Links.Add(j1520Code); str0 = str0 + j1520Code.Code + ", "
+        if j1569Code is not None: dc.Links.Add(j1569Code); str0 = str0 + j1569Code.Code + ", "
+        if j158Code is not None: dc.Links.Add(j158Code); str0 = str0 + j158Code.Code + ", "
+        if j690Code is not None: dc.Links.Add(j690Code); str0 = str0 + j690Code.Code + ", "
+        if j691Code is not None: dc.Links.Add(j691Code); str0 = str0 + j691Code.Code + ", "
+        if j698Code is not None: dc.Links.Add(j698Code); str0 = str0 + j698Code.Code + ", "
+        if j159Code is not None: dc.Links.Add(j159Code); str0 = str0 + j159Code.Code + ", "
+        if j152Code is not None: dc.Links.Add(j152Code); str0 = str0 + j152Code.Code + ", "
+        if j1521Code is not None: dc.Links.Add(j1521Code); str0 = str0 + j1521Code.Code + ", "
+        if a221Code is not None: dc.Links.Add(a221Code); str0 = str0 + a221Code.Code + ", "
+        if a420Code is not None: dc.Links.Add(a420Code); str0 = str0 + a420Code.Code + ", "
+        if a430Code is not None: dc.Links.Add(a430Code); str0 = str0 + a430Code.Code + ", "
+        if j13Code is not None: dc.Links.Add(j13Code); str0 = str0 + j13Code.Code + ", "
+        if j15211Code is not None: dc.Links.Add(j15211Code); str0 = str0 + j15211Code.Code + ", "
+        if j15212Code is not None: dc.Links.Add(j15212Code); str0 = str0 + j15212Code.Code + ", "
+        if j153Code is not None: dc.Links.Add(j153Code); str0 = str0 + j153Code.Code + ", "
+        if j154Code is not None: dc.Links.Add(j154Code); str0 = str0 + j154Code.Code + ", "
+        if j156Code is not None: dc.Links.Add(j156Code); str0 = str0 + j156Code.Code + ", "
+        if a0103Code is not None: dc.Links.Add(a0103Code); str0 = str0 + a0103Code.Code + ", "
+        if a0222Code is not None: dc.Links.Add(a0222Code); str0 = str0 + a0222Code.Code + ", "
+        if a212Code is not None: dc.Links.Add(a212Code); str0 = str0 + a212Code.Code + ", "
+        if a5484Code is not None: dc.Links.Add(a5484Code); str0 = str0 + a5484Code.Code + ", "
+        if a698Code is not None: dc.Links.Add(a698Code); str0 = str0 + a698Code.Code + ", "
+        if b440Code is not None: dc.Links.Add(b440Code); str0 = str0 + b440Code.Code + ", "
+        if b4411Code is not None: dc.Links.Add(b4411Code); str0 = str0 + b4411Code.Code + ", "
+        if b583Code is not None: dc.Links.Add(b583Code); str0 = str0 + b583Code.Code + ", "
+        if b59Code is not None: dc.Links.Add(b59Code); str0 = str0 + b59Code.Code + ", "
+        if j150Code is not None: dc.Links.Add(j150Code); str0 = str0 + j150Code.Code + ", "
+        if j151Code is not None: dc.Links.Add(j151Code); str0 = str0 + j151Code.Code + ", "
+        if j155Code is not None: dc.Links.Add(j155Code); str0 = str0 + j155Code.Code + ", "
+        if j1561Code is not None: dc.Links.Add(j1561Code); str0 = str0 + j1561Code.Code + ", "
+        if j157Code is not None: dc.Links.Add(j157Code); str0 = str0 + j157Code.Code + ", "
+        if j160Code is not None: dc.Links.Add(j160Code); str0 = str0 + j160Code.Code + ", "
+        result.Subtitle = "Pneumonia Conflicting Dx" + str0
+        if validated:
+            result.Validated = False
+            result.Outcome = ""
+            result.Reason = "Previously Autoresolved"
+        AlertPassed = True
 
-        table.sort(
-            antibiotics,
-            function(a, b)
-                return dates.date_string_to_int(a.start_date) > dates.date_string_to_int(b.start_date)
-            end
-        )
+    --]]
+    --[[
+    elif triggerAlert and unspecCodes is not None and (aspirationAbs is not None or T17GasticCodes is not None or T17FoodCodes is not None):
+        if unspecCodes is not None: dc.Links.Add(unspecCodes)
+        if aspirationAbs is not None: dc.Links.Add(aspirationAbs)
+        if T17GasticCodes is not None: dc.Links.Add(T17GasticCodes)
+        if T17FoodCodes is not None: dc.Links.Add(T17FoodCodes)
+        result.Subtitle = "Possible Aspiration Pneumonia"
+        AlertPassed = True
 
-        local discrete_value_names = {
-            "MRSA DNA",
-            "SARS-CoV2 (COVID-19)",
-            "Influenza A",
-            "Influenza B",
-            "DELIVERY",
-            "Respiratory syncytial virus",
-            "Resp O2 Delivery Flow Num",
-            "C REACTIVE PROTEIN (mg/dL)",
-            "3.5 Neuro Glasgow Score",
-            "INTERLEUKIN 6",
-            "BLD GAS O2 (mmHg)", "PO2 (mmHg)",
-            "PROCALCITONIN (ng/mL)",
-            "3.5 Respiratory Rate (#VS I&O) (per Minute)",
-            "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)", "TEMPERATURE (C)",
-            "WBC (10x3/ul)",
-        }
-        local discrete_values = {}
+    --]]
+    --[[
+    elif (
+        unspecCodes is not None and
+        (r845Code is not None or
+        CBloodDV is not None or
+        RespCultureDV is not None or
+        MRSASCreenDV is not None or
+        sARSCOVIDDV is not None or
+        InfluenzeScreenADV is not None or
+        InfluenzeScreenBDV is not None or
+        rSVDV is not None or
+        viralPneumoniaOrganismAbs is not None or
+        bacterialPneumoniaOrganismAbs is not None or
+        fungalPneumoniaOrganismAbs is not None or
+        drug.Links)
+    ):
+        dc.Links.Add(unspecCodes)
+        if r845Code is not None: dc.Links.Add(r845Code)
+        if CBloodDV is not None: dc.Links.Add(CBloodDV)
+        if RespCultureDV is not None: dc.Links.Add(RespCultureDV)
+        if MRSASCreenDV is not None: dc.Links.Add(MRSASCreenDV)
+        if sARSCOVIDDV is not None: dc.Links.Add(sARSCOVIDDV)
+        if InfluenzeScreenADV is not None: dc.Links.Add(InfluenzeScreenADV)
+        if InfluenzeScreenBDV is not None: dc.Links.Add(InfluenzeScreenBDV)
+        if rSVDV is not None: dc.Links.Add(rSVDV)
+        result.Subtitle = "Pneumonia Dx Unspecified"
+        AlertPassed = True
+        UnspecDX = True
 
-        for _, discrete_value in ipairs(discrete_value_names) do
-            for _, discrete_value in ipairs(Account:find_discrete_values(discrete_value)) do
-                table.insert(discrete_values, discrete_value)
-            end
-        end
+    --]]
+    --[[
+    elif triggerAlert and unspecCodes is None and CI >= 2 and irregularRadRepPneumoniaAbs is not None and (aspirationAbs is not None or T17GasticCodes is not None or T17FoodCodes is not None):
+        dc.Links.Add(irregularRadRepPneumoniaAbs)
+        if aspirationAbs is not None: dc.Links.Add(aspirationAbs)
+        if T17GasticCodes is not None: dc.Links.Add(T17GasticCodes)
+        if T17FoodCodes is not None: dc.Links.Add(T17FoodCodes)
+        result.Subtitle = "Possible Aspiration Pneumonia"
+        AlertConditions = True
+        result.Passed = True
 
-        table.sort(
-            discrete_values,
-            function(a, b)
-                return dates.date_string_to_int(a.start_date) > dates.date_string_to_int(b.start_date)
-            end
-        )
-    end
+    --]]
+    --[[
+    elif unspecCodes is not None and antibiotic2Med is not None:
+        dc.Links.Add(unspecCodes)
+        result.Subtitle = "Possible Complex Pneumonia"
+        AlertConditions = True
+        result.Passed = True
+
+    --]]
+    --[[
+    elif subtitle == "Possible Pneumonia Dx" and unspecCodes is not None:
+        updateLinkText(unspecCodes, autoCodeText); dc.Links.Add(unspecCodes)
+        result.Outcome = "AUTORESOLVED"
+        result.Reason = "Autoresolved due to one Specified Code on the Account"
+        result.Validated = True
+        AlertConditions = True
+
+    --]]
+    --[[
+    elif triggerAlert and CI >= 2 and TI >= 1 and irregularRadRepPneumoniaAbs is not None and unspecCodes is None:
+        dc.Links.Add(irregularRadRepPneumoniaAbs)
+        result.Subtitle = "Possible Pneumonia Dx"
+        AlertConditions = True
+        result.Passed = True
+
+    --]]
+    --[[
+    else:
+        db.LogEvaluationScriptMessage("Not enough data to warrent alert, Alert Failed. " + str(account._id), scriptName, scriptInstance, "Debug")
+        result.Passed = False
+    --]]
+
 
     if Result.passed then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            -- Normal Alert
+            --[[
+            #Abs
+            abstractValue("RESPIRATORY_BREATH_SOUNDS", "Respiratory Breath Sounds '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 17, abs, True)
+            #Document Links
+            documentLink("Chest  3 View", "Chest  3 View", 0, chestXRayLinks, True)
+            documentLink("Chest  PA and Lateral", "Chest  PA and Lateral", 0, chestXRayLinks, True)
+            documentLink("Chest  Portable", "Chest  Portable", 0, chestXRayLinks, True)
+            documentLink("Chest PA and Lateral", "Chest PA and Lateral", 0, chestXRayLinks, True)
+            documentLink("Chest  1 View", "Chest  1 View", 0, chestXRayLinks, True)
+            documentLink("CT Thorax W", "CT Thorax W", 0, ctChestLinks, True)
+            documentLink("CTA Thorax Aorta", "CTA Thorax Aorta", 0, ctChestLinks, True)
+            documentLink("CT Thorax WO-Abd WO-Pel WO", "CT Thorax WO-Abd WO-Pel WO", 0, ctChestLinks, True)
+            documentLink("CT Thorax WO", "CT Thorax WO", 0, ctChestLinks, True)
+            documentLink("OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive", "OP SLP Evaluation - Clinical Swallow (Dysphagia), Speech and Cognitive", 0, speechLinks, True)
+            documentLink("OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice", "OP SLP Evaluation - Clinical Swallow (Dysphagia), Motor Speech and Voice", 0, speechLinks, True)
+            documentLink("OP SLP Evaluation - Language -Motor Speech-Dysphagia", "OP SLP Evaluation - Language -Motor Speech-Dysphagia", 0, speechLinks, True)
+            documentLink("OP SLP Evaluation - Motor Speech-Dysphagia", "OP SLP Evaluation - Motor Speech-Dysphagia", 0, speechLinks, True)
+            --]]
+            --[[
+            #Labs
+            if r845Code is not None and UnspecDX == False: labs.Links.Add(r845Code) #16
+            #Oxygen
+            multiCodeValue(["5A0935A", "5A0945A", "5A0955A"], "Flow Nasal Oxygen: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 1, oxygen, True)
+            codeValue("5A1945Z", "Mechanical Ventilation 24 to 96 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 2, oxygen, True)
+            codeValue("5A1955Z", "Mechanical Ventilation Greater than 96 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 3, oxygen, True)
+            codeValue("Z99.1", "Mechanical Ventilation/Invasive Ventilation: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 4, oxygen, True)
+            codeValue("5A1935Z", "Mechanical Ventilation Less than 24 hours: [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", 5, oxygen, True)
+            abstractValue("NON_INVASIVE_VENTILATION", "Non-Invasive Ventilation '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])", True, 6, oxygen, True)
+            #7-8
+            --]]
         end
 
 
