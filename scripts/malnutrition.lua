@@ -51,7 +51,7 @@ local function get_non_caution_code_link(code, text)
                     link.document_id = document.document_id
                     link.code = code
                     link.link_text = text .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-                    link.link_text = links.replace_link_place_holders(link.link_text)
+                    link.link_text = links.replace_link_place_holders(link.link_text, code_, document, nil, nil )
                     return link
                 end
             end
