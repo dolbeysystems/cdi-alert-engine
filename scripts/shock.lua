@@ -20,6 +20,8 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require("libs.common.lists")
+local cdi_alert_link = require "cdi.link"
 
 
 
@@ -111,6 +113,40 @@ local function calc_any_1(dv_, num) return num > 0 end
 
 
 
+--------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
+
+
+
+--------------------------------------------------------------------------------
+--- Header Variables and Helper Functions
+--------------------------------------------------------------------------------
+local result_links = {}
+local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake and Output Data", 2)
+local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 3)
+local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 4)
+local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 5)
+local oxygenation_ventilation_header = headers.make_header_builder("Oxygenation/Ventilation", 6)
+
+local function compile_links()
+    table.insert(result_links, documented_dx_header:build(true))
+    table.insert(result_links, clinical_evidence_header:build(true))
+    table.insert(result_links, laboratory_studies_header:build(true))
+    table.insert(result_links, vital_signs_intake_header:build(true))
+    table.insert(result_links, treatment_and_monitoring_header:build(true))
+    table.insert(result_links, oxygenation_ventilation_header:build(true))
+
+    if existing_alert then
+        result_links = links.merge_links(existing_alert.links, result_links)
+    end
+    Result.links = result_links
+end
+
+
 
 --------------------------------------------------------------------------------
 --- Script Specific Functions
@@ -123,7 +159,10 @@ local function anesthesia_med_predicate(dv, num_)
     return dv and dv.route and dv.dosage and (string.find(dv.dosage, "hr") or string.find(dv.dosage, "hour") or string.find(dv.dosage, "min") or string.find(dv.dosage, "minute")) and (string.find(dv.route, "Intravenous") or string.find(dv.route, "IV Push"))
 end
 
+--- @param med_dic Medication[]
+--- @return table
 local function blood_pressure_lookup(med_dic)
+    local med_search_list = { "Dobutamine", "Dopamine", "Epinephrine", "Levophed", "Milrinone", "Neosynephrine" }
     local discrete_dic1 = discrete.get_ordered_discrete_values { 
         discreteValueNames = dv_dbp, 
         predicate = function(dv_, num) return num ~= nil end,
@@ -143,136 +182,146 @@ local function blood_pressure_lookup(med_dic)
     local w = #discrete_dic1
     local x = #discrete_dic2
     local sm = #discrete_dic3
-    --[[
-    for mv in medDic or []:
-        if (
-            medDic[mv]['Route'] is not None and
-            medDic[mv]['Dosage'] is not None and
-            medDic[mv]['CDIAlertCategory'] in medSearchList and
-            (re.search(r'\bIntravenous\b', medDic[mv]['Route'], re.IGNORECASE) or
-            re.search(r'\bIV Push\b', medDic[mv]['Route'], re.IGNORECASE))
-        ):
-            a += 1
-            medsDic[a] = medDic[mv]
-                
-    if sm > 0:
-        abstractedList = []
-        medList = []
-        for item in discreteDic3:
-            dbpDv = None
-            sbpDv = None
-            hrDv = None
-            mapDv = None
-            id = None
-            firstMedName = None
-            firstMedDosage = None
-            matchingDate = None
-            if discreteDic3[item]['Name'] in dvSBP and float(discreteDic3[item]['Result']) < float(calcSBP1) and discreteDic3[item]['_id'] not in abstractedList:
-                sbpList.append(discreteDic3[item].Result)
-                matchingDate = discreteDic3[item].ResultDate
-                sbpDv = discreteDic3[item].Result
-                abstractedList.append(discreteDic3[item]._id)
-                id = discreteDic3[item]._id
-                for item1 in discreteDic3:
-                    if discreteDic3[item1].ResultDate == matchingDate and discreteDic3[item1].Name in dvMAP:
-                        if float(discreteDic3[item1]['Result']) < float(calcMAP1):
-                            mapList.append(discreteDic3[item1].Result)
-                        mapDv = discreteDic3[item1].Result
-                        abstractedList.append(discreteDic3[item1]._id)
-                        break
-            elif discreteDic3[item]['Name'] in dvMAP and float(discreteDic3[item]['Result']) < float(calcMAP1) and discreteDic3[item]['_id'] not in abstractedList:
-                mapList.append(discreteDic3[item].Result)
-                matchingDate = discreteDic3[item].ResultDate
-                mapDv = discreteDic3[item].Result
-                abstractedList.append(discreteDic3[item]._id)
-                id = discreteDic3[item]._id
-                for item1 in discreteDic3:
-                    if discreteDic3[item1].ResultDate == matchingDate and discreteDic3[item1].Name in dvSBP:
-                        if float(discreteDic3[item1]['Result']) < float(calcSBP1):
-                            sbpList.append(discreteDic3[item1].Result)
-                        sbpDv = discreteDic3[item1].Result
-                        abstractedList.append(discreteDic3[item1]._id)
-                        break
-            if w > 0:
-                for item2 in discreteDic1:
-                    if discreteDic1[item2].ResultDate == matchingDate:
-                        dbpDv = discreteDic1[item2].Result
-                        break
-            if x > 0:
-                for item3 in discreteDic2:
-                    if discreteDic2[item3].ResultDate == matchingDate:
-                        hrDv = discreteDic2[item3].Result
-                        break
-            if a > 0 and matchingDate is not None:
-                dateLimit = matchingDate.AddHours(24)
-                for item4 in medsDic:
-                    if matchingDate <= medsDic[item4].StartDate <= dateLimit:
-                        if medsDic[item4]['ExternalId'] not in medList:
-                            medDataConversion(medsDic[item4]['StartDate'], linkText, medsDic[item4]['Medication'], medsDic[item4]['ExternalId'], medsDic[item4]['Dosage'], medsDic[item4]['Route'], meds, 0)
-                            medList.append(medsDic[item4]['ExternalId'])
-                        firstMedName = medsDic[item4]['Medication']
-                        firstMedDosage = medsDic[item4]['Dosage']
-                        break
-                    
-            if dbpDv is None:
-                dbpDv = 'XX'
-            if hrDv is None:
-                hrDv = 'XX'
-            if mapDv is None:
-                mapDv = 'XX'
-            if sbpDv is None:
-                sbpDv = 'XX'
-            if firstMedName is not None and matchingDate is not None:
-                matchedList.append(dataConversion(matchingDate, "[RESULTDATETIME] HR = " + str(hrDv) + ", BP = " + str(sbpDv) + "/" + str(dbpDv) + ", MAP = " + str(mapDv) + ", Vasopressor:  = " + str(firstMedName) + " @ " + str(firstMedDosage), None, id, vitals, 0, True))
-            elif matchingDate is not None:
-                matchedList.append(dataConversion(matchingDate, "[RESULTDATETIME] HR = " + str(hrDv) + ", BP = " + str(sbpDv) + "/" + str(dbpDv) + ", MAP = " + str(mapDv), None, id, vitals, 0, True))
+    local sbp_list = {}
+    local map_list = {}
 
-    #Return the 7 days of low for alert triggers or return false for nothing for trigger purposes.
-    if len(sbpList) == 0:
-        sbpList = [False]
-    if len(mapList) == 0:
-        mapList = [False]
-    return [sbpList, mapList]
-    --]]
+    for _, mv in ipairs(med_dic) do
+        if
+            mv.route and mv.dosage and
+            lists.includes(med_search_list, mv.cdi_alert_category) and
+            (string.find(mv.route, "Intravenous") or string.find(mv.route, "IV Push"))
+        then
+            a = a + 1
+            med_dic[a] = mv
+        end
+    end
+    if sm > 0 then
+        local abstracted_list = {}
+        local med_list = {}
+
+        for _, item in ipairs(discrete_dic3) do
+            local dbp_dv = nil
+            local sbp_dv = nil
+            local hr_dv = nil
+            local map_dv = nil
+            local id = nil
+            local first_med_name = nil
+            local first_med_dosage = nil
+            local matching_date = nil
+
+            if lists.includes(dv_sbp, item.name) and discrete.get_dv_value(item) < calc_sbp_1 and not lists.includes(abstracted_list, item.unique_id) then
+                table.insert(sbp_list, item.result)
+                matching_date = dates.date_string_to_int(item.result_date)
+                sbp_dv = item.result
+                table.insert(abstracted_list, item.unique_id)
+                id = item.unique_id
+
+                for _, item1 in ipairs(discrete_dic3) do
+                    if dates.date_string_to_int(item1.result_date) == matching_date and lists.includes(dv_map, item1.name) then
+                        if discrete.get_dv_value(item1) < calc_map_1 then
+                            table.insert(map_list, item1.result)
+                        end
+                        map_dv = item1.result
+                        table.insert(abstracted_list, item1.unique_id)
+                        break
+                    end
+                end
+            elseif lists.includes(dv_map, item.name) and discrete.get_dv_value(item) < calc_map_1 and not lists.includes(abstracted_list, item.unique_id) then
+                table.insert(map_list, item.result)
+                matching_date = dates.date_string_to_int(item.result_date)
+                map_dv = item.result
+                table.insert(abstracted_list, item.unique_id)
+                id = item.unique_id
+
+                for _, item1 in ipairs(discrete_dic3) do
+                    if dates.date_string_to_int(item1.result_date) == matching_date and lists.includes(dv_sbp, item1.name) then
+                        if discrete.get_dv_value(item1) < calc_sbp_1 then
+                            table.insert(sbp_list, item1.result)
+                        end
+                        sbp_dv = item1.result
+                        table.insert(abstracted_list, item1.unique_id)
+                        break
+                    end
+                end
+            end
+
+
+            if w > 0 then
+                for _, item2 in ipairs(discrete_dic1) do
+                    if dates.date_string_to_int(item2.result_date) == matching_date then
+                        dbp_dv = item2.result
+                        break
+                    end
+                end
+            end
+            if x > 0 then
+                for _, item3 in ipairs(discrete_dic2) do
+                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                        hr_dv = item3.result
+                        break
+                    end
+                end
+            end
+            if a > 0 and matching_date then
+                local date_limit = matching_date + (24 * 60 * 60)
+
+                for _, med in pairs(med_dic) do
+                    local med_start_date = dates.date_string_to_int(med.start_date)
+                    if matching_date <= med_start_date and med_start_date <= date_limit then
+                        if not lists.includes(med_list, med.external_id) then
+                            table.insert(med_list, med.external_id)
+                            first_med_name = med.medication
+                            first_med_dosage = med.dosage
+                            break
+                        end
+                    end
+                    if matching_date <= med_start_date and med_start_date <= date_limit then
+                        if not lists.includes(med_list, med.external_id) then
+                            table.insert(med_list, med.external_id)
+                            first_med_name = med.medication
+                            first_med_dosage = med.dosage
+                            break
+                        end
+                    end
+                end
+            end
+
+            dbp_dv = dbp_dv or "XX"
+            hr_dv = hr_dv or "XX"
+            map_dv = map_dv or "XX"
+            sbp_dv = sbp_dv or "XX"
+
+            if first_med_name and matching_date then
+                local link = cdi_alert_link()
+                link.discrete_value_id = id
+                link.link_text = links.replace_link_place_holders(
+                    "[RESULTDATETIME] HR = " .. hr_dv .. ", BP = " .. sbp_dv .. "/" .. dbp_dv .. ", MAP = " ..
+                    map_dv .. ", Vasopressor:  = " .. first_med_name .. " @ " .. first_med_dosage
+                )
+                vital_signs_intake_header:add_link(link)
+            elseif matching_date then
+                local link = cdi_alert_link()
+                link.discrete_value_id = id
+                link.link_text = links.replace_link_place_holders(
+                    "[RESULTDATETIME] HR = " .. hr_dv .. ", BP = " .. sbp_dv .. "/" .. dbp_dv .. ", MAP = " .. map_dv
+                )
+                vital_signs_intake_header:add_link(link)
+            end
+        end
+    end
+
+    -- Return the 7 days of low for alert triggers or return false for nothing for trigger purposes
+    if #sbp_list == 0 then sbp_list = { false } end
+    if #map_list == 0 then map_list = { false } end
+    return { sbp_list, map_list }
 end
 
 
 
---------------------------------------------------------------------------------
---- Existing Alert
---------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
 
 
 
 if not existing_alert or not existing_alert.validated then
-    --------------------------------------------------------------------------------
-    --- Header Variables and Helper Functions
-    --------------------------------------------------------------------------------
-    local result_links = {}
-    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
-    local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake and Output Data", 2)
-    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 3)
-    local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 4)
-    local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 5)
-    local oxygenation_ventilation_header = headers.make_header_builder("Oxygenation/Ventilation", 6)
-
-    local function compile_links()
-        table.insert(result_links, documented_dx_header:build(true))
-        table.insert(result_links, clinical_evidence_header:build(true))
-        table.insert(result_links, laboratory_studies_header:build(true))
-        table.insert(result_links, vital_signs_intake_header:build(true))
-        table.insert(result_links, treatment_and_monitoring_header:build(true))
-        table.insert(result_links, oxygenation_ventilation_header:build(true))
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
-    end
-
-
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
