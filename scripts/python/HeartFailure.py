@@ -587,7 +587,7 @@ if (
         result.Outcome = "AUTORESOLVED"
         result.Reason = "Autoresolved due to one Specified Code on the Account"
         result.Validated = True
-        AlertConditions = True   
+        AlertConditions = True
     #5
     elif (
         codesExist >= 4 or

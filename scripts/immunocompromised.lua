@@ -86,12 +86,6 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Variables
     --------------------------------------------------------------------------------
-
-    local medications = links.get_medication_links { cats = { "Antibiotic", "Antibiotic2" } }
-    local discrete_values = links.get_discrete_value_links { discreteValueNames = {
-        "SARS-CoV2 (COVID-19)", "Influenza A", "Influenza B"
-    } }
-
     local d80_codes = codes.get_code_prefix_link { prefix = "D80.", text = "Immunodeficiency with Predominantly Antibody Defects", sequence = 6 }
     local d81_codes = codes.get_code_prefix_link { prefix = "D81.", text = "Combined Immunodeficiencies", sequence = 6 }
     local d82_codes = codes.get_code_prefix_link { prefix = "D82.", text = "Immunodeficiency Associated with other Major Defects", sequence = 6 }
