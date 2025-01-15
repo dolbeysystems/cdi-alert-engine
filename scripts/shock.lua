@@ -122,36 +122,28 @@ end
 local function anesthesia_med_predicate(dv, num_)
     return dv and dv.route and dv.dosage and (string.find(dv.dosage, "hr") or string.find(dv.dosage, "hour") or string.find(dv.dosage, "min") or string.find(dv.dosage, "minute")) and (string.find(dv.route, "Intravenous") or string.find(dv.route, "IV Push"))
 end
---[[
-def bloodPressureLookup(dvDic, medDic):
-    discreteDic1 = {}
-    discreteDic2 = {}
-    discreteDic3 = {}
-    medsDic = {}
-    sbpList = []
-    mapList = []
-    linkText = "[MEDICATION], Dosage [DOSAGE], Route [ROUTE] ([STARTDATE])"
-    medSearchList = ["Dobutamine", "Dopamine", "Epinephrine", "Levophed", "Milrinone", "Neosynephrine"]
-    #Default should be set to -1 day back.
-    a = 0; w = 0; x = 0; sm = 0
-    matchedList = []
-    dvr = None
-    #Pull all values for discrete values we need
-    for dv in dvDic or []:
-        dvr = cleanNumbers(dvDic[dv]['Result'])
-        if dvDic[dv]['Name'] in dvDBP and dvr is not None:
-            #Diastolic Blood Pressure
-            w += 1
-            discreteDic1[w] = dvDic[dv]
-        elif dvDic[dv]['Name'] in dvHeartRate and dvr is not None:
-            #Heart Rate
-            x += 1
-            discreteDic2[x] = dvDic[dv]
-        elif (dvDic[dv]['Name'] in dvSBP and dvr is not None) or (dvDic[dv]['Name'] in dvMAP and dvr is not None):
-            #Systolic/Mean Blood Pressure
-            sm += 1
-            discreteDic3[sm] = dvDic[dv]
 
+local function blood_pressure_lookup(med_dic)
+    local discrete_dic1 = discrete.get_ordered_discrete_values { 
+        discreteValueNames = dv_dbp, 
+        predicate = function(dv_, num) return num ~= nil end,
+    }
+    local discrete_dic2 = discrete.get_ordered_discrete_values { 
+        discreteValueNames = dv_heart_rate, 
+        predicate = function(dv_, num) return num ~= nil end,
+    }
+    local dv_sbp_and_map = {}
+    for _, dv_sbp in discrete_dic1 do table.insert(dv_sbp_and_map, dv_sbp) end
+    for _, dv_map in discrete_dic2 do table.insert(dv_sbp_and_map, dv_map) end
+    local discrete_dic3 = discrete.get_ordered_discrete_values { 
+        discreteValueNames = dv_sbp_and_map,
+        predicate = function(dv_, num) return num ~= nil end,
+    }
+    local a = 0
+    local w = #discrete_dic1
+    local x = #discrete_dic2
+    local sm = #discrete_dic3
+    --[[
     for mv in medDic or []:
         if (
             medDic[mv]['Route'] is not None and
@@ -241,7 +233,8 @@ def bloodPressureLookup(dvDic, medDic):
     if len(mapList) == 0:
         mapList = [False]
     return [sbpList, mapList]
---]]
+    --]]
+end
 
 
 

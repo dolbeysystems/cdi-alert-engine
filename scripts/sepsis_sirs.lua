@@ -20,6 +20,9 @@ local codes = require("libs.common.codes")(Account)
 local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require("libs.common.lists")
+local cdi_alert_link = require "cdi.link"
+
 
 
 
@@ -134,6 +137,56 @@ local calc_wbc_4 = function(dv_, num) return num < 4 end
 
 
 --------------------------------------------------------------------------------
+--- Existing Alert
+--------------------------------------------------------------------------------
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local subtitle = existing_alert and existing_alert.subtitle or nil
+
+
+
+--------------------------------------------------------------------------------
+--- Header Variables and Helper Functions
+--------------------------------------------------------------------------------
+local result_links = {}
+local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
+local sirs_criteria_header = headers.make_header_builder("SIRS Criteria", 2)
+local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake and Output Data", 3)
+local infection_header = headers.make_header_builder("Infection", 4)
+local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 5)
+local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 6)
+local oxygenation_ventilation_header = headers.make_header_builder("Oxygenation/Ventilation", 7)
+local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 8)
+local contributing_dx_header = headers.make_header_builder("Contributing Dx", 9)
+local sirs_resp_header = headers.make_header_builder("Respiratory Rate: > 20 breaths per min or PC02 < 32", 1)
+local sirs_wbc_header = headers.make_header_builder("WBC Count: > 12,000 or < 4,000 or bands > 10%", 2)
+local sirs_temp_header = headers.make_header_builder("Temperature: > 100.4F/38.0C or < 96.8F/36.0C", 3)
+local sirs_heart_header = headers.make_header_builder("Heart Rate: > 90bpm", 4)
+
+local function compile_links()
+    sirs_criteria_header:add_link(sirs_resp_header:build(true))
+    sirs_criteria_header:add_link(sirs_temp_header:build(true))
+    sirs_criteria_header:add_link(sirs_wbc_header:build(true))
+    sirs_criteria_header:add_link(sirs_heart_header:build(true))
+
+    table.insert(result_links, documented_dx_header:build(true))
+    table.insert(result_links, sirs_criteria_header:build(true))
+    table.insert(result_links, vital_signs_intake_header:build(true))
+    table.insert(result_links, infection_header:build(true))
+    table.insert(result_links, clinical_evidence_header:build(true))
+    table.insert(result_links, laboratory_studies_header:build(true))
+    table.insert(result_links, oxygenation_ventilation_header:build(true))
+    table.insert(result_links, treatment_and_monitoring_header:build(true))
+    table.insert(result_links, contributing_dx_header:build(true))
+
+    if existing_alert then
+        result_links = links.merge_links(existing_alert.links, result_links)
+    end
+    Result.links = result_links
+end
+
+
+
+--------------------------------------------------------------------------------
 --- Script Specific Functions
 --------------------------------------------------------------------------------
 local function positive_check(dv, num_)
@@ -148,138 +201,110 @@ local function antibiotic_med_value_predicate(dv, num_)
     return dv and dv.route and dv.category == "Antibiotic" and not (string.find(dv.route, "Eye") or string.find(dv.route, "topical") or string.find(dv.route, "ocular") or string.find(dv.route, "ophthalmic"))
 end
 
---[[
-def sirsLookup(dvDic, dvSirsMatches):
-    matchedList = []
-    dateList = []
-    #Pull all values for discrete values we need
-    for value in dvSirsMatches:
-        tempDv = 'XX'
-        hrDv = 'XX'
-        respDv = 'XX'
-        date = dvSirsMatches[value]['ResultDate']
-        match = dvSirsMatches[value]['Name']
-        id = dvSirsMatches[value]['UniqueId'] or dvSirsMatches[value]['_id']
-        if date not in dateList:
-            dateList.append(date)
-            if match in dvTemperature:
-                tempDv = dvSirsMatches[value]['Result']
-            elif match in dvHeartRate:
-                hrDv = dvSirsMatches[value]['Result']
-            elif match in dvRespiratoryRate:
-                respDv = dvSirsMatches[value]['Result']
-            for dv in dvDic or []:
-                dvr = cleanNumbers(dvDic[dv]['Result'])
-                if dvDic[dv]['Name'] in dvTemperature and dvr is not None and match not in dvTemperature and dvDic[dv]['ResultDate'] == date:
-                    #Temperature
-                    tempDv = dvDic[dv]['Result']
-                elif dvDic[dv]['Name'] in dvHeartRate and dvr is not None and match not in dvHeartRate and dvDic[dv]['ResultDate'] == date:
-                    #Heart Rate
-                    hrDv = dvDic[dv]['Result']
-                elif dvDic[dv]['Name'] in dvRespiratoryRate and dvr is not None and match not in dvRespiratoryRate and dvDic[dv]['ResultDate'] == date:
-                    #Respiratory Rate
-                    respDv = dvDic[dv]['Result']
-            matchingDate = datetimeFromUtcToLocal(date)
-            matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-            matchedList.append(dataConversion(None, matchingDate + " Temp = " + str(tempDv) + ", HR = " + str(hrDv) + ", RR = " + str(respDv), None, id, vitals, 0, True))
- 
-    if matchedList is not None:
-        return matchedList
-    else:
-        return None
---]]
---[[
-def sirsLookupLacking(dvDic, sirsMatchID):
-    matchedList = []
-    dateList = []
-    #Pull all values for discrete values we need
-    for value in dvDic:
-        if dvDic[value]['UniqueId'] == sirsMatchID:
-            tempDv = 'XX'
-            hrDv = 'XX'
-            respDv = 'XX'
-            date = dvDic[value]['ResultDate']
-            match = dvDic[value]['Name']
-            id = dvDic[value]['UniqueId'] or dvDic[value]['_id']
-            if date not in dateList:
-                dateList.append(date)
-                if match in dvTemperature:
-                    tempDv = dvDic[value]['Result']
-                elif match in dvHeartRate:
-                    hrDv = dvDic[value]['Result']
-                elif match in dvRespiratoryRate:
-                    respDv = dvDic[value]['Result']
-                for dv in dvDic or []:
-                    dvr = cleanNumbers(dvDic[dv]['Result'])
-                    if dvDic[dv]['Name'] in dvTemperature and dvr is not None and match not in dvTemperature and dvDic[dv]['ResultDate'] == date:
-                        #Temperature
-                        tempDv = dvDic[dv]['Result']
-                    elif dvDic[dv]['Name'] in dvHeartRate and dvr is not None and match not in dvHeartRate and dvDic[dv]['ResultDate'] == date:
-                        #Heart Rate
-                        hrDv = dvDic[dv]['Result']
-                    elif dvDic[dv]['Name'] in dvRespiratoryRate and dvr is not None and match not in dvRespiratoryRate and dvDic[dv]['ResultDate'] == date:
-                        #Respiratory Rate
-                        respDv = dvDic[dv]['Result']
-                matchingDate = datetimeFromUtcToLocal(date)
-                matchingDate = matchingDate.ToString("MM/dd/yyyy, HH:mm")
-                matchedList.append(dataConversion(None, matchingDate + " Temp = " + str(tempDv) + ", HR = " + str(hrDv) + ", RR = " + str(respDv), None, id, vitals, 0, True))
-                return True
-    return None
---]]
+---@param dv_sirs_match DiscreteValue[]
+---@return CdiAlertLink[]?
+local function sirs_lookup(dv_sirs_match)
+    local matched_list = {}
+    local date_list = {}
+    -- Pull all values for discrete values we need
+    for _, value in pairs(dv_sirs_match) do
+        local temp_dv = 'XX'
+        local hr_dv = 'XX'
+        local resp_dv = 'XX'
+        local date = value.result_date or ""
+        local match = value.name
+        local id = value.unique_id
+        if not date_list[date] then
+            date_list[date] = true
+            if lists.includes(dv_temperature, match) then
+                temp_dv = value.result
+            elseif lists.includes(dv_heart_rate, match) then
+                hr_dv = value.result
+            elseif lists.includes(dv_respiratory_rate, match) then
+                resp_dv = value.result
+            end
+            for _, dv in pairs(Account.discrete_values) do
+                local dvr = discrete.get_dv_value_number(dv)
+                if lists.includes(dv_temperature, dv.name) and dvr and not lists.includes(dv_temperature, match) and dv.result_date == date then
+                    -- Temperature
+                    temp_dv = dv.result
+                elseif lists.includes(dv_heart_rate, dv.name) and dvr and not lists.includes(dv_heart_rate, match) and dv.result_date == date then
+                    -- Heart Rate
+                    hr_dv = dv.result
+                elseif lists.includes(dv_respiratory_rate, dv.name) and dvr and not lists.includes(dv_respiratory_rate, match) and dv.result_date == date then
+                    -- Respiratory Rate
+                    resp_dv = dv.result
+                end
+            end
+            local link = cdi_alert_link()
+            link.link_text = date .. " Temp = " .. tostring(temp_dv) .. ", HR = " .. tostring(hr_dv) .. ", RR = " .. tostring(resp_dv)
+            link.discrete_value_id = id
+            link.discrete_value_name = value.name
+            vital_signs_intake_header:add_link(link)
+            table.insert(matched_list, link)
+        end
+    end
 
+    if #matched_list > 0 then
+        return matched_list
+    else
+        return nil
+    end
+end
 
-
---------------------------------------------------------------------------------
---- Existing Alert
---------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
+---@param sirs_match_id string
+---@return boolean?
+local function sirs_lookup_lacking(sirs_match_id)
+    local matched_list = {}
+    local date_list = {}
+    -- Pull all values for discrete values we need
+    for _, value in pairs(Account.discrete_values) do
+        if value.unique_id == sirs_match_id then
+            local temp_dv = 'XX'
+            local hr_dv = 'XX'
+            local resp_dv = 'XX'
+            local date = value.result_date or ""
+            local match = value.name
+            local id = value.unique_id
+            if not date_list[date] then
+                date_list[date] = true
+                if lists.includes(dv_temperature, match) then
+                    temp_dv = value.result
+                elseif lists.includes(dv_heart_rate, match) then
+                    hr_dv = value.result
+                elseif lists.includes(dv_respiratory_rate, match) then
+                    resp_dv = value.result
+                end
+                for _, dv in pairs(Account.discrete_values) do
+                    local dvr = discrete.get_dv_value_number(dv)
+                    if lists.includes(dv_temperature, dv.name) and dvr and not lists.includes(dv_temperature, match) and dv.result_date == date then
+                        -- Temperature
+                        temp_dv = dv.result
+                    elseif lists.includes(dv_heart_rate, dv.name) and dvr and not lists.includes(dv_heart_rate, match) and dv.result_date == date then
+                        -- Heart Rate
+                        hr_dv = dv.result
+                    elseif lists.includes(dv_respiratory_rate, dv.name) and dvr and not lists.includes(dv_respiratory_rate, match) and dv.result_date == date then
+                        -- Respiratory Rate
+                        resp_dv = dv.result
+                    end
+                end
+                --table.insert(matched_list, cdi_alert_link(nil, date .. " Temp = " .. tostring(temp_dv) .. ", HR = " .. tostring(hr_dv) .. ", RR = " .. tostring(resp_dv), nil, id, vitals, 0, true))
+                local link = cdi_alert_link()
+                link.link_text = date .. " Temp = " .. tostring(temp_dv) .. ", HR = " .. tostring(hr_dv) .. ", RR = " .. tostring(resp_dv)
+                link.discrete_value_id = id
+                link.discrete_value_name = value.name
+                vital_signs_intake_header:add_link(link)
+                table.insert(matched_list, link)
+                return true
+            end
+        end
+    end
+    return nil
+end
 
 
 
 if not existing_alert or not existing_alert.validated then
-    --------------------------------------------------------------------------------
-    --- Header Variables and Helper Functions
-    --------------------------------------------------------------------------------
-    local result_links = {}
-    local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
-    local sirs_criteria_header = headers.make_header_builder("SIRS Criteria", 2)
-    local vital_signs_intake_header = headers.make_header_builder("Vital Signs/Intake and Output Data", 3)
-    local infection_header = headers.make_header_builder("Infection", 4)
-    local clinical_evidence_header = headers.make_header_builder("Clinical Evidence", 5)
-    local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 6)
-    local oxygenation_ventilation_header = headers.make_header_builder("Oxygenation/Ventilation", 7)
-    local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 8)
-    local contributing_dx_header = headers.make_header_builder("Contributing Dx", 9)
-    local sirs_resp_header = headers.make_header_builder("Respiratory Rate: > 20 breaths per min or PC02 < 32", 1)
-    local sirs_wbc_header = headers.make_header_builder("WBC Count: > 12,000 or < 4,000 or bands > 10%", 2)
-    local sirs_temp_header = headers.make_header_builder("Temperature: > 100.4F/38.0C or < 96.8F/36.0C", 3)
-    local sirs_heart_header = headers.make_header_builder("Heart Rate: > 90bpm", 4)
-
-
-    local function compile_links()
-        sirs_criteria_header:add_link(sirs_resp_header:build(true))
-        sirs_criteria_header:add_link(sirs_temp_header:build(true))
-        sirs_criteria_header:add_link(sirs_wbc_header:build(true))
-        sirs_criteria_header:add_link(sirs_heart_header:build(true))
-
-        table.insert(result_links, documented_dx_header:build(true))
-        table.insert(result_links, sirs_criteria_header:build(true))
-        table.insert(result_links, vital_signs_intake_header:build(true))
-        table.insert(result_links, infection_header:build(true))
-        table.insert(result_links, clinical_evidence_header:build(true))
-        table.insert(result_links, laboratory_studies_header:build(true))
-        table.insert(result_links, oxygenation_ventilation_header:build(true))
-        table.insert(result_links, treatment_and_monitoring_header:build(true))
-        table.insert(result_links, contributing_dx_header:build(true))
-
-        if existing_alert then
-            result_links = links.merge_links(existing_alert.links, result_links)
-        end
-        Result.links = result_links
-    end
-
-
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
