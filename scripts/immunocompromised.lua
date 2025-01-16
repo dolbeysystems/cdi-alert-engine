@@ -15,15 +15,12 @@ local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local lists = require "libs.common.lists"
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
-local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
