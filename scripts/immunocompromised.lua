@@ -55,10 +55,13 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Variables
     --------------------------------------------------------------------------------
-    local medications = links.get_medication_links { cats = { "Antibiotic", "Antibiotic2" } }
-    local discrete_values = links.get_discrete_value_links { discreteValueNames = {
-        "SARS-CoV2 (COVID-19)", "Influenza A", "Influenza B"
-    } }
+    ---@param dv DiscreteValue
+    ---@return boolean
+    local function positive(dv)
+        -- string:find returns a truthy value only when successful
+        -- `not not` normalizes the return value to be a boolean rather than falsy or truthy.
+        return dv.result ~= nil and not not dv.result:find("positive")
+    end
 
     local d80_code = codes.get_code_prefix_link { prefix = "D80.", text = "Immunodeficiency with Predominantly Antibody Defects", sequence = 6 }
     local d81_code = codes.get_code_prefix_link { prefix = "D81.", text = "Combined Immunodeficiencies", sequence = 6 }
@@ -68,24 +71,20 @@ if not existing_alert or not existing_alert.validated then
     local b44_code = codes.get_code_prefix_link { prefix = "B44.", text = "Aspergillosis Infection", sequence = 1 }
     local r7881_code = links.get_code_link { code = "R78.81", text = "Bacteremia", sequence = 2 }
     local b40_code = codes.get_code_prefix_link { prefix = "B40.", text = "Blastomycosis Infection", sequence = 3 }
-    -- cBlood_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvCBlood, "Blood Culture Result", sequence = 4)
     local b43_code = codes.get_code_prefix_link { prefix = "B43.", text = "Chromomycosis And Pheomycotic Abscess Infection", sequence = 5 }
-    -- covid_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVID, "Covid 19 Screen", sequence = 6)
-    -- covidAnti_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvSARSCOVIDAntigen, "Covid 19 Screen", sequence = 7)
+    local covid_discrete_value = links.get_discrete_value_link { code = "SARS-CoV2 (COVID-19)", text = "Covid 19 Screen", predicate = positive, sequence = 6 }
     local b45_code = codes.get_code_prefix_link { prefix = "B45.", text = "Cryptococcosis Infection", sequence = 8 }
     local b25_code = codes.get_code_prefix_link { prefix = "B25.", text = "Cytomegaloviral Disease Code", sequence = 9 }
     local infection_abs = links.get_abstraction_link { code = "INFECTION", text = "Infection", sequence = 10 }
-    -- influenzeA_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvInfluenzeScreenA, "Influenza A Screen", sequence = 11)
-    -- influenzeB_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvInfluenzeScreenB, "Influenza B Screen", sequence = 12)
+    local influenza_a_discrete_value = links.get_discrete_value_link { code = "Influenze A", text = "Influenza A Screen", predicate = positive, sequence = 11 }
+    local influenza_b_discrete_value = links.get_discrete_value_link { code = "Influenze B", text = "Influenza B Screen", predicate = positive, sequence = 12 }
     local b49_code = codes.get_code_prefix_link { prefix = "B49.", text = "Mycosis Infection", sequence = 13 }
     local b96_code = codes.get_code_prefix_link { prefix = "B96.", text = "Other Bacterial Agents As The Cause Of Diseases Infection", sequence = 14 }
     local b41_code = codes.get_code_prefix_link { prefix = "B41.", text = "Paracoccidioidomycosis Infection", sequence = 15 }
     local r835_code = links.get_code_link { code = "R83.5", text = "Positive Cerebrospinal Fluid Culture", sequence = 16 }
     local r845_code = links.get_code_link { code = "R84.5", text = "Positive Respiratory Culture", sequence = 17 }
     local positive_would_culture_abs = links.get_abstraction_link { code = "POSITIVE_WOUND_CULTURE", text = "Positive Wound Culture", sequence = 18 }
-    -- cResp_discrete_value = dvmrsaCheck(dict(maindiscreteDic), dvCResp, "Final Report", "Respiratory Blood Culture Result", sequence = 19)
     local b42_code = codes.get_code_prefix_link { prefix = "B42.", text = "Sporotrichosis Infection", sequence = 20 }
-    -- pneumococcalAnti_discrete_value = dvPositiveCheck(dict(maindiscreteDic), dvPneumococcalAntigen, "Strept Pneumonia Screen", sequence = 21)
     local b95_code = codes.get_code_prefix_link { prefix = "B95.", text = "Streptococcus, Staphylococcus, and Enterococcus Infection", sequence = 22 }
     local b46_code = codes.get_code_prefix_link { prefix = "B46.", text = "Zygomycosis Infection", sequence = 23 }
     local antimetabolites_medication = links.get_medication_link { medication = "Antimetabolite", text = "", sequence = 1 }
@@ -146,7 +145,7 @@ if not existing_alert or not existing_alert.validated then
     local hba1c_discrete_value = links.get_discrete_value_link {
         discreteValueName = "HEMOGLOBIN A1C (%)",
         text = "Poorly controlled HbA1c",
-        predicate = function(dv, num)
+        predicate = function(dv, num) ---@diagnostic disable-line:unused-local
             return num > 10
         end,
         sequence = 33
@@ -158,7 +157,7 @@ if not existing_alert or not existing_alert.validated then
     local wbc_discrete_value = links.get_discrete_value_link {
         discreteValueName = "WBC (10x3/ul)",
         text = "WBC",
-        predicate = function(dv, num)
+        predicate = function(dv, num) ---@diagnostic disable-line:unused-local
             return num < 4.5
         end
     }
@@ -167,7 +166,7 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
 
-    if lists.some { d80_code, d81_code, d82_code, d83_code, d84_code } and existing_alert then
+    if existing_alert and lists.some { d80_code, d81_code, d82_code, d83_code, d84_code } then
         for _, v in ipairs { d80_code, d81_code, d82_code, d83_code, d84_code } do
             v.link_text = "Autoresolved Specified Code - " .. v.link_text
         end
@@ -192,9 +191,9 @@ if not existing_alert or not existing_alert.validated then
             hba1c_discrete_value, m05_code, m06_code, severe_malnutrition_codes
         }
         if lists.some {
-                b44_code, r7881_code, b40_code, blood_culture_discrete_value, b43_code, covidDv, covidAntiDV,
-                b45_code, b25_code, infection_abs, influenzeADV, influenzeBDV, b48_code, b96_code, b41_code, r835_code,
-                r845_code, positive_would_culture_abs, cRespDV, b42_code, pneumococcalAntiDV, b95_code, b46_code
+                b44_code, r7881_code, b40_code, b43_code, covid_discrete_value,
+                b45_code, b25_code, infection_abs, influenza_a_discrete_value, influenza_b_discrete_value, b49_code, b96_code, b41_code, r835_code,
+                r845_code, positive_would_culture_abs, b42_code, b95_code, b46_code
             } then
             local subtitle
             if medication and chronic then
@@ -224,17 +223,101 @@ if not existing_alert or not existing_alert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
 
-
-
     if Result.passed then
         --------------------------------------------------------------------------------
         --- Link Collection
         --------------------------------------------------------------------------------
-        if not Result.validated then
-            -- Normal Alert
+        infectious_process_header:add_link(b44_code)
+        infectious_process_header:add_link(b44_code)
+        infectious_process_header:add_link(r7881_code)
+        infectious_process_header:add_link(b40_code)
+        infectious_process_header:add_link(b43_code)
+        infectious_process_header:add_link(covid_discrete_value)
+        infectious_process_header:add_link(b45_code)
+        infectious_process_header:add_link(b25_code)
+        infectious_process_header:add_link(infection_abs)
+        infectious_process_header:add_link(influenza_a_discrete_value)
+        infectious_process_header:add_link(influenza_b_discrete_value)
+        infectious_process_header:add_link(b49_code)
+        infectious_process_header:add_link(b96_code)
+        infectious_process_header:add_link(b41_code)
+        infectious_process_header:add_link(r835_code)
+        infectious_process_header:add_link(r845_code)
+        infectious_process_header:add_link(positive_would_culture_abs)
+        infectious_process_header:add_link(b42_code)
+        infectious_process_header:add_link(b95_code)
+        infectious_process_header:add_link(b46_code)
+        suppressive_medication_header:add_link(antimetabolites_abs)
+        suppressive_medication_header:add_link(antimetabolites_medication)
+        suppressive_medication_header:add_link(z5111_code)
+        suppressive_medication_header:add_link(z5112_code)
+        suppressive_medication_header:add_link(antirejection_medication)
+        suppressive_medication_header:add_link(antirejection_medication_abs)
+        suppressive_medication_header:add_link(a3e04305_code)
+        suppressive_medication_header:add_link(interferons_abs)
+        suppressive_medication_header:add_link(interferons_medication)
+        suppressive_medication_header:add_link(z796_code)
+        suppressive_medication_header:add_link(z7952_code)
+        suppressive_medication_header:add_link(monoclonal_antibodies_abs)
+        suppressive_medication_header:add_link(monoclonal_antibodies_medication)
+        suppressive_medication_header:add_link(tumor_necrosis_abs)
+        suppressive_medication_header:add_link(tumor_necrosis_medication)
+        local function isnt_eye(dv)
+            return dv.route ~= nil
+                and not dv.route:find("Eye")
+                and not dv.route:find("optical")
+                and not dv.route:find("ocular")
+                and not dv.route:find("ophthalmic")
         end
-
-
+        treatment_and_monitoring_header:add_medication_link("Antibiotic", "Antibiotic", isnt_eye)
+        treatment_and_monitoring_header:add_medication_link("Antibiotic2", "Antibiotic", isnt_eye)
+        treatment_and_monitoring_header:add_abstraction_link("ANTIBIOTIC", "Antibiotic")
+        treatment_and_monitoring_header:add_abstraction_link("ANTIBIOTIC_2", "Antibiotic")
+        treatment_and_monitoring_header:add_medication_link("Antifungal", "Antifungal")
+        treatment_and_monitoring_header:add_abstraction_link("ANTIFUNGAL", "Antifungal")
+        treatment_and_monitoring_header:add_medication_link("Antiviral", "Antiviral")
+        treatment_and_monitoring_header:add_abstraction_link("ANTIVIRAL", "Antiviral")
+        chronic_conditions_header:add_links(alcoholism_codes)
+        chronic_conditions_header:add_link(q8901_code)
+        chronic_conditions_header:add_link(z9481_code)
+        chronic_conditions_header:add_link(e84_code)
+        chronic_conditions_header:add_link(k721_code)
+        chronic_conditions_header:add_link(n186_code)
+        chronic_conditions_header:add_link(c82_code)
+        chronic_conditions_header:add_link(z941_code)
+        chronic_conditions_header:add_link(z943_code)
+        chronic_conditions_header:add_link(b20_code)
+        chronic_conditions_header:add_link(c81_code)
+        chronic_conditions_header:add_link(c88_code)
+        chronic_conditions_header:add_link(z9482_code)
+        chronic_conditions_header:add_link(z940_code)
+        chronic_conditions_header:add_link(c95_code)
+        chronic_conditions_header:add_link(c94_code)
+        chronic_conditions_header:add_link(c93_code)
+        chronic_conditions_header:add_link(c92_code)
+        chronic_conditions_header:add_link(z944_code)
+        chronic_conditions_header:add_link(z942_code)
+        chronic_conditions_header:add_link(c91_code)
+        chronic_conditions_header:add_link(c85_code)
+        chronic_conditions_header:add_link(c86_code)
+        chronic_conditions_header:add_link(m32_code)
+        chronic_conditions_header:add_link(c96_code)
+        chronic_conditions_header:add_link(c84_code)
+        chronic_conditions_header:add_link(c90_code)
+        chronic_conditions_header:add_link(d46_code)
+        chronic_conditions_header:add_link(c83_code)
+        chronic_conditions_header:add_link(z9483_code)
+        chronic_conditions_header:add_link(hba1c_discrete_value)
+        chronic_conditions_header:add_link(m05_code)
+        chronic_conditions_header:add_link(m06_code)
+        chronic_conditions_header:add_links(severe_malnutrition_codes)
+        chronic_conditions_header:add_link(r161_code)
+        laboratory_studies_header:add_link(wbc_discrete_value)
+        laboratory_studies_header:add_discrete_value_link(
+            "ABS NEUT COUNT (10x3/uL)",
+            "Absolute Neutropils: [VALUE] (Result Date: [RESULTDATETIME])",
+            function(dv, num) return num < 1.5 end ---@diagnostic disable-line:unused-local
+        )
 
         ----------------------------------------
         --- Result Finalization
