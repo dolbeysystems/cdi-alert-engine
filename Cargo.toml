@@ -17,7 +17,6 @@ derive_environment = "1.1.0"
 futures = "0.3.28"
 mlua = { version = "0.10.1", features = ["async", "error-send", "luajit", "macros", "serialize", "userdata-wrappers", "vendored"] }
 mongodb = "3.1.0"
-notify = "8.0.0"
 profiling = "1.0.15"
 reqwest = { version = "0.12.4", features = ["rustls-tls"], default-features = false }
 serde = { version = "1.0.197", features = ["derive", "rc"] }
