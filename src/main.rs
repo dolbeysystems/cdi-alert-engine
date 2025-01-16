@@ -6,12 +6,13 @@ use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
+use notify::Watcher;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::exit;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -117,12 +118,49 @@ async fn main() {
         }
     }
 
+    let mut notify_reciever = {
+        let (tx, rx) = mpsc::channel::<notify::Result<notify::Event>>();
+        notify::PollWatcher::new(tx, notify::Config::default())
+        .and_then(|mut x| x.watch(&cli.config, notify::RecursiveMode::Recursive))
+        .map_err(|e| {
+            error!("failed to subscribe to config file updates. reloading will be unavailable: {e}")
+        })
+        .ok()
+        .map(|x| (x, rx))
+    };
+
+    let mut config = Arc::new(Config::open(&cli.config).unwrap());
+
     loop {
         profiling::scope!("database poll");
 
-        // TODO: Use inotify to only open when necessary.
-        let config = Arc::new(Config::open(&cli.config).unwrap());
-
+        if let Some((_, rx)) = &mut notify_reciever {
+            for event in rx.iter() {
+                match event {
+                    Ok(notify::Event {
+                        kind:
+                            notify::EventKind::Modify(notify::event::ModifyKind::Data(
+                                notify::event::DataChange::Content,
+                            )),
+                        ..
+                    }) => match Config::open(&cli.config) {
+                        Ok(x) => {
+                            config = Arc::new(x);
+                            info!("config reloaded");
+                        }
+                        Err(e) => {
+                            error!("failed to reload config file: {e}");
+                        }
+                    },
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!("notify reciever returned an error, hanging up: {e}");
+                        notify_reciever = None;
+                        break;
+                    }
+                }
+            }
+        }
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
