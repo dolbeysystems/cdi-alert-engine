@@ -43,18 +43,24 @@ function module.last(list, func)
     return nil
 end
 
+---@param list any[]
+---@param func function?
+---@return boolean
 function module.every(list, func)
     for _, v in ipairs(list) do
-        if not func(v) then
+        if func == nil and v == nil or func ~= nil and not func(v) then
             return false
         end
     end
     return true
 end
 
+---@param list any[]
+---@param func function?
+---@return boolean
 function module.some(list, func)
     for _, v in ipairs(list) do
-        if func(v) then
+        if func == nil and v == nil or func ~= nil and func(v) then
             return true
         end
     end
