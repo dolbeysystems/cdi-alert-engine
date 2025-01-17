@@ -8,6 +8,8 @@
 --- Site: Sarasota County Health District
 ---------------------------------------------------------------------------------------------------------------------
 
+
+
 --------------------------------------------------------------------------------
 --- Requires
 --------------------------------------------------------------------------------
@@ -17,10 +19,14 @@ local lists = require "libs.common.lists"
 local codes = require("libs.common.codes")(Account)
 local headers = require("libs.common.headers")(Account)
 
+
+
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+
+
 
 if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
