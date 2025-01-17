@@ -6,12 +6,13 @@ use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
+use notify::Watcher;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::exit;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -119,9 +120,6 @@ async fn main() {
 
     loop {
         profiling::scope!("database poll");
-
-        // TODO: Use inotify to only open when necessary.
-        let config = Arc::new(Config::open(&cli.config).unwrap());
 
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
