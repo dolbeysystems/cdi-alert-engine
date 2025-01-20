@@ -149,8 +149,8 @@ if not existing_alert or not existing_alert.validated then
     local mannitol_med_doc_link =
         latest_medical_document_date and
         links.get_medication_link {
+            cat = "Mannitol",
             text = "Mannitol",
-            medication = "Mannitol",
             predicate = function(med)
                 return dates.date_string_to_int(med.start_date) < latest_medical_document_date
             end
@@ -158,8 +158,8 @@ if not existing_alert or not existing_alert.validated then
     local dexamethasone_med_doc_link =
         latest_medical_document_date and
         links.get_medication_link {
+            cat = "Dexamethasone",
             text = "Dexamethasone",
-            medication = "Dexamethasone",
             predicate = function(med)
                 return dates.date_string_to_int(med.start_date) < latest_medical_document_date
             end
@@ -179,8 +179,8 @@ if not existing_alert or not existing_alert.validated then
     local burr_holes_codes = links.get_code_links { codes = { "00943ZZ", "00C40ZZ" }, text = "Burr Holes" }
     local decompressive_craniectomy_code = links.get_code_link { code = "00N00ZZ", text = "Decompressive Craniectomy" }
     local hypertonic_saline_med = links.get_medication_link {
+        cat = "Hypertonic Saline",
         text = "Hypertonic Saline",
-        medication = "Hypertonic Saline",
         predicate = function(med)
             return med.route:find("Aerosol") ~= nil
         end

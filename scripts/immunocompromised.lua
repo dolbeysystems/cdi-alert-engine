@@ -90,20 +90,20 @@ if not existing_alert or not existing_alert.validated then
     local b42_code = codes.get_code_prefix_link { prefix = "B42.", text = "Sporotrichosis Infection", sequence = 20 }
     local b95_code = codes.get_code_prefix_link { prefix = "B95.", text = "Streptococcus, Staphylococcus, and Enterococcus Infection", sequence = 22 }
     local b46_code = codes.get_code_prefix_link { prefix = "B46.", text = "Zygomycosis Infection", sequence = 23 }
-    local antimetabolites_medication = links.get_medication_link { medication = "Antimetabolite", text = "", sequence = 1 }
+    local antimetabolites_medication = links.get_medication_link { cat = "Antimetabolite", text = "", sequence = 1 }
     local antimetabolites_abs = links.get_abstraction_link { code = "ANTIMETABOLITE", text = "Antimetabolites", sequence = 2 }
     local z5111_code = links.get_code_link { code = "Z51.11", text = "Antineoplastic Chemotherapy", sequence = 3 }
     local z5112_code = links.get_code_link { code = "Z51.12", text = "Antineoplastic Immunotherapy", sequence = 4 }
-    local antirejection_medication = links.get_medication_link { medication = "Antirejection Medication", text = "", sequence = 5 }
+    local antirejection_medication = links.get_medication_link { cat = "Antirejection Medication", text = "", sequence = 5 }
     local antirejection_medication_abs = links.get_abstraction_link { code = "ANTIREJECTION_MEDICATION", text = "Anti-Rejection Medication", sequence = 6 }
     local a3e04305_code = links.get_code_link { code = "3E04305", text = "Chemotherapy Administration", sequence = 7 }
-    local interferons_medication = links.get_medication_link { medication = "Interferon", text = "", sequence = 8 }
+    local interferons_medication = links.get_medication_link { cat = "Interferon", text = "", sequence = 8 }
     local interferons_abs = links.get_abstraction_link { code = "INTERFERON", text = "Interferon", sequence = 9 }
     local z796_code = codes.get_code_prefix_link { prefix = "Z79.6", text = "Long term Immunomodulators and Immunosuppressants", sequence = 10 }
     local z7952_code = links.get_code_link { code = "Z79.52", text = "Long term Systemic Sterioids", sequence = 11 }
-    local monoclonal_antibodies_medication = links.get_medication_link { medication = "Monoclonal Antibodies", text = "", sequence = 12 }
+    local monoclonal_antibodies_medication = links.get_medication_link { cat = "Monoclonal Antibodies", text = "", sequence = 12 }
     local monoclonal_antibodies_abs = links.get_abstraction_link { code = "MONOCLONAL_ANTIBODIES", text = "Monoclonal Antibodies", sequence = 13 }
-    local tumor_necrosis_medication = links.get_medication_link { medication = "Tumor Necrosis Factor Alpha Inhibitor", text = "", sequence = 14 }
+    local tumor_necrosis_medication = links.get_medication_link { cat = "Tumor Necrosis Factor Alpha Inhibitor", text = "", sequence = 14 }
     local tumor_necrosis_abs = links.get_abstraction_link { code = "TUMOR_NECROSIS_FACTOR_ALPHA_INHIBITOR", text = "Tumor Necrosis Factor Alpha Inhibitor", sequence = 15 }
     local alcoholism_codes = links.get_code_links {
         codes = {
