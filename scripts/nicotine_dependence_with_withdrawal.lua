@@ -149,7 +149,8 @@ if not existing_alert or not existing_alert.validated then
                     local temp_code =
                         links.get_code_link {
                             code = code,
-                            text = "Autoresolved Specified Code - " .. desc .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+                            text =
+                                "Autoresolved Specified Code - " .. desc .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
                         }
                     if temp_code then
                         documented_dx_header:add_link(temp_code)

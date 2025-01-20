@@ -111,6 +111,7 @@ if not existing_alert or not existing_alert.validated then
         ["F11.288"] = "Opioid dependence with other opioid-induced disorder",
         ["F11.29"] = "Opioid dependence with unspecified opioid-induced disorder"
     }
+
     -- Get the alcohol and opioid codes on the account
     local account_alcohol_codes = codes.get_account_codes_in_dictionary(Account, alcohol_code_dic)
     local account_opioid_codes = codes.get_account_codes_in_dictionary(Account, opioid_code_dic)
@@ -221,8 +222,11 @@ if not existing_alert or not existing_alert.validated then
             )
             local r4182_code_link =
                 links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 2 }
-            local altered_abs =
-                links.get_abstraction_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level of Consciousness", seq = 3 }
+            local altered_abs = links.get_abstraction_link {
+                code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                text = "Altered Level of Consciousness",
+                seq = 3
+            }
             if r4182_code_link then
                 altered_abs.hidden = true
             end
