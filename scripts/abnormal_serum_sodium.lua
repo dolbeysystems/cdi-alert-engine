@@ -263,7 +263,7 @@ if not existing_alert or not existing_alert.validated then
 
             clinical_evidence_header:add_code_link("F10.230", "Beer Potomania")
             clinical_evidence_header:add_code_link("R11.14", "Bilious Vomiting")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41",
                     "I50.42", "I50.43", "I50.811", "I50.812", "I50.813", "I50.814", "I50.82", "I50.83", "I50.84"
@@ -281,7 +281,7 @@ if not existing_alert or not existing_alert.validated then
                 "Hyperosmolar Hyperglycemic Syndrome"
             )
             clinical_evidence_header:add_code_link("E86.1", "Hypovolemia")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "N17.0", "N17.1", "N17.2", "N18.1", "N18.2", "N18.30",
                     "N18.31", "N18.32", "N18.4", "N18.5", "N18.6"
@@ -291,7 +291,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("MUSCLE_CRAMPS", "Muscle Cramps")
             clinical_evidence_header:add_code_link("R63.1", "Polydipsia")
             clinical_evidence_header:add_abstraction_link("SEIZURE", "Seizure")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91"
                 },

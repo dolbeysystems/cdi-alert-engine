@@ -17,7 +17,32 @@ local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local lists = require "libs.common.lists"
 local codes = require("libs.common.codes")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
+local medications = require("libs.common.medications")(Account)
 local headers = require("libs.common.headers")(Account)
+
+
+
+--------------------------------------------------------------------------------
+--- Script Specific Functions
+--------------------------------------------------------------------------------
+--- Predicate function to check if a DiscreteValue is positive
+---@param dv DiscreteValue
+---@return boolean
+local function positive(dv)
+    return dv.result ~= nil and dv.result:find("positive") ~= nil
+end
+
+--- Predicate function to check if a Medication is not an eye medication
+---@param med Medication
+---@return boolean
+local function isnt_eye(med)
+    return med.route ~= nil
+        and not med.route:find("Eye")
+        and not med.route:find("optical")
+        and not med.route:find("ocular")
+        and not med.route:find("ophthalmic")
+end
 
 
 
@@ -55,120 +80,110 @@ if not existing_alert or not existing_alert.validated then
     end
 
 
-    --------------------------------------------------------------------------------
-    --- Alert Variables
-    --------------------------------------------------------------------------------
-    ---@param dv DiscreteValue
-    ---@return boolean
-    local function positive(dv)
-        -- string:find returns a truthy value only when successful
-        -- `not not` normalizes the return value to be a boolean rather than falsy or truthy.
-        return dv.result ~= nil and not not dv.result:find("positive")
-    end
-
-    local d80_code = codes.get_code_prefix_link { prefix = "D80.", text = "Immunodeficiency with Predominantly Antibody Defects", sequence = 6 }
-    local d81_code = codes.get_code_prefix_link { prefix = "D81.", text = "Combined Immunodeficiencies", sequence = 6 }
-    local d82_code = codes.get_code_prefix_link { prefix = "D82.", text = "Immunodeficiency Associated with other Major Defects", sequence = 6 }
-    local d83_code = codes.get_code_prefix_link { prefix = "D83.", text = "Common Variable Immunodeficiency", sequence = 6 }
-    local d84_code = codes.get_code_prefix_link { prefix = "D84.", text = "Other Immunodeficiencies", sequence = 6 }
-    local b44_code = codes.get_code_prefix_link { prefix = "B44.", text = "Aspergillosis Infection", sequence = 1 }
-    local r7881_code = links.get_code_link { code = "R78.81", text = "Bacteremia", sequence = 2 }
-    local b40_code = codes.get_code_prefix_link { prefix = "B40.", text = "Blastomycosis Infection", sequence = 3 }
-    local b43_code = codes.get_code_prefix_link { prefix = "B43.", text = "Chromomycosis And Pheomycotic Abscess Infection", sequence = 5 }
-    local covid_discrete_value = links.get_discrete_value_link { code = "SARS-CoV2 (COVID-19)", text = "Covid 19 Screen", predicate = positive, sequence = 6 }
-    local b45_code = codes.get_code_prefix_link { prefix = "B45.", text = "Cryptococcosis Infection", sequence = 8 }
-    local b25_code = codes.get_code_prefix_link { prefix = "B25.", text = "Cytomegaloviral Disease Code", sequence = 9 }
-    local infection_abs = links.get_abstraction_link { code = "INFECTION", text = "Infection", sequence = 10 }
-    local influenza_a_discrete_value = links.get_discrete_value_link { code = "Influenze A", text = "Influenza A Screen", predicate = positive, sequence = 11 }
-    local influenza_b_discrete_value = links.get_discrete_value_link { code = "Influenze B", text = "Influenza B Screen", predicate = positive, sequence = 12 }
-    local b49_code = codes.get_code_prefix_link { prefix = "B49.", text = "Mycosis Infection", sequence = 13 }
-    local b96_code = codes.get_code_prefix_link { prefix = "B96.", text = "Other Bacterial Agents As The Cause Of Diseases Infection", sequence = 14 }
-    local b41_code = codes.get_code_prefix_link { prefix = "B41.", text = "Paracoccidioidomycosis Infection", sequence = 15 }
-    local r835_code = links.get_code_link { code = "R83.5", text = "Positive Cerebrospinal Fluid Culture", sequence = 16 }
-    local r845_code = links.get_code_link { code = "R84.5", text = "Positive Respiratory Culture", sequence = 17 }
-    local positive_would_culture_abs = links.get_abstraction_link { code = "POSITIVE_WOUND_CULTURE", text = "Positive Wound Culture", sequence = 18 }
-    local b42_code = codes.get_code_prefix_link { prefix = "B42.", text = "Sporotrichosis Infection", sequence = 20 }
-    local b95_code = codes.get_code_prefix_link { prefix = "B95.", text = "Streptococcus, Staphylococcus, and Enterococcus Infection", sequence = 22 }
-    local b46_code = codes.get_code_prefix_link { prefix = "B46.", text = "Zygomycosis Infection", sequence = 23 }
-    local antimetabolites_medication = links.get_medication_link { cat = "Antimetabolite", text = "", sequence = 1 }
-    local antimetabolites_abs = links.get_abstraction_link { code = "ANTIMETABOLITE", text = "Antimetabolites", sequence = 2 }
-    local z5111_code = links.get_code_link { code = "Z51.11", text = "Antineoplastic Chemotherapy", sequence = 3 }
-    local z5112_code = links.get_code_link { code = "Z51.12", text = "Antineoplastic Immunotherapy", sequence = 4 }
-    local antirejection_medication = links.get_medication_link { cat = "Antirejection Medication", text = "", sequence = 5 }
-    local antirejection_medication_abs = links.get_abstraction_link { code = "ANTIREJECTION_MEDICATION", text = "Anti-Rejection Medication", sequence = 6 }
-    local a3e04305_code = links.get_code_link { code = "3E04305", text = "Chemotherapy Administration", sequence = 7 }
-    local interferons_medication = links.get_medication_link { cat = "Interferon", text = "", sequence = 8 }
-    local interferons_abs = links.get_abstraction_link { code = "INTERFERON", text = "Interferon", sequence = 9 }
-    local z796_code = codes.get_code_prefix_link { prefix = "Z79.6", text = "Long term Immunomodulators and Immunosuppressants", sequence = 10 }
-    local z7952_code = links.get_code_link { code = "Z79.52", text = "Long term Systemic Sterioids", sequence = 11 }
-    local monoclonal_antibodies_medication = links.get_medication_link { cat = "Monoclonal Antibodies", text = "", sequence = 12 }
-    local monoclonal_antibodies_abs = links.get_abstraction_link { code = "MONOCLONAL_ANTIBODIES", text = "Monoclonal Antibodies", sequence = 13 }
-    local tumor_necrosis_medication = links.get_medication_link { cat = "Tumor Necrosis Factor Alpha Inhibitor", text = "", sequence = 14 }
-    local tumor_necrosis_abs = links.get_abstraction_link { code = "TUMOR_NECROSIS_FACTOR_ALPHA_INHIBITOR", text = "Tumor Necrosis Factor Alpha Inhibitor", sequence = 15 }
-    local alcoholism_codes = links.get_code_links {
-        codes = {
-            "F10.20", "F10.220", "F10.2221", "F10.2229", "F10.230", "F10.20", "F10.231",
-            "F10.232", "F10.239", "F10.24", "F10.250", "F10.251", "F10.259", "F10.26",
-            "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"
-        },
-        text = "Alcoholism",
-        sequence = 1
-    }
-    local q8901_code = links.get_code_link { code = "Q89.01", text = "Asplenia", sequence = 2 }
-    local z9481_code = links.get_code_link { code = "Z94.81", text = "Bone Marrow Transplant", sequence = 3 }
-    local e84_code = codes.get_code_prefix_link { prefix = "E84.", text = "Cystic Fibrosis", sequence = 4 }
-    local k721_code = codes.get_code_prefix_link { prefix = "K72.1", text = "End Stage Liver Disease", sequence = 5 }
-    local n186_code = links.get_code_link { code = "N18.6", text = "ESRD", sequence = 6 }
-    local c82_code = codes.get_code_prefix_link { prefix = "C82.", text = "Follicular Lymphoma", sequence = 7 }
-    local z941_code = links.get_code_link { code = "Z94.1", text = "Heart Transplant", sequence = 8 }
-    local z943_code = links.get_code_link { code = "Z94.3", text = "Heart and Lung Transplant", sequence = 9 }
-    local b20_code = links.get_code_link { code = "B20", text = "HIV/AIDS", sequence = 10 }
-    local c81_code = codes.get_code_prefix_link { prefix = "C81.", text = "Hodgkin Lymphoma", sequence = 11 }
-    local c88_code = codes.get_code_prefix_link { prefix = "C88.", text = "Immunoproliferative Disease", sequence = 12 }
-    local z9482_code = links.get_code_link { code = "Z94.82", text = "Intestine Transplant", sequence = 13 }
-    local z940_code = links.get_code_link { code = "Z94.0", text = "Kidney Transplant", sequence = 14 }
-    local c95_code = codes.get_code_prefix_link { prefix = "C95.", text = "Leukemia", sequence = 15 }
-    local c94_code = codes.get_code_prefix_link { prefix = "C94.", text = "Leukemia", sequence = 16 }
-    local c93_code = codes.get_code_prefix_link { prefix = "C93.", text = "Leukemia", sequence = 17 }
-    local c92_code = codes.get_code_prefix_link { prefix = "C92.", text = "Leukemia", sequence = 18 }
-    local d72819_code = links.get_code_link { code = "D72.819", text = "Leukopenia", sequence = 19 }
-    local z944_code = links.get_code_link { code = "Z94.4", text = "Liver Transplant", sequence = 20 }
-    local z942_code = links.get_code_link { code = "Z94.2", text = "Lung Transplant", sequence = 21 }
-    local c91_code = codes.get_code_prefix_link { prefix = "C91.", text = "Lymphoid Leukemia", sequence = 22 }
-    local c85_code = codes.get_code_prefix_link { prefix = "C85.", text = "Lymphoma", sequence = 23 }
-    local c86_code = codes.get_code_prefix_link { prefix = "C86.", text = "Lymphoma", sequence = 24 }
-    local m32_code = codes.get_code_prefix_link { prefix = "M32.", text = "Lupus", sequence = 25 }
-    local c96_code = codes.get_code_prefix_link { prefix = "C96.", text = "Malignant Neoplasms", sequence = 26 }
-    local c84_code = codes.get_code_prefix_link { prefix = "C84.", text = "Mature T/NK-Cell  Lymphoma", sequence = 27 }
-    local c90_code = codes.get_code_prefix_link { prefix = "C90.", text = "Multiple Myeloma", sequence = 28 }
-    local d46_code = codes.get_code_prefix_link { prefix = "D46.", text = "Myelodysplastic Syndrome", sequence = 29 }
-    local c83_code = codes.get_code_prefix_link { prefix = "C83.", text = "Non-Follicular Lymphoma", sequence = 30 }
-    local z9483_code = links.get_code_link { code = "Z94.83", text = "Pancreas Transplant", sequence = 31 }
-    local pancytopenia_codes = links.get_code_links { codes = { "D61.810", "D61.811", "D61.818" }, text = "Pancytopenia", sequence = 32 }
-    local hba1c_discrete_value = links.get_discrete_value_link {
-        discreteValueName = "HEMOGLOBIN A1C (%)",
-        text = "Poorly controlled HbA1c",
-        predicate = function(dv, num) ---@diagnostic disable-line:unused-local
-            return num > 10
-        end,
-        sequence = 33
-    }
-    local m05_code = codes.get_code_prefix_link { prefix = "M05.", text = "RA", sequence = 34 }
-    local m06_code = codes.get_code_prefix_link { prefix = "M06.", text = "RA", sequence = 35 }
-    local severe_malnutrition_codes = links.get_code_links { codes = { "E40", "E41", "E42", "E43" }, text = "Severe Malnutrition", sequence = 36 }
-    local r161_code = links.get_code_link { code = "R16.1", text = "Splenomegaly", sequence = 37 }
-    local wbc_discrete_value = links.get_discrete_value_link {
-        discreteValueName = "WBC (10x3/ul)",
-        text = "WBC",
-        predicate = function(dv, num) ---@diagnostic disable-line:unused-local
-            return num < 4.5
-        end
-    }
 
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
+    local d80_code = codes.make_code_prefix_link("D80.", "Immunodeficiency with Predominantly Antibody Defects", 6)
+    local d81_code = codes.make_code_prefix_link("D81.", "Combined Immunodeficiencies", 6)
+    local d82_code = codes.make_code_prefix_link("D82.", "Immunodeficiency Associated with other Major Defects", 6)
+    local d83_code = codes.make_code_prefix_link("D83.", "Common Variable Immunodeficiency", 6)
+    local d84_code = codes.make_code_prefix_link("D84.", "Other Immunodeficiencies", 6)
+    local b44_code = codes.make_code_prefix_link("B44.", "Aspergillosis Infection", 1)
+    local r7881_code = codes.make_code_link("R78.81", "Bacteremia", 2)
+    local b40_code = codes.make_code_prefix_link("B40.", "Blastomycosis Infection", 3)
+    local b43_code = codes.make_code_prefix_link("B43.", "Chromomycosis And Pheomycotic Abscess Infection", 5)
+    local covid_discrete_value = discrete.make_discrete_value_link({ "SARS-CoV2 (COVID-19)" }, "Covid 19 Screen", positive, 6)
+    local b45_code = codes.make_code_prefix_link("B45.", "Cryptococcosis Infection", 8)
+    local b25_code = codes.make_code_prefix_link("B25.", "Cytomegaloviral Disease Code", 9)
+    local infection_abs = codes.make_abstraction_link("INFECTION", "Infection", 10)
+    local influenza_a_discrete_value = discrete.make_discrete_value_link({ "Influenze A" }, "Influenza A Screen", positive, 11)
+    local influenza_b_discrete_value = discrete.make_discrete_value_link({ "Influenze B" }, "Influenza B Screen", positive, 12)
+    local b49_code = codes.make_code_prefix_link("B49.", "Mycosis Infection", 13)
+    local b96_code = codes.make_code_prefix_link("B96.", "Other Bacterial Agents As The Cause Of Diseases Infection", 14)
+    local b41_code = codes.make_code_prefix_link("B41.", "Paracoccidioidomycosis Infection", 15)
+    local r835_code = codes.make_code_link("R83.5", "Positive Cerebrospinal Fluid Culture", 16)
+    local r845_code = codes.make_code_link("R84.5", "Positive Respiratory Culture", 17)
+    local positive_would_culture_abs = codes.make_abstraction_link("POSITIVE_WOUND_CULTURE", "Positive Wound Culture", 18)
+    local b42_code = codes.make_code_prefix_link("B42.", "Sporotrichosis Infection", 20)
+    local b95_code = codes.make_code_prefix_link("B95.", "Streptococcus, Staphylococcus, and Enterococcus Infection", 22)
+    local b46_code = codes.make_code_prefix_link("B46.", "Zygomycosis Infection", 23)
+    local antimetabolites_medication = medications.make_medication_link("Antimetabolite", "", 1)
+    local antimetabolites_abs = codes.make_abstraction_link("ANTIMETABOLITE", "Antimetabolites", 2)
+    local z5111_code = codes.make_code_link("Z51.11", "Antineoplastic Chemotherapy", 3)
+    local z5112_code = codes.make_code_link("Z51.12", "Antineoplastic Immunotherapy", 4)
+    local antirejection_medication = medications.make_medication_link("Antirejection Medication", "", 5)
+    local antirejection_medication_abs = codes.make_abstraction_link("ANTIREJECTION_MEDICATION", "Anti-Rejection Medication", 6)
+    local a3e04305_code = codes.make_code_link("3E04305", "Chemotherapy Administration", 7)
+    local interferons_medication = medications.make_medication_link("Interferon", "", 8)
+    local interferons_abs = codes.make_abstraction_link("INTERFERON", "Interferon", 9)
+    local z796_code = codes.make_code_prefix_link("Z79.6", "Long term Immunomodulators and Immunosuppressants", 10)
+    local z7952_code = codes.make_code_link("Z79.52", "Long term Systemic Sterioids", 11)
+    local monoclonal_antibodies_medication = medications.make_medication_link("Monoclonal Antibodies", "", 12)
+    local monoclonal_antibodies_abs = codes.make_abstraction_link("MONOCLONAL_ANTIBODIES", "Monoclonal Antibodies", 13)
+    local tumor_necrosis_medication = medications.make_medication_link("Tumor Necrosis Factor Alpha Inhibitor", "", 14)
+    local tumor_necrosis_abs = codes.make_abstraction_link("TUMOR_NECROSIS_FACTOR_ALPHA_INHIBITOR", "Tumor Necrosis Factor Alpha Inhibitor", 15)
+    local alcoholism_codes = codes.make_code_links(
+        {
+            "F10.20", "F10.220", "F10.2221", "F10.2229", "F10.230", "F10.20", "F10.231",
+            "F10.232", "F10.239", "F10.24", "F10.250", "F10.251", "F10.259", "F10.26",
+            "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"
+        },
+        "Alcoholism",
+        1
+    )
+    local q8901_code = codes.make_code_link("Q89.01", "Asplenia", 2)
+    local z9481_code = codes.make_code_link("Z94.81", "Bone Marrow Transplant", 3)
+    local e84_code = codes.make_code_prefix_link("E84.", "Cystic Fibrosis", 4)
+    local k721_code = codes.make_code_prefix_link("K72.1", "End Stage Liver Disease", 5)
+    local n186_code = codes.make_code_link("N18.6", "ESRD", 6)
+    local c82_code = codes.make_code_prefix_link("C82.", "Follicular Lymphoma", 7)
+    local z941_code = codes.make_code_link("Z94.1", "Heart Transplant", 8)
+    local z943_code = codes.make_code_link("Z94.3", "Heart and Lung Transplant", 9)
+    local b20_code = codes.make_code_link("B20", "HIV/AIDS", 10)
+    local c81_code = codes.make_code_prefix_link("C81.", "Hodgkin Lymphoma", 11)
+    local c88_code = codes.make_code_prefix_link("C88.", "Immunoproliferative Disease", 12)
+    local z9482_code = codes.make_code_link("Z94.82", "Intestine Transplant", 13)
+    local z940_code = codes.make_code_link("Z94.0", "Kidney Transplant", 14)
+    local c95_code = codes.make_code_prefix_link("C95.", "Leukemia", 15)
+    local c94_code = codes.make_code_prefix_link("C94.", "Leukemia", 16)
+    local c93_code = codes.make_code_prefix_link("C93.", "Leukemia", 17)
+    local c92_code = codes.make_code_prefix_link("C92.", "Leukemia", 18)
+    local d72819_code = codes.make_code_link("D72.819", "Leukopenia", 19)
+    local z944_code = codes.make_code_link("Z94.4", "Liver Transplant", 20)
+    local z942_code = codes.make_code_link("Z94.2", "Lung Transplant", 21)
+    local c91_code = codes.make_code_prefix_link("C91.", "Lymphoid Leukemia", 22)
+    local c85_code = codes.make_code_prefix_link("C85.", "Lymphoma", 23)
+    local c86_code = codes.make_code_prefix_link("C86.", "Lymphoma", 24)
+    local m32_code = codes.make_code_prefix_link("M32.", "Lupus", 25)
+    local c96_code = codes.make_code_prefix_link("C96.", "Malignant Neoplasms", 26)
+    local c84_code = codes.make_code_prefix_link("C84.", "Mature T/NK-Cell  Lymphoma", 27)
+    local c90_code = codes.make_code_prefix_link("C90.", "Multiple Myeloma", 28)
+    local d46_code = codes.make_code_prefix_link("D46.", "Myelodysplastic Syndrome", 29)
+    local c83_code = codes.make_code_prefix_link("C83.", "Non-Follicular Lymphoma", 30)
+    local z9483_code = codes.make_code_link("Z94.83", "Pancreas Transplant", 31)
+    local pancytopenia_codes = codes.make_code_one_of_link({ "D61.810", "D61.811", "D61.818" }, "Pancytopenia", 32)
+    local hba1c_discrete_value = discrete.make_discrete_value_link(
+        { "HEMOGLOBIN A1C (%)" },
+        "Poorly controlled HbA1c",
+        function(dv_, num) return num > 10 end,
+        33
+    )
+    local m05_code = codes.make_code_prefix_link("M05.", "RA", 34)
+    local m06_code = codes.make_code_prefix_link("M06.", "RA", 35)
+    local severe_malnutrition_codes = codes.make_code_one_of_link({ "E40", "E41", "E42", "E43" }, "Severe Malnutrition", 36)
+    local r161_code = codes.make_code_link("R16.1", "Splenomegaly", 37)
+    local wbc_discrete_value = discrete.make_discrete_value_link(
+        { "WBC (10x3/ul)" },
+        "WBC",
+        function(dv_, num) return num < 4.5 end
+    )
 
+
+
+    --------------------------------------------------------------------------------
+    --- Alert Qualification
+    --------------------------------------------------------------------------------
     if existing_alert and lists.some { d80_code, d81_code, d82_code, d83_code, d84_code } then
         for _, v in ipairs { d80_code, d81_code, d82_code, d83_code, d84_code } do
             v.link_text = "Autoresolved Specified Code - " .. v.link_text
@@ -197,11 +212,11 @@ if not existing_alert or not existing_alert.validated then
                 b44_code, r7881_code, b40_code, b43_code, covid_discrete_value,
                 b45_code, b25_code, infection_abs, influenza_a_discrete_value, influenza_b_discrete_value, b49_code, b96_code, b41_code, r835_code,
                 r845_code, positive_would_culture_abs, b42_code, b95_code, b46_code
-            } then
+            }
+        then
             local subtitle
             if medication and chronic then
-                subtitle =
-                "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication"
+                subtitle = "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication"
             elseif medication then
                 subtitle = "Infection Present with Possible Link to Immunocompromised State Due to Medication"
             elseif chronic then
@@ -222,9 +237,7 @@ if not existing_alert or not existing_alert.validated then
     end
     ::alert_passed::
 
-    --------------------------------------------------------------------------------
-    --- Alert Qualification
-    --------------------------------------------------------------------------------
+
 
     if Result.passed then
         --------------------------------------------------------------------------------
@@ -265,13 +278,6 @@ if not existing_alert or not existing_alert.validated then
         suppressive_medication_header:add_link(monoclonal_antibodies_medication)
         suppressive_medication_header:add_link(tumor_necrosis_abs)
         suppressive_medication_header:add_link(tumor_necrosis_medication)
-        local function isnt_eye(dv)
-            return dv.route ~= nil
-                and not dv.route:find("Eye")
-                and not dv.route:find("optical")
-                and not dv.route:find("ocular")
-                and not dv.route:find("ophthalmic")
-        end
         treatment_and_monitoring_header:add_medication_link("Antibiotic", "Antibiotic", isnt_eye)
         treatment_and_monitoring_header:add_medication_link("Antibiotic2", "Antibiotic", isnt_eye)
         treatment_and_monitoring_header:add_abstraction_link("ANTIBIOTIC", "Antibiotic")
@@ -319,7 +325,7 @@ if not existing_alert or not existing_alert.validated then
         laboratory_studies_header:add_discrete_value_link(
             "ABS NEUT COUNT (10x3/uL)",
             "Absolute Neutropils: [VALUE] (Result Date: [RESULTDATETIME])",
-            function(dv, num) return num < 1.5 end ---@diagnostic disable-line:unused-local
+            function(dv_, num) return num < 1.5 end
         )
 
         ----------------------------------------
@@ -328,3 +334,4 @@ if not existing_alert or not existing_alert.validated then
         compile_links()
     end
 end
+

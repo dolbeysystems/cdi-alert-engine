@@ -529,7 +529,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("E58", "Dietary Calcium Deficiency")
             clinical_evidence_header:add_code_link("E59", "Dietary Selenium Deficiency")
             clinical_evidence_header:add_code_link("E60", "Dietary Zinc Deficiency")
-            clinical_evidence_header:add_code_links({ "R13.10", "R13.11", "R13.12", "R13.13", "R13.14", "R13.19" }, "Dysphagia")
+            clinical_evidence_header:add_code_one_of_link({ "R13.10", "R13.11", "R13.12", "R13.13", "R13.14", "R13.19" }, "Dysphagia")
             clinical_evidence_header:add_code_link("R53.83", "Fatigue")
             clinical_evidence_header:add_abstraction_link("FEELING_COLD", "Feeling Cold")
             clinical_evidence_header:add_abstraction_link("FRAIL", "Frail")
@@ -665,14 +665,14 @@ if not existing_alert or not existing_alert.validated then
             risk_factor_header:add_code_prefix_link("K50%.", "Crohns Disease")
             risk_factor_header:add_code_prefix_link("E84%.", "Cystic Fibrosis")
             risk_factor_header:add_code_prefix_link("K57%.", "Diverticulitis")
-            risk_factor_header:add_code_links(
+            risk_factor_header:add_code_one_of_link(
                 { "F50.00", "F50.01", "F50.02", "F50.2", "F50.82", "F50.9" },
                 "Eating Disorder"
             )
             risk_factor_header:add_code_link("I50.84", "End Stage Heart Failure")
             risk_factor_header:add_code_link("N18.6", "End-Stage Renal Disease")
             risk_factor_header:add_code_link("K56.7", "Ileus")
-            risk_factor_header:add_code_links({ "K90.89", "K90.9" }, "Intestinal Malabsorption")
+            risk_factor_header:add_code_one_of_link({ "K90.89", "K90.9" }, "Intestinal Malabsorption")
             risk_factor_header:add_code_prefix_link("K56%.6", "Intestinal Obstructions")
             risk_factor_header:add_abstraction_link("MENTAL_HEALTH_DISORDER", "Mental Health Disorder")
             risk_factor_header:add_code_prefix_link("Z79%.62", "On Immunosuppressants")

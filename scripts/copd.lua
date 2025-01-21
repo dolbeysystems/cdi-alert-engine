@@ -917,7 +917,7 @@ if not existing_alert or not existing_alert.validated then
             "Breath Sounds",
             function(dv, num_) return not string.match(dv.result, "clear") end
         )
-        clinical_evidence_header:add_code_links(
+        clinical_evidence_header:add_code_one_of_link(
             { "J96.01", "J96.2", "J96.21", "J96.22" },
             "Acute Respiratory Failure"
         )

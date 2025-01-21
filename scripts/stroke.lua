@@ -244,11 +244,11 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_link(aborted_stroke_abs)
             clinical_evidence_header:add_code_link("R47.01", "Aphasia")
             clinical_evidence_header:add_abstraction_link("ATAXIA", "Ataxia")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I48.0", "I48.1", "I48.11", "I48.19", "I48.20", "I48.21", "I48.91" },
                 "Atrial Fibrillation"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "Q21.10", "Q21.11", "Q21.13", "Q21.14", "Q21.15", "Q21.16", "Q21.19" },
                 "Atrial Septal Defect"
             )
@@ -268,26 +268,26 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("FACIAL_NUMBNESS", "Facial Numbness")
             clinical_evidence_header:add_code_link("R29.810", "Facial Droop")
             clinical_evidence_header:add_abstraction_link("HEADACHE", "Headache")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "G81.00", "G81.01", "G81.02", "G81.03", "G81.04", "G81.1", "G81.10", "G81.11", "G81.12", "G81.13",
                     "G81.14", "G81.90", "G81.91", "G81.92", "G81.93", "G81.94"
                 },
                 "Hemiplegia"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I69.351", "I69.352", "I69.353", "I69.354", "I69.359" },
                 "Hemiplegia/Hemiparesis following Cerebral Infarction"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "G81.00", "G81.10", "G81.90" },
                 "Hemiplegia/Hemiparesis Unspecified Side"
             )
             clinical_evidence_header:add_code_link("Z82.3", "History of Stroke")
             clinical_evidence_header:add_code_link("I10", "HTN")
             clinical_evidence_header:add_code_link("Z86.73", "Hx Of Stroke/TIA")
-            clinical_evidence_header:add_code_links({ "I16.0", "I16.1", "I16.9" }, "Hypertensive Crisis")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link({ "I16.0", "I16.1", "I16.9" }, "Hypertensive Crisis")
+            clinical_evidence_header:add_code_one_of_link(
                 { "G81.02", "G81.04", "G81.12", "G81.14", "G81.92", "G81.94" },
                 "Left Hemiplegia/Hemiparesis"
             )
@@ -349,7 +349,7 @@ if not existing_alert or not existing_alert.validated then
                 "I67.841",
                 "Reveresible Cerebrovascular Vasospasm and Vasocontriction"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "G81.01", "G81.03", "G81.11", "G81.13", "G81.91", "G81.93" },
                 "Right Hemiplegia/Hemiparesis"
             )
@@ -367,7 +367,7 @@ if not existing_alert or not existing_alert.validated then
             contributing_dx_header:add_code_prefix_link("F14.", "Cocaine Use")
             contributing_dx_header:add_code_link("D68.59", "Hypercoagulable State")
             contributing_dx_header:add_code_link("D68.62", "Lupus Anticoagulant Syndrome")
-            contributing_dx_header:add_code_links({ "E66.01", "E66.2" }, "Morbid Obesity")
+            contributing_dx_header:add_code_one_of_link({ "E66.01", "E66.2" }, "Morbid Obesity")
             contributing_dx_header:add_code_prefix_link("F17.", "Nicotine Dependence")
             contributing_dx_header:add_code_link("D68.69", "Other Thrombophilia")
             contributing_dx_header:add_code_link("D68.52", "Prothrombin Gene Mutation")

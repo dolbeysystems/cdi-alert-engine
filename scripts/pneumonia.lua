@@ -1044,7 +1044,7 @@ if not existing_alert or not existing_alert.validated then
             -- Laboratory Studies
             if r845_code and not unspecified_dx then laboratory_studies_header:add_link(r845_code) end
             -- Oxygen Ventilation
-            oxygen_ventilation_header:add_code_links({ "5A0935A", "5A0945A", "5A0955A" }, "Flow Nasal Oxygen")
+            oxygen_ventilation_header:add_code_one_of_link({ "5A0935A", "5A0945A", "5A0955A" }, "Flow Nasal Oxygen")
             oxygen_ventilation_header:add_code_link("5A1945Z", "Mechanical Ventilation 24 to 96 hours")
             oxygen_ventilation_header:add_code_link("5A1955Z", "Mechanical Ventilation Greater than 96 hours")
             oxygen_ventilation_header:add_code_link("Z99.1", "Mechanical Ventilation/Invasive Ventilation")

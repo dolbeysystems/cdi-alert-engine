@@ -321,7 +321,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_link(altered_abs)
             clinical_evidence_header:add_link(brain_compression_abs)
 
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I60.31", "I60.32", "I60.4", "I60.5", "I60.50", "I60.51", "I60.52", "I60.6", "I60.7", "I60.8",
                     "I60.9", "I61.0", "I61.1", "I61.2", "I61.3", "I61.4", "I61.5", "I61.6", "I61.8", "I61.9", "I62",
@@ -343,26 +343,26 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R29.810", "Facial Droop")
             clinical_evidence_header:add_abstraction_link("FACIAL_NUMBNESS", "Facial Numbness")
             clinical_evidence_header:add_code_link("R51.9", "Headache")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "G81.00", "G81.01", "G81.02", "G81.03", "G81.04", "G81.1", "G81.10", "G81.11", "G81.12",
                     "G81.13", "G81.14", "G81.90", "G81.91", "G81.92", "G81.93", "G81.94"
                 },
                 "Hemiplegia"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "G81.00", "G81.10", "G81.90" },
                 "Hemiplegia/Hemiparesis of Unspecified Site"
             )
-            clinical_evidence_header:add_code_links({ "G91.1", "G91.3", "G91.9" }, "Hydrocephalus")
+            clinical_evidence_header:add_code_one_of_link({ "G91.1", "G91.3", "G91.9" }, "Hydrocephalus")
             clinical_evidence_header:add_code_link("G04.90", "Encephalitis")
             clinical_evidence_header:add_code_prefix_link("S06%.", "Intracranial Injury")
             clinical_evidence_header:add_abstraction_link("IRREGULAR_RADIOLOGY_FINDINGS_BRAIN", "Radiology Findings")
-            clinical_evidence_header:add_code_links({ "5A1935Z", "5A1945Z", "5A1955Z" }, "Intubation")
+            clinical_evidence_header:add_code_one_of_link({ "5A1935Z", "5A1945Z", "5A1955Z" }, "Intubation")
             clinical_evidence_header:add_link(mass_effect_abs)
             clinical_evidence_header:add_abstraction_link("MIDLINE_SHIFT", "Midline Shift")
             clinical_evidence_header:add_abstraction_link("MUSCLE_CRAMPS", "Muscle Cramps")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I63.0", "I63.00", "I63.01", "I63.011", "I63.012", "I63.013", "I63.019", "I63.02", "I63.03",
                     "I63.031", "I63.032", "I63.033", "I63.039", "I63.09", "I63.1", "I63.10", "I63.11", "I63.111",

@@ -617,7 +617,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("N18.6", "End-Stage Renal Disease")
             clinical_evidence_header:add_code_link("R53.83", "Fatigue")
             clinical_evidence_header:add_code_prefix_link("C82%.", "Follicular Lymphoma")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I5.42", "I50.43", "I50.810",
                     "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
@@ -632,7 +632,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_prefix_link("C95%.", "Leukemia of Unspecified Cell Type")
             clinical_evidence_header:add_code_prefix_link("C91%.", "Lymphoid Leukemia")
             clinical_evidence_header:add_code_link("K22.6", "Mallory-Weiss Tear")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "E40", "E41", "E42", "E43", "E44.0", "E44.1", "E45" },
                 "Malnutrition"
             )

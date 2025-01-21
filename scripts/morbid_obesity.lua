@@ -547,8 +547,8 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Clinical Evidence
-            clinical_evidence_header:add_code_links({ "Z68.41", "Z68.42", "Z68.43", "Z68.44", "Z68.45" }, "BMI")
-            clinical_evidence_header:add_code_links({ "Z68.35", "Z68.36", "Z68.37", "Z68.38", "Z68.39" }, "BMI")
+            clinical_evidence_header:add_code_one_of_link({ "Z68.41", "Z68.42", "Z68.43", "Z68.44", "Z68.45" }, "BMI")
+            clinical_evidence_header:add_code_one_of_link({ "Z68.35", "Z68.36", "Z68.37", "Z68.38", "Z68.39" }, "BMI")
             clinical_evidence_header:add_abstraction_link(
                 "DECREASED_FUNCTIONAL_CAPACITY",
                 "Decreased Functional Capacity"

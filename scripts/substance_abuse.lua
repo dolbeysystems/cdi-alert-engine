@@ -213,7 +213,7 @@ if not existing_alert or not existing_alert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "F10.20", "F10.21", "F10.220", "F10.221", "F10.229", "F10.24", "F10.250", "F10.251",
                     "F10.259", "F10.26", "F10.27", "F10.280", "F10.281", "F10.282", "F10.288", "F10.29"

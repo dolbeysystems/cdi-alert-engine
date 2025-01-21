@@ -774,7 +774,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("HEART_PALPITATIONS", "Heart Palpitations")
             clinical_evidence_header:add_code_link("R42", "Lightheadedness")
             clinical_evidence_header:add_link(malignant_hyper_abs)
-            clinical_evidence_header:add_code_links({ "R11.0", "R11.10", "R11.2" }, "Nausea and Vomiting")
+            clinical_evidence_header:add_code_one_of_link({ "R11.0", "R11.10", "R11.2" }, "Nausea and Vomiting")
             clinical_evidence_header:add_abstraction_link("RESOLVING_TROPONINS", "Resolving Troponins")
             clinical_evidence_header:add_abstraction_link("SHORTNESS_OF_BREATH", "Shortness of Breath")
             clinical_evidence_header:add_code_prefix_link("F15%.", "Stimulant Abuse")

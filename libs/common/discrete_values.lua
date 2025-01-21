@@ -641,5 +641,24 @@ return function(Account)
         return link
     end
 
+    --------------------------------------------------------------------------------
+    --- Make a discrete value link
+    ---
+    --- @param dvs string[] The discrete values to search for
+    --- @param text string The text for the link
+    --- @param predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
+    --- @param sequence number? The sequence number of the link
+    ---
+    --- @return CdiAlertLink? - a link to the discrete value or nil if not found
+    --------------------------------------------------------------------------------
+    function module.make_discrete_value_link(dvs, text, predicate, sequence)
+        return links.get_code_link {
+            discreteValueNames = dvs,
+            text = text,
+            predicate = predicate,
+            seq = sequence,
+        }
+    end
+
     return module
 end

@@ -493,12 +493,12 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R63.5", "Abnormal Weight Gain")
             clinical_evidence_header:add_link(r601_code)
             clinical_evidence_header:add_abstraction_link("ASCITES", "Ascites")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I48.0", "I48.11", "I48.19", "I48.20", "I48.21", "I48.91" },
                 "Atrial Fibrillation"
             )
             clinical_evidence_header:add_code_link("I31.4", "Cardiac Tamponade")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I25.5", "O90.3", "I42.0", "I42.1", "I42.2", "I42.3",
                     "I42.4", "I42.5", "I42.6", "I42.7", "I42.8", "I51.81"
@@ -526,7 +526,7 @@ if not existing_alert or not existing_alert.validated then
                 "IMPLANTABLE_CARDIAC_ASSIST_DEVICE",
                 "Implantable Cardiac Assist Device"
             )
-            clinical_evidence_header:add_code_links({ "02HA3QZ", "02HA0QZ" }, "Implantable Heart Assist Device")
+            clinical_evidence_header:add_code_one_of_link({ "02HA3QZ", "02HA0QZ" }, "Implantable Heart Assist Device")
             clinical_evidence_header:add_abstraction_link("IRREGULAR_ECHO_FINDING", "Irregular Echo Findings")
             clinical_evidence_header:add_abstraction_link(
                 "IRREGULAR_RADIOLOGY_REPORT_CARDIAC",
@@ -579,7 +579,7 @@ if not existing_alert or not existing_alert.validated then
                 "Severe Tricuspid Regurgitation"
             )
             clinical_evidence_header:add_link(sob_lying_flat_abs)
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "02HA0RJ", "02HA0RS", "02HA0RZ", "02HA3RJ", "02HA3RS",
                     "02HA3RZ", "02HA4QZ", "02HA4RJ", "02HA4RS", "02HA4RZ"

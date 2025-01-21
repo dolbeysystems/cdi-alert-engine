@@ -270,7 +270,7 @@ if not existing_alert or not existing_alert.validated then
                 clinical_evidence_header:add_link(a3e04305_code)
             end
             clinical_evidence_header:add_code_prefix_link("B18%.", "Chronic Viral Hepatitis")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.9" },
                 "Chronic Kidney Disease"
             )
@@ -302,7 +302,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("Z51.0", "Radiation Therapy")
             clinical_evidence_header:add_code_prefix_link("M05%.", "Rheumatoid Arthritis")
             clinical_evidence_header:add_code_prefix_link("M06%.", "Rheumatoid Arthritis")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "A41.2", "A41.3", "A41.4", "A41.50", "A41.51", "A41.52", "A41.53", "A41.59", "A41.81", "A41.89", "A41.9",
                     "A42.7", "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "T81.44XA", "T81.44XD"
@@ -361,9 +361,9 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_code_link("Z79.52", "Long term Systemic Steroids")
             treatment_and_monitoring_header:add_medication_link("Monoclonal Antibodies", "Monoclonal Antibodies")
             treatment_and_monitoring_header:add_abstraction_link("MONOCLONAL_ANTIBODIES", "Monoclonal Antibodies")
-            treatment_and_monitoring_header:add_code_links({ "30233R1", "30243R1" }, "Platelet Transfusion")
+            treatment_and_monitoring_header:add_code_one_of_link({ "30233R1", "30243R1" }, "Platelet Transfusion")
             treatment_and_monitoring_header:add_discrete_value_one_of_link(dv_platelet_transfusion, "Platelet Transfusion")
-            treatment_and_monitoring_header:add_code_links({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
+            treatment_and_monitoring_header:add_code_one_of_link({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
             treatment_and_monitoring_header:add_discrete_value_one_of_link(dv_red_blood_cell_transfusion, "Red Blood Cell Transfusion")
         end
 

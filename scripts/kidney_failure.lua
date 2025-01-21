@@ -845,7 +845,7 @@ then
             clinical_evidence_header:add_abstraction_link("FLANK_PAIN", "Flank Pain")
             clinical_evidence_header:add_code_link("E87.70", "Fluid Overloaded")
             clinical_evidence_header:add_code_link("M32.14", "Glomerular Disease in SLE")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "D59.30", "D59.31", "D59.32", "D59.39" },
                 "Hemolytic-Uremic Syndrome"
             )
@@ -867,15 +867,15 @@ then
             clinical_evidence_header:add_code_link("N14.3", "Nephropathy induced by Heavy Metals")
             clinical_evidence_header:add_code_link("N14.2", "Nephropathy induced by Unspecified Drug")
             clinical_evidence_header:add_code_prefix_link("^N04%.", "Nephrotic Syndrome")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T39.5X1A", "T39.5X2A", "T39.5X3A", "T39.5X4A" },
                 "Poisoning by Aminoglycoside"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T39.391A", "T39.392A", "T39.393A", "T39.394A" },
                 "Poisoning by NSAID"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T39.0X1A", "T39.0X2A", "T39.0X3A", "T39.0X4A" },
                 "Poisoning by Sulfonamide"
             )
@@ -884,7 +884,7 @@ then
             clinical_evidence_header:add_code_link("M62.82", "Rhabdomyolysis")
             clinical_evidence_header:add_code_prefix_link("^A40%.", "Sepsis")
             clinical_evidence_header:add_code_prefix_link("^A41%.", "Sepsis")
-            clinical_evidence_header:add_code_links({ "R57.8", "R57.9" }, "Shock")
+            clinical_evidence_header:add_code_one_of_link({ "R57.8", "R57.9" }, "Shock")
             clinical_evidence_header:add_abstraction_link("SHORTNESS_OF_BREATH", "Shortness of Breath")
             clinical_evidence_header:add_code_link("N14.4", "Toxic Nephropathy")
             clinical_evidence_header:add_code_link("N12", "Tubulo-Interstital Nephritis")

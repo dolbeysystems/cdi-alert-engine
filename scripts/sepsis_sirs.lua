@@ -1614,12 +1614,12 @@ if not existing_alert or not existing_alert.validated then
 
             -- Oxygen
             oxygenation_ventilation_header:add_code_link("Z99.1", "Dependence on Ventilator")
-            oxygenation_ventilation_header:add_code_links({ "5A0935A", "5A0945A", "5A0955A" }, "High Flow Nasal Oxygen")
+            oxygenation_ventilation_header:add_code_one_of_link({ "5A0935A", "5A0945A", "5A0955A" }, "High Flow Nasal Oxygen")
             oxygenation_ventilation_header:add_code_link("0BH17EZ", "Intubation")
             oxygenation_ventilation_header:add_code_link("5A1935Z", "Mechanical Ventilation Less than 24 hours")
             oxygenation_ventilation_header:add_code_link("5A1945Z", "Mechanical Ventilation 24 to 96 hours")
             oxygenation_ventilation_header:add_code_link("5A1955Z", "Mechanical Ventilation Greater than 96 hours")
-            oxygenation_ventilation_header:add_code_links({ "5A09357", "5A09457", "5A09557" }, "Non-Invasive Ventilation")
+            oxygenation_ventilation_header:add_code_one_of_link({ "5A09357", "5A09457", "5A09557" }, "Non-Invasive Ventilation")
             oxygenation_ventilation_header:add_abstraction_link("VENTILATOR_DAYS", "Ventilator Days")
 
             -- Vitals

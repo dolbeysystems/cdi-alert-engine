@@ -279,7 +279,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("CYANOSIS", "Cyanosis")
             clinical_evidence_header:add_code_link("R06.00", "Dyspnea")
             clinical_evidence_header:add_abstraction_link("DYSPNEA_ON_EXERTION", "Dyspnea on Exertion")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "02FP3Z0", "02FQ3Z0", "02FR3Z0", "02FS3Z0", "02FT3Z0", "03F23Z0", "03F33Z0", "03F43Z0",
                     "03F53Z0", "03F63Z0", "03F73Z0", "03F83Z0", "03F93Z0", "03FA3Z0", "03FB3Z0", "03FC3Z0",
@@ -350,11 +350,11 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_abstraction_link("VASODILATOR", "Vasodilator")
 
             -- Oxygen
-            oxygenation_ventilation_header:add_code_links(
+            oxygenation_ventilation_header:add_code_one_of_link(
                 { "5A0935A", "5A0945A", "5A0955A", "5A1935Z", "5A1945Z", "5A1955Z" },
                 "Flow Nasal Oxygen"
             )
-            oxygenation_ventilation_header:add_code_links(
+            oxygenation_ventilation_header:add_code_one_of_link(
                 { "5A1935Z", "5A1945Z", "5A1955Z" },
                 "Invasive Mechanical Ventilation"
             )

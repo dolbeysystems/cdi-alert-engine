@@ -1104,11 +1104,11 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("T78.3XXA", "Angioedema")
             clinical_evidence_header:add_code_link("R06.81", "Apnea")
             clinical_evidence_header:add_code_link("J69.0", "Aspiration")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "J45.21", "J45.31", "J45.41", "J45.51", "J454.901" },
                 "Asthma with Acute Exacerbation"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "J45.22", "J45.32", "J45.42", "J45.52", "J45.902" },
                 "Asthma with Status Asthmaticus"
             )

@@ -242,7 +242,7 @@ if not existing_alert or not existing_alert.validated then
             blood_product_transfusion_header:add_discrete_value_one_of_link(cryoprecipitate_discrete_value, "Cryoprecipitate", calc_any1)
             blood_product_transfusion_header:add_code_link("30233M1", "Cryoprecipitate Transfusion")
             blood_product_transfusion_header:add_code_link("30233T1", "Fibrinogen Transfusion")
-            blood_product_transfusion_header:add_code_links({ "30233L1", "30243L1" }, "Fresh Plasma Transfusion")
+            blood_product_transfusion_header:add_code_one_of_link({ "30233L1", "30243L1" }, "Fresh Plasma Transfusion")
             blood_product_transfusion_header:add_discrete_value_one_of_link(dv_plasma_transfusion, "Plasma Transfusion", calc_any1)
             blood_product_transfusion_header:add_discrete_value_one_of_link(dv_platelet_transfusion, "Platelet Transfusion", calc_any1)
 

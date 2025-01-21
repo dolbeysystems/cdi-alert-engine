@@ -190,22 +190,22 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Clinical Evidence
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "N17.0", "N17.1", "N17.2", "N17.8", "N17.9" },
                 "Acute Kidney Failure"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I46.2", "I46.8", "I46.9" },
                 "Cardiac Arrest"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "F14.920", "F14.921", "F14.922", "F14.929" },
                 "Cocaine Intoxication"
             )
             clinical_evidence_header:add_abstraction_link("DARK_COLORED_URINE", "Dark Colored Urine")
             clinical_evidence_header:add_code_link("R41.0", "Disorientation")
             clinical_evidence_header:add_code_prefix_link("D65%.", "Disseminated Intravascular Coagulation (DIC)")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "W06", "W07", "W08", "W09.0", "W09.1", "W09.2", "W09.8", "W10.0", "W10.1", "W10.2", "W11", "W12",
                     "W13.0", "W13.2", "W13.3", "W13.4", "W13.8", "W13.9", "W14", "W15", "W17.0", "W17.2", "W17.3",
@@ -225,7 +225,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R56.9", "Seizure")
             clinical_evidence_header:add_code_link("E86.0", "Severe Dehydration")
             clinical_evidence_header:add_code_link("R57.9", "Shock")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "F15.120", "F15.121", "F15.122", "F15.129" },
                 "Stimulant Intoxication"
             )

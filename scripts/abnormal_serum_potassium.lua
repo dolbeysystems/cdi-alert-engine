@@ -288,7 +288,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("HYPOKALEMIA_EKG_CHANGES", "EKG Changes")
             clinical_evidence_header:add_code_link("R53.83", "Fatigue")
             clinical_evidence_header:add_abstraction_link("HEART_PALPITATIONS", "Heart Palpitations")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "N17.0", "N17.1", "N17.2", "N18.30", "N18.31", "N18.32", "N18.1", "N18.2", "N18.30", "N18.31",
                     "N18.32", "N18.4", "N18.5", "N18.6"

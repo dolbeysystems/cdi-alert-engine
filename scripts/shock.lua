@@ -910,77 +910,77 @@ if not existing_alert or not existing_alert.validated then
                 end
             end
             vital_signs_intake_header:add_link(altered_abs)
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.10", "T31.11" },
                 "Burns Involving 10-19 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.20", "T31.21", "T31.22" },
                 "Burns Involving 20-29 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.30", "T31.31", "T31.32", "T31.33" },
                 "Burns Involving 30-39 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.40", "T31.41", "T31.42", "T31.43", "T31.44" },
                 "Burns Involving 40-49 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.50", "T31.51", "T31.52", "T31.53", "T31.54", "T31.55" },
                 "Burns Involving 50-59 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.60", "T31.61", "T31.62", "T31.63", "T31.64", "T31.65", "T31.66" },
                 "Burns Involving 60-69 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.70", "T31.71", "T31.72", "T31.73", "T31.74", "T31.75", "T31.76", "T31.77" },
                 "Burns Involving 70-79 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.80", "T31.81", "T31.82", "T31.83", "T31.84", "T31.85", "T31.86", "T31.87", "T31.88" },
                 "Burns Involving 80-89 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T31.90", "T31.91", "T31.92", "T31.93", "T31.94", "T31.95", "T31.96", "T31.97", "T31.98", "T31.99" },
                 "Burns Involving 90 Percent or More of Body Surface Area"
             )
             if cardiogenic and i314_code then
                 clinical_evidence_header:add_link(i314_code)
             end
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.10", "T32.11" },
                 "Corrosions Involving 10-19 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.20", "T32.21", "T32.22" },
                 "Corrosions Involving 20-29 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.30", "T32.31", "T32.32", "T32.33" },
                 "Corrosions Involving 30-39 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.40", "T32.41", "T32.42", "T32.43", "T32.44" },
                 "Corrosions Involving 40-49 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.50", "T32.51", "T32.52", "T32.53", "T32.54", "T32.55" },
                 "Corrosions Involving 50-59 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.60", "T32.61", "T32.62", "T32.63", "T32.64", "T32.65", "T32.66" },
                 "Corrosions Involving 60-69 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.70", "T32.71", "T32.72", "T32.73", "T32.74", "T32.75", "T32.76", "T32.77" },
                 "Corrosions Involving 70-79 Percent of Body Surface Area")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.80", "T32.81", "T32.82", "T32.83", "T32.84", "T32.85", "T32.86", "T32.87", "T32.88" },
                 "Corrosions Involving 80-89 Percent of Body Surface Area"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "T32.90", "T32.91", "T32.92", "T32.93", "T32.94", "T32.95", "T32.96", "T32.97", "T32.98", "T32.99" },
                 "Corrosions Involving 90 Percent or More of Body Surface Area"
             )
@@ -989,7 +989,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("DELAYED_CAPILLARY_REFILL", "Delayed Capillary Refill")
             if hypovolemic and diarrhea_abs then clinical_evidence_header:add_link(diarrhea_abs) end
             if endocarditis_code then clinical_evidence_header:add_link(endocarditis_code) end
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "5A15223", "FA1522F", "5A1522G", "FA1522H", "5A15A2F", "5A15A2G", "5A15A2H" },
                 "Extracorporeal Membrane Oxygenation (ECMO)"
             )
@@ -997,16 +997,16 @@ if not existing_alert or not existing_alert.validated then
             if cardiogenic and hf_code then clinical_evidence_header:add_link(hf_code) end
             if hemorrhagic and hemorrhage_abs then clinical_evidence_header:add_link(hemorrhage_abs) end
             if hypovolemic then clinical_evidence_header:add_code_link("E86.1", "Hypovolemia") end
-            clinical_evidence_header:add_code_links({ "5A0211D", "5A0221D" }, "Impella Device")
-            clinical_evidence_header:add_code_links({ "02HA3QZ", "02HA0QZ" }, "Implantable Heart Assist Device")
-            clinical_evidence_header:add_code_links({ "5A02110", "5A02210" }, "Intra-Aortic Balloon Pump")
+            clinical_evidence_header:add_code_one_of_link({ "5A0211D", "5A0221D" }, "Impella Device")
+            clinical_evidence_header:add_code_one_of_link({ "02HA3QZ", "02HA0QZ" }, "Implantable Heart Assist Device")
+            clinical_evidence_header:add_code_one_of_link({ "5A02110", "5A02210" }, "Intra-Aortic Balloon Pump")
             if cardiogenic then
                 clinical_evidence_header:add_link(mi_code)
                 clinical_evidence_header:add_link(myocarditis_code)
             end
             clinical_evidence_header:add_code_link("I51.2", "Papillary Muscle Rupture")
             clinical_evidence_header:add_abstraction_link("PULMONARY_ARTERY_SATURATION", "Pulmonary Artery Saturation")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I26.01", "I26.02", "I26.09", "I26.90", "I26.92", "I26.93", "I26.94", "I26.99" },
                 "Pulmonary Embolism Code Present"
 
@@ -1015,7 +1015,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_prefix_link("I71.1", "Ruptured Thoracic Aortic Aneurysm")
             clinical_evidence_header:add_code_prefix_link("I71.5", "Ruptured Thoracoabdominal Aortic Aneurysm")
             if hypovolemic and e860_code then clinical_evidence_header:add_link(e860_code) end
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "02HA0RJ", "02HA0RS", "02HA0RZ", "02HA3RJ", "02HA3RS", "02HA3RZ", "02HA4QZ", "02HA4RJ", "02HA4RS",
                     "02HA4RZ" },
                 "Short-Term Heart Assist Device"
@@ -1072,7 +1072,7 @@ if not existing_alert or not existing_alert.validated then
 
             -- Medications
             treatment_and_monitoring_header:add_medication_link("Albumin", "Albumin")
-            treatment_and_monitoring_header:add_code_links({ "30233N1", "30243N1" }, "Blood Transfusion")
+            treatment_and_monitoring_header:add_code_one_of_link({ "30233N1", "30243N1" }, "Blood Transfusion")
             treatment_and_monitoring_header:add_link(dobutamine_med)
             treatment_and_monitoring_header:add_link(dobutamine_abs)
             treatment_and_monitoring_header:add_link(dopamine_med)
@@ -1087,8 +1087,8 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_link(milrinone_abs)
             treatment_and_monitoring_header:add_link(neosynephrine_med)
             treatment_and_monitoring_header:add_link(neosynephrine_abs)
-            treatment_and_monitoring_header:add_code_links({ "30233R1", "30243R1" }, "Platelet Transfusion")
-            treatment_and_monitoring_header:add_code_links({ "30233L1", "30243L1" }, "Plasma Transfusion")
+            treatment_and_monitoring_header:add_code_one_of_link({ "30233R1", "30243R1" }, "Platelet Transfusion")
+            treatment_and_monitoring_header:add_code_one_of_link({ "30233L1", "30243L1" }, "Plasma Transfusion")
             treatment_and_monitoring_header:add_discrete_value_one_of_link(dv_plasma_transfusion, "Plasma Transfusion",
                 calc_any_1)
             treatment_and_monitoring_header:add_discrete_value_one_of_link(dv_red_blood_cell_transfusion,
@@ -1098,7 +1098,7 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_abstraction_link("VASOPRESSIN", "Vasopressin")
 
             -- Oxygen
-            oxygenation_ventilation_header:add_code_links(
+            oxygenation_ventilation_header:add_code_one_of_link(
                 { "5A0935A", "5A0945A", "5A0955A" },
                 "High Flow Nasal Oxygen"
             )

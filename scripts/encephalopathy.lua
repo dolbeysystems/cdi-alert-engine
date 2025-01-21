@@ -1314,7 +1314,7 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_abstraction_link("LACTULOSE", "Lactulose")
 
             -- Vitals
-            vital_signs_intake_header:add_code_links({ "F10.220", "F10.221", "F10.229" }, "Acute Alcohol Intoxication")
+            vital_signs_intake_header:add_code_one_of_link({ "F10.220", "F10.221", "F10.229" }, "Acute Alcohol Intoxication")
             -- 2-5
             vital_signs_intake_header:add_link(vital_vars.temp2_discrete_value_names)
 

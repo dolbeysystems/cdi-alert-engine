@@ -14,11 +14,11 @@ return function(Account)
     --- @field make_header_builder (fun (name: string, seq: integer): header_builder)
     --- @field build (fun (self: header_builder, require_links: boolean): CdiAlertLink)
     --- @field add_link (fun (self: header_builder, link: CdiAlertLink?)) : CdiAlertLink?
-    --- @field add_links (fun (self: header_builder, lnks: CdiAlertLink[])) : CdiAlertLink?
+    --- @field add_links (fun (self: header_builder, lnks: CdiAlertLink[]?)) : CdiAlertLink?
     --- @field add_text_link (fun (self: header_builder, text: string, validated: boolean?)) : CdiAlertLink?
     --- @field add_document_link (fun (self: header_builder, document_type: string, description: string)) : CdiAlertLink?
     --- @field add_code_link (fun (self: header_builder, code: string, description: string)) : CdiAlertLink?
-    --- @field add_code_links (fun (self: header_builder, codes: string[], description: string)) : CdiAlertLink?
+    --- @field add_code_one_of_link (fun (self: header_builder, codes: string[], description: string)) : CdiAlertLink?
     --- @field add_code_prefix_link (fun (self: header_builder, prefix: string, description: string)) : CdiAlertLink?
     --- @field add_abstraction_link (fun (self: header_builder, abstraction: string, description: string)) : CdiAlertLink?
     --- @field add_abstraction_link_with_value (fun (self: header_builder, abstraction: string, description: string)) : CdiAlertLink?
@@ -57,10 +57,10 @@ return function(Account)
             end,
 
             --- @param self header_builder
-            --- @param lnks CdiAlertLink[]
+            --- @param lnks CdiAlertLink[]?
             --- @return CdiAlertLink?
             add_links = function(self, lnks)
-                for _, link in ipairs(lnks) do
+                for _, link in ipairs(lnks or {}) do
                     link.sequence = self.sequence_counter
                     self.sequence_counter = self.sequence_counter + 1
                     self:add_link(link)
@@ -114,7 +114,7 @@ return function(Account)
             --- @param codes string[];
             --- @param description string
             --- @return CdiAlertLink?
-            add_code_links = function(self, codes, description)
+            add_code_one_of_link = function(self, codes, description)
                 ---@type CdiAlertLink[]
                 local lnks = {}
                 for _, code in ipairs(codes) do

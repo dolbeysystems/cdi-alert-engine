@@ -320,7 +320,7 @@ then
             clinical_evidence_header:add_code_link("R94.39", "Abnormal Cardiovascular Function Study")
             clinical_evidence_header:add_code_link("D62", "Acute Blood Loss Anemia")
             clinical_evidence_header:add_code_link("I24.81", "Acute Coronary microvascular Dysfunction")
-            clinical_evidence_header:add_code_links({ "N17.0", "N17.1", "N17.2", "K76.7", "K91.83" }, "Acute Kidney Failure")
+            clinical_evidence_header:add_code_one_of_link({ "N17.0", "N17.1", "N17.2", "K76.7", "K91.83" }, "Acute Kidney Failure")
             clinical_evidence_header:add_code_link("I20.9", "Angina")
             clinical_evidence_header:add_code_link("I20.81", "Angina Pectoris with Coronary Microvascular Dysfunction")
             clinical_evidence_header:add_code_link("I20.1", "Angina Pectoris with Documented Spasm/with Coronary Vasospasm")
@@ -332,7 +332,7 @@ then
             clinical_evidence_header:add_code_prefix_link("I43%.", "Cardiomyopathy Dx")
             clinical_evidence_header:add_link(r07_code_link)
             clinical_evidence_header:add_code_link("I25.85", "Chronic Coronary Microvascular Dysfunction")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5" },
                 "Chronic Kidney Failure"
             )
@@ -342,7 +342,7 @@ then
             clinical_evidence_header:add_code_link("Z95.5", "Coronary Angioplasty Implant and Graft Hx")
             clinical_evidence_header:add_code_link("I25.10", "Coronary Artery Disease")
             clinical_evidence_header:add_code_link("I25.119", "Coronary Artery Disease with Angina")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "270046", "027004Z", "0270056", "027005Z", "0270066", "027006Z", "0270076", "027007Z",
                     "02700D6", "02700DZ", "02700E6", "02700EZ", "02700F6", "02700FZ", "02700G6", "02700GZ",
@@ -366,7 +366,7 @@ then
             clinical_evidence_header:add_code_link("N18.6", "End-Stage Renal Disease")
             clinical_evidence_header:add_code_prefix_link("I38%.", "Endocarditis Dx")
             clinical_evidence_header:add_code_prefix_link("I39%.", "Endocarditis Dx")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "I50.1", "I50.20", "I50.22", "I50.23", "I50.30", "I50.32", "I50.33", "I50.40", "I50.42", "I50.43",
                     "I50.810", "I50.812", "I50.813", "I50.84", "I50.89", "I50.9"
@@ -393,11 +393,11 @@ then
             clinical_evidence_header:add_code_prefix_link("I47%.", "Paroxysmal Tachycardia Dx")
             clinical_evidence_header:add_code_prefix_link("I30%.", "Pericarditis Dx")
             clinical_evidence_header:add_code_prefix_link("I26%.", "Pulmonary Embolism Dx")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 { "I27.0", "I27.20", "I27.21", "I27.22", "I27.23", "I27.24", "I27.29" },
                 "Pulmonary Hypertension"
             )
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "0270346", "027034Z", "0270356", "027035Z", "0270366", "027036Z", "02730376", "027037Z",
                     "02703D6", "02703DZ", "02703E6", "02703EZ", "02703F6", "02703FZ", "02703G6", "02703GZ",
@@ -412,13 +412,13 @@ then
                 },
                 "Percutaneous Coronary Intervention"
             )
-            clinical_evidence_header:add_code_links({ "M62.82", "T79.6XXA", "T79.6XXD", "T79.6XXS" }, "Rhabdomyolysis")
+            clinical_evidence_header:add_code_one_of_link({ "M62.82", "T79.6XXA", "T79.6XXD", "T79.6XXS" }, "Rhabdomyolysis")
             clinical_evidence_header:add_code_link("4A023N6", "Right Heart Cath")
             clinical_evidence_header:add_code_link("I20.2", "Refractory Angina Pectoris")
             clinical_evidence_header:add_abstraction_link("RESOLVING_TROPONINS", "Resolving Troponins")
             clinical_evidence_header:add_code_prefix_link("A40%.", "Sepsis Dx")
             clinical_evidence_header:add_code_prefix_link("A41%.", "Sepsis Dx")
-            clinical_evidence_header:add_code_links(
+            clinical_evidence_header:add_code_one_of_link(
                 {
                     "A42.7", "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1", "A20.7", "R65.20",
                     "R65.21", "T81.44XA", "T81.44XD", "T81.44XS"
@@ -429,7 +429,7 @@ then
             clinical_evidence_header:add_code_link("I47.10", "Supraventricular Tachycardia, Unspecified")
             clinical_evidence_header:add_code_link("I51.81", "Takotsubo Syndrome")
             clinical_evidence_header:add_code_link("I25.82", "Total Occlusion of Coronary Artery")
-            clinical_evidence_header:add_code_links({ "I35.8", "I35.9" }, "Unspecified Non-Rheumatic Aortic Valve Disorders")
+            clinical_evidence_header:add_code_one_of_link({ "I35.8", "I35.9" }, "Unspecified Non-Rheumatic Aortic Valve Disorders")
             clinical_evidence_header:add_code_link("I20.0", "Unstable Angina")
             clinical_evidence_header:add_code_link("I49.01", "Ventricular Fibrillation")
             clinical_evidence_header:add_code_link("I49.02", "Ventricular Flutter")

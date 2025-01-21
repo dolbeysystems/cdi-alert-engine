@@ -219,7 +219,7 @@ if not existing_alert or not existing_alert.validated then
     )
     cardiogenic_indicators_header:add_abstraction_link("REDUCED_EJECTION_FRACTION", "Ejection Fraction")
     cardiogenic_indicators_header:add_code_link("I38", "Endocarditis")
-    cardiogenic_indicators_header:add_code_links({
+    cardiogenic_indicators_header:add_code_one_of_link({
         "I50.21", "I50.22", "I50.23", "I50.31", "I50.32", "I50.33", "I50.41", "I50.42", "I50.43",
         "I50.812", "I50.814", "I50.82", "I50.83", "I50.84", "I50.1", "I50.20", "I50.30", "I50.40",
         "I50.810", "I50.89", "I50.9"
@@ -398,29 +398,29 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R61", "Sweating")
             -- #23
             contributing_dx_header:add_abstraction_link("ASPIRATION", "Aspiration")
-            contributing_dx_header:add_code_links({ "I46.2", "I46.8", "I46.9" }, "Cardiac Arrest")
-            contributing_dx_header:add_code_links({ "T50.901A", "T50.902A", "T50.903A", "T50.904A" }, "Drug Overdose")
+            contributing_dx_header:add_code_one_of_link({ "I46.2", "I46.8", "I46.9" }, "Cardiac Arrest")
+            contributing_dx_header:add_code_one_of_link({ "T50.901A", "T50.902A", "T50.903A", "T50.904A" }, "Drug Overdose")
             contributing_dx_header:add_code_link("N18.6", "End-Stage Renal Disease")
-            contributing_dx_header:add_code_links(
+            contributing_dx_header:add_code_one_of_link(
                 {
                     "T17.200A", "T17.290A", "T17.300A", "T17.390A", "T17.400A", "T17.420A", "T17.490A", "T17.500A",
                     "T17.590A", "T17.800A", "T17.890A"
                 },
                 "Foreign Body in Respiratory Tract Causing Asphyxiation"
             )
-            contributing_dx_header:add_code_links(
+            contributing_dx_header:add_code_one_of_link(
                 {
                     "T17.210A", "T17.310A", "T17.410A", "T17.510A", "T17.810A", "T17.910A"
                 },
                 "Gastric Contents in Respiratory Tract Causing Asphyxiation"
             )
-            contributing_dx_header:add_code_links({ "I16.0", "I16.1", "I16.9" }, "Hypertensive Crisis")
+            contributing_dx_header:add_code_one_of_link({ "I16.0", "I16.1", "I16.9" }, "Hypertensive Crisis")
             contributing_dx_header:add_abstraction_link("OPIOID_OVERDOSE", "Overdose")
             contributing_dx_header:add_code_link("J69.1", "Pneumonitis due to Inhalation of Oils and Essences")
             contributing_dx_header:add_code_link("J68.1", "Pulmonary Edema due to Chemicals, Gases, Fumes and Vapors")
             contributing_dx_header:add_code_prefix_link("I26%.", "Pulmonary Embolism")
             contributing_dx_header:add_code_link("J70.0", "Radiation Pneumonitis (Acute Pulmonary Manifestations due to Radiation)")
-            contributing_dx_header:add_code_links(
+            contributing_dx_header:add_code_one_of_link(
                 {
                     "A41.2", "A41.3", "A41.4", "A41.50", "A41.51", "A41.52", "A41.53", "A41.54", "A41.59", "A41.81",
                     "A41.89", "A41.9", "A42.7", "A22.7", "B37.7", "A26.7", "A54.86", "B00.7", "A32.7", "A24.1",

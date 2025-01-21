@@ -254,9 +254,9 @@ if not existing_alert or not existing_alert.validated then
             medications_header:add_link(z7982_code_link)
             medications_header:add_link(z7902_code_link)
             medications_header:add_abstraction_link_with_value("PLASMA_DERIVED_FACTOR_CONCENTRATE", "Plasma Derived Factor Concentrate")
-            medications_header:add_code_links({ "30233R1", "30243R1" }, "Platelet Transfusion")
+            medications_header:add_code_one_of_link({ "30233R1", "30243R1" }, "Platelet Transfusion")
             medications_header:add_abstraction_link_with_value("RECOMBINANT_FACTOR_CONCENTRATE", "Recombinant Factor Concentrate")
-            medications_header:add_code_links({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
+            medications_header:add_code_one_of_link({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
 
             -- Sings of Bleeding
             signs_of_bleeding_header:add_link(d62_code_link)
