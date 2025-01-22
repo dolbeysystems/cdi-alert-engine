@@ -212,7 +212,7 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         if pancytopenia_codes ~= nil or d72819_code ~= nil or wbc_discrete_value ~= nil and (medication or chronic) then
-            chronic_conditions_header:add_links { d72819_code, pancytopenia_codes }
+            chronic_conditions_header:add_links(d72819_code, pancytopenia_codes)
             Result.subtitle = "Possible Immunocompromised State"
             Result.passed = true
         end

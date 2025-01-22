@@ -5,6 +5,7 @@ return function(Account)
     ---------------------------------------------------------------------------------------------
     local links_lib = require "libs.common.basic_links" (Account)
     local codes_lib = require "libs.common.codes" (Account)
+    local lists = require "libs.common.lists"
     local module = {}
 
     --- @class header_builder
@@ -14,7 +15,7 @@ return function(Account)
     --- @field make_header_builder (fun (name: string, seq: integer): header_builder)
     --- @field build (fun (self: header_builder, require_links: boolean): CdiAlertLink)
     --- @field add_link (fun (self: header_builder, link: CdiAlertLink?)) : CdiAlertLink?
-    --- @field add_links (fun (self: header_builder, lnks: CdiAlertLink[]?)) : CdiAlertLink?
+    --- @field add_links (fun (self: header_builder, ...: CdiAlertLink?)) : boolean
     --- @field add_text_link (fun (self: header_builder, text: string, validated: boolean?)) : CdiAlertLink?
     --- @field add_document_link (fun (self: header_builder, document_type: string, description: string)) : CdiAlertLink?
     --- @field add_code_link (fun (self: header_builder, code: string, description: string)) : CdiAlertLink?
@@ -57,15 +58,16 @@ return function(Account)
             end,
 
             --- @param self header_builder
-            --- @param lnks CdiAlertLink[]?
-            --- @return CdiAlertLink?
-            add_links = function(self, lnks)
+            --- @param ... CdiAlertLink?
+            --- @return boolean
+            add_links = function(self, ...)
+                local lnks = { ... }
                 for _, link in ipairs(lnks or {}) do
                     link.sequence = self.sequence_counter
                     self.sequence_counter = self.sequence_counter + 1
                     self:add_link(link)
                 end
-                return lnks
+                return lists.some(lnks)
             end,
 
             --- @param self header_builder

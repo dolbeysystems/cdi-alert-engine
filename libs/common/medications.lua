@@ -10,15 +10,17 @@ return function(Account)
     --- @param cat string The medication category (name)
     --- @param text string? The text for the link
     --- @param sequence number? The sequence number of the link
+    --- @param predicate (fun(med: Medication):boolean?)? A predicate to filter the medications
     ---
     --- @return CdiAlertLink? - a link to the medication or nil if not found
     --------------------------------------------------------------------------------
-    function module.make_medication_link(cat, text, sequence)
+    function module.make_medication_link(cat, text, sequence, predicate)
         text = text or cat
         return links.get_medication_link {
             cat = cat,
             text = text,
             seq = sequence,
+            predicate = predicate
         }
     end
 

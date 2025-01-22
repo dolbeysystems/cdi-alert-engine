@@ -669,7 +669,7 @@ return function(Account)
     --- @param predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
     --- @param max_per_value number? The sequence number of the link
     ---
-    --- @return CdiAlertLink? - a link to the discrete value or nil if not found
+    --- @return CdiAlertLink[] - a link to the discrete value or nil if not found
     --------------------------------------------------------------------------------
     function module.make_discrete_value_links(dvs, text, predicate, max_per_value)
         return links.get_discrete_value_links {

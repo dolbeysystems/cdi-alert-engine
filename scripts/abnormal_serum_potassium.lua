@@ -16,16 +16,22 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local dates = require("libs.common.dates")
+local codes = require "libs.common.codes" (Account)
+local discrete = require "libs.common.discrete_values" (Account)
+local medications = require "libs.common.medications" (Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require "libs.common.lists"
+
+
 
 --------------------------------------------------------------------------------
 --- Site Constants
 --------------------------------------------------------------------------------
 local potassium_dv_names = { "POTASSIUM (mmol/L)" }
-local potassium_very_low_predicate = function(dv_, num) return num < 3.1 end
-local potassium_low_predicate = function(dv_, num) return num < 3.4 end
-local potassium_high_predicate = function(dv_, num) return num > 5.1 end
-local potassium_very_high_predicate = function(dv_, num) return num > 5.4 end
+local potassium_very_low_predicate = discrete.make_lt_predicate(3.1)
+local potassium_low_predicate = discrete.make_lt_predicate(3.4)
+local potassium_high_predicate = discrete.make_gt_predicate(5.1)
+local potassium_very_high_predicate = discrete.make_gt_predicate(5.4)
 local dextrose_medication_name = "Dextrose 5% In Water"
 local insulin_medication_name = "Insulin"
 local kayexalate_medication_name = "Kayexalate"
@@ -76,43 +82,25 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local e875_code_link = links.get_code_link { code = "E87.5", text = "Hyperkalemia Fully Specified Code" }
-    local e876_code_link = links.get_code_link { code = "E87.6", text = "Hypokalemia Fully Specified Code" }
+    local e875_code_link = codes.make_code_link("E87.5", "Hyperkalemia Fully Specified Code")
+    local e876_code_link = codes.make_code_link("E87.6", "Hypokalemia Fully Specified Code")
 
-    --------------------------------------------------------------------------------
-    --- Potassium Dv Link Retrieval Function
-    ---
-    --- @param dv_predicate function The predicate to filter the discrete values
-    ---
-    --- @return CdiAlertLink[] The discrete value links
-    --------------------------------------------------------------------------------
-    local function get_potassium_dv_links(dv_predicate)
-        return links.get_discrete_value_links {
-            discreteValueNames = potassium_dv_names,
-            text = "Serum Potassium",
-            predicate = dv_predicate,
-        }
-    end
+    local serum_potassium_dx_very_low_links =
+        discrete.make_discrete_value_links(potassium_dv_names, "Serum Potassium", potassium_very_low_predicate)
+    local serum_potassium_dv_low_links =
+        discrete.make_discrete_value_links(potassium_dv_names, "Serum Potassium", potassium_low_predicate)
+    local serum_potassium_dv_high_links =
+        discrete.make_discrete_value_links(potassium_dv_names, "Serum Potassium", potassium_high_predicate)
+    local serum_potassium_dv_very_high_links =
+        discrete.make_discrete_value_links(potassium_dv_names, "Serum Potassium", potassium_very_high_predicate)
 
-    local serum_potassium_dx_very_low_links = get_potassium_dv_links(potassium_very_low_predicate)
-    local serum_potassium_dv_low_links = get_potassium_dv_links(potassium_low_predicate)
-    local serum_potassium_dv_high_links = get_potassium_dv_links(potassium_high_predicate)
-    local serum_potassium_dv_very_high_links = get_potassium_dv_links(potassium_very_high_predicate)
-
-    local dextrose_medication_link = links.get_medication_link {
-        cat = dextrose_medication_name,
-        text = "Dextrose",
-        seq = 1,
-    }
-    local hemodialysis_codes_links = links.get_code_links {
-        codes = { "5A1D70Z", "5A1D80Z", "5A1D90Z" },
-        text = "Hemodialysis",
-        seq = 2,
-    }
-    local insulin_medication_link = links.get_medication_link {
-        cat = insulin_medication_name,
-        text = "Insulin",
-        predicate = function(med)
+    local dextrose_medication_link = medications.make_medication_link(dextrose_medication_name, "Dextrose", 1)
+    local hemodialysis_codes_links = codes.make_code_links({ "5A1D70Z", "5A1D80Z", "5A1D90Z" }, "Hemodialysis", 2)
+    local insulin_medication_link = medications.make_medication_link(
+        insulin_medication_name,
+        "Insulin",
+        3,
+        function(med)
             local route_appropriate =
                 med.route ~= nil and
                 (
@@ -125,39 +113,18 @@ if not existing_alert or not existing_alert.validated then
                 dosage ~= nil and dosage == 10 and
                 dates.DateIsLessThanXDaysAgo(med.start_date, 365)
             )
-        end,
-        seq = 3,
-    }
+        end
+    )
     local kayexalate_med_link =
-        links.get_medication_link {
-            cat = kayexalate_medication_name,
-            text = "Kayexalate",
-            seq = 4
-        }
+        medications.make_medication_link(kayexalate_medication_name, "Kayexalate", 4)
     local potassium_replacement_med_link =
-        links.get_medication_link {
-            cat = potassium_replacement_medication_name,
-            text = "Potassium Replacement",
-            seq = 5
-        }
+        medications.make_medication_link(potassium_replacement_medication_name, "Potassium Replacement", 5)
     local potassium_chloride_abs_link =
-        links.get_abstraction_value_link {
-            code = "POTASSIUM_CHLORIDE",
-            text = "Potassium Chloride Absorption",
-            seq = 6
-        }
+        codes.make_abstraction_value_link("POTASSIUM_CHLORIDE", "Potassium Chloride Absorption", 6)
     local potassium_phosphate_abs_link =
-        links.get_abstraction_value_link {
-            code = "POTASSIUM_PHOSPHATE",
-            text = "Potassium Phosphate Absorption",
-            seq = 7
-        }
+        codes.make_abstraction_value_link("POTASSIUM_PHOSPHATE", "Potassium Phosphate Absorption", 7)
     local potassium_bicarbonate_abs_link =
-        links.get_abstraction_value_link {
-            code = "POTASSIUM_BICARBONATE",
-            text = "Potassium Bicarbonate Absorption",
-            seq = 8
-        }
+        codes.make_abstraction_value_link("POTASSIUM_BICARBONATE", "Potassium Bicarbonate Absorption", 8)
 
 
 
@@ -237,12 +204,12 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
     elseif
         not e876_code_link and
-        #serum_potassium_dx_very_low_links > 1 and (
-            potassium_replacement_med_link or
-            potassium_chloride_abs_link or
-            potassium_phosphate_abs_link or
+        #serum_potassium_dx_very_low_links > 1 and lists.some {
+            potassium_replacement_med_link,
+            potassium_chloride_abs_link,
+            potassium_phosphate_abs_link,
             potassium_bicarbonate_abs_link
-        )
+        }
     then
         -- Create Hypokalemia alert
         for _, link in ipairs(serum_potassium_dv_low_links) do

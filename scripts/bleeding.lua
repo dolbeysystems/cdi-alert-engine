@@ -100,15 +100,17 @@ if not existing_alert or not existing_alert.validated then
     -- Signs of Bleeding
     local d62_code_link = codes.make_code_link("D62", "Acute Blood Loss Anemia", 1)
     local bleeding_abs_link = codes.make_abstraction_link("BLEEDING", "Bleeding", 2)
-    local blood_loss_dv_link = links.get_discrete_value_link { dvNames = blood_loss_dv_names, text = "Blood Loss", seq = 3, predicate = high_blood_loss_predicate }
+    local blood_loss_dv_link =
+        discrete.make_discrete_value_link(blood_loss_dv_names, "Blood Loss", high_blood_loss_predicate, 3)
     local n99510_code_link = codes.make_code_link("N99.510", "Cystostomy Hemorrhage", 4)
     local r040_code_link = codes.make_code_link("R04.0", "Epistaxis", 5)
     local est_blood_loss_abs_link = codes.make_abstraction_link("ESTIMATED_BLOOD_LOSS", "Estimated Blood Loss", 6)
     local gi_bleed_codes_link = codes.make_code_one_of_link(
         {
-            "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4", "K27.6", "K28.0",
-            "K28.2", "K28.4", "28.6", "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61", "K29.71", "K29.81", "K29.91", "K31.811", "K31.82",
-            "K55.21", "K57.01", "K57.11", "K57.13", "K57.21", "K57.31", "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5"
+            "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4",
+            "K27.6", "K28.0", "K28.2", "K28.4", "28.6", "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61",
+            "K29.71", "K29.81", "K29.91", "K31.811", "K31.82", "K55.21", "K57.01", "K57.11", "K57.13", "K57.21",
+            "K57.31", "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5"
         },
         "GI Bleed",
         7
@@ -117,7 +119,7 @@ if not existing_alert or not existing_alert.validated then
     local k920_code_link = codes.make_code_link("K92.0", "Hematemesis", 9)
     local hematochezia_abs_link = codes.make_abstraction_link("HEMATCHEZIA", "Hematochezia", 10)
     local hematoma_abs_link = codes.make_abstraction_link("HEMATOMA", "Hematoma", 11)
-    local r310_code_link = codes.get_code_prefix_link { prefix = "R31%.", text = "Hematuria", seq = 12 }
+    local r310_code_link = codes.make_code_prefix_link("R31%.", "Hematuria", 12)
     local k661_code_link = codes.make_code_link("K66.1", "Hemoperitoneum", 13)
     local hemoptysis_code_link = codes.make_code_link("R04.2", "Hemoptysis", 14)
     local hemorrhage_abs_link = codes.make_abstraction_link("HEMORRHAGE", "Hemorrhage", 15)
@@ -125,9 +127,9 @@ if not existing_alert or not existing_alert.validated then
     local r041_code_link = codes.make_code_link("R04.1", "Hemorrhage from Throat", 17)
     local j9501_code_link = codes.make_code_link("J95.01", "Hemorrhage from Tracheostomy Stoma", 18)
     local k921_code_link = codes.make_code_link("K92.1", "Melena", 19)
-    local i62_codes_link = codes.get_code_prefix_link { prefix = "I61%.", text = "Non-Traumatic Subarachnoid Hemorrhage", seq = 20 }
-    local i60_codes_link = codes.get_code_prefix_link { prefix = "I60%.", text = "Non-Traumatic Subarachnoid Hemorrhage", seq = 21 }
-    local h922_codes_link = codes.get_code_prefix_link { prefix = "H92.2", text = "Otorrhagia", seq = 22 }
+    local i62_codes_link = codes.make_code_prefix_link("I61%.", "Non-Traumatic Subarachnoid Hemorrhage", 20)
+    local i60_codes_link = codes.make_code_prefix_link("I60%.", "Non-Traumatic Subarachnoid Hemorrhage", 21)
+    local h922_codes_link = codes.make_code_prefix_link("H92.2", "Otorrhagia", 22)
     local r0489_code_link = codes.make_code_link("R04.89", "Pulmonary Hemorrhage", 23)
 
     -- Medications
@@ -159,12 +161,7 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     if #account_alert_codes > 0 and existing_alert then
         for _, code in ipairs(account_alert_codes) do
-            local description = alert_code_dictionary[code]
-            local temp_code = links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. description }
-
-            if temp_code then
-                documented_dx_header:add_link(temp_code)
-            end
+            documented_dx_header:add_code_link(code, "Autoresolved Specified Code - " .. alert_code_dictionary[code])
         end
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
@@ -232,9 +229,15 @@ if not existing_alert or not existing_alert.validated then
             medications_header:add_link(z7901_code_link)
             medications_header:add_link(z7982_code_link)
             medications_header:add_link(z7902_code_link)
-            medications_header:add_abstraction_link_with_value("PLASMA_DERIVED_FACTOR_CONCENTRATE", "Plasma Derived Factor Concentrate")
+            medications_header:add_abstraction_link_with_value(
+                "PLASMA_DERIVED_FACTOR_CONCENTRATE",
+                "Plasma Derived Factor Concentrate"
+            )
             medications_header:add_code_one_of_link({ "30233R1", "30243R1" }, "Platelet Transfusion")
-            medications_header:add_abstraction_link_with_value("RECOMBINANT_FACTOR_CONCENTRATE", "Recombinant Factor Concentrate")
+            medications_header:add_abstraction_link_with_value(
+                "RECOMBINANT_FACTOR_CONCENTRATE",
+                "Recombinant Factor Concentrate"
+            )
             medications_header:add_code_one_of_link({ "30233N1", "30243N1" }, "Red Blood Cell Transfusion")
 
             -- Sings of Bleeding

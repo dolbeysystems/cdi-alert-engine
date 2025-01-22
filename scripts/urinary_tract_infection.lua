@@ -16,6 +16,7 @@
 local alerts = require "libs.common.alerts" (Account)
 local links = require "libs.common.basic_links" (Account)
 local codes = require "libs.common.codes" (Account)
+local discrete = require "libs.common.discrete_values" (Account)
 local headers = require "libs.common.headers" (Account)
 
 
@@ -25,6 +26,11 @@ local headers = require "libs.common.headers" (Account)
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
 
+
+
+--------------------------------------------------------------------------------
+--- Script Specific Functions
+--------------------------------------------------------------------------------
 local function numeric_result_predicate(dv, num_)
     return dv.result ~= nil and string.find(dv.name, "%d+") ~= nil
 end
@@ -95,82 +101,37 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     local uti_code =
-        links.get_code_links { codes = { "T83.510A", "T83.511A", "T83.512A", "T83.518" }, text = "UTI with Device Link Codes" }
-    local n390 = links.get_code_link { code = "N39.0", text = "Urinary Tract Infection" }
-    local r8271 = links.get_code_link { code = "R82.71", text = "Bacteriuria" }
-    local r8279 = links.get_code_link { code = "R82.79", text = "Positive Urine Culture" }
-    local r8281 = links.get_code_link { code = "R82.81", text = "Pyuria" }
+        codes.make_code_links({ "T83.510A", "T83.511A", "T83.512A", "T83.518" }, "UTI with Device Link Codes")
+    local n390 = codes.make_code_link("N39.0", "Urinary Tract Infection")
+    local r8271 = codes.make_code_link("R82.71", "Bacteriuria")
+    local r8279 = codes.make_code_link("R82.79", "Positive Urine Culture")
+    local r8281 = codes.make_code_link("R82.81", "Pyuria")
 
-    local urine_culture = links.get_discrete_value_link {
-        discreteValueName = "BACTERIA (/HPF)",
-        text = "Urine Culture",
-        predicate = function(dv, num_)
-            return dv.result ~= nil and
-                (string.find(dv.result, "positive") ~= nil or string.find(dv.result, "negative") ~= nil)
-        end,
-    }
-    local urine_bacteria = links.get_discrete_value_link {
-        discreteValueName = "BACTERIA (/HPF)",
-        text = "UA Bacteria",
-        predicate = numeric_result_predicate,
-    }
+    local urine_culture = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "Urine Culture", discrete.make_match_predicate { "positive", "negative" })
+    local urine_bacteria = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "UA Bacteria", numeric_result_predicate)
 
-    local chronic_cystostomy_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "CHRONIC_CYSTOSTOMY_CATHETER", text = "Cystostomy Catheter" }
-    local cystostomy_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "CYSTOSTOMY_CATHETER", text = "Cystostomy Catheter" }
-    local chronic_indwelling_urethral_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "CHRONIC_INDWELLING_URETHRAL_CATHETER", text = "Indwelling Urethral Catheter" }
-    local indwelling_urethral_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "INDWELLING_URETHRAL_CATHETER", text = "Indwelling Urethral Catheter" }
-    local chronic_nephrostomy_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "CHRONIC_NEPHROSTOMY_CATHETER", text = "Nephrostomy Catheter" }
-    local nephrostomy_catheter_abstraction_link =
-        links.get_abstraction_value_links { code = "NEPHROSTOMY_CATHETER", text = "Nephrostomy Catheter" }
-    local self_catheterization_abstraction_link =
-        links.get_abstraction_value_links { code = "SELF_CATHETERIZATION", text = "Self Catheterization" }
-    local straight_catheterization_abstraction_link =
-        links.get_abstraction_value_links { code = "STRAIGHT_CATHETERIZATION", text = "Straight Catheterization" }
-    local chronic_urinary_drainage_device_abstraction_link =
-        links.get_abstraction_value_links { code = "CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE", text = "Urinary Drainage Device" }
-    local urinary_drainage_device_abstraction_link =
-        links.get_abstraction_value_links { code = "OTHER_URINARY_DRAINAGE_DEVICE", text = "Urinary Drainage Device" }
-    local chronic_ureteral_stent_abstraction_link =
-        links.get_abstraction_value_links { code = "CHRONIC_URETERAL_STENT", text = "Ureteral Stent" }
-    local ureteral_stent_abstraction_link =
-        links.get_abstraction_value_links { code = "URETERAL_STENT", text = "Ureteral Stent" }
+    local chronic_cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_CYSTOSTOMY_CATHETER", "Cystostomy Catheter")
+    local cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CYSTOSTOMY_CATHETER", "Cystostomy Catheter")
+    local chronic_indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
+    local indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value("INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
+    local chronic_nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_NEPHROSTOMY_CATHETER", "Nephrostomy Catheter")
+    local nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("NEPHROSTOMY_CATHETER", "Nephrostomy Catheter")
+    local self_catheterization_abstraction_link = codes.make_abstraction_link_with_value("SELF_CATHETERIZATION", "Self Catheterization")
+    local straight_catheterization_abstraction_link = codes.make_abstraction_link_with_value("STRAIGHT_CATHETERIZATION", "Straight Catheterization")
+    local chronic_urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
+    local urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value("OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
+    local chronic_ureteral_stent_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_URETERAL_STENT", "Ureteral Stent")
+    local ureteral_stent_abstraction_link = codes.make_abstraction_link_with_value("URETERAL_STENT", "Ureteral Stent")
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-
-    --------------------------------------------------------------------------------
-    --- Adds several links to the `documented_dx_header` and returns whether any of
-    --- the parameters were non-nil.
-    ---
-    ---@param ... CdiAlertLink[]?
-    ---
-    ---@return boolean
-    --------------------------------------------------------------------------------
-    local function add_many_dx_links(...)
-        local had_non_nil = false
-        for _, lnks in pairs { ... } do
-            if lnks ~= nil then
-                for _, link in ipairs(lnks) do
-                    documented_dx_header:add_link(link)
-                end
-                had_non_nil = true
-            end
-        end
-        return had_non_nil
-    end
-
     if #account_alert_codes > 0 then
         local code = account_alert_codes[1]
         local code_desc = alert_code_dictionary[code]
-        local auto_resolved_code_link = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
+        local auto_resolved_code_link = codes.make_code_link(code, "Autoresolved Specified Code - " .. code_desc, 1)
         documented_dx_header:add_link(auto_resolved_code_link)
 
         Result.outcome = "AUTORESOLVED"
@@ -178,57 +139,57 @@ if not existing_alert or not existing_alert.validated then
         Result.validated = true
         Result.passed = true
     elseif uti_code == nil and n390 ~= nil then
-        if add_many_dx_links(chronic_cystostomy_catheter_abstraction_link, cystostomy_catheter_abstraction_link) then
+        if documented_dx_header:add_links(chronic_cystostomy_catheter_abstraction_link, cystostomy_catheter_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
             Result.passed = true
-        elseif add_many_dx_links(chronic_indwelling_urethral_catheter_abstraction_link, indwelling_urethral_catheter_abstraction_link) then
+        elseif documented_dx_header:add_links(chronic_indwelling_urethral_catheter_abstraction_link, indwelling_urethral_catheter_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Indwelling Urethral Catheter"
             Result.passed = true
-        elseif add_many_dx_links(chronic_nephrostomy_catheter_abstraction_link, nephrostomy_catheter_abstraction_link) then
+        elseif documented_dx_header:add_links(chronic_nephrostomy_catheter_abstraction_link, nephrostomy_catheter_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
             Result.passed = true
             -- #5
-        elseif add_many_dx_links(chronic_urinary_drainage_device_abstraction_link, urinary_drainage_device_abstraction_link) then
+        elseif documented_dx_header:add_links(chronic_urinary_drainage_device_abstraction_link, urinary_drainage_device_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
             Result.passed = true
             -- #6
-        elseif add_many_dx_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
+        elseif documented_dx_header:add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Ureteral Stent"
             Result.passed = true
             -- #7
-        elseif add_many_dx_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
+        elseif documented_dx_header:add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
             Result.passed = true
         end
     elseif urine_culture or r8271 or r8279 or r8281 or urine_bacteria then
         if n390 == nil then
-            if add_many_dx_links(chronic_cystostomy_catheter_abstraction_link) then
+            if documented_dx_header:add_link(chronic_cystostomy_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI with Possible Link to Cystostomy Catheter"
                 Result.passed = true
-            elseif add_many_dx_links(chronic_indwelling_urethral_catheter_abstraction_link) then
+            elseif documented_dx_header:add_link(chronic_indwelling_urethral_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Indwelling Urethral Catheter"
                 Result.passed = true
-            elseif add_many_dx_links(chronic_nephrostomy_catheter_abstraction_link) then
+            elseif documented_dx_header:add_link(chronic_nephrostomy_catheter_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Nephrostomy Catheter"
                 Result.passed = true
-            elseif add_many_dx_links(chronic_urinary_drainage_device_abstraction_link) then
+            elseif documented_dx_header:add_link(chronic_urinary_drainage_device_abstraction_link) then
                 Result.subtitle = "Possible UTI With Possible Link to Other Urinary Drainage Device"
                 Result.passed = true
             end
-        elseif add_many_dx_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
-            add_many_dx_links(urine_bacteria)
-            add_many_dx_links(r8271)
+        elseif documented_dx_header:add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
+            documented_dx_header:add_link(urine_bacteria)
+            documented_dx_header:add_link(r8271)
             Result.subtitle = "Possible UTI with Possible Link to Ureteral Stent"
             Result.passed = true
-        elseif add_many_dx_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
-            add_many_dx_links(urine_bacteria)
-            add_many_dx_links(r8271)
+        elseif documented_dx_header:add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
+            documented_dx_header:add_link(urine_bacteria)
+            documented_dx_header:add_link(r8271)
             Result.subtitle = "Possible UTI with Possible Link to Intermittent Catheterization"
             Result.passed = true
         end
@@ -267,8 +228,8 @@ if not existing_alert or not existing_alert.validated then
         laboratory_studies_header:add_code_link("0T25X0Z", "Nephrostomy Tube Exchange")
         laboratory_studies_header:add_code_link("0T2BX0Z", "Suprapubic/Foley Catheter Exchange")
 
-        local r4182 = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
-        local altered_level_of_consciousness = links.get_abstraction_value_link { code = "ALTERED_LEVEL_OF_CONSCIOUSNESS", text = "Altered Level Of Consciousness" }
+        local r4182 = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
+        local altered_level_of_consciousness = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
         if r4182 ~= nil then
             vital_signs_header:add_link(r4182)
             if altered_level_of_consciousness ~= nil then
@@ -276,17 +237,15 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         vital_signs_header:add_link(altered_level_of_consciousness)
-        vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score",
-            function(dv_, num) return num < 15 end)
-        vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature",
-            function(dv_, num) return num > 38.3 end)
+        vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score", discrete.make_gt_predicate(15))
+        vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature", discrete.make_gt_predicate(38.3))
 
         urinary_devices_header:add_link(urine_bacteria)
         urinary_devices_header:add_discrete_value_link("BLOOD", "UA Blood", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("", "UA Gran Cast", numeric_result_predicate)
         urinary_devices_header:add_discrete_value_link("PROTEIN (mg/dL)", "UA Protein", numeric_result_predicate)
-        urinary_devices_header:add_discrete_value_link("RBC/HPF (/HPF)", "UA RBC", function(dv_, num) return num > 3 end)
-        urinary_devices_header:add_discrete_value_link("WBC/HPF (/HPF)", "UA WBC", function(dv_, num) return num > 5 end)
+        urinary_devices_header:add_discrete_value_link("RBC/HPF (/HPF)", "UA RBC", discrete.make_gt_predicate(3))
+        urinary_devices_header:add_discrete_value_link("WBC/HPF (/HPF)", "UA WBC", discrete.make_gt_predicate(5))
         urinary_devices_header:add_discrete_value_link("", "UA Squamous Epithelias", function(dv, num_)
             if dv.result == nil then return false end
             local a, b = string.match(dv.result, "(%d+)-(%d+)")
