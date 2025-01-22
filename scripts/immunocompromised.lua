@@ -26,23 +26,8 @@ local headers = require("libs.common.headers")(Account)
 --------------------------------------------------------------------------------
 --- Script Specific Functions
 --------------------------------------------------------------------------------
---- Predicate function to check if a DiscreteValue is positive
----@param dv DiscreteValue
----@return boolean
-local function positive(dv)
-    return dv.result ~= nil and dv.result:find("positive") ~= nil
-end
-
---- Predicate function to check if a Medication is not an eye medication
----@param med Medication
----@return boolean
-local function isnt_eye(med)
-    return med.route ~= nil
-        and not med.route:find("Eye")
-        and not med.route:find("optical")
-        and not med.route:find("ocular")
-        and not med.route:find("ophthalmic")
-end
+local positive = discrete.make_match_predicate { "Positive" }
+local isnt_eye = medications.make_route_no_match_predicate { "Eye", "optical", "ocular", "ophthalmic" }
 
 
 
@@ -199,22 +184,19 @@ if not existing_alert or not existing_alert.validated then
             monoclonal_antibodies_abs, tumor_necrosis_medication, tumor_necrosis_abs
         }
         local chronic = #alcoholism_codes > 0 and lists.some {
-            q8901_code, z9481_code,
-            e84_code, k721_code, n186_code, c82_code, z941_code,
-            z943_code, b20_code, c81_code, c88_code, z9482_code,
-            z940_code, c95_code, c94_code, c93_code,
-            c92_code, z944_code, z942_code, c91_code, c85_code,
-            c86_code, m32_code, c96_code, c84_code, c90_code,
-            d46_code, c83_code, z9483_code, r161_code,
+            q8901_code, z9481_code, e84_code, k721_code, n186_code, c82_code, z941_code, z943_code, b20_code, c81_code,
+            c88_code, z9482_code, z940_code, c95_code, c94_code, c93_code, c92_code, z944_code, z942_code, c91_code,
+            c85_code, c86_code, m32_code, c96_code, c84_code, c90_code, d46_code, c83_code, z9483_code, r161_code,
             hba1c_discrete_value, m05_code, m06_code, severe_malnutrition_codes
         }
         if lists.some {
                 b44_code, r7881_code, b40_code, b43_code, covid_discrete_value,
-                b45_code, b25_code, infection_abs, influenza_a_discrete_value, influenza_b_discrete_value, b49_code, b96_code, b41_code, r835_code,
-                r845_code, positive_would_culture_abs, b42_code, b95_code, b46_code
+                b45_code, b25_code, infection_abs, influenza_a_discrete_value, influenza_b_discrete_value, b49_code,
+                b96_code, b41_code, r835_code, r845_code, positive_would_culture_abs, b42_code, b95_code, b46_code
             }
         then
             local subtitle
+
             if medication and chronic then
                 subtitle = "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication"
             elseif medication then
@@ -327,6 +309,8 @@ if not existing_alert or not existing_alert.validated then
             "Absolute Neutropils: [VALUE] (Result Date: [RESULTDATETIME])",
             function(dv_, num) return num < 1.5 end
         )
+
+
 
         ----------------------------------------
         --- Result Finalization

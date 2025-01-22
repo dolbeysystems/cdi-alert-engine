@@ -17,7 +17,10 @@ local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local blood = require("libs.common.blood")(Account)
 local codes = require("libs.common.codes")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
+local medications = require("libs.common.medications")(Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require("libs.common.lists")
 
 
 
@@ -25,13 +28,13 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local blood_loss_dv_names = { "" }
-local high_blood_loss_predicate = function(dv_, num) return num > 300 end
+local high_blood_loss_predicate = discrete.make_gt_predicate(300)
 local inr_dv_names = { "INR" }
-local high_inr_predicate = function(dv_, num) return num > 1.2 end
+local high_inr_predicate = discrete.make_gt_predicate(1.2)
 local pt_dv_names = { "PROTIME (SEC)" }
-local high_pt_predicate = function(dv_, num) return num > 13 end
+local high_pt_predicate = discrete.make_gt_predicate(13)
 local ptt_dv_names = { "PTT (SEC)" }
-local high_ptt_predicate = function(dv_, num) return num > 30.5 end
+local high_ptt_predicate = discrete.make_gt_predicate(30.5)
 
 
 
@@ -95,77 +98,59 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Signs of Bleeding
-    local d62_code_link = links.get_code_link { code = "D62", text = "Acute Blood Loss Anemia", seq = 1 }
-    local bleeding_abs_link = links.get_abstraction_link { code = "BLEEDING", text = "Bleeding", seq = 2 }
+    local d62_code_link = codes.make_code_link("D62", "Acute Blood Loss Anemia", 1)
+    local bleeding_abs_link = codes.make_abstraction_link("BLEEDING", "Bleeding", 2)
     local blood_loss_dv_link = links.get_discrete_value_link { dvNames = blood_loss_dv_names, text = "Blood Loss", seq = 3, predicate = high_blood_loss_predicate }
-    local n99510_code_link = links.get_code_link { code = "N99.510", text = "Cystostomy Hemorrhage", seq = 4 }
-    local r040_code_link = links.get_code_link { code = "R04.0", text = "Epistaxis", seq = 5 }
-    local est_blood_loss_abs_link = links.get_abstraction_link { code = "ESTIMATED_BLOOD_LOSS", text = "Estimated Blood Loss", seq = 6 }
-    local gi_bleed_codes_link = links.get_code_link {
-        codes = {
+    local n99510_code_link = codes.make_code_link("N99.510", "Cystostomy Hemorrhage", 4)
+    local r040_code_link = codes.make_code_link("R04.0", "Epistaxis", 5)
+    local est_blood_loss_abs_link = codes.make_abstraction_link("ESTIMATED_BLOOD_LOSS", "Estimated Blood Loss", 6)
+    local gi_bleed_codes_link = codes.make_code_one_of_link(
+        {
             "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4", "K27.6", "K28.0",
             "K28.2", "K28.4", "28.6", "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61", "K29.71", "K29.81", "K29.91", "K31.811", "K31.82",
             "K55.21", "K57.01", "K57.11", "K57.13", "K57.21", "K57.31", "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5"
         },
-        text = "GI Bleed",
-        seq = 7
-    }
-    local k922_code_link = links.get_code_link { code = "K92.2", text = "GI Hemorrhage", seq = 8 }
-    local k920_code_link = links.get_code_link { code = "K92.0", text = "Hematemesis", seq = 9 }
-    local hematochezia_abs_link = links.get_abstraction_link { code = "HEMATCHEZIA", text = "Hematochezia", seq = 10 }
-    local hematoma_abs_link = links.get_abstraction_link { code = "HEMATOMA", text = "Hematoma", seq = 11 }
+        "GI Bleed",
+        7
+    )
+    local k922_code_link = codes.make_code_link("K92.2", "GI Hemorrhage", 8)
+    local k920_code_link = codes.make_code_link("K92.0", "Hematemesis", 9)
+    local hematochezia_abs_link = codes.make_abstraction_link("HEMATCHEZIA", "Hematochezia", 10)
+    local hematoma_abs_link = codes.make_abstraction_link("HEMATOMA", "Hematoma", 11)
     local r310_code_link = codes.get_code_prefix_link { prefix = "R31%.", text = "Hematuria", seq = 12 }
-    local k661_code_link = links.get_code_link { code = "K66.1", text = "Hemoperitoneum", seq = 13 }
-    local hemoptysis_code_link = links.get_code_link { code = "R04.2", text = "Hemoptysis", seq = 14 }
-    local hemorrhage_abs_link = links.get_abstraction_link { code = "HEMORRHAGE", text = "Hemorrhage", seq = 15 }
-    local r049_code_link = links.get_code_link { code = "R04.9", text = "Hemorrhage from Respiratory Passages", seq = 16 }
-    local r041_code_link = links.get_code_link { code = "R04.1", text = "Hemorrhage from Throat", seq = 17 }
-    local j9501_code_link = links.get_code_link { code = "J95.01", text = "Hemorrhage from Tracheostomy Stoma", seq = 18 }
-    local k921_code_link = links.get_code_link { code = "K92.1", text = "Melena", seq = 19 }
+    local k661_code_link = codes.make_code_link("K66.1", "Hemoperitoneum", 13)
+    local hemoptysis_code_link = codes.make_code_link("R04.2", "Hemoptysis", 14)
+    local hemorrhage_abs_link = codes.make_abstraction_link("HEMORRHAGE", "Hemorrhage", 15)
+    local r049_code_link = codes.make_code_link("R04.9", "Hemorrhage from Respiratory Passages", 16)
+    local r041_code_link = codes.make_code_link("R04.1", "Hemorrhage from Throat", 17)
+    local j9501_code_link = codes.make_code_link("J95.01", "Hemorrhage from Tracheostomy Stoma", 18)
+    local k921_code_link = codes.make_code_link("K92.1", "Melena", 19)
     local i62_codes_link = codes.get_code_prefix_link { prefix = "I61%.", text = "Non-Traumatic Subarachnoid Hemorrhage", seq = 20 }
     local i60_codes_link = codes.get_code_prefix_link { prefix = "I60%.", text = "Non-Traumatic Subarachnoid Hemorrhage", seq = 21 }
     local h922_codes_link = codes.get_code_prefix_link { prefix = "H92.2", text = "Otorrhagia", seq = 22 }
-    local r0489_code_link = links.get_code_link { code = "R04.89", text = "Pulmonary Hemorrhage", seq = 23 }
+    local r0489_code_link = codes.make_code_link("R04.89", "Pulmonary Hemorrhage", 23)
 
     -- Medications
-    local anticoagulant_med_link = links.get_medication_link { cat = "Anticoagulant", text = "", seq = 1 }
-    local anticoagulant_abs_link = links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant", seq = 2 }
-    local antiplatelet_med_link = links.get_medication_link { cat = "Antiplatelet", text = "", seq = 3 }
-    local antiplatelet2_med_link = links.get_medication_link { cat = "Antiplatelet2", text = "", seq = 4 }
-    local antiplatelet_abs_link = links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet", seq = 5 }
-    local antiplatelet2_abs_link = links.get_abstraction_link { code = "ANTIPLATELET_2", text = "Antiplatelet", seq = 6 }
-    local aspirin_med_link = links.get_medication_link { cat = "Aspirin", text = "", seq = 7 }
-    local aspirin_abs_link = links.get_abstraction_link { code = "ASPIRIN", text = "Aspirin", seq = 8 }
-    local heparin_med_link = links.get_medication_link { cat = "Heparin", text = "", seq = 15 }
-    local heparin_abs_link = links.get_abstraction_link { code = "HEPARIN", text = "Heparin", seq = 16 }
-    local z7901_code_link = links.get_code_link { code = "Z79.01", text = "Long Term use of Anticoagulants", seq = 17 }
-    local z7982_code_link = links.get_code_link { code = "Z79.82", text = "Long-Term use of Asprin", seq = 18 }
-    local z7902_code_link = links.get_code_link { code = "Z79.02", text = "Long-term use of Antithrombotics/Antiplatelets", seq = 19 }
+    local anticoagulant_med_link = medications.make_medication_link("Anticoagulant", "", 1)
+    local anticoagulant_abs_link = codes.make_abstraction_link("ANTICOAGULANT", "Anticoagulant", 2)
+    local antiplatelet_med_link = medications.make_medication_link("Antiplatelet", "", 3)
+    local antiplatelet2_med_link = medications.make_medication_link("Antiplatelet2", "", 4)
+    local antiplatelet_abs_link = codes.make_abstraction_link("ANTIPLATELET", "Antiplatelet", 5)
+    local antiplatelet2_abs_link = codes.make_abstraction_link("ANTIPLATELET_2", "Antiplatelet", 6)
+    local aspirin_med_link = medications.make_medication_link("Aspirin", "", 7)
+    local aspirin_abs_link = codes.make_abstraction_link("ASPIRIN", "Aspirin", 8)
+    local heparin_med_link = medications.make_medication_link("Heparin", "", 15)
+    local heparin_abs_link = codes.make_abstraction_link("HEPARIN", "Heparin", 16)
+    local z7901_code_link = codes.make_code_link("Z79.01", "Long Term use of Anticoagulants", 17)
+    local z7982_code_link = codes.make_code_link("Z79.82", "Long-Term use of Asprin", 18)
+    local z7902_code_link = codes.make_code_link("Z79.02", "Long-term use of Antithrombotics/Antiplatelets", 19)
 
-    local signs_of_bleeding =
-        d62_code_link or
-        bleeding_abs_link or
-        r041_code_link or
-        r0489_code_link or
-        r049_code_link or
-        h922_codes_link or
-        i62_codes_link or
-        i60_codes_link or
-        n99510_code_link or
-        r040_code_link or
-        k922_code_link or
-        gi_bleed_codes_link or
-        hemorrhage_abs_link or
-        j9501_code_link or
-        hematochezia_abs_link or
-        k920_code_link or
-        hematoma_abs_link or
-        r310_code_link or
-        k661_code_link or
-        hemoptysis_code_link or
-        k921_code_link or
-        est_blood_loss_abs_link or
-        blood_loss_dv_link
+    local signs_of_bleeding = lists.some {
+        d62_code_link, bleeding_abs_link, r041_code_link, r0489_code_link, r049_code_link, h922_codes_link,
+        i62_codes_link, i60_codes_link, n99510_code_link, r040_code_link, k922_code_link, gi_bleed_codes_link,
+        hemorrhage_abs_link, j9501_code_link, hematochezia_abs_link, k920_code_link, hematoma_abs_link, r310_code_link,
+        k661_code_link, hemoptysis_code_link, k921_code_link, est_blood_loss_abs_link, blood_loss_dv_link
+    }
 
 
 
@@ -187,21 +172,15 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
     elseif
         signs_of_bleeding and
-        #account_alert_codes == 0 and (
-            anticoagulant_med_link or
-            anticoagulant_abs_link or
-            antiplatelet_med_link or
-            antiplatelet2_med_link or
-            antiplatelet_abs_link or
-            antiplatelet2_abs_link or
-            aspirin_med_link or
-            aspirin_abs_link or
-            heparin_med_link or
-            heparin_abs_link or
-            z7901_code_link or
-            z7982_code_link or
-            z7902_code_link
-        )
+        #account_alert_codes == 0 and
+        lists.some {
+            anticoagulant_med_link, anticoagulant_abs_link,
+            antiplatelet_med_link, antiplatelet_abs_link,
+            antiplatelet2_med_link, antiplatelet2_abs_link,
+            aspirin_med_link, aspirin_abs_link,
+            heparin_med_link, heparin_abs_link,
+            z7901_code_link, z7982_code_link, z7902_code_link
+        }
     then
         Result.subtitle = "Bleeding with possible link to Anticoagulant"
         Result.passed = true

@@ -16,26 +16,24 @@
 local alerts = require "libs.common.alerts" (Account)
 local links = require "libs.common.basic_links" (Account)
 local codes = require "libs.common.codes" (Account)
+local discrete = require("libs.common.discrete_values")(Account)
 local headers = require "libs.common.headers" (Account)
+local lists = require "libs.common.lists"
 
 
 
 --------------------------------------------------------------------------------
 --- Setup
 --------------------------------------------------------------------------------
-local ciwa_score_dv_name = "alcohol CIWA Calc score 1112"
-local ciwa_score_dv_predicate = function(dv_, num) return num > 9 end
+local ciwa_score_dv_name = { "alcohol CIWA Calc score 1112" }
+local ciwa_score_dv_predicate = discrete.make_gt_predicate(9)
 local methadone_medication_name = "Methadone"
 local suboxone_medication_name = "Suboxone"
 local benzodiazepine_medication_name = "Benzodiazepine"
 local dexmedetomidine_medication_name = "Dexmedetomidine"
 local lithium_medication_name = "Lithium"
 local propofol_medication_name = "Propofol"
-local pain_document_types = {
-    "Pain Team Consultation Note",
-    "zzPain Team Consultation Note",
-    "Pain Team Progress Note"
-}
+local pain_document_types = { "Pain Team Consultation Note", "zzPain Team Consultation Note", "Pain Team Progress Note" }
 local opioid_dependence_subtitle = "Possible Opioid Dependence"
 local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
 
@@ -121,16 +119,10 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local ciwa_score_dv_link = links.get_discrete_value_link {
-        discreteValueName = ciwa_score_dv_name,
-        text = "CIWA Score",
-        seq = 5,
-        predicate = ciwa_score_dv_predicate
-    }
-    local ciwa_score_abstraction_link =
-        links.get_abstraction_value_link { code = "CIWA_SCORE", text = "CIWA Score", seq = 6 }
-    local ciwa_protocol_abstraction_link =
-        links.get_abstraction_value_link { code = "CIWA_PROTOCOL", text = "CIWA Protocol", seq = 7 }
+    local ciwa_score_dv_link =
+        discrete.make_discrete_value_link(ciwa_score_dv_name, "CIWA Score", ciwa_score_dv_predicate, 5)
+    local ciwa_score_abstraction_link = codes.make_abstraction_link_with_value("CIWA_SCORE", "CIWA Score", 6)
+    local ciwa_protocol_abstraction_link = codes.make_abstraction_link_with_value("CIWA_PROTOCOL", "CIWA Protocol", 7)
     local methadone_medication_links = links.get_medication_links {
         cat = methadone_medication_name,
         text = "Methadone",
@@ -139,8 +131,7 @@ if not existing_alert or not existing_alert.validated then
         onePerDate = true,
         maxPerValue = 9999,
     } or {}
-    local methadone_abstraction_link =
-        links.get_abstraction_value_link { code = "METHADONE", text = "Methadone", seq = 8 }
+    local methadone_abstraction_link = codes.make_abstraction_link_with_value("METHADONE", "Methadone", 8)
     local suboxone_medication_link = links.get_medication_link {
         cat = suboxone_medication_name,
         text = "Suboxone",
@@ -148,10 +139,8 @@ if not existing_alert or not existing_alert.validated then
         useCdiAlertCategoryField = true,
         onlyOne = true,
     }
-    local suboxone_abstraction_link =
-        links.get_abstraction_value_link { code = "SUBOXONE", text = "Suboxone", seq = 12 }
-    local methadone_clinic_abstraction_link =
-        links.get_abstraction_link { code = "METHADONE_CLINIC", text = "Methadone Clinic", seq = 13 }
+    local suboxone_abstraction_link = codes.make_abstraction_link_with_value("SUBOXONE", "Suboxone", 12)
+    local methadone_clinic_abstraction_link = codes.make_abstraction_link("METHADONE_CLINIC", "Methadone Clinic", 13)
 
 
 
@@ -161,10 +150,7 @@ if not existing_alert or not existing_alert.validated then
     if subtitle == alcohol_withdrawal_subtitle and #account_alcohol_codes > 0 then
         -- Auto resolve alert if it currently triggered for alcohol but now has alcohol codes
         local code = account_alcohol_codes[1]
-        local code_desc = alcohol_code_dic[code]
-        local auto_resolved_code_link =
-            links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
-        documented_dx_header:add_link(auto_resolved_code_link)
+        documented_dx_header:add_code_link(code, "Autoresolved Specified Code - " .. alcohol_code_dic[code])
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
@@ -173,10 +159,7 @@ if not existing_alert or not existing_alert.validated then
     elseif subtitle == opioid_dependence_subtitle and #account_opioid_codes > 0 then
         -- Auto resolve alert if it currently triggered for opioids but now has opioid codes
         local code = account_opioid_codes[1]
-        local code_desc = opioid_code_dic[code]
-        local auto_resolved_code_link =
-            links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. code_desc, seq = 1 }
-        documented_dx_header:add_link(auto_resolved_code_link)
+        documented_dx_header:add_code_link(code, "Autoresolved Specified Code - " .. opioid_code_dic[code])
 
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
@@ -194,10 +177,10 @@ if not existing_alert or not existing_alert.validated then
         #account_opioid_codes == 0 and
         (
             #methadone_medication_links > 0 or
-            methadone_abstraction_link or
-            suboxone_medication_link or
-            suboxone_abstraction_link or
-            methadone_clinic_abstraction_link
+            lists.some {
+                methadone_abstraction_link, suboxone_medication_link, suboxone_abstraction_link,
+                methadone_clinic_abstraction_link
+            }
         )
     then
         -- Trigger alert if it has no opioid code, but has a methadone medication, or a methadone abstraction,
@@ -220,13 +203,8 @@ if not existing_alert or not existing_alert.validated then
                 },
                 "Alcohol Dependence"
             )
-            local r4182_code_link =
-                links.get_code_link { code = "R41.82", text = "Altered Level of Consciousness", seq = 2 }
-            local altered_abs = links.get_abstraction_link {
-                code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-                text = "Altered Level of Consciousness",
-                seq = 3
-            }
+            local r4182_code_link = codes.make_code_link("R41.82", "Altered Level of Consciousness", 2)
+            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level of Consciousness", 3)
             if r4182_code_link then
                 altered_abs.hidden = true
             end

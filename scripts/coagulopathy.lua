@@ -17,6 +17,9 @@ local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
 local headers = require("libs.common.headers")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
+local medications = require("libs.common.medications")(Account)
+local lists = require("libs.common.lists")
 
 
 
@@ -24,30 +27,30 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local activated_clotting_time_dv_name = { "" }
-local activated_clotting_time_predicate = function(dv_, num) return num > 120 end
+local activated_clotting_time_predicate = discrete.make_gt_predicate(120)
 local cryoprecipitate_discrete_value = { "" }
 local ddimer_discrete_value = { "D-DIMER (mg/L FEU)" }
-local ddimer_predicate_1 = function(dv_, num) return num >= 4 end
-local ddimer_predicate_2 = function(dv_, num) return 0.48 <= num < 4 end
+local ddimer_predicate_1 = discrete.make_gte_predicate(4)
+local ddimer_predicate_2 = discrete.make_range_predicate(0.48, 4)
 local fibrinogen_discrete_value = { "FIBRINOGEN (mg/dL)" }
-local calc_fibrinogen1 = function(dv_, num) return num < 200 end
+local calc_fibrinogen1 = discrete.make_lt_predicate(200)
 local dv_homocysteine_levels = { "" }
-local calc_homocysteine_levels1 = function(dv_, num) return num > 15 end
+local calc_homocysteine_levels1 = discrete.make_gt_predicate(15)
 local dv_inr = { "INR" }
-local calc_inr3 = function(dv_, num) return num > 1.3 end
+local calc_inr3 = discrete.make_gt_predicate(1.3)
 local dv_plasma_transfusion = { "Volume (mL)-Transfuse Plasma (mL)" }
 local dv_partial_thromboplastin_time = { "PTT (SEC)" }
-local calc_partial_thromboplastin_time1 = function(dv_, num) return num > 30.5 end
+local calc_partial_thromboplastin_time1 = discrete.make_gt_predicate(30.5)
 local dv_platelet_count = { "PLATELET COUNT (10x3/uL)" }
-local calc_platelet_count1 = function(dv_, num) return num < 150 end
+local calc_platelet_count1 = discrete.make_lt_predicate(150)
 local dv_platelet_transfusion = { "" }
 local dv_protein_c_resistance = { "" }
-local calc_protein_c_resistance1 = function(dv_, num) return num < 2.3 end
+local calc_protein_c_resistance1 = discrete.make_lt_predicate(2.3)
 local dv_prothrombin_time = { "PROTIME (SEC)" }
-local calc_prothrombin_time1 = function(dv_, num) return num > 13.0 end
+local calc_prothrombin_time1 = discrete.make_gt_predicate(13.0)
 local dv_thrombin_time = { "THROMBIN CLOTTING TM" }
-local calc_thrombin_time1 = function(dv_, num) return num > 14 end
-local calc_any1 = function(dv_, num) return num > 0 end
+local calc_thrombin_time1 = discrete.make_gt_predicate(14)
+local calc_any1 = discrete.make_gt_predicate(0)
 
 
 
@@ -142,53 +145,48 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negation
-    local gi_bleed_codes = links.get_code_links {
-        codes = {
-            "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4", "K27.6", "K28.0", "K28.2", "K28.4", "K28.6",
-            "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61", "K29.71", "K29.81", "K29.91", "K31.811", "K31.82", "K55.21", "K57.01", "K57.11",
-            "K57.13", "K57.21", "K57.31", "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5", "K92.0", "K92.1", "K92.2"
+    local gi_bleed_codes = codes.make_code_links(
+        {
+            "K25.0", "K25.2", "K25.4", "K25.6", "K26.0", "K26.2", "K26.4", "K26.6", "K27.0", "K27.2", "K27.4", "K27.6",
+            "K28.0", "K28.2", "K28.4", "K28.6", "K29.01", "K29.21", "K29.31", "K29.41", "K29.51", "K29.61", "K29.71",
+            "K29.81", "K29.91", "K31.811", "K31.82", "K55.21", "K57.01", "K57.11", "K57.13", "K57.21", "K57.31",
+            "K57.33", "K57.41", "K57.51", "K57.53", "K57.81", "K57.91", "K57.93", "K62.5", "K92.0", "K92.1", "K92.2"
         },
-        text = "GI Bleed"
-    }
-    local hemorrhage_abs = links.get_abstraction_link { code = "HEMORRHAGE", text = "Hemorrhage" }
-    local ddimer4_dv = links.get_discrete_value_link { discrete_value = ddimer_discrete_value, text = "D Dimer", predicate = ddimer_predicate_1 }
-    local ddimer0484_dv = links.get_discrete_value_link { discrete_value = ddimer_discrete_value, text = "D Dimer", predicate = ddimer_predicate_2 }
-    local fibrinogen_dv = links.get_discrete_value_link { discrete_value = fibrinogen_discrete_value, text = "Fibrinogen", predicate = calc_fibrinogen1 }
+        "GI Bleed"
+    )
+    local hemorrhage_abs = codes.make_abstraction_link("HEMORRHAGE", "Hemorrhage")
+    local ddimer4_dv = discrete.make_discrete_value_link(ddimer_discrete_value, "D Dimer", ddimer_predicate_1)
+    local ddimer0484_dv = discrete.make_discrete_value_link(ddimer_discrete_value, "D Dimer", ddimer_predicate_2)
+    local fibrinogen_dv = discrete.make_discrete_value_link(fibrinogen_discrete_value, "Fibrinogen", calc_fibrinogen1)
 
     -- Labs Subheadings
-    local inr13_dv = links.get_discrete_value_links { discrete_value = dv_inr, text = "INR", predicate = calc_inr3, max_per_value = 10 }
-    local ptt_dv = links.get_discrete_value_links { discrete_value = dv_partial_thromboplastin_time, text = "Partial Thromboplastin Time", predicate = calc_partial_thromboplastin_time1, max_per_value = 10 }
-    local platelet_count150_dv = links.get_discrete_value_links { discrete_value = dv_platelet_count, text = "Platelet Count", predicate = calc_platelet_count1, max_per_value = 10 }
-    local pt_dv = links.get_discrete_value_links { discrete_value = dv_prothrombin_time, text = "Prothrombin Time", predicate = calc_prothrombin_time1, max_per_value = 10 }
+    local inr13_dv = discrete.make_discrete_value_links(dv_inr, "INR", calc_inr3, 10)
+    local ptt_dv = discrete.make_discrete_value_links(dv_partial_thromboplastin_time, "Partial Thromboplastin Time", calc_partial_thromboplastin_time1, 10)
+    local platelet_count150_dv = discrete.make_discrete_value_links(dv_platelet_count, "Platelet Count", calc_platelet_count1, 10)
+    local pt_dv = discrete.make_discrete_value_links(dv_prothrombin_time, "Prothrombin Time", calc_prothrombin_time1, 10)
 
     -- Meds
-    local anticoagulant_dv = links.get_medication_link { cat = "Anticoagulant", text = "" }
-    local anticoagulant_abs = links.get_abstraction_link { code = "ANTICOAGULANT", text = "Anticoagulant" }
-    local antiplatelet_dv = links.get_medication_link { cat = "Antiplatelet", text = "" }
-    local antiplatelet_abs = links.get_abstraction_link { code = "ANTIPLATELET", text = "Antiplatelet" }
-    local aspirin_dv = links.get_medication_link { cat = "Aspirin", text = "" }
-    local aspirin_abs = links.get_abstraction_link { code = "ASPIRIN", text = "Aspirin" }
-    local heparin_dv = links.get_medication_link { cat = "Heparin", text = "" }
-    local heparin_abs = links.get_abstraction_link { code = "HEPARIN", text = "Heparin" }
-    local z7901_code = links.get_code_link { code = "Z79.01", text = "Long Term Anticoagulants" }
-    local z7902_code = links.get_code_link { code = "Z79.02", text = "Long Term use of Antithrombotics/Antiplatelets" }
-    local z7982_code = links.get_code_link { code = "Z79.82", text = "Long Term Aspirin" }
+    local anticoagulant_dv = medications.make_medication_link("Anticoagulant")
+    local anticoagulant_abs = codes.make_abstraction_link("ANTICOAGULANT", "Anticoagulant")
+    local antiplatelet_dv = medications.make_medication_link("Antiplatelet")
+    local antiplatelet_abs = codes.make_abstraction_link("ANTIPLATELET", "Antiplatelet")
+    local aspirin_dv = medications.make_medication_link("Aspirin")
+    local aspirin_abs = codes.make_abstraction_link("ASPIRIN", "Aspirin")
+    local heparin_dv = medications.make_medication_link("Heparin")
+    local heparin_abs = codes.make_abstraction_link("HEPARIN", "Heparin")
+    local z7901_code = codes.make_code_link("Z79.01", "Long Term Anticoagulants")
+    local z7902_code = codes.make_code_link("Z79.02", "Long Term use of Antithrombotics/Antiplatelets")
+    local z7982_code = codes.make_code_link("Z79.82", "Long Term Aspirin")
     local multi_dv_values =
         (inr13_dv and 1 or 0) +
         (pt_dv and 1 or 0) +
         (ptt_dv and 1 or 0)
-    local med_check =
-        z7901_code or
-        z7902_code or
-        z7982_code or
-        anticoagulant_abs or
-        antiplatelet_abs or
-        anticoagulant_dv or
-        antiplatelet_dv or
-        aspirin_abs or
-        aspirin_dv or
-        heparin_abs or
-        heparin_dv
+    local med_check = lists.some({
+        z7901_code, z7902_code, z7982_code,
+        anticoagulant_abs, antiplatelet_abs, anticoagulant_dv, antiplatelet_dv,
+        aspirin_abs, aspirin_dv,
+        heparin_abs, heparin_dv
+    })
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
@@ -197,7 +195,7 @@ if not existing_alert or not existing_alert.validated then
         if existing_alert then
             for _, code in ipairs(account_alert_codes) do
                 local desc = alert_code_dictionary[code]
-                local temp_code = links.get_code_link { code = code, text = desc }
+                local temp_code = codes.make_code_link(code, desc)
                 if temp_code then
                     documented_dx_header:add_link(temp_code)
                     break

@@ -16,8 +16,8 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
+local lists = require("libs.common.lists")
 
 
 
@@ -49,6 +49,7 @@ if not existing_alert or not existing_alert.validated then
     end
 
 
+
     --------------------------------------------------------------------------------
     --- Alert Variables 
     --------------------------------------------------------------------------------
@@ -66,75 +67,40 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Alert Trigger
-    local f17200_code =
-        links.get_code_link { code = "F17.200", text = "Nicotine Dependence, Unspecified, Uncomplicated" }
-    local f17208_code =
-        links.get_code_link { code = "F17.208", text = "Nicotine Dependence, Unspecified, With Other Nicotine-Induced Disorders" }
-    local f17209_code =
-        links.get_code_link { code = "F17.209", text = "Nicotine Dependence, Unspecified, With Unspecified Nicotine-Induced Disorders" }
-    local f1721_code =
-        links.get_code_link { code = "F17.21", text = "Nicotine Dependence, Cigarettes" }
-    local f17210_code =
-        links.get_code_link { code = "F17.210", text = "Nicotine Dependence, Cigarettes, Uncomplicated" }
-    local f17218_code =
-        links.get_code_link { code = "F17.218", text = "Nicotine Dependence, Cigarettes, With Other Nicotine-Induced Disorders" }
-    local f17219_code =
-        links.get_code_link { code = "F17.219", text = "Nicotine Dependence, Cigarettes, With Unspecified Nicotine-Induced Disorders" }
-    local f1722_code =
-        links.get_code_link { code = "F17.22", text = "Nicotine Dependence, Chewing Tobacco" }
-    local f17220_code =
-        links.get_code_link { code = "F17.220", text = "Nicotine Dependence, Chewing Tobacco, Uncomplicated" }
-    local f17228_code =
-        links.get_code_link { code = "F17.228", text = "Nicotine Dependence, Chewing Tobacco, With Other Nicotine-Induced Disorders" }
-    local f17229_code =
-        links.get_code_link { code = "F17.229", text = "Nicotine Dependence, Chewing Tobacco, With Unspecified Nicotine-Induced Disorders" }
-    local f1729_code =
-        links.get_code_link { code = "F17.29", text = "Nicotine Dependence, Other Tobacco Product" }
-    local f17290_code =
-        links.get_code_link { code = "F17.290", text = "Nicotine Dependence, Other Tobacco Product, Uncomplicated" }
-    local f17298_code =
-        links.get_code_link { code = "F17.298", text = "Nicotine Dependence, Other Tobacco Product, With Other Nicotine-Induced Disorders" }
-    local f17299_code =
-        links.get_code_link { code = "F17.299", text = "Nicotine Dependence, Other Tobacco Product, With Unspecified Nicotine-Induced Disorders" }
+    local f_code_present = lists.some {
+        documented_dx_header:add_code_link("F17.200", "Nicotine Dependence, Unspecified, Uncomplicated"),
+        documented_dx_header:add_code_link("F17.208", "Nicotine Dependence, Unspecified, With Other Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.209", "Nicotine Dependence, Unspecified, With Unspecified Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.21", "Nicotine Dependence, Cigarettes"),
+        documented_dx_header:add_code_link("F17.210", "Nicotine Dependence, Cigarettes, Uncomplicated"),
+        documented_dx_header:add_code_link("F17.218", "Nicotine Dependence, Cigarettes, With Other Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.219", "Nicotine Dependence, Cigarettes, With Unspecified Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.22", "Nicotine Dependence, Chewing Tobacco"),
+        documented_dx_header:add_code_link("F17.220", "Nicotine Dependence, Chewing Tobacco, Uncomplicated"),
+        documented_dx_header:add_code_link("F17.228", "Nicotine Dependence, Chewing Tobacco, With Other Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.229", "Nicotine Dependence, Chewing Tobacco, With Unspecified Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.29", "Nicotine Dependence, Other Tobacco Product"),
+        documented_dx_header:add_code_link("F17.290", "Nicotine Dependence, Other Tobacco Product, Uncomplicated"),
+        documented_dx_header:add_code_link("F17.298", "Nicotine Dependence, Other Tobacco Product, With Other Nicotine-Induced Disorders"),
+        documented_dx_header:add_code_link("F17.299", "Nicotine Dependence, Other Tobacco Product, With Unspecified Nicotine-Induced Disorders")
+    }
 
     -- Medications
-    local nicotine_withdrawal_meds = discrete.get_medication("Nicotine Withdrawal Medication")
-    local nicotine_withdrawal_meds_abs = links.get_abstraction_link {
-        code = "NICOTINE_WITHDRAWAL_MEDICATION",
-        text = "Nicotine Withdrawal Medication '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
+    local medication_present = lists.some {
+        treatment_and_monitoring_header:add_medication_link("Nicotine Withdrawal Medication"),
+        treatment_and_monitoring_header:add_abstraction_link("NICOTINE_WITHDRAWAL_MEDICATION", "Nicotine Withdrawal Medication")
     }
 
     -- Withdrawal Symptoms
-    local r41840_code = links.get_code_link { code = "R41.840", text = "Difficulty Concentrating" }
-    local headache_abs = links.get_abstraction_link { code = "HEADACHE", text = "Headache" }
-    local r454_code = links.get_code_link { code = "R45.4", text = "Irritability" }
-    local g4700_code = links.get_code_link { code = "G47.00", text = "Insomnia" }
-    local r450_code = links.get_code_link { code = "R45.0", text = "Nervousness/Anxious" }
-    local nicotine_cravings_abs = links.get_abstraction_link { code = "NICOTINE_CRAVINGS", text = "Nicotine Cravings" }
-    local r451_code = links.get_code_link { code = "R45.1", text = "Restlessness and Agitated" }
-
-    local code_present =
-        f17200_code ~= nil or f17208_code ~= nil or f17209_code ~= nil or f1721_code ~= nil or
-        f17210_code ~= nil or f17218_code ~= nil or f17219_code ~= nil or f1722_code ~= nil or
-        f17220_code ~= nil or f17228_code ~= nil or f17229_code ~= nil or f1729_code ~= nil or
-        f17290_code ~= nil or f17298_code ~= nil or f17299_code ~= nil
-
-    -- Code Present Determination
-    documented_dx_header:add_link(f17200_code)
-    documented_dx_header:add_link(f17208_code)
-    documented_dx_header:add_link(f17209_code)
-    documented_dx_header:add_link(f1721_code)
-    documented_dx_header:add_link(f17210_code)
-    documented_dx_header:add_link(f17218_code)
-    documented_dx_header:add_link(f17219_code)
-    documented_dx_header:add_link(f1722_code)
-    documented_dx_header:add_link(f17220_code)
-    documented_dx_header:add_link(f17228_code)
-    documented_dx_header:add_link(f17229_code)
-    documented_dx_header:add_link(f1729_code)
-    documented_dx_header:add_link(f17290_code)
-    documented_dx_header:add_link(f17298_code)
-    documented_dx_header:add_link(f17299_code)
+    local withdrawal_symptom_present = lists.some {
+        documented_dx_header:add_code_link("R41.840", "Difficulty Concentrating"),
+        documented_dx_header:add_abstraction_link("HEADACHE", "Headache"),
+        documented_dx_header:add_code_link("R45.4", "Irritability"),
+        documented_dx_header:add_code_link("G47.00", "Insomnia"),
+        documented_dx_header:add_code_link("R45.0", "Nervousness/Anxious"),
+        documented_dx_header:add_abstraction_link("NICOTINE_CRAVINGS", "Nicotine Cravings"),
+        documented_dx_header:add_code_link("R45.1", "Restlessness and Agitated")
+    }
 
 
 
@@ -142,52 +108,27 @@ if not existing_alert or not existing_alert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
     if #account_alert_codes > 0 then
-        if code_present then
-            if existing_alert then
-                for _, code in ipairs(account_alert_codes) do
-                    local desc = alert_code_dictionary[code]
-                    local temp_code =
-                        links.get_code_link {
-                            code = code,
-                            text =
-                                "Autoresolved Specified Code - " .. desc .. ": [CODE] '[PHRASE]' ([DOCUMENTTYPE], [DOCUMENTDATE])"
-                        }
-                    if temp_code then
-                        documented_dx_header:add_link(temp_code)
-                        break
-                    end
+        if f_code_present and existing_alert then
+            for _, code in ipairs(account_alert_codes) do
+                if documented_dx_header:add_code_link(code, "Autoresolved Specified Code - " .. alert_code_dictionary[code]) then
+                    break
                 end
-                Result.outcome = "AUTORESOLVED"
-                Result.reason = "Autoresolved due to one Specified Code on the Account"
-                Result.validated = true
-                Result.passed = true
-            else
-                Result.passed = false
             end
+            Result.outcome = "AUTORESOLVED"
+            Result.reason = "Autoresolved due to one Specified Code on the Account"
+            Result.validated = true
+            Result.passed = true
         end
-
-    elseif code_present and (nicotine_withdrawal_meds_abs or nicotine_withdrawal_meds) and
-        (headache_abs or r454_code or g4700_code or r450_code or nicotine_cravings_abs or r451_code or r41840_code)
-    then
-        treatment_and_monitoring_header:add_link(nicotine_withdrawal_meds)
-        treatment_and_monitoring_header:add_link(nicotine_withdrawal_meds_abs)
-        documented_dx_header:add_link(headache_abs)
-        documented_dx_header:add_link(r454_code)
-        documented_dx_header:add_link(g4700_code)
-        documented_dx_header:add_link(r450_code)
-        documented_dx_header:add_link(nicotine_cravings_abs)
-        documented_dx_header:add_link(r451_code)
-        documented_dx_header:add_link(r41840_code)
+    elseif f_code_present and medication_present and withdrawal_symptom_present then
         Result.subtitle = "Nicotine Dependence present with possible Withdrawal"
         Result.passed = true
     end
 
 
-    if Result.passed then
-        ----------------------------------------
-        --- Result Finalization 
-        ----------------------------------------
-        compile_links()
-    end
+
+    ----------------------------------------
+    --- Result Finalization 
+    ----------------------------------------
+    if Result.passed then compile_links() end
 end
 

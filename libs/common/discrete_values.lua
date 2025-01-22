@@ -3,6 +3,7 @@ return function(Account)
     local module = {}
     local dates = require "libs.common.dates"
     local links = require "libs.common.basic_links" (Account)
+    local lists = require "libs.common.lists"
     local cdi_alert_link = require "cdi.link"
 
     --------------------------------------------------------------------------------
@@ -652,7 +653,7 @@ return function(Account)
     --- @return CdiAlertLink? - a link to the discrete value or nil if not found
     --------------------------------------------------------------------------------
     function module.make_discrete_value_link(dvs, text, predicate, sequence)
-        return links.get_code_link {
+        return links.get_discrete_value_link {
             discreteValueNames = dvs,
             text = text,
             predicate = predicate,
@@ -660,5 +661,131 @@ return function(Account)
         }
     end
 
+    --------------------------------------------------------------------------------
+    --- Make a discrete value link
+    ---
+    --- @param dvs string[] The discrete values to search for
+    --- @param text string The text for the link
+    --- @param predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
+    --- @param max_per_value number? The sequence number of the link
+    ---
+    --- @return CdiAlertLink? - a link to the discrete value or nil if not found
+    --------------------------------------------------------------------------------
+    function module.make_discrete_value_links(dvs, text, predicate, max_per_value)
+        return links.get_discrete_value_links {
+            discreteValueNames = dvs,
+            text = text,
+            predicate = predicate,
+            max_per_value = max_per_value,
+        }
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value is less than some number
+    ---
+    --- @param value number The value to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_lt_predicate(value)
+        return function(dv_, num)
+            return num < value
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value is less than or equal to some number
+    ---
+    --- @param value number The value to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_lte_predicate(value)
+        return function(dv_, num)
+            return num <= value
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value is greater than some number
+    ---
+    --- @param value number The value to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_gt_predicate(value)
+        return function(dv_, num)
+            return num > value
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value is greater than or equal to some number
+    ---
+    --- @param value number The value to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_gte_predicate(value)
+        return function(dv_, num)
+            return num >= value
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value falls within a range
+    ---
+    --- @param min number The minimum value to compare against
+    --- @param max number The maximum value to compare against
+    --- @param lower_inclusive boolean? If true, the lower bound is inclusive (default true)
+    --- @param upper_inclusive boolean? If true, the upper bound is inclusive (default false)
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_range_predicate(min, max, lower_inclusive, upper_inclusive)
+        if lower_inclusive == nil then lower_inclusive = true end
+        if upper_inclusive == nil then upper_inclusive = false end
+
+        if lower_inclusive and upper_inclusive then
+            return function(dv_, num)
+                return num >= min and num <= max
+            end
+        elseif lower_inclusive and not upper_inclusive then
+            return function(dv_, num)
+                return num >= min and num < max
+            end
+        elseif not lower_inclusive and upper_inclusive then
+            return function(dv_, num)
+                return num > min and num <= max
+            end
+        else
+            return function(dv_, num)
+                return num > min and num < max
+            end
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value matches any of a list of patterns
+    ---
+    --- @param patterns string[] The patterns to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_match_predicate(patterns)
+        return function(dv, num_)
+            return lists.any(patterns, function(pattern)
+                return string.match(dv.result, pattern)
+            end)
+        end
+    end
+
+    --------------------------------------------------------------------------------
+    --- Make a predicate to check that a discrete value does not match any of a list of patterns
+    ---
+    --- @param patterns string[] The patterns to compare against
+    --- @return fun(discrete_value: DiscreteValue, num: number?):boolean - the predicate function
+    --------------------------------------------------------------------------------
+    function module.make_no_match_predicate(patterns)
+        return function(dv, num_)
+            return not lists.any(patterns, function(pattern)
+                return string.match(dv.result, pattern)
+            end)
+        end
+    end
     return module
 end

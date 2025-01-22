@@ -16,8 +16,9 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
-
+local lists = require("libs.common.lists")
 
 
 
@@ -31,11 +32,11 @@ local dv_heart_rate = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local high_heart_rate_predicate = function(dv_, num) return num > 90 end
+local high_heart_rate_predicate = discrete.make_gt_predicate(90)
 local map_dv_names = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local low_map_predicate = function(dv_, num) return num < 70 end
+local low_map_predicate = discrete.make_lt_predicate(70)
 local systolic_blood_pressure_dv_names = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local low_systolic_blood_pressure_predicate = function(dv_, num) return num < 90 end
+local low_systolic_blood_pressure_predicate = discrete.make_lt_predicate(90)
 
 
 
@@ -91,12 +92,11 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local i4891_code_link = links.get_code_links { code = "I48.91", text = "Unspecified Atrial Fibrillation Dx Present" }
-    local i480_code_link = links.get_code_links { code = "I48.0", text = "Paroxysmal Atrial Fibrillation" }
-    local i4819_code_link = links.get_code_links { code = "I48.19", text = "Other Persistent Atrial Fibrillation" }
-    local i4820_code_link = links.get_code_links { code = "I48.20", text = "Chronic Atrial Fibrillation" }
-    local i4821_code_link = links.get_code_links { code = "I48.21", text = "Permanent Atrial Fibrillation" }
-
+    local i4891_code_link = codes.make_code_link("I48.91", "Unspecified Atrial Fibrillation Dx Present")
+    local i480_code_link = codes.make_code_link("I48.0", "Paroxysmal Atrial Fibrillation")
+    local i4819_code_link = codes.make_code_link("I48.19", "Other Persistent Atrial Fibrillation")
+    local i4820_code_link = codes.make_code_link("I48.20", "Chronic Atrial Fibrillation")
+    local i4821_code_link = codes.make_code_link("I48.21", "Permanent Atrial Fibrillation")
 
 
 
@@ -104,7 +104,7 @@ if not existing_alert or not existing_alert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
     -- Alert Conflicting Atrial Fibrillation Dx
-    if i480_code_link and (i4819_code_link or i4820_code_link or i4821_code_link) then
+    if i480_code_link and lists.some { i4819_code_link, i4820_code_link, i4821_code_link } then
         documented_dx_header:add_link(i480_code_link)
         documented_dx_header:add_link(i4819_code_link)
         documented_dx_header:add_link(i4820_code_link)
@@ -122,7 +122,7 @@ if not existing_alert or not existing_alert.validated then
         -- Auto Resolve Unspecified Atrial Fibrillation Dx
         for _, code in ipairs(account_alert_codes) do
             local description = alert_code_dictionary[code]
-            local temp_code = links.get_code_links { code = code, text = "Autoresolved Specified Code - " .. description }
+            local temp_code = codes.make_code_link(code, "Autoresolved Specified Code - " .. description)
 
             if temp_code then
                 documented_dx_header:add_link(temp_code)

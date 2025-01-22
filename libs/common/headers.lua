@@ -26,8 +26,8 @@ return function(Account)
     --- @field add_discrete_value_one_of_link (fun (self: header_builder, dv_names: string[], description: string, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?)) : CdiAlertLink?
     --- @field add_discrete_value_links (fun (self: header_builder, dv_name: string, description: string, max: number, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?)) : CdiAlertLink?
     --- @field add_discrete_value_many_links (fun (self: header_builder, dv_names: string[], description: string, max_per_value: number, predicate: (fun (dv: DiscreteValue, num: number?): boolean)?)) : CdiAlertLink?
-    --- @field add_medication_link (fun (self: header_builder, cat: string, description: string, predicate: (fun (med: Medication): boolean)?)) : CdiAlertLink?
-    --- @field add_medication_links (fun (self: header_builder, cats: string[], description: string, predicate: (fun (med: Medication): boolean)?)) : CdiAlertLink?
+    --- @field add_medication_link (fun (self: header_builder, cat: string, description: string?, predicate: (fun (med: Medication): boolean)?)) : CdiAlertLink?
+    --- @field add_medication_links (fun (self: header_builder, cats: string[], description: string?, predicate: (fun (med: Medication): boolean)?)) : CdiAlertLink?
 
     local header_builder_meta = {
         __index = {
@@ -254,10 +254,11 @@ return function(Account)
 
             --- @param self header_builder
             --- @param cat string
-            --- @param description string
+            --- @param description string?
             --- @param predicate (fun (med: Medication): boolean)?
             --- @return CdiAlertLink?
             add_medication_link = function(self, cat, description, predicate)
+                description = description or cat
                 local link = links_lib.get_medication_link { cat = cat, text = description, predicate = predicate }
                 if link then
                     link.sequence = self.sequence_counter
@@ -269,10 +270,11 @@ return function(Account)
 
             --- @param self header_builder
             --- @param cats string[]
-            --- @param description string
+            --- @param description string?
             --- @param predicate (fun (med: Medication): boolean)?
             --- @return CdiAlertLink[]?
             add_medication_links = function(self, cats, description, predicate)
+                description = description or ""
                 local lnks = links_lib.get_medication_links { cats = cats, text = description, predicate = predicate }
                 for _, link in ipairs(lnks) do
                     link.sequence = self.sequence_counter
