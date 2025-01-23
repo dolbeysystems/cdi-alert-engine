@@ -57,7 +57,7 @@ local calc_any1 = discrete.make_gt_predicate(0)
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 
 
 

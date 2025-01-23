@@ -41,7 +41,7 @@ local high_ptt_predicate = discrete.make_gt_predicate(30.5)
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 
 
 

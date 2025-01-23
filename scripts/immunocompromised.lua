@@ -34,7 +34,7 @@ local isnt_eye = medications.make_route_no_match_predicate("Eye", "optical", "oc
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 
 
 

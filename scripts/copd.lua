@@ -538,7 +538,7 @@ end
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 local link_text_1 = "Possible Missing Signs of Low Oxygen"
 local link_text_2 = "Possible Missing Signs of Respiratory Distress"

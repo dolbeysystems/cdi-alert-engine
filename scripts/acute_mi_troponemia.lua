@@ -57,7 +57,7 @@ local high_troponin_predicate = function(dv_, num) return num > 59 end
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 
 
 

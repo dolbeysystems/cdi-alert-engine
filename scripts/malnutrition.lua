@@ -108,7 +108,7 @@ local e440_triggered = false
 local e441_triggered = false
 local e45_triggered = false
 local e46_triggered = false
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 if existing_alert then
     if existing_alert.outcome == 'AUTORESOLVED' or existing_alert.reason == 'Previously Autoresolved' then

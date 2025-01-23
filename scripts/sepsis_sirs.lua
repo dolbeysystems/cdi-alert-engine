@@ -149,7 +149,7 @@ local calc_wbc_4 = function(dv_, num) return num < 4 end
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 local lacking_sirs_link_text = "Possible Lacking Positive SIRS Criteria, Please Review"
 local lacking_infection_link_text = "Possible No Documentation of Infection Present, Please Review"

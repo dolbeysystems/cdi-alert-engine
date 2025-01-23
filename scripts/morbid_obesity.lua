@@ -49,7 +49,7 @@ local calc_venous_blood_co2 = function(dv_, num) return num > 55 end
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
 local link_text1 = "Possibly Missing BMI to meet Morbid Obesity Criteria"

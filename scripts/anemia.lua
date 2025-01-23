@@ -81,7 +81,7 @@ local link_text_possible_no_anemia_treatment_present = false
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName }
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert and existing_alert.subtitle or nil
 
 if existing_alert and existing_alert.links then
