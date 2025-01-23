@@ -16,8 +16,11 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
+local discrete = require("libs.common.discrete")(Account)
+local medications = require("libs.common.medications")(Account)
 local dates = require("libs.common.dates")
 local headers = require("libs.common.headers")(Account)
+local documents = require("libs.common.documents")(Account)
 
 
 
@@ -25,7 +28,7 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local glasgow_coma_scale_dv_name = { "3.5 Neuro Glasgow Score" }
-local glasgow_coma_scale_predicate = function(dv_, num) return num < 15 end
+local glasgow_coma_scale_predicate = discrete.make_lt_predicate(15)
 local heart_rate_dv_name = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -33,11 +36,11 @@ local heart_rate_dv_name = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local heart_rate_predicate = function(dv_, num) return num < 60 end
+local heart_rate_predicate = discrete.make_lt_predicate(60)
 local intracranial_pressure_dv_name = { "ICP cc (mm Hg)" }
-local intracranial_pressure_predicate = function(dv_, num) return num > 15 end
+local intracranial_pressure_predicate = discrete.make_gt_predicate(15)
 local respiratory_rate_dv_name = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local respiratory_rate_predicate = function(dv_, num) return num < 12 end
+local respiratory_rate_predicate = discrete.make_lt_predicate(12)
 
 
 
@@ -112,21 +115,21 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     -- Negations
     local cervical_decompression_abs =
-        links.get_abstraction_link { code = "CERVICAL_DECOMPRESSION", text = "Cervical Decompression" }
+        codes.make_abstraction_link("CERVICAL_DECOMPRESSION", "Cervical Decompression")
     local cervical_fusion_abs =
-        links.get_abstraction_link { code = "CERVICAL_FUSION", text = "Cervical Fusion" }
+        codes.make_abstraction_link("CERVICAL_FUSION", "Cervical Fusion")
     local lumbar_decompression_abs =
-        links.get_abstraction_link { code = "LUMBAR_DECOMPRESSION", text = "Lumbar Decompression" }
+        codes.make_abstraction_link("LUMBAR_DECOMPRESSION", "Lumbar Decompression")
     local lumbar_fusion_abs =
-        links.get_abstraction_link { code = "LUMBAR_FUSION", text = "Lumbar Fusion" }
+        codes.make_abstraction_link("LUMBAR_FUSION", "Lumbar Fusion")
     local sacral_decompression_abs =
-        links.get_abstraction_link { code = "SACRAL_DECOMPRESSION", text = "Sacral Decompression" }
+        codes.make_abstraction_link("SACRAL_DECOMPRESSION", "Sacral Decompression")
     local sacral_fusion_abs =
-        links.get_abstraction_link { code = "SACRAL_FUSION", text = "Sacral Fusion" }
+        codes.make_abstraction_link("SACRAL_FUSION", "Sacral Fusion")
     local thoracic_decompression_abs =
-        links.get_abstraction_link { code = "THORACIC_DECOMPRESSION", text = "Thoracic Decompression" }
+        codes.make_abstraction_link("THORACIC_DECOMPRESSION", "Thoracic Decompression")
     local thoracic_fusion_abs =
-        links.get_abstraction_link { code = "THORACIC_FUSION", text = "Thoracic Fusion" }
+        codes.make_abstraction_link("THORACIC_FUSION", "Thoracic Fusion")
 
     -- Alert Trigger
     -- get latest medical document
@@ -145,62 +148,56 @@ if not existing_alert or not existing_alert.validated then
         end
     end
     local latest_medical_document_link =
-        links.get_document_link { documentType = latest_medical_document_type, text = "" }
+        latest_medical_document_type and
+        documents.make_document_link(latest_medical_document_type) or nil
     local mannitol_med_doc_link =
         latest_medical_document_date and
-        links.get_medication_link {
-            cat = "Mannitol",
-            text = "Mannitol",
-            predicate = function(med)
-                return dates.date_string_to_int(med.start_date) < latest_medical_document_date
-            end
-        } or nil
+        medications.make_medication_link("Mannitol", "Mannitol", nil, function(med)
+            return dates.date_string_to_int(med.start_date) < latest_medical_document_date
+        end
+        ) or nil
     local dexamethasone_med_doc_link =
         latest_medical_document_date and
-        links.get_medication_link {
-            cat = "Dexamethasone",
-            text = "Dexamethasone",
-            predicate = function(med)
+        medications.make_medication_link(
+            "Dexamethasone",
+            "Dexamethasone",
+            nil,
+            function(med)
                 return dates.date_string_to_int(med.start_date) < latest_medical_document_date
             end
-        } or nil
+        ) or nil
 
     -- Abs
-    local brain_compression_abs = links.get_abstraction_link { code = "BRAIN_COMPRESSION", text = "Brain Compression" }
-    local brain_herniation_abs = links.get_abstraction_link { code = "BRAIN_HERNIATION", text = "Brain Herniation" }
-    local brain_pressure_abs = links.get_abstraction_link { code = "BRAIN_PRESSURE", text = "Brain Pressure" }
-    local cerebral_edema_abs = links.get_abstraction_link { code = "CEREBRAL_EDEMA", text = "Cerebral Edema" }
+    local brain_compression_abs = codes.make_abstraction_link("BRAIN_COMPRESSION", "Brain Compression")
+    local brain_herniation_abs = codes.make_abstraction_link("BRAIN_HERNIATION", "Brain Herniation")
+    local brain_pressure_abs = codes.make_abstraction_link("BRAIN_PRESSURE", "Brain Pressure")
+    local cerebral_edema_abs = codes.make_abstraction_link("CEREBRAL_EDEMA", "Cerebral Edema")
     local cerebral_ventricle_effacement_abs =
-        links.get_abstraction_link { code = "CEREBRAL_VENTRICLE_EFFACEMENT", text = "Cerebral Ventricle Effacement" }
-    local mass_effect_abs = links.get_abstraction_link { code = "MASS_EFFECT", text = "Mass Effect" }
-    local sulcal_effacement_abs = links.get_abstraction_link { code = "SULCAL_EFFACEMENT", text = "Sulcal Effacement" }
+        codes.make_abstraction_link("CEREBRAL_VENTRICLE_EFFACEMENT", "Cerebral Ventricle Effacement")
+    local mass_effect_abs = codes.make_abstraction_link("MASS_EFFECT", "Mass Effect")
+    local sulcal_effacement_abs = codes.make_abstraction_link("SULCAL_EFFACEMENT", "Sulcal Effacement")
 
     -- Treatment
-    local burr_holes_codes = links.get_code_links { codes = { "00943ZZ", "00C40ZZ" }, text = "Burr Holes" }
-    local decompressive_craniectomy_code = links.get_code_link { code = "00N00ZZ", text = "Decompressive Craniectomy" }
-    local hypertonic_saline_med = links.get_medication_link {
-        cat = "Hypertonic Saline",
-        text = "Hypertonic Saline",
-        predicate = function(med)
+    local burr_holes_codes = codes.make_code_links({ "00943ZZ", "00C40ZZ" }, "Burr Holes")
+    local decompressive_craniectomy_code = codes.make_code_link("00N00ZZ", "Decompressive Craniectomy")
+    local hypertonic_saline_med = medications.make_medication_link(
+        "Hypertonic Saline",
+        "Hypertonic Saline",
+        nil,
+        function(med)
             return med.route:find("Aerosol") ~= nil
         end
-    }
+    )
     local hyperventilation_therapy_abs =
-        links.get_abstraction_link { code = "HYPERVENTILATION_THERAPY", text = "Hyperventilation Therapy" }
-    local subarchnoid_epidural_bolt_code =
-        links.get_code_link { code = "00H032Z", text = "Subarchnoid/Epidural Bolt" }
-    local ventriculostomy_codes =
-        links.get_code_link { codes = { "009600Z", "009630Z", "009640Z" }, text = "Ventriculostomy" }
+        codes.make_abstraction_link("HYPERVENTILATION_THERAPY", "Hyperventilation Therapy")
+    local subarchnoid_epidural_bolt_code = codes.make_code_link("00H032Z", "Subarchnoid/Epidural Bolt")
+    local ventriculostomy_codes = codes.make_code_links({ "009600Z", "009630Z", "009640Z" }, "Ventriculostomy")
 
     -- Vitals
     local intra_pressure_dv =
-        links.get_discrete_value_link {
-            discreteValueNames = intracranial_pressure_dv_name,
-            text = "Intracranial Pressure",
-            predicate = intracranial_pressure_predicate
-        }
+        discrete.make_discrete_value_link(intracranial_pressure_dv_name, "Intracranial Pressure", intracranial_pressure_predicate)
     local intra_pressure_abs =
-        links.get_abstraction_link { code = "ELEVATED_INTRACRANIAL_PRESSURE", text = "Intracranial Pressure" }
+        codes.make_abstraction_link("ELEVATED_INTRACRANIAL_PRESSURE", "Intracranial Pressure")
 
     local negation_check =
         cervical_decompression_abs or
@@ -306,12 +303,8 @@ if not existing_alert or not existing_alert.validated then
         --------------------------------------------------------------------------------
         if not Result.validated then
             -- Clinical Evidence
-            local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
-            local altered_abs =
-                links.get_abstraction_link {
-                    code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-                    text = "Altered Level Of Consciousness"
-                }
+            local r4182_code = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
+            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
             if r4182_code then
                 clinical_evidence_header:add_link(r4182_code)
                 if altered_abs then

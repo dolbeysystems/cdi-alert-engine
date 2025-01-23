@@ -16,6 +16,7 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
+local discrete = require "libs.common.discrete_values" (Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -24,13 +25,13 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local dv_aldolase = { "ALDOLASE" }
-local calc_aldolase1 = function(dv_, num) return num > 7.7 end
+local calc_aldolase1 = discrete.make_gt_predicate(7.7)
 local dv_ckmb = { "CKMB (ng/mL)" }
-local calc_ckmb1 = function(dv_, num) return num > 5 end
+local calc_ckmb1 = discrete.make_gt_predicate(5)
 local dv_ckmb_index = { "" }
-local calc_ckmb_index1 = function(dv_, num) return num > 2.5 end
+local calc_ckmb_index1 = discrete.make_gt_predicate(2.5)
 local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
-local calc_glasgow_coma_scale1 = function(dv_, num) return num < 15 end
+local calc_glasgow_coma_scale1 = discrete.make_lt_predicate(15)
 local dv_heart_rate = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -38,23 +39,23 @@ local dv_heart_rate = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local calc_heart_rate1 = function(dv_, num) return num > 90 end
+local calc_heart_rate1 = discrete.make_gt_predicate(90)
 local dv_kinase = { "CPK (U/L)" }
-local calc_kinase1 = function(dv_, num) return num > 1500 end
-local calc_kinase2 = function(dv_, num) return num > 308 end
+local calc_kinase1 = discrete.make_gt_predicate(1500)
+local calc_kinase2 = discrete.make_gt_predicate(308)
 local dv_map = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
-local calc_map1 = function(dv_, num) return num < 70 end
+local calc_map1 = discrete.make_lt_predicate(70)
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local calc_sbp1 = function(dv_, num) return num < 90 end
+local calc_sbp1 = discrete.make_lt_predicate(90)
 local dv_serum_blood_urea_nitrogen = { "BUN (mg/dL)" }
-local calc_serum_blood_urea_nitrogen1 = function(dv_, num) return num > 23 end
+local calc_serum_blood_urea_nitrogen1 = discrete.make_gt_predicate(23)
 local dv_serum_creatinine = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
-local calc_serum_creatinine1 = function(dv_, num) return num > 1.3 end
+local calc_serum_creatinine1 = discrete.make_gt_predicate(1.3)
 local dv_serum_potassium = { "POTASSIUM (mmol/L)" }
-local calc_serum_potassium1 = function(dv_, num) return num > 5.1 end
+local calc_serum_potassium1 = discrete.make_gt_predicate(5.1)
 local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)", "TEMPERATURE (C)" }
-local calc_temperature1 = function(dv_, num) return num > 38.3 end
-local calc_temperature2 = function(dv_, num) return num < 36.0 end
+local calc_temperature1 = discrete.make_gt_predicate(38.3)
+local calc_temperature2 = discrete.make_lt_predicate(36.0)
 
 
 
@@ -113,21 +114,16 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negations
-    local negation_kidney_failure = links.get_code_links {
-        codes = { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6" },
-        text = "Kidney Failure Codes",
-    }
+    local negation_kidney_failure = codes.make_code_one_of_link(
+        { "N18.1", "N18.2", "N18.30", "N18.31", "N18.32", "N18.4", "N18.5", "N18.6" },
+        "Kidney Failure Codes"
+    )
+
     -- Labs
-    local kinase_dv = links.get_discrete_value_link {
-        discrete_values = dv_kinase,
-        text = "Creatine Kinase",
-        predicate = calc_kinase1,
-    }
-    local kinase2_dv = links.get_discrete_value_link {
-        discrete_values = dv_kinase,
-        text = "Creatine Kinase",
-        predicate = calc_kinase2,
-    }
+    local kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_kinase1)
+    local kinase2_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_kinase2)
+
+
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
@@ -143,7 +139,7 @@ if not existing_alert or not existing_alert.validated then
     elseif trigger_alert and #account_alert_codes > 0 and kinase2_dv then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
         Result.subtitle = "Rhabdomyolysis Dx Lacking Supporting Evidence"
@@ -152,7 +148,7 @@ if not existing_alert or not existing_alert.validated then
     elseif #account_alert_codes > 1 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
         if existing_alert then
@@ -166,7 +162,7 @@ if not existing_alert or not existing_alert.validated then
     elseif subtitle == "Possible Rhabdomyolysis Dx" and #account_alert_codes > 0 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             if temp_code then
                 documented_dx_header:add_link(temp_code)
                 break
@@ -292,11 +288,8 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_medication_link("Fluid Bolus", "Fluid Bolus")
 
             -- Vitals
-            local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
-            local altered_abs = links.get_abstract_value_link {
-                value = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-                text = "Altered Level Of Consciousness",
-            }
+            local r4182_code = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
+            local altered_abs = codes.make_abstract_value_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
             if r4182_code then
                 vital_signs_intake_header:add_link(r4182_code)
                 if altered_abs then

@@ -15,6 +15,9 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
+local codes = require("libs.common.codes")(Account)
+local medications = require("libs.common.medications")(Account)
+local discrete = require("libs.common.discrete")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -23,31 +26,31 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local dv_arterial_blood_co2 = { "BLD GAS CO2 (mmHg)", "PaCO2 (mmHg)" }
-local calc_arterial_blood_co2 = function(dv_, num) return num > 46 end
+local calc_arterial_blood_co2 = discrete.make_gt_predicate(46)
 local dv_arterial_blood_ph = { "pH" }
-local calc_arterial_blood_ph = function(dv_, num) return num < 7.30 end
+local calc_arterial_blood_ph = discrete.make_lt_predicate(7.30)
 local dv_bnp = { "BNP(NT proBNP) (pg/mL)" }
-local calc_bnp = function(dv_, num) return num > 900 end
+local calc_bnp = discrete.make_gt_predicate(900)
 local dv_dbp = { "BP Arterial Diastolic cc (mm Hg)", "DBP 3.5 (No Calculation) (mmhg)",
     "DBP 3.5 (No Calculation) (mm Hg)" }
-local calc_dbp = function(dv_, num) return num > 110 end
+local calc_dbp = discrete.make_gt_predicate(110)
 local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)",
     "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
-local calc_heart_rate = function(dv_, num) return num > 90 end
+local calc_heart_rate = discrete.make_gt_predicate(90)
 local dv_pa_o2 = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local calc_pa_o2 = function(dv_, num) return num < 80 end
+local calc_pa_o2 = discrete.make_lt_predicate(80)
 local dv_pro_bnp = { "" }
-local calc_pro_bnp = function(dv_, num) return num > 900 end
+local calc_pro_bnp = discrete.make_gt_predicate(900)
 local dv_reduced_ejection_fraction = { "" }
-local calc_reduced_ejection_fraction = function(dv_, num) return num < 41 end
+local calc_reduced_ejection_fraction = discrete.make_lt_predicate(41)
 local dv_respiratory_rate = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local calc_respiratory_rate = function(dv_, num) return num > 20 end
+local calc_respiratory_rate = discrete.make_gt_predicate(20)
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
-local calc_sbp = function(dv_, num) return num > 180 end
+local calc_sbp = discrete.make_gt_predicate(180)
 local dv_spo2 = { "Pulse Oximetry(Num) (%)" }
-local calc_spo2 = function(dv_, num) return num < 90 end
+local calc_spo2 = discrete.make_lt_predicate(90)
 local dv_troponin_t = { "TROPONIN, HIGH SENSITIVITY (ng/L)" }
-local calc_troponin_t = function(dv_, num) return num > 59 end
+local calc_troponin_t = discrete.make_gt_predicate(59)
 local dv_oxygen_therapy = { "DELIVERY" }
 
 
@@ -105,105 +108,57 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Negations
-    local j690_code = links.get_code_link { code = "J69.0", text = "Aspiration Pneumonia" }
-    local j681_code = links.get_code_link {
-        code = "J68.1",
-        text = "Pulmonary Edema due to Chemicals, Gases, Fumes and Vapors"
-    }
-    local i501_code = links.get_code_link { code = "I50.1", text = "Pulmonary Edema with Heart Failure/Heart Failure" }
-    local acute_hf_codes = links.get_code_link {
-        codes = { "I50.21", "I50.23", "I50.31", "I50.33", "I50.41", "I50.43", "I50.811", "I50.813" },
-        text = "Acute Heart Failure"
-    }
-    local acute_hf_abs = links.get_abstraction_link { code = "ACUTE_HEART_FAILURE", text = "Acute Heart Failure" }
-    local acute_chronic_hf_abs = links.get_abstraction_link {
-        code = "ACUTE_ON_CHRONIC_HEART_FAILURE",
-        text = "Acute on Chronic Heart Failure"
-    }
+    local j690_code = codes.make_code_link("J69.0", "Aspiration Pneumonia")
+    local j681_code = codes.make_code_link("J68.1", "Pulmonary Edema due to Chemicals, Gases, Fumes and Vapors")
+    local i501_code = codes.make_code_link("I50.1", "Pulmonary Edema with Heart Failure/Heart Failure")
+    local acute_hf_codes = codes.make_code_one_of_link(
+        { "I50.21", "I50.23", "I50.31", "I50.33", "I50.41", "I50.43", "I50.811", "I50.813" },
+        "Acute Heart Failure"
+    )
+    local acute_hf_abs = codes.make_abstraction_link("ACUTE_HEART_FAILURE", "Acute Heart Failure")
+    local acute_chronic_hf_abs = codes.make_abstraction_link("ACUTE_ON_CHRONIC_HEART_FAILURE", "Acute on Chronic Heart Failure")
 
     -- Alert Trigger
-    local chronic_pulmonary_edema_abs = links.get_abstraction_link {
-        code = "CHRONIC_PULMONARY_EDEMA",
-        text = "Chronic Pulmonary Edema"
-    }
-    local j810_code = links.get_code_link { code = "J81.0", text = "Acute Pulmonary Edema" }
-    local j960_code = links.get_code_link { code = "J96.0", text = "Aspiration Pneumonia" }
-    local pulmonary_edema_abs = links.get_abstraction_link { code = "PULMONARY_EDEMA", text = "Pulmonary Edema" }
+    local chronic_pulmonary_edema_abs = codes.make_abstraction_link("CHRONIC_PULMONARY_EDEMA", "Chronic Pulmonary Edema")
+    local j810_code = codes.make_code_link("J81.0", "Acute Pulmonary Edema")
+    local j960_code = codes.make_code_link("J96.0", "Aspiration Pneumonia")
+    local pulmonary_edema_abs = codes.make_abstraction_link("PULMONARY_EDEMA", "Pulmonary Edema")
 
     -- Clinical Indicators
-    local acute_resp_failure = links.get_code_link {
-        codes = { "J96.00", "J96.01", "J96.02" },
-        text = "Acute Respiratory Failure"
-    }
-    local j80_code = links.get_code_link { code = "J80", text = "Acute Respiratory Distress Syndrome" }
-    local r079_code = links.get_code_link { code = "R07.9", text = "Chest Pain" }
-    local chest_tightness_abs = links.get_abstraction_link { code = "CHEST_TIGHTNESS", text = "Chest Tightness" }
-    local crackles_abs = links.get_abstraction_link { code = "CRACKLES", text = "Crankles" }
-    local r0600_code = links.get_code_link { code = "R06.00", text = "Dyspnea" }
-    local e8740_code = links.get_code_link { code = "E87.40", text = "Fluid Overloaded" }
-    local r042_code = links.get_code_link { code = "R04.2", text = "Hemoptysis" }
-    local pink_frothy_sputum_abs = links.get_abstraction_link {
-        code = "PINK_FROTHY_SPUTUM",
-        text = "Pink Frothy Sputum"
-    }
-    local r062_code = links.get_code_link { code = "R06.2", text = "Wheezing" }
+    local acute_resp_failure = codes.make_code_one_of_link({ "J96.00", "J96.01", "J96.02" }, "Acute Respiratory Failure")
+    local j80_code = codes.make_code_link("J80", "Acute Respiratory Distress Syndrome")
+    local r079_code = codes.make_code_link("R07.9", "Chest Pain")
+    local chest_tightness_abs = codes.make_abstraction_link("CHEST_TIGHTNESS", "Chest Tightness")
+    local crackles_abs = codes.make_abstraction_link("CRACKLES", "Crankles")
+    local r0600_code = codes.make_code_link("R06.00", "Dyspnea")
+    local e8740_code = codes.make_code_link("E87.40", "Fluid Overloaded")
+    local r042_code = codes.make_code_link("R04.2", "Hemoptysis")
+    local pink_frothy_sputum_abs = codes.make_abstraction_link("PINK_FROTHY_SPUTUM", "Pink Frothy Sputum")
+    local r062_code = codes.make_code_link("R06.2", "Wheezing")
 
     -- Labs
-    local r0902_code = links.get_code_link { code = "R09.02", text = "Hypoxemia" }
-    local pao2_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_pa_o2,
-        text = "pa02",
-        predicate = calc_pa_o2
-    }
+    local r0902_code = codes.make_code_link("R09.02", "Hypoxemia")
+    local pao2_dv = discrete.make_discrete_value_link(dv_pa_o2, "pa02", calc_pa_o2)
 
     -- Meds
-    local diuretic_med = links.get_abstraction_link { code = "DIURETIC", text = "Diuretic" }
-    local sodium_nitro_med = links.get_medication_link { cat = "Sodium Nitroprusside", text = "Sodium Nitroprusside" }
-    local vasodilator_med = links.get_medication_link { cat = "Vasodilator", text = "Vasodilator" }
+    local diuretic_med = codes.make_abstraction_link("DIURETIC", "Diuretic")
+    local sodium_nitro_med = medications.make_medication_link("Sodium Nitroprusside")
+    local vasodilator_med = medications.make_medication_link("Vasodilator")
 
     -- Oxygen
-    local flow_nasal_oxygen = links.get_code_link {
-        codes = { "5A0935A", "5A0945A", "5A0955A" },
-        text = "Flow Nasal Oxygen"
-    }
-    local a5a1945z_code = links.get_code_link {
-        code = "5A1945Z",
-        text = "Mechanical Ventilation 24 to 96 hours"
-    }
-    local a5a1955z_code = links.get_code_link {
-        code = "5A1955Z",
-        text = "Mechanical Ventilation Greater than 96 hours"
-    }
-    local a5a1935z_code = links.get_code_link {
-        code = "5A1935Z",
-        text = "Mechanical Ventilation Less than 24 hours"
-    }
-    local a3e0f7sf_code = links.get_code_link { code = "3E0F7SF", text = "Nasal Cannula" }
-    local non_invasive_vent_abs = links.get_abstraction_link {
-        code = "NON_INVASIVE_VENTILATION",
-        text = "Non-Invasive Ventilation"
-    }
-    local oxygen_therapy_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_oxygen_therapy,
-        text = "Oxygen Therapy"
-    }
-    local oxygen_therapy_abs = links.get_abstraction_link { code = "OXYGEN_THERAPY", text = "Oxygen Therapy" }
+    local flow_nasal_oxygen = codes.make_code_one_of_link({ "5A0935A", "5A0945A", "5A0955A" }, "Flow Nasal Oxygen")
+    local a5a1945z_code = codes.make_code_link("5A1945Z", "Mechanical Ventilation 24 to 96 hours")
+    local a5a1955z_code = codes.make_code_link("5A1955Z", "Mechanical Ventilation Greater than 96 hours")
+    local a5a1935z_code = codes.make_code_link("5A1935Z", "Mechanical Ventilation Less than 24 hours")
+    local a3e0f7sf_code = codes.make_code_link("3E0F7SF", "Nasal Cannula")
+    local non_invasive_vent_abs = codes.make_abstraction_link("NON_INVASIVE_VENTILATION", "Non-Invasive Ventilation")
+    local oxygen_therapy_dv = discrete.make_discrete_value_link(dv_oxygen_therapy, "Oxygen Therapy")
+    local oxygen_therapy_abs = codes.make_abstraction_link("OXYGEN_THERAPY", "Oxygen Therapy")
 
     -- Vitals
-    local elev_right_ventricle_sy_pressure_abs = links.get_abstraction_link {
-        code = "ELEVATED_RIGHT_VENTRICLE_SYSTOLIC_PRESSUE",
-        text = "Elevated Right Ventricle Systolic Pressure"
-    }
-    local sp02_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_spo2,
-        text = "Sp02",
-        predicate = calc_spo2
-    }
-    local high_resp_rate_dv = links.get_discrete_value_link {
-        discreteValueNames = dv_respiratory_rate,
-        text = "Respiratory Rate",
-        predicate = calc_respiratory_rate
-    }
+    local elev_right_ventricle_sy_pressure_abs = codes.make_abstraction_link("ELEVATED_RIGHT_VENTRICLE_SYSTOLIC_PRESSUE", "Elevated Right Ventricle Systolic Pressure")
+    local sp02_dv = discrete.make_discrete_value_link(dv_spo2, "Sp02", calc_spo2)
+    local high_resp_rate_dv = discrete.make_discrete_value_link(dv_respiratory_rate, "Respiratory Rate", calc_respiratory_rate)
 
     -- Cardiogenic Indicators
     cardiogenic_indicators_header:add_code_link("I51.1", "Acute Heart Valve Failure Rupture of Chordae Tendineae")

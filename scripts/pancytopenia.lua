@@ -25,34 +25,34 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local dv_absolute_basophil = { "" }
-local calc_absolute_basophil1 = function(dv_, num) return num > 200 end
+local calc_absolute_basophil1 = discrete.make_gt_predicate(200)
 local dv_basophil_auto = { "BASOPHILS (%)", "BASOS (%)" }
 local dv_absolute_eosinophil = { "EOSIN ABSOLUTE (10X3/uL)" }
-local calc_absolute_eosinophil1 = function(dv_, num) return num > 500 end
+local calc_absolute_eosinophil1 = discrete.make_gt_predicate(500)
 local dv_eosinophil_auto = { "EOS (%)" }
 local dv_absolute_lymphocyte = { "" }
-local calc_absolute_lymphocyte1 = function(dv_, num) return num < 1000 end
+local calc_absolute_lymphocyte1 = discrete.make_lt_predicate(1000)
 local dv_lymphocyte_auto = { "LYMPHS (%)" }
 local dv_absolute_monocyte = { "" }
-local calc_absolute_monocyte1 = function(dv_, num) return num < 200 end
+local calc_absolute_monocyte1 = discrete.make_lt_predicate(200)
 local dv_monocyte_auto = { "MONOS (%)" }
 local dv_absolute_neutrophil = { "ABS NEUT COUNT (10x3/uL)" }
-local calc_absolute_neutrophil1 = function(dv_, num) return num < 1.5 end
+local calc_absolute_neutrophil1 = discrete.make_lt_predicate(1.5)
 local dv_neutrophil_auto = { "" }
 local calc_dbc1 = function(dv_, num) return num >= 0.0 end
 local dv_hematocrit = { "HEMATOCRIT (%)", "HEMATOCRIT" }
 local dv_hemoglobin = { "HEMOGLOBIN", "HEMOGLOBIN (g/dL)" }
 local dv_platelet_count = { "PLATELET COUNT (10x3/uL)" }
-local calc_platelet_count1 = function(dv_, num) return num < 150 end
+local calc_platelet_count1 = discrete.make_lt_predicate(150)
 local dv_platelet_transfusion = { "" }
 local dv_rbc = { "" }
-local calc_rbc1 = function(dv_, num) return num > 4.4 end
+local calc_rbc1 = discrete.make_gt_predicate(4.4)
 local dv_red_blood_cell_transfusion = { "" }
 local dv_serum_folate = { "" }
 local dv_vitamin_b12 = { "VITAMIN B12 (pg/mL)" }
-local calc_vitamin_b121 = function(dv_, num) return num < 180 end
+local calc_vitamin_b121 = discrete.make_lt_predicate(180)
 local dv_wbc = { "WBC (10x3/ul)" }
-local calc_wbc1 = function(dv_, num) return num < 4.5 end
+local calc_wbc1 = discrete.make_lt_predicate(4.5)
 
 
 
@@ -116,27 +116,27 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     -- Negations
     local d62_code =
-        links.get_code_link { code = "D62", text = "Acute Posthemorrhagic Anemia" }
+        codes.make_code_link("D62", "Acute Posthemorrhagic Anemia")
     local hemorrhage_abs =
-        links.get_abstract_value_link { abstractValue = "HEMORRHAGE", text = "Hemorrhage" }
+        codes.make_abstraction_link_with_value("HEMORRHAGE", "Hemorrhage")
 
     -- Documented Dx
     local d61810_code =
-        links.get_code_link { code = "D61.810", text = "Antineoplastic chemotherapy induced pancytopenia" }
+        codes.make_code_link("D61.810", "Antineoplastic chemotherapy induced pancytopenia")
     local d61811_code =
-        links.get_code_link { code = "D61.811", text = "Other drug-induced pancytopenia" }
+        codes.make_code_link("D61.811", "Other drug-induced pancytopenia")
     local d61818_code =
-        links.get_code_link { code = "D61.818", text = "Other pancytopenia" }
+        codes.make_code_link("D61.818", "Other pancytopenia")
 
     -- Abs
     local a3e04305_code =
-        links.get_code_link { code = "3E04305", text = "Chemotherapy Medication Administration" }
+        codes.make_code_link("3E04305", "Chemotherapy Medication Administration")
     local current_chemotherapy_abs =
-        links.get_abstract_value_link { abstractValue = "CURRENT_CHEMOTHERAPY", linkTemplate = "Current Chemotherapy" }
+        codes.make_abstraction_link_with_value("CURRENT_CHEMOTHERAPY", "Current Chemotherapy")
 
     -- Meds
     local z5111_code =
-        links.get_code_link { code = "Z51.11", text = "Antineoplastic Chemotherapy" }
+        codes.make_code_link("Z51.11", "Antineoplastic Chemotherapy")
 
     -- Hemoglobin/Hematocrit
     local low_hemoglobin_multi_dv = discrete.get_discrete_value_pairs_as_link_pairs {
@@ -149,20 +149,11 @@ if not existing_alert or not existing_alert.validated then
     }
 
     -- Platlet
-    local low_platelet_dv = links.get_discrete_value_links {
-        discreteValueNames = dv_platelet_count,
-        text = "Platelet Count",
-        predicate = calc_platelet_count1,
-        max_per_value = 10
-    }
+    local low_platelet_dv =
+        discrete.make_discrete_value_link(dv_platelet_count, "Platelet Count", calc_platelet_count1, 10)
 
     -- WBC
-    local low_wbc_dv = links.get_discrete_value_links {
-        discreteValueNames = dv_wbc,
-        text = "WBC",
-        predicate = calc_wbc1,
-        max_per_value = 10
-    }
+    local low_wbc_dv = discrete.make_discete_value_links(dv_wbc, "WBC", calc_wbc1, 10)
 
 
 
@@ -192,7 +183,7 @@ if not existing_alert or not existing_alert.validated then
     elseif #account_alert_codes > 0 and #low_hemoglobin_multi_dv == 0 and #low_wbc_dv == 0 and #low_platelet_dv == 0 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
         if #low_hemoglobin_multi_dv == 0 then
@@ -229,7 +220,7 @@ if not existing_alert or not existing_alert.validated then
     elseif #account_alert_codes > 0 and subtitle == "Possible Pancytopenia Dx" then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             if temp_code then
                 documented_dx_header:add_link(temp_code)
                 break

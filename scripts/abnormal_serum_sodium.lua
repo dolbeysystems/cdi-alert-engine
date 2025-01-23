@@ -15,6 +15,9 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
+local codes = require "libs.common.codes" (Account)
+local discrete = require "libs.common.discrete_values" (Account)
+local medications = require "libs.common.medications" (Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -23,14 +26,14 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local blood_glucose_dv_names = { "GLUCOSE (mg/dL)", "GLUCOSE" }
-local blood_glucose_predicate = function(dv_, num) return num > 600 end
+local blood_glucose_predicate = discrete.make_gt_predicate(600)
 local blood_glucose_poc_dv_names = { "GLUCOSE ACCUCHECK (mg/dL)" }
-local blood_glucose_poc_predicate = function(dv_, num) return num > 600 end
+local blood_glucose_poc_predicate = discrete.make_gt_predicate(600)
 local sodium_dv_names = { "SODIUM (mmol/L)" }
-local sodium_very_low_predicate = function(dv_, num) return num < 131 end
-local sodium_low_predicate = function(dv_, num) return num < 132 end
-local sodium_high_predicate = function(dv_, num) return num > 144 end
-local sodium_very_high_predicate = function(dv_, num) return num > 145 end
+local sodium_very_low_predicate = discrete.make_lt_predicate(131)
+local sodium_low_predicate = discrete.make_lt_predicate(132)
+local sodium_high_predicate = discrete.make_gt_predicate(144)
+local sodium_very_high_predicate = discrete.make_gt_predicate(145)
 local dextrose_medication_name = "Dextrose 5% in Water"
 local hypertonic_saline_medication_name = "Hypertonic Saline"
 local hypotonic_solution_medication_name = "Hypotonic Solution"
@@ -77,39 +80,21 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local e870_code_link = links.get_code_link { code = "E870", text = "Hyperosmolality and Hypernatremia", seq = 12 }
-    local e871_code_link = links.get_code_link { code = "E871", text = "Hypoosmolality and Hyponatremia", seq = 14 }
+    local e870_code_link = codes.make_code_link("E870", "Hyperosmolality and Hypernatremia", 12)
+    local e871_code_link = codes.make_code_link("E871", "Hypoosmolality and Hyponatremia", 14)
 
-    --- @param predicate (fun(dv:DiscreteValue, num:number?)) Filtering function
-    --- @return CdiAlertLink[] Serum Sodium Links
-    local function get_sodium_dv_links(predicate)
-        return links.get_discrete_value_links {
-            dvNames = sodium_dv_names,
-            predicate = predicate,
-            text = "Serum Sodium",
-            maxPerValue = 99999
-        }
-    end
+    local very_low_sodium_links = discrete.make_discrete_value_links(sodium_dv_names, "Serum Sodium", sodium_very_low_predicate)
+    local low_sodium_links = discrete.make_discrete_value_links(sodium_dv_names, "Serum Sodium", sodium_low_predicate)
+    local high_sodium_links = discrete.make_discrete_value_links(sodium_dv_names, "Serum Sodium", sodium_high_predicate)
+    local very_high_sodium_links = discrete.make_discrete_value_links(sodium_dv_names, "Serum Sodium", sodium_very_high_predicate)
 
-    local very_low_sodium_links = get_sodium_dv_links(sodium_very_low_predicate)
-    local low_sodium_links = get_sodium_dv_links(sodium_low_predicate)
-    local high_sodium_links = get_sodium_dv_links(sodium_high_predicate)
-    local very_high_sodium_links = get_sodium_dv_links(sodium_very_high_predicate)
-
-    local dextrose_medication_link =
-        links.get_medication_link { cat = dextrose_medication_name, text = "Dextrose", seq = 1 }
-    local dextrose_abstract_link =
-        links.get_abstraction_link { code = "DEXTROSE_5_IN_WATER", text = "Dextrose", seq = 2 }
-    local fluid_restriction_abstraction_link =
-        links.get_abstraction_link { code = "FLUID_RESTRICTION", text = "Fluid Restriction", seq = 3 }
-    local hypertonic_saline_medication_link =
-        links.get_medication_link { cat = hypertonic_saline_medication_name, text = "Hypertonic Saline", seq = 4 }
-    local hypertonic_saline_abstract_link =
-        links.get_abstraction_link { code = "HYPERTONIC_SALINE", text = "Hypertonic Saline", seq = 5 }
-    local hypotonic_solution_medication_link =
-        links.get_medication_link { cat = hypotonic_solution_medication_name, text = "Hypotonic Solution", seq = 6 }
-    local hypotonic_solution_abstract_link =
-        links.get_abstraction_link { code = "HYPOTONIC_SOLUTION", text = "Hypotonic Solution", seq = 7 }
+    local dextrose_medication_link = medications.make_medication_link(dextrose_medication_name, "Dextrose", 1)
+    local dextrose_abstract_link = codes.make_abstraction_link("DEXTROSE_5_IN_WATER", "Dextrose", 2)
+    local fluid_restriction_abstraction_link = codes.make_abstraction_link("FLUID_RESTRICTION", "Fluid Restriction", 3)
+    local hypertonic_saline_medication_link = medications.make_medication_link(hypertonic_saline_medication_name, "Hypertonic Saline", 4)
+    local hypertonic_saline_abstract_link = codes.make_abstraction_link("HYPERTONIC_SALINE", "Hypertonic Saline", 5)
+    local hypotonic_solution_medication_link = medications.make_medication_link(hypotonic_solution_medication_name, "Hypotonic Solution", 6)
+    local hypotonic_solution_abstract_link = codes.make_abstraction_link("HYPOTONIC_SOLUTION", "Hypotonic Solution", 7)
 
 
 
@@ -128,7 +113,10 @@ if not existing_alert or not existing_alert.validated then
         Result.passed = true
         Result.validated = true
 
-    elseif subtitle == possible_hypernatermia_subtitle and e870_code_link then
+    elseif
+        subtitle == possible_hypernatermia_subtitle and
+        e870_code_link
+    then
         -- Auto resolve Possible Hypernatremia Dx
         e870_code_link.link_text = "Autoresolved Code - " .. e870_code_link.link_text
         clinical_evidence_header:add_link(e870_code_link)
@@ -168,7 +156,8 @@ if not existing_alert or not existing_alert.validated then
 
     elseif
         subtitle == hyponatremia_lacking_supporting_evidence_subtitle and
-        #low_sodium_links > 0 and e871_code_link
+        #low_sodium_links > 0 and
+        e871_code_link
     then
         -- Auto resolve Hyponatremia Lacking Supporting Evidence
         e871_code_link.link_text = "Autoresolved Code - " .. e871_code_link.link_text
@@ -218,13 +207,19 @@ if not existing_alert or not existing_alert.validated then
         Result.subtitle = possible_hyponatermia_subtitle
         Result.passed = true
 
-    elseif e870_code_link and #high_sodium_links == 0 then
+    elseif
+        e870_code_link and
+        #high_sodium_links == 0
+    then
         -- Alert if hypernatremia is lacking supporting evidence
         laboratory_studies_header:add_text_link(review_high_sodium_link_text)
         Result.subtitle = hypernatremia_lacking_supporting_evidence_subtitle
         Result.passed = true
 
-    elseif e871_code_link and #low_sodium_links == 0 then
+    elseif
+        e871_code_link and
+        #low_sodium_links == 0
+    then
         -- Alert if hyponatremia is lacking supporting evidence
         laboratory_studies_header:add_text_link(review_low_sodium_link_text)
         Result.subtitle = hyponatremia_lacking_supporting_evidence_subtitle
@@ -238,18 +233,8 @@ if not existing_alert or not existing_alert.validated then
         --- Additional Link Collection
         --------------------------------------------------------------------------------
         if not Result.validated then
-            local r4182_code_link =
-                links.get_code_link {
-                    code = "R41.82",
-                    text = "Altered Level of Consciousness",
-                    seq = 1
-                }
-            local altered_abs_link =
-                links.get_abstraction_link {
-                    code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-                    text = "Altered Level of Consciousness",
-                    seq = 2
-                }
+            local r4182_code_link = codes.make_code_link("R41.82", "Altered Level of Consciousness", 1)
+            local altered_abs_link = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level of Consciousness", 2)
 
             if r4182_code_link then
                 clinical_evidence_header:add_link(r4182_code_link)
@@ -292,9 +277,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R63.1", "Polydipsia")
             clinical_evidence_header:add_abstraction_link("SEIZURE", "Seizure")
             clinical_evidence_header:add_code_one_of_link(
-                {
-                    "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91"
-                },
+                { "E05.01", "E05.11", "E05.21", "E05.41", "E05.81", "E05.91" },
                 "Thyrotoxic Crisis Storm Code"
             )
             clinical_evidence_header:add_code_link("E86.9", "Volume Depletion")
@@ -303,12 +286,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("R11.11", "Vomiting Without Nausea")
             clinical_evidence_header:add_abstraction_link("WEAKNESS", "Muscle Weakness")
 
-            local blood_glucose_links = links.get_discrete_value_links {
-                dvNames = blood_glucose_dv_names,
-                predicate = blood_glucose_predicate,
-                text = "Blood Glucose",
-                maxPerValue = 1,
-            }
+            local blood_glucose_links = discrete.make_discrete_value_links(blood_glucose_dv_names, "Blood Glucose", blood_glucose_predicate, 1)
             laboratory_studies_header:add_links(blood_glucose_links)
 
             if #blood_glucose_links == 0 then

@@ -27,7 +27,7 @@ local headers = require("libs.common.headers")(Account)
 --- Script Specific Functions
 --------------------------------------------------------------------------------
 local positive = discrete.make_match_predicate { "Positive" }
-local isnt_eye = medications.make_route_no_match_predicate { "Eye", "optical", "ocular", "ophthalmic" }
+local isnt_eye = medications.make_route_no_match_predicate("Eye", "optical", "ocular", "ophthalmic")
 
 
 
@@ -45,7 +45,8 @@ if not existing_alert or not existing_alert.validated then
     local result_links = {}
     local documented_dx_header = headers.make_header_builder("Documented Dx", 1)
     local infectious_process_header = headers.make_header_builder("Infectious Process", 2)
-    local suppressive_medication_header = headers.make_header_builder("Medication that can suppress the immune system", 3)
+    local suppressive_medication_header =
+        headers.make_header_builder("Medication that can suppress the immune system", 3)
     local chronic_conditions_header = headers.make_header_builder("Chronic Conditions", 4)
     local laboratory_studies_header = headers.make_header_builder("Laboratory Studies", 5)
     local treatment_and_monitoring_header = headers.make_header_builder("Treatment and Monitoring", 6)
@@ -78,27 +79,35 @@ if not existing_alert or not existing_alert.validated then
     local r7881_code = codes.make_code_link("R78.81", "Bacteremia", 2)
     local b40_code = codes.make_code_prefix_link("B40.", "Blastomycosis Infection", 3)
     local b43_code = codes.make_code_prefix_link("B43.", "Chromomycosis And Pheomycotic Abscess Infection", 5)
-    local covid_discrete_value = discrete.make_discrete_value_link({ "SARS-CoV2 (COVID-19)" }, "Covid 19 Screen", positive, 6)
+    local covid_discrete_value =
+        discrete.make_discrete_value_link({ "SARS-CoV2 (COVID-19)" }, "Covid 19 Screen", positive, 6)
     local b45_code = codes.make_code_prefix_link("B45.", "Cryptococcosis Infection", 8)
     local b25_code = codes.make_code_prefix_link("B25.", "Cytomegaloviral Disease Code", 9)
     local infection_abs = codes.make_abstraction_link("INFECTION", "Infection", 10)
-    local influenza_a_discrete_value = discrete.make_discrete_value_link({ "Influenze A" }, "Influenza A Screen", positive, 11)
-    local influenza_b_discrete_value = discrete.make_discrete_value_link({ "Influenze B" }, "Influenza B Screen", positive, 12)
+    local influenza_a_discrete_value =
+        discrete.make_discrete_value_link({ "Influenze A" }, "Influenza A Screen", positive, 11)
+    local influenza_b_discrete_value =
+        discrete.make_discrete_value_link({ "Influenze B" }, "Influenza B Screen", positive, 12)
     local b49_code = codes.make_code_prefix_link("B49.", "Mycosis Infection", 13)
-    local b96_code = codes.make_code_prefix_link("B96.", "Other Bacterial Agents As The Cause Of Diseases Infection", 14)
+    local b96_code =
+        codes.make_code_prefix_link("B96.", "Other Bacterial Agents As The Cause Of Diseases Infection", 14)
     local b41_code = codes.make_code_prefix_link("B41.", "Paracoccidioidomycosis Infection", 15)
     local r835_code = codes.make_code_link("R83.5", "Positive Cerebrospinal Fluid Culture", 16)
     local r845_code = codes.make_code_link("R84.5", "Positive Respiratory Culture", 17)
-    local positive_would_culture_abs = codes.make_abstraction_link("POSITIVE_WOUND_CULTURE", "Positive Wound Culture", 18)
+    local positive_would_culture_abs =
+        codes.make_abstraction_link("POSITIVE_WOUND_CULTURE", "Positive Wound Culture", 18)
     local b42_code = codes.make_code_prefix_link("B42.", "Sporotrichosis Infection", 20)
-    local b95_code = codes.make_code_prefix_link("B95.", "Streptococcus, Staphylococcus, and Enterococcus Infection", 22)
-    local b46_code = codes.make_code_prefix_link("B46.", "Zygomycosis Infection", 23)
+    local b95_code =
+        codes.make_code_prefix_link("B95.", "Streptococcus, Staphylococcus, and Enterococcus Infection", 22)
+    local b46_code =
+        codes.make_code_prefix_link("B46.", "Zygomycosis Infection", 23)
     local antimetabolites_medication = medications.make_medication_link("Antimetabolite", "", 1)
     local antimetabolites_abs = codes.make_abstraction_link("ANTIMETABOLITE", "Antimetabolites", 2)
     local z5111_code = codes.make_code_link("Z51.11", "Antineoplastic Chemotherapy", 3)
     local z5112_code = codes.make_code_link("Z51.12", "Antineoplastic Immunotherapy", 4)
     local antirejection_medication = medications.make_medication_link("Antirejection Medication", "", 5)
-    local antirejection_medication_abs = codes.make_abstraction_link("ANTIREJECTION_MEDICATION", "Anti-Rejection Medication", 6)
+    local antirejection_medication_abs =
+        codes.make_abstraction_link("ANTIREJECTION_MEDICATION", "Anti-Rejection Medication", 6)
     local a3e04305_code = codes.make_code_link("3E04305", "Chemotherapy Administration", 7)
     local interferons_medication = medications.make_medication_link("Interferon", "", 8)
     local interferons_abs = codes.make_abstraction_link("INTERFERON", "Interferon", 9)
@@ -107,7 +116,11 @@ if not existing_alert or not existing_alert.validated then
     local monoclonal_antibodies_medication = medications.make_medication_link("Monoclonal Antibodies", "", 12)
     local monoclonal_antibodies_abs = codes.make_abstraction_link("MONOCLONAL_ANTIBODIES", "Monoclonal Antibodies", 13)
     local tumor_necrosis_medication = medications.make_medication_link("Tumor Necrosis Factor Alpha Inhibitor", "", 14)
-    local tumor_necrosis_abs = codes.make_abstraction_link("TUMOR_NECROSIS_FACTOR_ALPHA_INHIBITOR", "Tumor Necrosis Factor Alpha Inhibitor", 15)
+    local tumor_necrosis_abs = codes.make_abstraction_link(
+        "TUMOR_NECROSIS_FACTOR_ALPHA_INHIBITOR",
+        "Tumor Necrosis Factor Alpha Inhibitor",
+        15
+    )
     local alcoholism_codes = codes.make_code_links(
         {
             "F10.20", "F10.220", "F10.2221", "F10.2229", "F10.230", "F10.20", "F10.231",
@@ -151,17 +164,18 @@ if not existing_alert or not existing_alert.validated then
     local hba1c_discrete_value = discrete.make_discrete_value_link(
         { "HEMOGLOBIN A1C (%)" },
         "Poorly controlled HbA1c",
-        function(dv_, num) return num > 10 end,
+        discrete.make_gt_predicate(10),
         33
     )
     local m05_code = codes.make_code_prefix_link("M05.", "RA", 34)
     local m06_code = codes.make_code_prefix_link("M06.", "RA", 35)
-    local severe_malnutrition_codes = codes.make_code_one_of_link({ "E40", "E41", "E42", "E43" }, "Severe Malnutrition", 36)
+    local severe_malnutrition_codes =
+        codes.make_code_one_of_link({ "E40", "E41", "E42", "E43" }, "Severe Malnutrition", 36)
     local r161_code = codes.make_code_link("R16.1", "Splenomegaly", 37)
     local wbc_discrete_value = discrete.make_discrete_value_link(
         { "WBC (10x3/ul)" },
         "WBC",
-        function(dv_, num) return num < 4.5 end
+        discrete.make_lt_predicate(4.5)
     )
 
 
@@ -211,7 +225,12 @@ if not existing_alert or not existing_alert.validated then
                 goto alert_passed
             end
         end
-        if pancytopenia_codes ~= nil or d72819_code ~= nil or wbc_discrete_value ~= nil and (medication or chronic) then
+        if
+            pancytopenia_codes ~= nil or
+            d72819_code ~= nil or
+            wbc_discrete_value ~= nil and
+            (medication or chronic)
+        then
             chronic_conditions_header:add_links(d72819_code, pancytopenia_codes)
             Result.subtitle = "Possible Immunocompromised State"
             Result.passed = true
@@ -245,6 +264,7 @@ if not existing_alert or not existing_alert.validated then
         infectious_process_header:add_link(b42_code)
         infectious_process_header:add_link(b95_code)
         infectious_process_header:add_link(b46_code)
+
         suppressive_medication_header:add_link(antimetabolites_abs)
         suppressive_medication_header:add_link(antimetabolites_medication)
         suppressive_medication_header:add_link(z5111_code)
@@ -260,6 +280,7 @@ if not existing_alert or not existing_alert.validated then
         suppressive_medication_header:add_link(monoclonal_antibodies_medication)
         suppressive_medication_header:add_link(tumor_necrosis_abs)
         suppressive_medication_header:add_link(tumor_necrosis_medication)
+
         treatment_and_monitoring_header:add_medication_link("Antibiotic", "Antibiotic", isnt_eye)
         treatment_and_monitoring_header:add_medication_link("Antibiotic2", "Antibiotic", isnt_eye)
         treatment_and_monitoring_header:add_abstraction_link("ANTIBIOTIC", "Antibiotic")
@@ -268,6 +289,7 @@ if not existing_alert or not existing_alert.validated then
         treatment_and_monitoring_header:add_abstraction_link("ANTIFUNGAL", "Antifungal")
         treatment_and_monitoring_header:add_medication_link("Antiviral", "Antiviral")
         treatment_and_monitoring_header:add_abstraction_link("ANTIVIRAL", "Antiviral")
+
         chronic_conditions_header:add_links(alcoholism_codes)
         chronic_conditions_header:add_link(q8901_code)
         chronic_conditions_header:add_link(z9481_code)
@@ -303,11 +325,12 @@ if not existing_alert or not existing_alert.validated then
         chronic_conditions_header:add_link(m06_code)
         chronic_conditions_header:add_links(severe_malnutrition_codes)
         chronic_conditions_header:add_link(r161_code)
+
         laboratory_studies_header:add_link(wbc_discrete_value)
         laboratory_studies_header:add_discrete_value_link(
             "ABS NEUT COUNT (10x3/uL)",
             "Absolute Neutropils: [VALUE] (Result Date: [RESULTDATETIME])",
-            function(dv_, num) return num < 1.5 end
+            discrete.make_lt_predicate(1.5)
         )
 
 

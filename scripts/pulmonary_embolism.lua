@@ -16,6 +16,7 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
+local discrete = require("libs.common.discrete")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -24,9 +25,9 @@ local headers = require("libs.common.headers")(Account)
 --- Site Constants
 --------------------------------------------------------------------------------
 local dv_bnp = { "BNP(NT proBNP) (pg/mL)" }
-local calc_bnp = function(dv_, num) return num > 900 end
+local calc_bnp = discrete.make_gt_predicate(900)
 local dv_d_dimer = { "D-DIMER (mg/L FEU)" }
-local calc_d_dimer = function(dv_, num) return num > 0.48 end
+local calc_d_dimer = discrete.make_gt_predicate(0.48)
 local dv_heart_rate = {
     "Heart Rate cc (bpm)",
     "3.5 Heart Rate (Apical) (bpm)",
@@ -34,16 +35,16 @@ local dv_heart_rate = {
     "3.5 Heart Rate (Radial) (bpm)",
     "SCC Monitor Pulse (bpm)"
 }
-local calc_heart_rate = function(dv_, num) return num > 90 end
+local calc_heart_rate = discrete.make_gt_predicate(90)
 local dv_oxygen_therapy = { "DELIVERY" }
 local dv_pa_o2 = { "BLD GAS O2 (mmHg)", "PO2 (mmHg)" }
-local calc_pa_o2 = function(dv_, num) return num < 80 end
+local calc_pa_o2 = discrete.make_lt_predicate(80)
 local dv_pro_bnp = { "" }
-local calc_pro_bnp = function(dv_, num) return num > 900 end
+local calc_pro_bnp = discrete.make_gt_predicate(900)
 local dv_pulmonary_pressure = { "" }
-local calc_pulmonary_pressure = function(dv_, num) return num > 30 end
+local calc_pulmonary_pressure = discrete.make_gt_predicate(30)
 local dv_respiratory_rate = { "3.5 Respiratory Rate (#VS I&O) (per Minute)" }
-local calc_respiratory_rate = function(dv_, num) return num > 20 end
+local calc_respiratory_rate = discrete.make_gt_predicate(20)
 
 
 
@@ -104,47 +105,16 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Alert Trigger
-    local i2694_code = links.get_code_link {
-        code = "I26.94",
-        text = "Assigned Multiple Subsegmental Pulmonary Embolism without Acute Cor Pulmonale"
-    }
-    local i2699_code = links.get_code_link {
-        code = "I26.99",
-        text = "Assigned Pulmonary Embolism without Acute Cor Pulmonale"
-    }
-    local i2692_code = links.get_code_link {
-        code = "I26.92",
-        text = "Assigned Saddle Embolus without Acute Cor Pulmonale"
-    }
-    local i2690_code = links.get_code_link {
-        code = "I26.90",
-        text = "Assigned Septic Pulmonary Embolism without Acute Cor Pulmonale"
-    }
-    local i2693_code = links.get_code_link {
-        code = "I26.93",
-        text = "Assigned Single Subsegmental Pulmonary Embolism without Acute Cor Pulmonale"
-    }
-    local right_ventricle_hypertropy_abs = links.get_abstract_link {
-        code = "RIGHT_VENTRICULAR_HYPERTROPHY",
-        text = "Right Ventricular Hypertrophy"
-    }
-    local pul_embo_abs = links.get_abstraction_link {
-        code = "PULMONARY_EMBOLISM",
-        text = "Pulmonary Embolism"
-    }
-    local i50810_code = links.get_code_link {
-        code = "I50.810",
-        text = "Right Heart Failure"
-    }
-    local heart_strain_abs = links.get_abstraction_link {
-        code = "RIGHT_HEART_STRAIN",
-        text = "Right Heart Strain"
-    }
-    local clot_burden_abs = links.get_abstraction_link {
-        code = "CLOT_BURDEN",
-        text = "Clot Burden"
-    }
-
+    local i2694_code = codes.make_code_link("I26.94", "Assigned Multiple Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
+    local i2699_code = codes.make_code_link("I26.99", "Assigned Pulmonary Embolism without Acute Cor Pulmonale")
+    local i2692_code = codes.make_code_link("I26.92", "Assigned Saddle Embolus without Acute Cor Pulmonale")
+    local i2690_code = codes.make_code_link("I26.90", "Assigned Septic Pulmonary Embolism without Acute Cor Pulmonale")
+    local i2693_code = codes.make_code_link("I26.93", "Assigned Single Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
+    local right_ventricle_hypertropy_abs = codes.make_abstraction_link("RIGHT_VENTRICULAR_HYPERTROPHY", "Right Ventricular Hypertrophy")
+    local pul_embo_abs = codes.make_abstraction_link("PULMONARY_EMBOLISM", "Pulmonary Embolism")
+    local i50810_code = codes.make_code_link("I50.810", "Right Heart Failure")
+    local heart_strain_abs = codes.make_abstraction_link("RIGHT_HEART_STRAIN", "Right Heart Strain")
+    local clot_burden_abs = codes.make_abstraction_link("CLOT_BURDEN", "Clot Burden")
 
 
 
@@ -160,7 +130,7 @@ if not existing_alert or not existing_alert.validated then
         if existing_alert then
             for _, code in ipairs(account_alert_codes) do
                 local desc = alert_code_dictionary[code]
-                local temp_code = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. desc }
+                local temp_code = codes.make_code_link(code, "Autoresolved Specified Code - " .. desc)
                 if temp_code then
                     documented_dx_header:add_link(temp_code)
                     break
@@ -176,7 +146,7 @@ if not existing_alert or not existing_alert.validated then
     elseif #account_alert_codes >= 2 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
-            local temp_code = links.get_code_link { code = code, text = desc }
+            local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
         if existing_alert and existing_alert.validated then
@@ -217,7 +187,7 @@ if not existing_alert or not existing_alert.validated then
         if #account_alert_codes > 0 then
             for _, code in ipairs(account_alert_codes) do
                 local desc = alert_code_dictionary[code]
-                local temp_code = links.get_code_link { code = code, text = "Autoresolved Specified Code - " .. desc }
+                local temp_code = codes.make_code_link(code, "Autoresolved Specified Code - " .. desc)
                 if temp_code then
                     documented_dx_header:add_link(temp_code)
                     break

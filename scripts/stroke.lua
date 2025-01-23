@@ -170,21 +170,20 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local cerebral_infarction_codes = links.get_code_links {
-        codes = {
+    local cerebral_infarction_codes = codes.make_code_links(
+        {
             "I63.51", "I63.511", "I63.512", "I63.513", "I63.521", "I63.522", "I63.523", "I63.531", "I63.532",
             "I63.533", "I63.541", "I63.542", "I63.543", "I63.50", "I63.519", "I63.529", "I63.539", "I63.549",
             "I63.59", "I63.81", "I63.81", "I63.89", "I63.9", "I63.00", "I63.019", "I63.039", "I63.30", "I63.319",
-            "I63.329", "I63.339", "I63.349", "I63.39", "I63.40", "I63.419", "I63.429", "I63.439", "I63.449", "I63.49",
-            "I63.09"
+            "I63.329", "I63.339", "I63.349", "I63.39", "I63.40", "I63.419", "I63.429", "I63.439", "I63.449",
+            "I63.49", "I63.09"
         },
-        text = "Cerebral Infarction Codes"
-    }
-    local g649_code = links.get_code_link { code = "G64.9", text = "TIA" }
-    local cerebral_ischemia_abs = links.get_abstraction_link { code = "CEREBRAL_ISCHEMIA", text = "Cerebral Ischemia" }
-    local cerebral_infarction_abs =
-        links.get_abstraction_link { code = "CEREBRAL_INFARCTION", text = "Cerebral Infarction" }
-    local aborted_stroke_abs = links.get_abstraction_link { code = "ABORTED_STROKE", text = "Aborted Stroke" }
+        "Cerebral Infarction Codes"
+    )
+    local g649_code = codes.make_code_link("G64.9", "TIA")
+    local cerebral_ischemia_abs = codes.make_abstraction_link("CEREBRAL_ISCHEMIA", "Cerebral Ischemia")
+    local cerebral_infarction_abs = codes.make_abstraction_link("CEREBRAL_INFARCTION", "Cerebral Infarction")
+    local aborted_stroke_abs = codes.make_abstraction_link("ABORTED_STROKE", "Aborted Stroke")
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
@@ -194,10 +193,7 @@ if not existing_alert or not existing_alert.validated then
         if existing_alert then
             for _, code in ipairs(account_alert_codes) do
                 local desc = alert_code_dictionary[code]
-                local temp_code = links.get_code_link {
-                    code = code,
-                    text = "Autoresolved Specified Code - " .. desc .. ""
-                }
+                local temp_code = codes.make_code_link(code, "Autoresolved Specified Code - " .. desc .. "")
                 if temp_code then
                     documented_dx_header:add_link(temp_code)
                     break
@@ -434,12 +430,9 @@ if not existing_alert or not existing_alert.validated then
             procedure_header:add_code_link("03CY0ZZ", "Upper Artery - Open Thrombectomy")
             procedure_header:add_code_link("03CY3ZZ", "Upper Artery - Trans Catheter Thrombectomy")
 
-            local r4182_code = links.get_code_link { code = "R41.82", text = "Altered Level Of Consciousness" }
+            local r4182_code = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
             local altered_level_of_consciousness =
-                links.get_abstraction_link {
-                    code = "ALTERED_LEVEL_OF_CONSCIOUSNESS",
-                    text = "Altered Level Of Consciousness"
-                }
+                codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
             if r4182_code ~= nil then
                 vital_signs_header:add_link(r4182_code)
                 if altered_level_of_consciousness ~= nil then

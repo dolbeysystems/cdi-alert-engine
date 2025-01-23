@@ -27,10 +27,11 @@ return function(Account)
     --------------------------------------------------------------------------------
     --- Make a predicate to check that a medication route matches any of a list of patterns
     ---
-    --- @param patterns string[] The patterns to compare against
+    --- @param ... string The patterns to compare against
     --- @return fun(med: Medication):boolean - the predicate function
     --------------------------------------------------------------------------------
-    function module.make_route_match_predicate(patterns)
+    function module.make_route_match_predicate(...)
+        local patterns = { ... }
         return function(med)
             return lists.any(patterns, function(pattern)
                 return string.match(med.route, pattern)
@@ -41,10 +42,11 @@ return function(Account)
     --------------------------------------------------------------------------------
     --- Make a predicate to check that a medication route matches any of a list of patterns
     ---
-    --- @param patterns string[] The patterns to compare against
+    --- @param ... string The patterns to compare against
     --- @return fun(med: Medication):boolean - the predicate function
     --------------------------------------------------------------------------------
-    function module.make_route_no_match_predicate(patterns)
+    function module.make_route_no_match_predicate(...)
+        local patterns = { ... }
         return function(med)
             return not lists.any(patterns, function(pattern)
                 return string.match(med.route, pattern)
