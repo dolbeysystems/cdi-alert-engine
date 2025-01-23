@@ -17,7 +17,6 @@ derive_environment = "1.1.0"
 futures = "0.3.28"
 mlua = { version = "0.10.1", features = ["async", "error-send", "luajit", "macros", "serialize", "userdata-wrappers", "vendored"] }
 mongodb = "3.1.0"
-profiling = "1.0.15"
 reqwest = { version = "0.12.4", features = ["rustls-tls"], default-features = false }
 serde = { version = "1.0.197", features = ["derive", "rc"] }
 serde_with = "3.7.0"
@@ -25,17 +24,10 @@ thiserror = "2.0.3"
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
-tracing-tracy = { version = "0.11.0", optional = true }
-tracy-client = { version = "0.17.0", optional = true }
 
-[features]
-# Add profiling spans to tracing's output.
-# This is required for tracy-tracing.
-extra-tracing = ["profiling/profile-with-tracing"]
-
-# Send tracing's output to tracy for profiling with log messages.
-tracy-tracing = ["dep:tracing-tracy", "extra-tracing"]
-
-# Send profiling information using just the tracy client,
-# without adding extra tracing spans.
-tracy-client = ["dep:tracy-client", "profiling/profile-with-tracy"]
+[dependencies.fae-ghost]
+git = "ssh://git@github.com/dolbeysystems/fae-ghost"
+# TODO: Use the v1.0 tag when available.
+rev = "e9b11ba"
+default-features = false
+features = ["luajit"]

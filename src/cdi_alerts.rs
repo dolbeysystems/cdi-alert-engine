@@ -7,7 +7,6 @@ use mongodb::bson::doc;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
-#[profiling::function]
 pub async fn next_pending_account(
     connection_string: &str,
     dv_days_back: u32,
@@ -59,7 +58,6 @@ fn cache_by_date<'a, T: Clone + 'a>(
     }
 }
 
-#[profiling::function]
 pub async fn get_account_by_id(
     connection_string: &str,
     id: &str,
@@ -104,6 +102,12 @@ pub async fn get_account_by_id(
     }
 
     debug!("Building HashMaps for account #{:?}", id);
+    build_account_caches(&mut account, dv_days_back, med_days_back);
+
+    Ok(Some(account))
+}
+
+pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_back: u32) {
     let oldest_allowed = Utc::now() - chrono::Duration::days(dv_days_back as i64);
     let root_discrete_values = account
         .discrete_values
@@ -157,11 +161,8 @@ pub async fn get_account_by_id(
                 });
         }
     }
-
-    Ok(Some(account))
 }
 
-#[profiling::function]
 pub async fn save<'config>(
     mongo: &'config config::Mongo,
     account: &Account,
@@ -284,7 +285,6 @@ pub async fn save<'config>(
     Ok(())
 }
 
-#[profiling::function]
 pub async fn create_test_data(
     connection_string: &str,
     number_of_test_accounts: usize,
@@ -299,8 +299,6 @@ pub async fn create_test_data(
 
     // create test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
-        profiling::scope!("creating test account");
-
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         account_collection
             .insert_one(Account {
@@ -387,7 +385,6 @@ pub async fn create_test_data(
 
     // Queue up test accounts #TEST_CDI_X
     for i in 0..number_of_test_accounts {
-        profiling::scope!("queueing test account");
         let account_number = format!("TEST_CDI_{}", &i.to_string());
         evaluation_queue_collection
             .insert_one(EvaluationQueueEntry {
@@ -400,7 +397,6 @@ pub async fn create_test_data(
     Ok(())
 }
 
-#[profiling::function]
 pub async fn delete_test_data(connection_string: &str) -> Result<()> {
     let cac_database_client = mongodb::Client::with_uri_str(connection_string)
         .await

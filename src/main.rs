@@ -6,13 +6,11 @@ use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
 use mlua::{Lua, LuaSerdeExt};
-use notify::Watcher;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::exit;
-use std::sync::{mpsc, Arc};
 use tokio::task;
 use tracing::*;
 use tracing_subscriber::layer::SubscriberExt;
@@ -28,7 +26,7 @@ pub struct Cli {
     pub log: config::LogLevel,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, FromEnv)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Config {
     #[env(ignore)]
     pub scripts: HashMap<Box<Path>, ScriptInfo>,
@@ -69,11 +67,6 @@ impl Config {
     }
 }
 
-struct ConfiguredRuntime {
-    lua: mlua::Lua,
-    config: Arc<Config>,
-}
-
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct ScriptInfo {
     pub criteria_group: String,
@@ -83,14 +76,9 @@ pub struct ScriptInfo {
 async fn main() {
     let cli = Cli::parse();
 
-    let tracing_registry = tracing_subscriber::registry()
+    tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(cli.log.to_filter());
-    #[cfg(feature = "tracy-tracing")]
-    let tracing_registry = tracing_registry.with(tracing_tracy::TracyLayer::default());
-    tracing::subscriber::set_global_default(tracing_registry).unwrap();
-    #[cfg(feature = "tracy-client")]
-    tracy_client::Client::start();
 
     let mut config = match Config::open(&cli.config) {
         Ok(config) => config,
@@ -119,8 +107,6 @@ async fn main() {
     }
 
     loop {
-        profiling::scope!("database poll");
-
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts
         // so that results can be written to the database in bulk.
@@ -137,12 +123,9 @@ async fn main() {
         // coallesce Option<Option<T> into Option<T>.
         .and_then(|x| x)
         {
-            profiling::scope!("processing account");
             info!("Evaluating account: {:?}", account.id);
 
             for (path, _info) in config.scripts.iter() {
-                profiling::scope!("initializing script");
-
                 let path = path.clone();
                 // Script path without directory & extension
                 let script_name = path.file_name().map(|x| x.to_string_lossy());
@@ -153,36 +136,23 @@ async fn main() {
 
                 let result = cac_data::CdiAlert {
                     script_name: script_name.to_string(),
-                    passed: false,
-                    validated: false,
-                    outcome: None,
-                    reason: None,
-                    subtitle: None,
-                    links: Vec::new(),
-                    weight: None,
-                    sequence: None,
+                    ..Default::default()
                 };
 
                 let account = account.clone();
-                let config = config.clone();
 
                 script_threads.push(task::spawn_blocking(move || {
                     thread_local! {
-                        static RUNTIME: Cell<Option<ConfiguredRuntime>> = const { Cell::new(None) };
+                        static RUNTIME: Cell<Option<mlua::Lua>> = const { Cell::new(None) };
                     }
-
-                    profiling::scope!("executing script");
 
                     let _enter =
                         error_span!("lua", path = &*script_name, account = &account.id).entered();
                     RUNTIME.with(|runtime| {
-                        let (lua, config) = if let Some(runtime) = runtime.take()
-                            && Arc::as_ptr(&runtime.config) == Arc::as_ptr(&config)
-                        {
-                            (runtime.lua, runtime.config)
+                        let lua = if let Some(runtime) = runtime.take() {
+                            runtime
                         } else {
-                            let lua = make_runtime().expect("runtime init should not fail");
-                            (lua, config)
+                            cdi_alert_engine::make_runtime().expect("runtime init should not fail")
                         };
 
                         let function = match lua
@@ -210,10 +180,7 @@ async fn main() {
                             }
                         };
 
-                        runtime.set(Some(ConfiguredRuntime {
-                            lua: lua.clone(),
-                            config,
-                        }));
+                        runtime.set(Some(lua.clone()));
 
                         let function_environment = lua.create_table().unwrap();
                         let function_environment_meta = lua.create_table().unwrap();
@@ -225,7 +192,6 @@ async fn main() {
                             .set("Account", account.clone())
                             .unwrap();
                         function_environment.set("Result", result).unwrap();
-                        function_environment.set("ScriptName", script_name).unwrap();
                         function
                             .set_environment(function_environment.clone())
                             .unwrap();
@@ -292,62 +258,6 @@ async fn main() {
         }
         debug!("Completed processing pending accounts");
 
-        // Flush profiling information
-        profiling::finish_frame!();
-
         tokio::time::sleep(tokio::time::Duration::from_secs(config.polling_seconds)).await;
     }
-}
-
-#[allow(clippy::unwrap_used)]
-#[profiling::function]
-fn make_runtime() -> mlua::Result<Lua> {
-    let lua = Lua::new();
-    let log = lua.create_table()?;
-
-    macro_rules! register_logging {
-        ($type:ident) => {
-            log.set(
-                stringify!($type),
-                lua.create_function(|_, s: mlua::String| {
-                    $type!("{}", s.to_str()?.as_ref());
-                    Ok(())
-                })
-                .unwrap(),
-            )
-            .unwrap();
-        };
-    }
-
-    register_logging!(error);
-    register_logging!(warn);
-    register_logging!(info);
-    register_logging!(debug);
-
-    lua.load_from_function::<mlua::Value>(
-        "cdi.log",
-        lua.create_function(move |_, ()| Ok(log.clone()))?,
-    )?;
-    lua.load_from_function::<mlua::Value>(
-        "cdi.link",
-        lua.create_function(move |lua, ()| {
-            lua.create_function(|_, ()| Ok(cac_data::CdiAlertLink::default()))
-        })?,
-    )?;
-    lua.load_from_function::<mlua::Value>(
-        "cdi.discrete_value",
-        lua.create_function(move |lua, ()| {
-            lua.create_function(|_, (id, name): (String, _)| {
-                Ok(cac_data::DiscreteValue::new(&id, name))
-            })
-        })?,
-    )?;
-
-    // Initialize a scripts "library" to contain function caches.
-    lua.load_from_function::<mlua::Value>(
-        "cdi.scripts",
-        lua.create_function(|lua, ()| lua.create_table())?,
-    )?;
-
-    Ok(lua)
 }

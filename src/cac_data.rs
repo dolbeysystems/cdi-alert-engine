@@ -425,7 +425,9 @@ pub struct CodeReference {
     pub length: Option<i32>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
+#[derive(
+    Clone, Default, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, mlua::FromLua,
+)]
 pub struct CdiAlert {
     /// The name of the script that generated the alert    
     #[serde(rename = "ScriptName")]
