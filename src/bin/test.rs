@@ -3,7 +3,7 @@ use cdi_alert_engine::{
     cdi_alerts,
 };
 use mlua::LuaSerdeExt;
-use std::fs;
+use std::{fs, process::exit};
 
 fn main() -> anyhow::Result<()> {
     let lua = cdi_alert_engine::make_runtime()?;
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
             .load(fs::read_to_string(&script_path)?)
             .set_name(format!("@{script_path}"))
             .into_function()?;
-        for i in accounts.pairs::<String, bool>() {
+        for i in accounts.pairs::<String, mlua::Function>() {
             let (account_script_path, expected_result) = i?;
             lua.load(fs::read_to_string(&account_script_path)?)
                 .set_name(format!("@{account_script_path}"))
@@ -32,8 +32,7 @@ fn main() -> anyhow::Result<()> {
             if accounts.next().is_some() {
                 eprintln!(
                     "multiple accounts provided by {}, using _id = {id:?}",
-                    // Skip @ sign
-                    &account_script_path[1..]
+                    &account_script_path
                 );
             }
             // Clear out the collections table so that the next test can start fresh.
@@ -52,21 +51,17 @@ fn main() -> anyhow::Result<()> {
             globals.set(
                 "Result",
                 cac_data::CdiAlert {
-                    script_name: account_script_path[1..].to_string(),
+                    script_name: account_script_path.to_string(),
                     ..Default::default()
                 },
             )?;
             script.call::<()>(())?;
             let result: CdiAlert = globals.get("Result")?;
-            if result.passed == expected_result {
+            if expected_result.call(result)? {
                 eprintln!("{script_path}:{account_script_path} ... passed");
                 passes += 1;
             } else {
                 eprintln!("{script_path}:{account_script_path} ... failed");
-                eprintln!(
-                    "expected Result.passed == {}, got {}",
-                    expected_result, result.passed
-                );
                 failures += 1;
             }
         }
@@ -78,5 +73,5 @@ fn main() -> anyhow::Result<()> {
         "{failures} test{} failed",
         if failures == 1 { "" } else { "s" }
     );
-    Ok(())
+    exit(if failures > 0 { 1 } else { 0 });
 }

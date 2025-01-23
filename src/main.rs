@@ -5,7 +5,7 @@ use cdi_alert_engine::*;
 use clap::Parser;
 use derive_environment::FromEnv;
 use futures::future::join_all;
-use mlua::{Lua, LuaSerdeExt};
+use mlua::LuaSerdeExt;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fs;
