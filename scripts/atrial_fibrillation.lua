@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -44,11 +44,9 @@ local low_systolic_blood_pressure_predicate = discrete.make_lt_predicate(90)
 --- Existing Alert
 --------------------------------------------------------------------------------
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
-local subtitle = existing_alert and existing_alert.subtitle or nil
+local subtitle = existing_alert ~= nil and existing_alert.subtitle
 
-
-
-if not existing_alert or not existing_alert.validated then
+if not (existing_alert and existing_alert.validated) then
     --------------------------------------------------------------------------------
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
@@ -60,7 +58,6 @@ if not existing_alert or not existing_alert.validated then
     local ekg_header = headers.make_header_builder("EKG", 5)
 
     local function compile_links()
-
         table.insert(result_links, documented_dx_header:build(true))
         table.insert(result_links, clinical_evidence_header:build(true))
         table.insert(result_links, vital_signs_intake_header:build(true))
@@ -76,7 +73,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["I48.0"] = "Paroxysmal Atrial Fibrillation",
@@ -112,27 +109,22 @@ if not existing_alert or not existing_alert.validated then
         Result.subtitle = "Conflicting Atrial Fibrillation Dx"
         Result.passed = true
 
+        -- TODO: This branch can never be reached because if an existing validated alert exists the script doesn't even run.
         if existing_alert and existing_alert.validated then
             Result.validated = false
             Result.outcome = ""
             Result.reason = "Previously Autoresolved"
         end
-
     elseif subtitle == "Unspecified Atrial Fibrillation Dx" and #account_alert_codes > 0 then
         -- Auto Resolve Unspecified Atrial Fibrillation Dx
         for _, code in ipairs(account_alert_codes) do
-            local description = alert_code_dictionary[code]
-            local temp_code = codes.make_code_link(code, "Autoresolved Specified Code - " .. description)
-
-            if temp_code then
-                documented_dx_header:add_link(temp_code)
-            end
+            documented_dx_header:add_link(codes.make_code_link(code,
+                "Autoresolved Specified Code - " .. alert_code_dictionary[code]))
         end
         Result.validated = true
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.passed = true
-
     elseif i4891_code_link and #account_alert_codes == 0 then
         -- Unspecified Atrial Fibrillation Dx
         documented_dx_header:add_link(i4891_code_link)
@@ -155,7 +147,8 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("DYSPNEA_ON_EXERTION", "Dyspnea On Exertion")
             clinical_evidence_header:add_code_link("R53.83", "Fatigue")
             clinical_evidence_header:add_abstraction_link("HEART_PALPITATIONS", "Heart Palpitations")
-            clinical_evidence_header:add_abstraction_link("IMPLANTABLE_CARDIAC_ASSIST_DEVICE", "Implantable Cardiac Assist Device")
+            clinical_evidence_header:add_abstraction_link("IMPLANTABLE_CARDIAC_ASSIST_DEVICE",
+                "Implantable Cardiac Assist Device")
             clinical_evidence_header:add_abstraction_link("IRREGULAR_ECHO_FINDING", "Irregular Echo Findings")
             clinical_evidence_header:add_code_link("R42", "Light Headed")
             clinical_evidence_header:add_abstraction_link("MAZE_PROCEDURE", "Maze Procedure")
@@ -196,8 +189,10 @@ if not existing_alert or not existing_alert.validated then
 
 
             -- Vital Links
-            vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate", high_heart_rate_predicate)
-            vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_names, "Mean Arterial Pressure", low_map_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate",
+                high_heart_rate_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_names, "Mean Arterial Pressure",
+                low_map_predicate)
             vital_signs_intake_header:add_discrete_value_one_of_link(
                 systolic_blood_pressure_dv_names,
                 "Systolic Blood Pressure",
@@ -208,9 +203,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-
