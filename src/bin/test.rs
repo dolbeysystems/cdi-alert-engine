@@ -1,9 +1,7 @@
-use cdi_alert_engine::{
-    cac_data::{self, Account, CdiAlert},
-    cdi_alerts,
-};
+use cdi_alert_engine::cac_data::{self, Account, CdiAlert};
+use cdi_alert_engine::cdi_alerts;
 use mlua::LuaSerdeExt;
-use std::{fs, process::exit};
+use std::{fs, path::PathBuf, process::exit};
 
 fn main() -> anyhow::Result<()> {
     let lua = cdi_alert_engine::make_runtime()?;
@@ -15,16 +13,16 @@ fn main() -> anyhow::Result<()> {
     let mut passes = 0;
     let mut failures = 0;
 
-    for i in tests.pairs::<String, mlua::Table>() {
+    for i in tests.pairs::<PathBuf, mlua::Table>() {
         let (script_path, accounts) = i?;
         let script = lua
             .load(fs::read_to_string(&script_path)?)
-            .set_name(format!("@{script_path}"))
+            .set_name(format!("@{}", script_path.display()))
             .into_function()?;
-        for i in accounts.pairs::<String, mlua::Function>() {
+        for i in accounts.pairs::<PathBuf, mlua::Function>() {
             let (account_script_path, expected_result) = i?;
             lua.load(fs::read_to_string(&account_script_path)?)
-                .set_name(format!("@{account_script_path}"))
+                .set_name(format!("@{}", account_script_path.display()))
                 .exec()?;
             let accounts = collections.get::<mlua::Table>("Accounts")?;
             let mut accounts = accounts.pairs::<mlua::Value, mlua::Value>();
@@ -32,7 +30,7 @@ fn main() -> anyhow::Result<()> {
             if accounts.next().is_some() {
                 eprintln!(
                     "multiple accounts provided by {}, using _id = {id:?}",
-                    &account_script_path
+                    account_script_path.display()
                 );
             }
             // Clear out the collections table so that the next test can start fresh.
@@ -48,20 +46,33 @@ fn main() -> anyhow::Result<()> {
             cdi_alerts::build_account_caches(&mut account, 7, 7);
             let globals = lua.globals();
             globals.set("Account", account)?;
+            let script_name = script_path.file_name().map(|x| x.to_string_lossy());
+            let script_name = script_name
+                .as_ref()
+                .map(|x| x.to_string())
+                .unwrap_or("unnamed script".into());
             globals.set(
                 "Result",
                 cac_data::CdiAlert {
-                    script_name: account_script_path.to_string(),
+                    script_name,
                     ..Default::default()
                 },
             )?;
             script.call::<()>(())?;
             let result: CdiAlert = globals.get("Result")?;
             if expected_result.call(result)? {
-                eprintln!("{script_path}:{account_script_path} ... passed");
+                eprintln!(
+                    "{}:{} ... passed",
+                    script_path.display(),
+                    account_script_path.display()
+                );
                 passes += 1;
             } else {
-                eprintln!("{script_path}:{account_script_path} ... failed");
+                eprintln!(
+                    "{}:{} ... failed",
+                    script_path.display(),
+                    account_script_path.display()
+                );
                 failures += 1;
             }
         }

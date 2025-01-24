@@ -16,8 +16,7 @@ return function(Account)
         local account = args.account or Account
         local script_name = args.scriptName
 
-        for i = 1, #account.cdi_alerts do
-            local alert = account.cdi_alerts[i]
+        for _, alert in ipairs(account.cdi_alerts) do
             if alert.script_name == script_name then
                 return alert
             end
