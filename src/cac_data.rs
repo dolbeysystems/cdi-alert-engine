@@ -4,11 +4,9 @@
 //! self-contained modules.
 
 use alua::{ClassAnnotation, UserData};
-use chrono::{DateTime, Utc};
 use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
@@ -25,9 +23,14 @@ macro_rules! setter {
     };
 }
 
+fn system_time_t(time: SystemTime) -> u64 {
+    time.duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
 // To avoid excessive cloning, wrap `UserData` in `Arc`s!
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct AccountCustomWorkFlowEntry {
     #[serde(rename = "WorkGroup")]
@@ -45,9 +48,8 @@ pub struct AccountCustomWorkFlowEntry {
     pub work_group_assigned_by: Option<String>,
     /// Date time the work group was assigned
     #[serde(rename = "WorkGroupAssignedDateTime")]
-    #[serde_as(as = "Option<bson::DateTime>")]
     #[alua(as_lua = "string?")]
-    pub work_group_date_time: Option<DateTime<Utc>>,
+    pub work_group_date_time: Option<SystemTime>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -93,7 +95,6 @@ pub struct CodeReferenceWithDocument {
     pub code_reference: Arc<CodeReference>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 #[alua(fields = [
     "find_code_references fun(self: Account, code: string?): CodeReferenceWithDocument[] - Find code references in the account",
@@ -113,13 +114,11 @@ pub struct Account {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(rename = "AdmitDateTime")]
-    #[serde_as(as = "Option<bson::DateTime>")]
     #[alua(as_lua = "string?")]
-    pub admit_date_time: Option<DateTime<Utc>>,
+    pub admit_date_time: Option<SystemTime>,
     #[serde(rename = "DischargeDateTime")]
-    #[serde_as(as = "Option<bson::DateTime>")]
     #[alua(as_lua = "string?")]
-    pub discharge_date_time: Option<DateTime<Utc>>,
+    pub discharge_date_time: Option<SystemTime>,
     #[serde(rename = "Patient")]
     pub patient: Option<Arc<Patient>>,
     #[serde(rename = "PatientType")]
@@ -167,10 +166,10 @@ impl mlua::UserData for Account {
     fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
         fields.add_field_method_get("id", |_, this| Ok(this.id.clone()));
         fields.add_field_method_get("admit_date_time", |_, this| {
-            Ok(this.admit_date_time.map(|x| x.to_string()))
+            Ok(this.admit_date_time.map(system_time_t))
         });
         fields.add_field_method_get("discharge_date_time", |_, this| {
-            Ok(this.discharge_date_time.map(|x| x.to_string()))
+            Ok(this.discharge_date_time.map(system_time_t))
         });
         fields.add_field_method_get("patient", |_, this| Ok(this.patient.clone()));
         fields.add_field_method_get("patient_type", |_, this| Ok(this.patient_type.clone()));
@@ -274,93 +273,110 @@ impl mlua::UserData for Account {
     }
 }
 
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct Patient {
     /// Medical record number
     #[serde(rename = "MRN")]
-    #[alua(get)]
     pub mrn: Option<String>,
     #[serde(rename = "FirstName")]
-    #[alua(get)]
     pub first_name: Option<String>,
     #[serde(rename = "MiddleName")]
-    #[alua(get)]
     pub middle_name: Option<String>,
     #[serde(rename = "LastName")]
-    #[alua(get)]
     pub last_name: Option<String>,
     #[serde(rename = "Gender")]
-    #[alua(get)]
     pub gender: Option<String>,
     #[serde(rename = "BirthDate")]
-    #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?", get)]
-    pub birthdate: Option<DateTime<Utc>>,
+    #[alua(as_lua = "integer?")]
+    pub birthdate: Option<SystemTime>,
 }
 
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
+impl mlua::UserData for Patient {
+    fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
+        getter!(fields, mrn);
+        getter!(fields, first_name);
+        getter!(fields, middle_name);
+        getter!(fields, last_name);
+        getter!(fields, gender);
+        fields.add_field_method_get("birthdate", |_, this| Ok(this.birthdate.map(system_time_t)));
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct CACDocument {
     #[serde(rename = "DocumentId")]
     #[alua(as_lua = "string", get)]
     pub document_id: Arc<str>,
     #[serde(rename = "DocumentType")]
-    #[alua(get)]
     pub document_type: Option<String>,
     #[serde(rename = "DocumentDate")]
-    #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?", get)]
-    pub document_date: Option<DateTime<Utc>>,
+    #[alua(as_lua = "integer?")]
+    pub document_date: Option<SystemTime>,
     /// Content type (e.g. html, text, etc.)
     #[serde(rename = "ContentType")]
-    #[alua(get)]
     pub content_type: Option<String>,
     /// List of code references on this document
     #[serde(rename = "CodeReferences", default)]
-    #[alua(get)]
     pub code_references: Vec<Arc<CodeReference>>,
     /// List of abstraction references on this document
     #[serde(rename = "AbstractionReferences", default)]
-    #[alua(get)]
     pub abstraction_references: Vec<Arc<CodeReference>>,
 }
 
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, UserData)]
+impl mlua::UserData for CACDocument {
+    fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
+        fields.add_field_method_get("document_id", |_, this| Ok(this.document_id.to_string()));
+        getter!(fields, document_type);
+        fields.add_field_method_get("document_date", |_, this| {
+            Ok(this.document_date.map(system_time_t))
+        });
+        getter!(fields, content_type);
+        getter!(fields, code_references);
+        getter!(fields, abstraction_references);
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct Medication {
     #[serde(rename = "ExternalId")]
-    #[alua(as_lua = "string", get)]
+    #[alua(as_lua = "string")]
     pub external_id: Arc<str>,
     #[serde(rename = "Medication")]
-    #[alua(get)]
     pub medication: Option<String>,
     #[serde(rename = "Dosage")]
-    #[alua(get)]
     pub dosage: Option<String>,
     #[serde(rename = "Route")]
-    #[alua(get)]
     pub route: Option<String>,
     #[serde(rename = "StartDate")]
-    #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?", get)]
-    pub start_date: Option<DateTime<Utc>>,
+    #[alua(as_lua = "integer?")]
+    pub start_date: Option<SystemTime>,
     #[serde(rename = "EndDate")]
-    #[serde_as(as = "Option<bson::DateTime>")]
-    #[alua(as_lua = "string?", get)]
-    pub end_date: Option<DateTime<Utc>>,
+    #[alua(as_lua = "integer?")]
+    pub end_date: Option<SystemTime>,
     #[serde(rename = "Status")]
-    #[alua(get)]
     pub status: Option<String>,
     #[serde(rename = "Category")]
-    #[alua(get)]
     pub category: Option<String>,
     #[serde(rename = "CDIAlertCategory")]
-    #[alua(get)]
     pub cdi_alert_category: Option<String>,
 }
 
-#[serde_as]
+impl mlua::UserData for Medication {
+    fn add_fields<F: mlua::UserDataFields<Self>>(fields: &mut F) {
+        fields.add_field_method_get("external_id", |_, this| Ok(this.external_id.to_string()));
+        getter!(fields, medication);
+        getter!(fields, dosage);
+        getter!(fields, route);
+        fields.add_field_method_get("start_date", |_, this| {
+            Ok(this.start_date.map(system_time_t))
+        });
+        fields.add_field_method_get("end_date", |_, this| Ok(this.end_date.map(system_time_t)));
+        getter!(fields, status);
+        getter!(fields, category);
+        getter!(fields, cdi_alert_category);
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
@@ -371,9 +387,8 @@ pub struct DiscreteValue {
     #[serde(rename = "Result")]
     pub result: Option<String>,
     #[serde(rename = "ResultDate")]
-    #[serde_as(as = "Option<bson::DateTime>")]
     #[alua(as_lua = "string?")]
-    pub result_date: Option<DateTime<Utc>>,
+    pub result_date: Option<SystemTime>,
 }
 impl DiscreteValue {
     pub fn new(unique_id: &str, name: String) -> Self {
@@ -391,7 +406,7 @@ impl mlua::UserData for DiscreteValue {
         getter!(f, name);
         getter!(f, result);
         f.add_field_method_get("result_date", |_, this| {
-            Ok(this.result_date.map(|x| x.to_string()))
+            Ok(this.result_date.map(system_time_t))
         });
 
         f.add_field_method_set("unique_id", |_, this, value: String| {
@@ -609,19 +624,16 @@ impl mlua::UserData for CdiAlertLink {
     }
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData)]
 pub struct EvaluationQueueEntry {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(rename = "TimeQueued")]
-    #[serde_as(as = "bson::DateTime")]
-    pub time_queued: DateTime<Utc>,
+    pub time_queued: SystemTime,
     #[serde(rename = "Source")]
     pub source: String,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
 pub struct AccountWorkingHistoryEntry {
     #[serde(rename = "Diagnoses")]
@@ -630,7 +642,6 @@ pub struct AccountWorkingHistoryEntry {
     pub procedures: Vec<ProcedureCode>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
 pub struct DiagnosisCode {
     #[serde(rename = "Code")]
@@ -641,7 +652,6 @@ pub struct DiagnosisCode {
     pub is_principal: bool,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, UserData, ClassAnnotation)]
 pub struct ProcedureCode {
     #[serde(rename = "Code")]

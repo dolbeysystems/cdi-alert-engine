@@ -2,8 +2,6 @@
 
 --- @class Account
 --- @field id string - Account number
---- @field admit_date_time string? -
---- @field discharge_date_time string? -
 --- @field patient Patient? -
 --- @field patient_type string? -
 --- @field admit_source string? -
@@ -37,7 +35,7 @@
 --- @class CACDocument
 --- @field document_id string -
 --- @field document_type string? -
---- @field document_date string? -
+--- @field document_date integer? -
 --- @field content_type string? - Content type (e.g. html, text, etc.)
 --- @field code_references CodeReference[] - List of code references on this document
 --- @field abstraction_references CodeReference[] - List of abstraction references on this document
@@ -59,7 +57,7 @@
 --- @field medication string? -
 --- @field dosage string? -
 --- @field route string? -
---- @field start_date string? -
+--- @field start_date integer? -
 --- @field end_date string? -
 --- @field status string? -
 --- @field category string? -
@@ -69,7 +67,7 @@
 --- @field unique_id string -
 --- @field name string? -
 --- @field result string? -
---- @field result_date string? -
+--- @field result_date integer? -
 
 --- @class AccountCustomWorkFlowEntry
 --- @field work_group string? -
@@ -81,15 +79,15 @@
 --- @field work_group_date_time string? - Date time the work group was assigned
 
 --- @class CdiAlert
---- @field script_name string - The name of the script that generated the alert    
---- @field passed boolean - Whether the alert passed or failed    
---- @field links CdiAlertLink[] - A list of links to display in the alert    
+--- @field script_name string - The name of the script that generated the alert
+--- @field passed boolean - Whether the alert passed or failed
+--- @field links CdiAlertLink[] - A list of links to display in the alert
 --- @field validated boolean - Whether the alert has been validated by a user or autoclosed
---- @field subtitle string? - A subtitle to display in the alert    
---- @field outcome string? - The outcome of the alert    
---- @field reason string? - The reason for the alert    
---- @field weight number? - The weight of the alert    
---- @field sequence integer? - The sequence number of the alert    
+--- @field subtitle string? - A subtitle to display in the alert
+--- @field outcome string? - The outcome of the alert
+--- @field reason string? - The reason for the alert
+--- @field weight number? - The weight of the alert
+--- @field sequence integer? - The sequence number of the alert
 
 --- @class CdiAlertLink
 --- @field link_text string - The text to display for the link
@@ -119,4 +117,3 @@
 --- @field code string -
 --- @field description string -
 --- @field is_principal boolean -
-

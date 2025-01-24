@@ -111,7 +111,7 @@ if not existing_alert or not existing_alert.validated then
             return (
                 route_appropriate and
                 dosage ~= nil and dosage == 10 and
-                dates.DateIsLessThanXDaysAgo(med.start_date, 365)
+                dates.date_is_less_than_x_days_ago(med.start_date, 365)
             )
         end
     )

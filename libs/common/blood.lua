@@ -11,7 +11,7 @@ return function(Account)
     --- Get Low Hemoglobin Discrete Value Pairs
     ---
     --- @param gender string Gender of the patient
-    --- 
+    ---
     --- @return HematocritHemoglobinDiscreteValuePair[]
     --------------------------------------------------------------------------------
     function module.get_low_hemoglobin_discrete_value_pairs(gender)
@@ -34,9 +34,9 @@ return function(Account)
         for i = 1, #low_hemoglobin_values do
             local dv_hemoglobin = low_hemoglobin_values[i]
             local dv_date = dv_hemoglobin.result_date
-            local dv_hematocrit = discrete.get_discrete_value_nearest_to_date({
+            local dv_hematocrit = dv_date and discrete.get_discrete_value_nearest_to_date({
                 discreteValueName = "Hematocrit",
-                date = dv_date or ""
+                date = dv_date
             })
             if dv_hematocrit then
                 local hemoglobin_link = discrete.get_link_for_discrete_value(dv_hemoglobin, "Hemoglobin", 1, true)
@@ -53,7 +53,7 @@ return function(Account)
 
     --------------------------------------------------------------------------------
     --- Get Low Hemoglobin Discrete Value Pairs
-    --- 
+    ---
     --- @param gender string Gender of the patient
     ---
     --- @return HematocritHemoglobinDiscreteValuePair[]
@@ -78,9 +78,9 @@ return function(Account)
         for i = 1, #low_hematomocrit_values do
             local dv_hematocrit = low_hematomocrit_values[i]
             local dv_date = dv_hematocrit.result_date
-            local dv_hemoglobin = discrete.get_discrete_value_nearest_to_date({
+            local dv_hemoglobin = dv_date and discrete.get_discrete_value_nearest_to_date({
                 discreteValueName = "Hemoglobin",
-                date = dv_date or ""
+                date = dv_date
             })
             if dv_hemoglobin then
                 local hematocrit_link = discrete.get_link_for_discrete_value(dv_hematocrit, "Hematocrit", 1, true)
@@ -100,7 +100,7 @@ return function(Account)
     --- @field hematocritDropLink CdiAlertLink
 
     --------------------------------------------------------------------------------
-    --- Get Hemoglobin and Hematocrit Links denoting a significant drop in hemoglobin 
+    --- Get Hemoglobin and Hematocrit Links denoting a significant drop in hemoglobin
     ---
     --- @return HematocritHemoglobinPeakDropLinks? - Peak and Drop links for Hemoglobin and Hematocrit if present
     --------------------------------------------------------------------------------
@@ -118,16 +118,20 @@ return function(Account)
             discreteValueName = "Hemoglobin",
             daysBack = 7,
             predicate = function(dv)
-                return highest_hemoglobin_in_past_week ~= nil and dv.result_date > highest_hemoglobin_in_past_week.result_date
+                return highest_hemoglobin_in_past_week ~= nil and
+                    dv.result_date > highest_hemoglobin_in_past_week.result_date
             end
         })
         local hemoglobin_delta = 0
 
         if highest_hemoglobin_in_past_week and lowest_hemoglobin_in_past_week_after_highest then
-            hemoglobin_delta = discrete.get_dv_value_number(highest_hemoglobin_in_past_week) - discrete.get_dv_value_number(lowest_hemoglobin_in_past_week_after_highest)
+            hemoglobin_delta = discrete.get_dv_value_number(highest_hemoglobin_in_past_week) -
+                discrete.get_dv_value_number(lowest_hemoglobin_in_past_week_after_highest)
             if hemoglobin_delta >= 2 then
-                hemoglobin_peak_link = discrete.get_link_for_discrete_value(highest_hemoglobin_in_past_week, "Peak Hemoglobin", 1, true)
-                hemoglobin_drop_link = discrete.get_link_for_discrete_value(lowest_hemoglobin_in_past_week_after_highest, "Dropped Hemoglobin", 2, true)
+                hemoglobin_peak_link = discrete.get_link_for_discrete_value(highest_hemoglobin_in_past_week,
+                    "Peak Hemoglobin", 1, true)
+                hemoglobin_drop_link = discrete.get_link_for_discrete_value(lowest_hemoglobin_in_past_week_after_highest,
+                    "Dropped Hemoglobin", 2, true)
                 local hemoglobin_peak_hemocrit = discrete.get_discrete_value_nearest_to_date({
                     discreteValueName = "Hematocrit",
                     date = highest_hemoglobin_in_past_week.result_date
@@ -137,10 +141,12 @@ return function(Account)
                     date = lowest_hemoglobin_in_past_week_after_highest.result_date
                 })
                 if hemoglobin_peak_hemocrit then
-                    hematocrit_peak_link = discrete.get_link_for_discrete_value(hemoglobin_peak_hemocrit, "Hematocrit at Hemoglobin Peak", 3, true)
+                    hematocrit_peak_link = discrete.get_link_for_discrete_value(hemoglobin_peak_hemocrit,
+                        "Hematocrit at Hemoglobin Peak", 3, true)
                 end
                 if hemoglobin_drop_hemocrit then
-                    hematocrit_drop_link = discrete.get_link_for_discrete_value(hemoglobin_drop_hemocrit, "Hematocrit at Hemoglobin Drop", 4, true)
+                    hematocrit_drop_link = discrete.get_link_for_discrete_value(hemoglobin_drop_hemocrit,
+                        "Hematocrit at Hemoglobin Drop", 4, true)
                 end
             end
         end
@@ -177,16 +183,20 @@ return function(Account)
             discreteValueName = "Hematocrit",
             daysBack = 7,
             predicate = function(dv)
-                return highest_hematocrit_in_past_week ~= nil and dv.result_date > highest_hematocrit_in_past_week.result_date
+                return highest_hematocrit_in_past_week ~= nil and
+                    dv.result_date > highest_hematocrit_in_past_week.result_date
             end
         })
         local hematocrit_delta = 0
 
         if highest_hematocrit_in_past_week and lowest_hematocrit_in_past_week_after_highest then
-            hematocrit_delta = discrete.get_dv_value_number(highest_hematocrit_in_past_week) - discrete.get_dv_value_number(lowest_hematocrit_in_past_week_after_highest)
+            hematocrit_delta = discrete.get_dv_value_number(highest_hematocrit_in_past_week) -
+                discrete.get_dv_value_number(lowest_hematocrit_in_past_week_after_highest)
             if hematocrit_delta >= 6 then
-                hematocrit_peak_link = discrete.get_link_for_discrete_value(highest_hematocrit_in_past_week, "Peak Hematocrit", 5, true)
-                hematocrit_drop_link = discrete.get_link_for_discrete_value(lowest_hematocrit_in_past_week_after_highest, "Dropped Hematocrit", 6, true)
+                hematocrit_peak_link = discrete.get_link_for_discrete_value(highest_hematocrit_in_past_week,
+                    "Peak Hematocrit", 5, true)
+                hematocrit_drop_link = discrete.get_link_for_discrete_value(lowest_hematocrit_in_past_week_after_highest,
+                    "Dropped Hematocrit", 6, true)
                 local hemocrit_peak_hemoglobin = discrete.get_discrete_value_nearest_to_date({
                     discreteValueName = "Hemoglobin",
                     date = highest_hematocrit_in_past_week.result_date
@@ -196,10 +206,12 @@ return function(Account)
                     date = lowest_hematocrit_in_past_week_after_highest.result_date
                 })
                 if hemocrit_peak_hemoglobin then
-                    hemoglobin_peak_link = discrete.get_link_for_discrete_value(hemocrit_peak_hemoglobin, "Hemoglobin at Hematocrit Peak", 7, true)
+                    hemoglobin_peak_link = discrete.get_link_for_discrete_value(hemocrit_peak_hemoglobin,
+                        "Hemoglobin at Hematocrit Peak", 7, true)
                 end
                 if hemocrit_drop_hemoglobin then
-                    hemoglobin_drop_link = discrete.get_link_for_discrete_value(hemocrit_drop_hemoglobin, "Hemoglobin at Hematocrit Drop", 8, true)
+                    hemoglobin_drop_link = discrete.get_link_for_discrete_value(hemocrit_drop_hemoglobin,
+                        "Hemoglobin at Hematocrit Drop", 8, true)
                 end
             end
         end

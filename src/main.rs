@@ -92,20 +92,6 @@ async fn main() {
         error!("{msg}");
     }
 
-    if config.create_test_accounts > 0 {
-        info!("Removing old test data");
-        if let Err(e) = cdi_alerts::delete_test_data(&config.mongo.url).await {
-            error!("Failed to delete test data: {e}");
-        }
-        info!("Creating test data");
-        if let Err(e) =
-            cdi_alerts::create_test_data(&config.mongo.url, config.create_test_accounts as usize)
-                .await
-        {
-            error!("Failed to create test data: {e}");
-        }
-    }
-
     loop {
         // All scripts for all accounts are joined at once,
         // and then sorted back into a hashmap of accounts

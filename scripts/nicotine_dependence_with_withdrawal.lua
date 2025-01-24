@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -51,7 +51,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["F17.203"] = "Nicotine Dependence Unspecified, With Withdrawal",
@@ -127,8 +127,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     ----------------------------------------
-    --- Result Finalization 
+    --- Result Finalization
     ----------------------------------------
     if Result.passed then compile_links() end
 end
-

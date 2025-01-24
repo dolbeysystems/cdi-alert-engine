@@ -127,13 +127,13 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text)
     if x > 1 then
         for _, discrete_value in ipairs(discrete_values) do
             local id1 = discrete_value.unique_id
-            if dates.date_string_to_int(discrete_value.result_date) >= date_limit then
+            if discrete_value.result_date >= date_limit then
                 for _, discrete_value_2 in ipairs(discrete_values) do
                     local id2 = discrete_value_2.unique_id
-                    local date2 = dates.date_string_to_int(discrete_value_2.result_date)
+                    local date2 = discrete_value_2.result_date
                     if
                         date2 >= date_limit and
-                        date2 >= dates.date_string_to_int(discrete_value.result_date) and
+                        date2 >= discrete_value.result_date and
                         id2 ~= id1 and
                         discrete.get_dv_value_number(discrete_value_2) > 1.0
                     then
@@ -175,8 +175,8 @@ local function creatinine_check(discrete_value_name, abs_value_name, link_text)
                 local id2 = discrete_value.unique_id
                 if
                     (
-                        dates.date_string_to_int(item2.result_date) >=
-                        dates.date_string_to_int(discrete_value.result_date)
+                        item2.result_date >=
+                        discrete_value.result_date
                     ) and
                     id2 ~= id1
                 then
@@ -241,7 +241,7 @@ local function is_value_greater_than_three_days(discrete_value_name, value, link
 
     for _, dv in ipairs(discrete_values) do
         local dvr = discrete.get_dv_value_number(dv)
-        local date = dates.date_string_to_int(dv.result_date)
+        local date = dv.result_date
         if dvr and dvr > value and date <= day_one then
             discrete_dic_1[w] = dv
         elseif dvr and dvr > value and day_two <= date and date <= day_one then
@@ -450,7 +450,6 @@ then
             Result.validated = false
             Result.passed = true
         end
-
     elseif #account_spec_codes > 1 then
         -- 2
         if not gfr_dv then
@@ -473,7 +472,6 @@ then
         end
         Result.subtitle = "Conflicting Acute Kidney Failure Dx Codes"
         Result.passed = true
-
     elseif subtitle == "Possible End-Stage Renal Disease" and n186_code then
         -- 3.1
         if not n186_code then
@@ -484,7 +482,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         existing_alert and
         (existing_alert.outcome == 'AUTORESOLVED' or existing_alert.reason == 'Previously Autoresolved') and
@@ -504,7 +501,6 @@ then
         documented_dx_header:add_link(n185_code)
         Result.subtitle = "Possible End-Stage Renal Disease"
         Result.passed = true
-
     elseif
         #account_chro_codes > 0 and
         #account_spec_codes > 0 and
@@ -535,7 +531,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         n179_code and
         high_serum_creatinine_multi_day_dv and
@@ -557,7 +552,6 @@ then
         end
         Result.subtitle = "Acute Kidney Failure Unspecified Present Possible ATN"
         Result.passed = true
-
     elseif
         subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and
         creatinine_multi_dv
@@ -577,7 +571,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         (n179_code or n17_codes) and
         not n181_code and not n182_code and not n1830_code and not n1831_code and
@@ -589,7 +582,6 @@ then
         documented_dx_header:add_link(n17_codes)
         Result.subtitle = "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence"
         Result.passed = true
-
     elseif
         subtitle == "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence" and
         (high_serum_creatinine_multi_day_dv or creatinine_check_dv)
@@ -609,14 +601,12 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif (n179_code or n17_codes) and not high_serum_creatinine_multi_day_dv and not creatinine_check_dv then
         -- 6
         documented_dx_header:add_link(n179_code)
         documented_dx_header:add_link(n17_codes)
         Result.subtitle = "Acute Kidney Failure/AKI Present Possible Lacking Clinical Evidence"
         Result.passed = true
-
     elseif #account_chro_codes > 0 and subtitle == "CKD No Stage Documented" then
         -- 7.1
         for _, code in ipairs(account_chro_codes) do
@@ -631,13 +621,11 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif n189_code and #account_chro_codes == 0 and gfr_dv then
         -- 7
         documented_dx_header:add_link(n189_code)
         Result.subtitle = "CKD No Stage Documented"
         Result.passed = true
-
     elseif
         subtitle == "Kidney Failure Dx Missing Acuity" and
         (n179_code or #account_chro_codes > 0 or #account_spec_codes > 0)
@@ -671,13 +659,11 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif n19_code and #account_chro_codes == 0 and #account_spec_codes == 0 then
         -- 8
         documented_dx_header:add_link(n19_code)
         Result.subtitle = "Kidney Failure Dx Missing Acuity"
         Result.passed = true
-
     elseif
         (#account_spec_codes > 0 or n179_code or #account_chro_codes == 1) and
         subtitle == "Possible Acute Kidney Failure/AKI"
@@ -711,7 +697,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         not n19_code and
         #account_chro_codes == 0 and
@@ -728,7 +713,6 @@ then
         creatinine_spec_check = true
         Result.subtitle = "Possible Acute Kidney Failure/AKI"
         Result.passed = true
-
     elseif
         (#account_spec_codes > 0 or n179_code) and
         subtitle == "Possible Chronic Kidney Failure with Superimposed AKI"
@@ -746,7 +730,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         #account_chro_codes == 1 and
         not n186_code and #account_spec_codes == 0 and
@@ -769,7 +752,6 @@ then
         creatinine_spec_check = true
         Result.subtitle = "Possible Chronic Kidney Failure with Superimposed AKI"
         Result.passed = true
-
     elseif
         subtitle == "Conflicting AKI and Renal Insufficiency Dx, Clarification Needed" and
         #account_spec_codes > 0
@@ -787,7 +769,6 @@ then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif acute_kidney_injury_abs and acute_renal_insufficiency_abs and #account_spec_codes == 0 then
         -- 11
         if acute_kidney_injury_abs then documented_dx_header:add_link(acute_kidney_injury_abs) end

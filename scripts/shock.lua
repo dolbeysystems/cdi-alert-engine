@@ -16,7 +16,6 @@
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 local lists = require("libs.common.lists")
@@ -208,14 +207,14 @@ local function blood_pressure_lookup()
                 not lists.includes(abstracted_list, item.unique_id)
             then
                 table.insert(sbp_list, item.result)
-                matching_date = dates.date_string_to_int(item.result_date)
+                matching_date = item.result_date
                 sbp_dv = item.result
                 table.insert(abstracted_list, item.unique_id)
                 id = item.unique_id
 
                 for _, item1 in ipairs(discrete_dic3) do
                     if
-                        dates.date_string_to_int(item1.result_date) == matching_date and
+                        item1.result_date == matching_date and
                         lists.includes(dv_map, item1.name)
                     then
                         if discrete.get_dv_value(item1) < calc_map_1 then
@@ -232,14 +231,14 @@ local function blood_pressure_lookup()
                 not lists.includes(abstracted_list, item.unique_id)
             then
                 table.insert(map_list, item.result)
-                matching_date = dates.date_string_to_int(item.result_date)
+                matching_date = item.result_date
                 map_dv = item.result
                 table.insert(abstracted_list, item.unique_id)
                 id = item.unique_id
 
                 for _, item1 in ipairs(discrete_dic3) do
                     if
-                        dates.date_string_to_int(item1.result_date) == matching_date and
+                        item1.result_date == matching_date and
                         lists.includes(dv_sbp, item1.name)
                     then
                         if discrete.get_dv_value(item1) < calc_sbp_1 then
@@ -255,7 +254,7 @@ local function blood_pressure_lookup()
 
             if w > 0 then
                 for _, item2 in ipairs(discrete_dic1) do
-                    if dates.date_string_to_int(item2.result_date) == matching_date then
+                    if item2.result_date == matching_date then
                         dbp_dv = item2.result
                         break
                     end
@@ -263,7 +262,7 @@ local function blood_pressure_lookup()
             end
             if x > 0 then
                 for _, item3 in ipairs(discrete_dic2) do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         hr_dv = item3.result
                         break
                     end
@@ -273,7 +272,7 @@ local function blood_pressure_lookup()
                 local date_limit = matching_date + (24 * 60 * 60)
 
                 for _, med in pairs(med_dic) do
-                    local med_start_date = dates.date_string_to_int(med.start_date)
+                    local med_start_date = med.start_date
                     if matching_date <= med_start_date and med_start_date <= date_limit then
                         if not lists.includes(med_list, med.external_id) then
                             table.insert(med_list, med.external_id)

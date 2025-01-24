@@ -18,7 +18,6 @@ local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
 local discrete = require("libs.common.discrete")(Account)
 local medications = require("libs.common.medications")(Account)
-local dates = require("libs.common.dates")
 local headers = require("libs.common.headers")(Account)
 local documents = require("libs.common.documents")(Account)
 
@@ -89,10 +88,14 @@ if not existing_alert or not existing_alert.validated then
         ["S06.1X2A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 31 Minutes To 59 Minutes",
         ["SO6.1X3A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 1 Hour To 5 Hours 59 Minutes",
         ["SO6.1X4A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of 6 Hours To 24 Hours",
-        ["SO6.1X5A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours With Return To Pre-Existing Conscious Level",
-        ["SO6.1X6A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours Without Return To Pre-Existing Conscious Level With Patient Surviving",
-        ["SO6.1X7A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Brain Injury Prior To Regaining Consciousness",
-        ["S06.1X8A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Other Cause Prior To Regaining Consciousness",
+        ["SO6.1X5A"] =
+        "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours With Return To Pre-Existing Conscious Level",
+        ["SO6.1X6A"] =
+        "Traumatic Cerebral Edema With Loss Of Consciousness Greater Than 24 Hours Without Return To Pre-Existing Conscious Level With Patient Surviving",
+        ["SO6.1X7A"] =
+        "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Brain Injury Prior To Regaining Consciousness",
+        ["S06.1X8A"] =
+        "Traumatic Cerebral Edema With Loss Of Consciousness Of Any Duration With Death Due To Other Cause Prior To Regaining Consciousness",
         ["SO6.1X9A"] = "Traumatic Cerebral Edema With Loss Of Consciousness Of Unspecified Duration",
     }
     local compression_code_dictionary = {
@@ -133,17 +136,17 @@ if not existing_alert or not existing_alert.validated then
 
     -- Alert Trigger
     -- get latest medical document
-    --- @type number | nil
+    --- @type integer?
     local latest_medical_document_date = nil
-    --- @type string | nil
+    --- @type string?
     local latest_medical_document_type = nil
     for _, document in ipairs(Account.documents) do
         if
             document_list[document.document_type] and
             latest_medical_document_date == nil or
-            dates.date_string_to_int(document.document_date)
+            document.document_date
         then
-            latest_medical_document_date = dates.date_string_to_int(document.document_date)
+            latest_medical_document_date = document.document_date
             latest_medical_document_type = document.document_type
         end
     end
@@ -153,7 +156,7 @@ if not existing_alert or not existing_alert.validated then
     local mannitol_med_doc_link =
         latest_medical_document_date and
         medications.make_medication_link("Mannitol", "Mannitol", nil, function(med)
-            return dates.date_string_to_int(med.start_date) < latest_medical_document_date
+            return med.start_date < latest_medical_document_date
         end
         ) or nil
     local dexamethasone_med_doc_link =
@@ -163,7 +166,7 @@ if not existing_alert or not existing_alert.validated then
             "Dexamethasone",
             nil,
             function(med)
-                return dates.date_string_to_int(med.start_date) < latest_medical_document_date
+                return med.start_date < latest_medical_document_date
             end
         ) or nil
 
@@ -195,7 +198,8 @@ if not existing_alert or not existing_alert.validated then
 
     -- Vitals
     local intra_pressure_dv =
-        discrete.make_discrete_value_link(intracranial_pressure_dv_name, "Intracranial Pressure", intracranial_pressure_predicate)
+        discrete.make_discrete_value_link(intracranial_pressure_dv_name, "Intracranial Pressure",
+            intracranial_pressure_predicate)
     local intra_pressure_abs =
         codes.make_abstraction_link("ELEVATED_INTRACRANIAL_PRESSURE", "Intracranial Pressure")
 
@@ -304,7 +308,8 @@ if not existing_alert or not existing_alert.validated then
         if not Result.validated then
             -- Clinical Evidence
             local r4182_code = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
-            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
+            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                "Altered Level Of Consciousness")
             if r4182_code then
                 clinical_evidence_header:add_link(r4182_code)
                 if altered_abs then

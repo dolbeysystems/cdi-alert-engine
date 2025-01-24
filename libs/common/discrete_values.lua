@@ -1,7 +1,6 @@
 ---@diagnostic disable-next-line:name-style-check
 return function(Account)
     local module = {}
-    local dates = require "libs.common.dates"
     local links = require "libs.common.basic_links" (Account)
     local lists = require "libs.common.lists"
     local cdi_alert_link = require "cdi.link"
@@ -157,7 +156,7 @@ return function(Account)
     --- @field account Account? Account object (uses global account if not provided)
     --- @field discreteValueName? string The name of the discrete value to search for
     --- @field discreteValueNames? string[] The names of the discrete values to search for
-    --- @field date string The date to search for the nearest discrete value to
+    --- @field date integer The date to search for the nearest discrete value to
     --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
@@ -171,10 +170,9 @@ return function(Account)
         --- @type Account
         local account = args.account or Account
         local discrete_value_names = args.discreteValueNames or { args.discreteValueName }
-        local date_string = args.date
+        local date = args.date
         local predicate = args.predicate
 
-        local date = dates.date_string_to_int(date_string)
         --- @type DiscreteValue[]
         local discrete_values_for_name = {}
         for _, dv_name in ipairs(discrete_value_names) do
@@ -187,9 +185,7 @@ return function(Account)
         local nearest = nil
         local nearest_diff = math.huge
         for i = 1, #discrete_values_for_name do
-            local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
-
-            local diff = math.abs(os.difftime(date, discrete_value_date))
+            local diff = math.abs(date - discrete_values_for_name[i].result_date)
             local result_as_number =
                 discrete_values_for_name[i].result and
                 tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
@@ -205,7 +201,7 @@ return function(Account)
     --- @class (exact) GetDiscreteValueNearestAfterDateArgs
     --- @field account Account? Account object (uses global account if not provided)
     --- @field discreteValueName string The name of the discrete value to search for
-    --- @field date string The date to search for the nearest discrete value to
+    --- @field date integer The date to search for the nearest discrete value to
     --- @field predicate (fun(discrete_value: DiscreteValue, num: number?):boolean)? Predicate function to filter discrete values
 
     --------------------------------------------------------------------------------
@@ -219,17 +215,15 @@ return function(Account)
         --- @type Account
         local account = args.account or Account
         local discrete_value_name = args.discreteValueName
-        local date_string = args.date
+        local date = args.date
         local predicate = args.predicate
-
-        local date = dates.date_string_to_int(date_string)
 
         local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
         --- @type DiscreteValue?
         local nearest = nil
         local nearest_diff = math.huge
         for i = 1, #discrete_values_for_name do
-            local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
+            local discrete_value_date = discrete_values_for_name[i].result_date
             local result_as_number =
                 discrete_values_for_name[i].result and
                 tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
@@ -260,17 +254,15 @@ return function(Account)
         --- @type Account
         local account = args.account or Account
         local discrete_value_name = args.discreteValueName
-        local date_string = args.date
+        local date = args.date
         local predicate = args.predicate
-
-        local date = dates.date_string_to_int(date_string)
 
         local discrete_values_for_name = account:find_discrete_values(discrete_value_name)
         --- @type DiscreteValue?
         local nearest = nil
         local nearest_diff = math.huge
         for i = 1, #discrete_values_for_name do
-            local discrete_value_date = dates.date_string_to_int(discrete_values_for_name[i].result_date)
+            local discrete_value_date = discrete_values_for_name[i].result_date
             local result_as_number =
                 discrete_values_for_name[i].result and
                 tonumber(string.gsub(discrete_values_for_name[i].result, "[<>]", "")) or
@@ -297,16 +289,15 @@ return function(Account)
         local dv_dates = {}
         for _, dv_name in ipairs(dv_names) do
             for _, dv in ipairs(account:find_discrete_values(dv_name)) do
-                local dv_date = dates.date_string_to_int(dv.result_date)
                 -- check if table already contains the date
                 local found = false
                 for _, date in ipairs(dv_dates) do
-                    if date == dv_date then
+                    if date == dv.result_date then
                         found = true
                         break
                     end
                 end
-                if not found then table.insert(dv_dates, dv_date) end
+                if not found then table.insert(dv_dates, dv.result_date) end
             end
         end
 
@@ -333,9 +324,9 @@ return function(Account)
         --- @type DiscreteValue[]
         local discrete_values = {}
 
-        --- @type string
+        --- @type integer?
         local first_date = nil
-        --- @type string
+        --- @type integer?
         local last_date = nil
         --- @type string
         local concat_values = ""
@@ -349,7 +340,7 @@ return function(Account)
             end
         end
         table.sort(discrete_values, function(a, b)
-            return dates.date_string_to_int(a.result_date) > dates.date_string_to_int(b.result_date)
+            return a.result_date > b.result_date
         end)
 
         if #discrete_values == 0 then
@@ -458,8 +449,9 @@ return function(Account)
                 date = first_value.result_date,
                 predicate = function(second_value, second_num)
                     return (
-                        math.abs(dates.date_string_to_int(first_value.result_date) - dates.date_string_to_int(second_value.result_date)) <= max_diff
-                    ) and predicate2(second_value, second_num) and join_predicate(first_value, second_value, first_num, second_num)
+                            math.abs(first_value.result_date - second_value.result_date) <= max_diff
+                        ) and predicate2(second_value, second_num) and
+                        join_predicate(first_value, second_value, first_num, second_num)
                 end
             }
             if second_value then
@@ -787,5 +779,6 @@ return function(Account)
             end)
         end
     end
+
     return module
 end

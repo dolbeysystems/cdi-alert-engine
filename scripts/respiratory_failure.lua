@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -74,7 +74,7 @@ local calc_venous_blood_co2 = function(dv_, num) return num > 55 end
 --- Links returned use the seq field to communicate other meaning:
 --- 2 - Ratio was calcluated by site
 --- 8 - Ratio was calculated by us and needs a warning added before it
---- 
+---
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_fi_o2_links()
@@ -84,10 +84,23 @@ local function get_pa_o2_fi_o2_links()
 
     --- Lookup table for converting spO2 to paO2
     local sp_o2_to_pa_o2_lookup = {
-        [80] = 44, [81] = 45, [82] = 46, [83] = 47, [84] = 49,
-        [85] = 50, [86] = 51, [87] = 52, [88] = 54, [89] = 56,
-        [90] = 58, [91] = 60, [92] = 64, [93] = 68, [94] = 73,
-        [95] = 80, [96] = 90
+        [80] = 44,
+        [81] = 45,
+        [82] = 46,
+        [83] = 47,
+        [84] = 49,
+        [85] = 50,
+        [86] = 51,
+        [87] = 52,
+        [88] = 54,
+        [89] = 56,
+        [90] = 58,
+        [91] = 60,
+        [92] = 64,
+        [93] = 68,
+        [94] = 73,
+        [95] = 80,
+        [96] = 90
     }
     --- Lookup table for converting oxygen flow rate to FiO2
     local flow_rate_to_fi_o2_lookup = {
@@ -154,7 +167,7 @@ local function get_pa_o2_fi_o2_links()
                     local link = cdi_alert_link()
                     link.discrete_value_id = fi_o2_dv.unique_id
                     link.link_text =
-                        os.date(fi_o2_dv.result_date) ..
+                        os.date("%c", fi_o2_dv.result_date) ..
                         " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                         ") and PaO2 (" .. pa_o2 ..
                         ") yielding a ratio of (" .. ratio .. ")"
@@ -198,7 +211,7 @@ local function get_pa_o2_fi_o2_links()
                         local link = cdi_alert_link()
                         link.discrete_value_id = fi_o2_dv.unique_id
                         link.link_text =
-                            os.date(fi_o2_dv.result_date) ..
+                            os.date("%c", fi_o2_dv.result_date) ..
                             " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                             ") and SpO2(" .. sp_o2 ..
                             ") yielding a ratio of (" .. ratio .. ")"
@@ -246,11 +259,11 @@ local function get_pa_o2_fi_o2_links()
                                 discreteValueNames = dv_respiratory_rate,
                                 date = oxygen_pair.first.result_date,
                             }
-                            -- Build link 
+                            -- Build link
                             local link = cdi_alert_link()
                             link.discrete_value_id = oxygen_pair.first.unique_id
                             link.link_text =
-                                os.date(oxygen_pair.first.result_date) ..
+                                os.date("%c", oxygen_pair.first.result_date) ..
                                 " - Calculated PaO2/FiO2 from Oxygen Flow Rate(" .. oxygen_flow_rate_value ..
                                 " - " .. oxygen_therapy_value ..
                                 ") and PaO2 (" .. pa_o2 ..
@@ -306,7 +319,7 @@ local function get_pa_o2_fi_o2_links()
                                 local link = cdi_alert_link()
                                 link.discrete_value_id = oxygen_pair.first.unique_id
                                 link.link_text =
-                                    os.date(oxygen_pair.first.result_date) ..
+                                    os.date("%c", oxygen_pair.first.result_date) ..
                                     " - Calculated PaO2/FiO2 from Oxygen Flow Rate(" .. oxygen_flow_rate_value ..
                                     " - " .. oxygen_therapy_value ..
                                     ") and SpO2 (" .. sp_o2 ..
@@ -331,11 +344,11 @@ end
 --------------------------------------------------------------------------------
 --- Get fallback links for PaO2 and SpO2
 --- These are gathered if the PaO2/FiO2 collection fails
---- 
+---
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_sp_o2_links()
-    --- @param date_time string?
+    --- @param date_time integer?
     --- @param link_text string
     --- @param result string?
     --- @param id string?
@@ -346,7 +359,7 @@ local function get_pa_o2_sp_o2_links()
         local link = cdi_alert_link()
 
         if date_time then
-            link_text = link_text:gsub("[RESULTDATETIME]", date_time)
+            link_text = link_text:gsub("[RESULTDATETIME]", os.date("%c", date_time))
         else
             link_text = link_text:gsub("(Result Date: [RESULTDATETIME])", "")
         end
@@ -382,39 +395,39 @@ local function get_pa_o2_sp_o2_links()
     sp_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_sp_o2,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) < 91
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) < 91
         end
     }
 
     pa_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_pa_o2,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) <= 60
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) <= 60
         end
     }
 
     o2_therapy_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_oxygen_therapy,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and dv.result ~= nil
+            return dv.result_date >= date_limit and dv.result ~= nil
         end
     }
 
     respiratory_rate_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_respiratory_rate,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) ~= nil
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) ~= nil
         end
     }
 
     if #pa_o2_discrete_values > 0 then
         for idx, item in pa_o2_discrete_values do
-            matching_date = dates.date_string_to_int(item.result_date)
+            matching_date = item.result_date
             pa_dv_idx = idx
             if #o2_therapy_discrete_values > 0 then
                 for idx2, item2 in o2_therapy_discrete_values do
-                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
-                        matching_date = dates.date_string_to_int(item.result_date)
+                    if item.result_date == item2.result_date then
+                        matching_date = item.result_date
                         ot_dv_idx = idx2
                         oxygen_value = item2.result
                         break
@@ -425,7 +438,7 @@ local function get_pa_o2_sp_o2_links()
             end
             if #respiratory_rate_discrete_values > 0 then
                 for idx3, item3 in respiratory_rate_discrete_values do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         rr_dv_idx = idx3
                         resp_rate_str = item3.result
                         break
@@ -485,13 +498,13 @@ local function get_pa_o2_sp_o2_links()
         return matched_list
     elseif #sp_o2_discrete_values > 0 then
         for idx, item in sp_o2_discrete_values do
-            matching_date = dates.date_string_to_int(item.result_date)
+            matching_date = item.result_date
             sp_dv_idx = idx
 
             if #o2_therapy_discrete_values > 0 then
                 for idx2, item2 in o2_therapy_discrete_values do
-                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
-                        matching_date = dates.date_string_to_int(item.result_date)
+                    if item.result_date == item2.result_date then
+                        matching_date = item.result_date
                         ot_dv_idx = idx2
                         oxygen_value = item2.result
                         break
@@ -502,7 +515,7 @@ local function get_pa_o2_sp_o2_links()
             end
             if #respiratory_rate_discrete_values > 0 then
                 for idx3, item3 in respiratory_rate_discrete_values do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         rr_dv_idx = idx3
                         resp_rate_str = item3.result
                         break
@@ -661,7 +674,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local spec_code_dic = {
         ["J96.01"] = "Acute Respiratory Failure With Hypoxia",
@@ -949,7 +962,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif acute_respiratory_failure_hypox and (ci == 0 or odc == 0 or loc == 0) then
         -- 1
         documented_dx_header:add_link(acute_respiratory_failure_hypox)
@@ -961,7 +973,6 @@ if not existing_alert or not existing_alert.validated then
         if lacking_pulse_oximetry_dv then vital_signs_intake_header:add_link(lacking_pulse_oximetry_dv) end
         Result.subtitle = "Acute Respiratory Failure With Hypoxia Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif
         subtitle == "Acute Respiratory Failure With Hypercapnia Possibly Lacking Supporting Evidence" and
         (
@@ -978,7 +989,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif acute_respiratory_failure_hyper and (ci == 0 or odc == 0 or hc == 0) then
         -- 2
         documented_dx_header:add_link(acute_respiratory_failure_hyper)
@@ -987,7 +997,6 @@ if not existing_alert or not existing_alert.validated then
         if hc < 1 then laboratory_studies_header:add_link(links.get_matched_criteria_link(link_text4)) end
         Result.subtitle = "Acute Respiratory Failure With Hypercapnia Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif
         (
             subtitle == "Respiratory Failure Dx Missing Acuity and Type" or
@@ -1005,25 +1014,21 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to Specifed Code now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif j9691_code then
         -- 3
         documented_dx_header:add_link(j9691_code)
         Result.subtitle = "Respiratory Failure with Hypoxia, Acuity Missing"
         Result.passed = true
-
     elseif j9692_code then
         -- 4
         documented_dx_header:add_link(j9692_code)
         Result.subtitle = "Respiratory Failure with Hypercapnia, Acuity Missing"
         Result.passed = true
-
     elseif j9690_code then
         -- 5
         documented_dx_header:add_link(j9690_code)
         Result.subtitle = "Respiratory Failure Dx Missing Acuity and Type"
         Result.passed = true
-
     elseif
         subtitle == "Possible Chronic Respiratory Failure" and
         (j9601_code or j9602_code or j95821_code or j80_code or j9621_code or j9622_code or j9611_code or j9612_code)
@@ -1039,7 +1044,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to Specifed Code now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         #account_unspec_codes == 0 and
         #account_spec_codes == 0 and
@@ -1050,7 +1054,6 @@ if not existing_alert or not existing_alert.validated then
         -- 6
         Result.subtitle = "Possible Acute Respiratory Failure"
         Result.passed = true
-
     elseif
         subtitle == "Possible Chronic Respiratory Failure" and
         (j9601_code or j9602_code or j95821_code or j80_code or j9621_code or j9622_code or j9611_code or j9612_code)
@@ -1068,12 +1071,10 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to Specifed Code now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif negation_acute_respiratory_failure and z930_code and (oc >= 1 or hc >= 1) then
         -- 7
         Result.subtitle = "Possible Chronic Respiratory Failure"
         Result.passed = true
-
     elseif z9981_code or z9911_code then
         -- 8
         Result.subtitle = "Possible Chronic Respiratory Failure"
@@ -1096,7 +1097,9 @@ if not existing_alert or not existing_alert.validated then
             }
             if r4182_code then
                 clinical_evidence_header:add_link(r4182_code)
-                if altered_abs then altered_abs.hidden = true; clinical_evidence_header:add_link(altered_abs) end
+                if altered_abs then
+                    altered_abs.hidden = true; clinical_evidence_header:add_link(altered_abs)
+                end
             else
                 clinical_evidence_header:add_link(altered_abs)
             end
@@ -1293,9 +1296,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

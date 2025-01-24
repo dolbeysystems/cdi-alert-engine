@@ -223,7 +223,6 @@ dependencies = [
  "ahash",
  "base64 0.13.1",
  "bitvec",
- "chrono",
  "hex",
  "indexmap 2.7.1",
  "js-sys",
@@ -281,7 +280,6 @@ dependencies = [
  "alua",
  "anyhow",
  "bson",
- "chrono",
  "clap",
  "derive_environment",
  "fae-ghost",
@@ -317,10 +315,8 @@ checksum = "7e36cc9d416881d2e24f9a963be5fb1cd90966419ac844274161d10488b3e825"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -620,7 +616,7 @@ dependencies = [
 [[package]]
 name = "fae-ghost"
 version = "0.1.0"
-source = "git+ssh://git@github.com/dolbeysystems/fae-ghost?rev=e9b11ba#e9b11ba49bc22fa2d20fc74bf4376cb3f7a7c7aa"
+source = "git+ssh://git@github.com/dolbeysystems/fae-ghost?rev=9b62c73#9b62c733f116b90b058493ecf1723a13ead76b27"
 dependencies = [
  "cfg-if",
  "mlua",

@@ -1,9 +1,9 @@
 use crate::cac_data::*;
 use crate::config;
 use anyhow::{Context, Result};
-use chrono::DateTime;
-use chrono::{TimeZone, Utc};
 use mongodb::bson::doc;
+use std::time::Duration;
+use std::time::SystemTime;
 use std::{collections::HashMap, sync::Arc};
 use tracing::*;
 
@@ -38,7 +38,7 @@ pub async fn next_pending_account(
 }
 
 fn cache_by_date<'a, T: Clone + 'a>(
-    get_date: impl Fn(&T) -> DateTime<Utc>,
+    get_date: impl Fn(&T) -> SystemTime,
     mut root_values: impl Iterator<Item = (&'a str, &'a T)> + Clone,
     hashed_values: &mut HashMap<Arc<str>, Vec<T>>,
 ) {
@@ -86,7 +86,7 @@ pub async fn get_account_by_id(
     debug!("Checking account #{:?} for external discrete values", id);
     let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
     let mut discrete_values_cursor = discrete_values_collection
-        .find(doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : Utc::now() - chrono::Duration::days(dv_days_back as i64) } })
+        .find(doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
         .await?;
 
     let mut external_discrete_values = Vec::new();
@@ -108,7 +108,8 @@ pub async fn get_account_by_id(
 }
 
 pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_back: u32) {
-    let oldest_allowed = Utc::now() - chrono::Duration::days(dv_days_back as i64);
+    let oldest_allowed =
+        SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60);
     let root_discrete_values = account
         .discrete_values
         .iter()
@@ -119,7 +120,8 @@ pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_b
         root_discrete_values,
         &mut account.hashed_discrete_values,
     );
-    let oldest_allowed = Utc::now() - chrono::Duration::days(med_days_back as i64);
+    let oldest_allowed =
+        SystemTime::now() - Duration::from_secs(med_days_back as u64 * 24 * 60 * 60);
     let root_medications = account
         .medications
         .iter()
@@ -136,7 +138,7 @@ pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_b
         account
             .hashed_documents
             .entry(document_type.into())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(document.clone());
 
         for code_reference in document.code_references.iter() {
@@ -144,7 +146,7 @@ pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_b
             account
                 .hashed_code_references
                 .entry(code_reference.code.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(CodeReferenceWithDocument {
                     document: document.clone(),
                     code_reference: code_reference.clone(),
@@ -154,7 +156,7 @@ pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_b
             account
                 .hashed_code_references
                 .entry(code_reference.code.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(CodeReferenceWithDocument {
                     document: document.clone(),
                     code_reference: code_reference.clone(),
@@ -276,152 +278,11 @@ pub async fn save<'config>(
             evaluation_queue_collection
                 .insert_one(EvaluationQueueEntry {
                     id: account.id.clone(),
-                    time_queued: Utc::now(),
+                    time_queued: SystemTime::now(),
                     source: "Requeue".to_string(),
                 })
                 .await?;
         }
     }
-    Ok(())
-}
-
-pub async fn create_test_data(
-    connection_string: &str,
-    number_of_test_accounts: usize,
-) -> Result<()> {
-    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
-        .await
-        .with_context(|| format!("while connecting to {connection_string}"))?;
-    let cac_database = cac_database_client.database("FusionCAC2");
-    let account_collection = cac_database.collection::<Account>("accounts");
-    let evaluation_queue_collection =
-        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
-
-    // create test accounts #TEST_CDI_X
-    for i in 0..number_of_test_accounts {
-        let account_number = format!("TEST_CDI_{}", &i.to_string());
-        account_collection
-            .insert_one(Account {
-                id: account_number,
-                // April 17, 2024 12:00:00 PM
-                admit_date_time: Some(Utc.with_ymd_and_hms(2024, 4, 17, 12, 0, 0).unwrap()),
-                discharge_date_time: None,
-                patient: Some(Arc::new(Patient {
-                    mrn: Some("123456".to_string()),
-                    first_name: Some("John".to_string()),
-                    middle_name: Some("Q".to_string()),
-                    last_name: Some("Public".to_string()),
-                    gender: Some("M".to_string()),
-                    birthdate: Some(Utc::now()),
-                })),
-                patient_type: Some("Inpatient".to_string()),
-                admit_source: Some("Emergency Room".to_string()),
-                admit_type: Some("Emergency".to_string()),
-                hospital_service: Some("Medicine".to_string()),
-                building: Some("Main".to_string()),
-                documents: vec![
-                    Arc::new(CACDocument {
-                        document_id: "DOC_001".into(),
-                        document_type: Some("Discharge Summary".to_string()),
-                        document_date: Some(Utc::now()),
-                        content_type: Some("text/plain".to_string()),
-                        code_references: vec![
-                            Arc::new(CodeReference {
-                                code: "I10".into(),
-                                value: None,
-                                description: Some("Essential (primary) hypertension".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                            Arc::new(CodeReference {
-                                code: "E11".into(),
-                                value: None,
-                                description: Some("Type 2 Diabetes".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                        ],
-                        abstraction_references: vec![],
-                    }),
-                    Arc::new(CACDocument {
-                        document_id: "DOC_002".into(),
-                        document_type: Some("Physician Note".to_string()),
-                        document_date: Some(Utc::now()),
-                        content_type: Some("text/plain".to_string()),
-                        code_references: vec![
-                            Arc::new(CodeReference {
-                                code: "R99".into(),
-                                value: None,
-                                description: Some("".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                            Arc::new(CodeReference {
-                                code: "A10".into(),
-                                value: None,
-                                description: Some("".to_string()),
-                                phrase: Some("".to_string()),
-                                start: Some(0),
-                                length: Some(4),
-                            }),
-                        ],
-                        abstraction_references: vec![],
-                    }),
-                ],
-                medications: vec![],
-                discrete_values: vec![],
-                cdi_alerts: vec![],
-                working_history: vec![],
-                hashed_code_references: HashMap::new(),
-                hashed_discrete_values: HashMap::new(),
-                hashed_medications: HashMap::new(),
-                hashed_documents: HashMap::new(),
-            })
-            .await?;
-    }
-
-    // Queue up test accounts #TEST_CDI_X
-    for i in 0..number_of_test_accounts {
-        let account_number = format!("TEST_CDI_{}", &i.to_string());
-        evaluation_queue_collection
-            .insert_one(EvaluationQueueEntry {
-                id: account_number,
-                time_queued: Utc::now(),
-                source: "test".to_string(),
-            })
-            .await?;
-    }
-    Ok(())
-}
-
-pub async fn delete_test_data(connection_string: &str) -> Result<()> {
-    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
-        .await
-        .with_context(|| format!("while connecting to {connection_string}"))?;
-    let cac_database = cac_database_client.database("FusionCAC2");
-    let account_collection = cac_database.collection::<Account>("accounts");
-    let evaluation_queue_collection =
-        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
-    let evaluation_results_collection =
-        cac_database.collection::<bson::Document>("EvaluationResults");
-
-    // delete test account #TEST_CDI_001
-    account_collection
-        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } })
-        .await?;
-
-    // delete cdi queue entries for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
-    evaluation_queue_collection
-        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } })
-        .await?;
-
-    // delete cdi results for #TEST_CDI_001 and #TEST_CDI_002 if they are still present
-    evaluation_results_collection
-        .delete_many(doc! { "_id": { "$regex": "^TEST_CDI_.*" } })
-        .await?;
-
     Ok(())
 }

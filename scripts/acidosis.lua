@@ -11,12 +11,11 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
@@ -162,7 +161,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["E08.10"] = "Diabetes mellitus due to underlying condition with ketoacidosis without coma",
@@ -183,11 +182,11 @@ if not existing_alert or not existing_alert.validated then
     local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
     --------------------------------------------------------------------------------
-    --- Predicate function filtering a medication list to only include medications 
+    --- Predicate function filtering a medication list to only include medications
     --- within 12 hours of one of these three discrete values: arterialBlood, pH, blood CO2
-    --- 
+    ---
     --- @param med Medication Medication being filtered
-    --- 
+    ---
     --- @return boolean True if the medication passes, false otherwise
     --------------------------------------------------------------------------------
     local acidosis_med_predicate = function(med)
@@ -203,12 +202,10 @@ if not existing_alert or not existing_alert.validated then
             table.insert(med_dv_dates, date)
         end
 
-        local med_date = dates.date_string_to_int(med.start_date)
-
         for _, dv_date in ipairs(med_dv_dates) do
             local dv_date_after = dv_date + 12 * 60 * 60
             local dv_date_before = dv_date - 12 * 60 * 60
-            if med_date >= dv_date_before and med_date <= dv_date_after then
+            if med.start_date >= dv_date_before and med.start_date <= dv_date_after then
                 return true
             end
         end
@@ -362,7 +359,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         subtitle == respiratory_acidosis_lacking_evidence_subtitle and
         (#venous_co2_dv_links > 0 or #ph_dv_links > 0) and
@@ -373,7 +369,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         (subtitle == possible_lactic_acidosis_subtitle or subtitle == possible_acidosis_subtitle) and
         (unspecified_exist or full_specified_exist)
@@ -432,7 +427,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         not acute_respiratory_acidosis_abstraction_link and
         not j9602_code_link and
@@ -448,8 +442,6 @@ if not existing_alert or not existing_alert.validated then
 
         Result.subtitle = possible_acute_respiratory_acidosis_subtitle
         Result.passed = true
-
-
     elseif
         acute_respiratory_acidosis_abstraction_link and
         not venous_co2_dv_links and
@@ -461,12 +453,10 @@ if not existing_alert or not existing_alert.validated then
         documented_dx_header:add_link(acute_respiratory_acidosis_abstraction_link)
         Result.subtitle = respiratory_acidosis_lacking_evidence_subtitle
         Result.passed = true
-
     elseif not full_specified_exist and not unspecified_exist and #high_serum_lactate_level_dv_links > 0 then
         -- Trigger alert for Possible Lactic Acidosis
         Result.subtitle = possible_lactic_acidosis_subtitle
         Result.passed = true
-
     elseif
         (
             not unspecified_exist and
@@ -556,7 +546,8 @@ if not existing_alert or not existing_alert.validated then
             if not blood_glucose_dv_link then
                 laboratory_studies_header:add_link(blood_glucose_dv_link)
             else
-                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_poc_dv_name, "Blood Glucose", blood_glucose_poc1_predicate)
+                laboratory_studies_header:add_discrete_value_one_of_link(blood_glucose_poc_dv_name, "Blood Glucose",
+                    blood_glucose_poc1_predicate)
             end
 
             laboratory_studies_header:add_abstraction_link("POSITIVE_KETONES_IN_URINE", "Positive Ketones In Urine")
@@ -589,7 +580,8 @@ if not existing_alert or not existing_alert.validated then
             )
 
             -- Lactate, ph, and blood links
-            lactate_header:add_discrete_value_one_of_link(serum_lactate_dv_name, "Serum Lactate", serum_lactate2_predicate)
+            lactate_header:add_discrete_value_one_of_link(serum_lactate_dv_name, "Serum Lactate",
+                serum_lactate2_predicate)
             lactate_header:add_links(high_serum_lactate_level_dv_links)
 
             ph_header:add_links(low_arterial_blood_ph_multi_dv_links)
@@ -600,11 +592,16 @@ if not existing_alert or not existing_alert.validated then
 
 
             -- Vitals
-            vital_signs_intake_header:add_discrete_value_one_of_link(glasgow_coma_scale_dv_name, "Glasgow Coma Scale", glasgow_coma_scale1_predicate)
-            vital_signs_intake_header:add_discrete_value_one_of_link(heart_rate_dv_name, "Heart Rate", heart_rate1_predicate)
-            vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_name, "Mean Arterial Pressure", map1_predicate)
-            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate", respiratory_rate1_predicate)
-            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate", respiratory_rate2_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(glasgow_coma_scale_dv_name, "Glasgow Coma Scale",
+                glasgow_coma_scale1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(heart_rate_dv_name, "Heart Rate",
+                heart_rate1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(map_dv_name, "Mean Arterial Pressure",
+                map1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate",
+                respiratory_rate1_predicate)
+            vital_signs_intake_header:add_discrete_value_one_of_link(respiratory_rate_dv_name, "Respiratory Rate",
+                respiratory_rate2_predicate)
             vital_signs_intake_header:add_discrete_value_one_of_link(spo2_dv_name, "SpO2", spo21_predicate)
             vital_signs_intake_header:add_discrete_value_one_of_link(
                 sbp_dv_name,
@@ -626,7 +623,8 @@ if not existing_alert or not existing_alert.validated then
             if #high_serum_bicarbonate_dv_links > 0 then
                 abg_hco3_header:add_links(high_serum_bicarbonate_dv_links)
             else
-                abg_hco3_header:add_discrete_value_one_of_link(serum_bicarbonate_dv_name, "HC03", serum_bicarbonate3_predicate)
+                abg_hco3_header:add_discrete_value_one_of_link(serum_bicarbonate_dv_name, "HC03",
+                    serum_bicarbonate3_predicate)
             end
 
             -- ABG
@@ -640,7 +638,7 @@ if not existing_alert or not existing_alert.validated then
         end
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end

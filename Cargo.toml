@@ -10,8 +10,7 @@ license-file = "license.rtf"
 [dependencies]
 alua = { version = "0.2.0", features = ["userdata"] }
 anyhow = "1.0.93"
-bson = { version = "2.9.0", features = ["chrono-0_4", "serde_with-3"] }
-chrono = "0.4.37"
+bson = { version = "2.9.0", features = ["serde_with-3"] }
 clap = { version = "4.5.4", features = ["derive"] }
 derive_environment = "1.1.0"
 futures = "0.3.28"
@@ -28,6 +27,6 @@ tracing-subscriber = "0.3.18"
 [dependencies.fae-ghost]
 git = "ssh://git@github.com/dolbeysystems/fae-ghost"
 # TODO: Use the v1.0 tag when available.
-rev = "e9b11ba"
+rev = "9b62c73"
 default-features = false
 features = ["luajit"]

@@ -11,11 +11,10 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 local lists = require("libs.common.lists")
@@ -30,11 +29,13 @@ local dv_alanine_transaminase = { "ALT", "ALT/SGPT (U/L)	16-61" }
 local calc_alanine_transaminase1 = function(dv_, num) return num > 61 end
 local dv_aspartate_transaminase = { "AST", "AST/SGOT (U/L)" }
 local calc_aspartate_transaminase1 = function(dv_, num) return num > 35 end
-local dv_dbp = { "BP Arterial Diastolic cc (mm Hg)", "DBP 3.5 (No Calculation) (mmhg)", "DBP 3.5 (No Calculation) (mm Hg)" }
+local dv_dbp = { "BP Arterial Diastolic cc (mm Hg)", "DBP 3.5 (No Calculation) (mmhg)",
+    "DBP 3.5 (No Calculation) (mm Hg)" }
 local calc_dbp1 = function(dv_, num) return num > 120 end
 local dv_glasgow_coma_scale = { "3.5 Neuro Glasgow Score" }
 local calc_glasgow_coma_scale1 = function(dv_, num) return num < 15 end
-local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
+local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)",
+    "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
 local dv_map = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
 local calc_sbp1 = function(dv_, num) return num > 180 end
@@ -111,10 +112,10 @@ local function bp_single_line_lookup(sbp_dic, dbp_dic)
         dbp_dv = nil
         hr_dv = nil
         map_dv = nil
-        matching_date = dates.date_string_to_int(item.result_date)
+        matching_date = item.result_date
         if m > 0 then
             for _, item1 in map_discrete_values do
-                if dates.date_string_to_int(item1.result_date) == matching_date then
+                if item1.result_date == matching_date then
                     map_dv = item1.result
                     break
                 end
@@ -122,14 +123,14 @@ local function bp_single_line_lookup(sbp_dic, dbp_dic)
         end
         if h > 0 then
             for _, item2 in heart_rate_discrete_values do
-                if dates.date_string_to_int(item2.result_date) == matching_date then
+                if item2.result_date == matching_date then
                     hr_dv = item2.result
                     break
                 end
             end
         end
         for _, item3 in ipairs(dbp_dic) do
-            if dates.date_string_to_int(item3.result_date) == matching_date then
+            if item3.result_date == matching_date then
                 dbp_dv = item3.result
                 break
             end
@@ -176,12 +177,13 @@ local function linked_greater_values()
             local x_item = dbp_discrete_values[x]
             local a_item = sbp_discrete_values[a]
 
-            local x_date = dates.date_string_to_int(x_item.result_date)
-            local a_date = dates.date_string_to_int(a_item.result_date)
+            local x_date = x_item.result_date
+            local a_date = a_item.result_date
 
             if s <= 0 or a <= 0 then
                 break
             elseif
+                x_date ~= nil and a_date ~= nil and
                 x_date == a_date and
                 x_item.result > value and
                 a_item.result > value2 and
@@ -197,7 +199,7 @@ local function linked_greater_values()
                 table.insert(matched_sbp_list, a_item.result)
                 x = x - 1
                 a = a - 1
-            elseif x_date ~= a_date then
+            elseif x_date ~= nil and a_date ~= nil and x_date ~= a_date then
                 for _, item2 in ipairs(sbp_discrete_values) do
                     if x_item.result_date == item2.result_date then
                         if
@@ -258,7 +260,7 @@ local function non_linked_greater_values()
         table.insert(combined_discrete_values, item)
     end
     table.sort(combined_discrete_values, function(a, b)
-        return dates.date_string_to_int(a.result_date) < dates.date_string_to_int(b.result_date)
+        return a.result_date < b.result_date
     end)
 
     local discrete_dic2 = {}
@@ -276,7 +278,7 @@ local function non_linked_greater_values()
                 id_list[item.unique_id] = true
                 for _, item2 in ipairs(combined_discrete_values) do
                     if
-                        dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) and
+                        item.result_date == item2.result_date and
                         lists.includes(dv_sbp, item2.name) and
                         not id_list[item2.unique_id]
                     then
@@ -291,7 +293,7 @@ local function non_linked_greater_values()
                 id_list[item.unique_id] = true
                 for _, item2 in ipairs(combined_discrete_values) do
                     if
-                        dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) and
+                        item.result_date == item2.result_date and
                         lists.includes(dv_dbp, item2.name) and
                         tonumber(item2.result) > value and
                         not id_list[item2.unique_id]
@@ -623,7 +625,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Hypertensive Crisis Conflicting Dx Codes"
         Result.passed = true
-
     elseif subtitle == "Unspecified Hypertensive Crisis Dx" and (i160_code or i161_code) then
         -- 2.1
         if i160_code then
@@ -638,13 +639,11 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif i169_code and (bp_multi_dv[1][1] or bp_multi_dv[2][1]) and not i160_code and not i161_code then
         -- 2.0
         documented_dx_header:add_link(i169_code)
         Result.subtitle = "Unspecified Hypertensive Crisis Dx"
         Result.passed = true
-
     elseif subtitle == "Unspecified Hypertensive Crisis Dx Possibly Lacking Blood Pressure Criteria" and (sbp_dv or dbp_dv) then
         -- 3.1
         vital_signs_intake_header:add_link(sbp_dv)
@@ -653,14 +652,12 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif i169_code and not sbp_dv and not dbp_dv then
         -- 3
         documented_dx_header:add_link(i169_code)
         documented_dx_header:add_text_link("Possible No Blood Pressure Values Meeting Criteria, Please Review")
         Result.subtitle = "Unspecified Hypertensive Crisis Dx Possibly Lacking Blood Pressure Criteria"
         Result.passed = true
-
     elseif subtitle == "Possible Hypertensive Emergency" and i161_code then
         -- 4.1
         if i161_code then
@@ -671,7 +668,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         i161_code and
         (
@@ -705,8 +701,6 @@ if not existing_alert or not existing_alert.validated then
         treatment_and_monitoring_header:add_link(sodium_nitroprusside_iv_med)
         Result.subtitle = "Possible Hypertensive Emergency"
         Result.passed = true
-
-
     elseif subtitle == "Possible Hypertensive Crisis" and (i160_code or i161_code) then
         -- 5.1
         if i160_code then
@@ -721,7 +715,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif
         not i160_code and
         not i161_code and
@@ -738,7 +731,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Possible Hypertensive Crisis"
         Result.passed = true
-
     elseif subtitle == "Hypertensive Emergency Dx Possibly Lacking Supporting Evidence" and (eods > 0 and (sbp_dv or dbp_dv)) then
         -- 6.1
         vital_signs_intake_header:add_link(sbp_dv)
@@ -747,7 +739,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif i161_code and (eods == 0 or (not sbp_dv and not dbp_dv)) then
         -- 6
         documented_dx_header:add_link(i161_code)
@@ -782,8 +773,10 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("ELEVATED_TROPONINS", "Troponemia")
 
             -- Labs
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_ts_amphetamine, "Drug/Tox Screen: Amphetamine Screen Urine")
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_ts_cocaine, "Drug/Tox Screen: Cocaine Screen Urine")
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_ts_amphetamine,
+                "Drug/Tox Screen: Amphetamine Screen Urine")
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_ts_cocaine,
+                "Drug/Tox Screen: Cocaine Screen Urine")
 
             -- Meds
             treatment_and_monitoring_header:add_medication_link("Antianginal Medication", "Antianginal Medication")
@@ -807,9 +800,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

@@ -11,12 +11,11 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 local cdi_alert_link = require "cdi.link"
@@ -122,7 +121,10 @@ local function glasgow_linked_values(value, consecutive)
     }
     local oxygen_dvs = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_oxygen_therapy,
-        predicate = function(dv, num_) return string.find(dv.result, "vent") ~= nil or string.find(dv.result, "Vent") ~= nil end
+        predicate = function(dv, num_)
+            return string.find(dv.result, "vent") ~= nil or
+                string.find(dv.result, "Vent") ~= nil
+        end
     }
 
     local matched_list = {}
@@ -136,13 +138,12 @@ local function glasgow_linked_values(value, consecutive)
     local z = d - 1
 
     local clean_numbers = function(num) return tonumber(string.gsub(num, "[<>]", "")) end
-    local twelve_hour_check = function(date_string, oxygen_dvs_)
-        local date_int = dates.date_string_to_int(date_string)
+    local twelve_hour_check = function(date, oxygen_dvs_)
         for _, dv in ipairs(oxygen_dvs_) do
-            local dv_date_int = dates.date_string_to_int(dv.result_date)
+            local dv_date_int = dv.result_date
             local start_date = dv_date_int - (12 * 3600)
             local end_date = dv_date_int - (12 * 3600)
-            if start_date <= date_int and date_int <= end_date then
+            if start_date <= date and date <= end_date then
                 return false
             end
         end
@@ -153,9 +154,9 @@ local function glasgow_linked_values(value, consecutive)
             a > 0 and b > 0 and c > 0 and d > 0 and
             eye_dvs[b].result ~= 'Oriented' and
             clean_numbers(score_dvs[a].result) <= value and
-            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(eye_dvs[b].result_date) and
-            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(verbal_dvs[c].result_date) and
-            dates.date_string_to_int(score_dvs[a].result_date) == dates.date_string_to_int(motor_dvs[d].result_date) and
+            score_dvs[a].result_date == eye_dvs[b].result_date and
+            score_dvs[a].result_date == verbal_dvs[c].result_date and
+            score_dvs[a].result_date == motor_dvs[d].result_date and
             twelve_hour_check(score_dvs[a].result_date, oxygen_dvs)
         then
             local matching_date = score_dvs[a].result_date
@@ -177,9 +178,9 @@ local function glasgow_linked_values(value, consecutive)
             w > 0 and x > 0 and y > 0 and z > 0 and
             eye_dvs[x].result ~= 'Oriented' and
             clean_numbers(score_dvs[w].result) <= value and
-            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(eye_dvs[x].result_date) and
-            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(verbal_dvs[y].result_date) and
-            dates.date_string_to_int(score_dvs[w].result_date) == dates.date_string_to_int(motor_dvs[z].result_date) and
+            score_dvs[w].result_date == eye_dvs[x].result_date and
+            score_dvs[w].result_date == verbal_dvs[y].result_date and
+            score_dvs[w].result_date == motor_dvs[z].result_date and
             twelve_hour_check(score_dvs[w].result_date, oxygen_dvs)
         then
             local matching_date = score_dvs[w].result_date
@@ -309,7 +310,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["E51.2"] = "Wernicke's Encephalopathy",
@@ -845,7 +846,6 @@ if not existing_alert or not existing_alert.validated then
         documented_dx_vars.k712_code or
         documented_dx_vars.toxic_liver_disease_code
     then
-
         clinical_evidence_header:add_link(documented_dx_vars.acute_subacute_hepatic_fail_code)
         clinical_evidence_header:add_link(documented_dx_vars.alcohol_heptac_fail_code)
         clinical_evidence_header:add_link(documented_dx_vars.chronic_hepatic_failure_code)
@@ -1108,7 +1108,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to Glascow Coma Score or NCI Existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif existing_alert and #account_alert_codes == 1 and documented_dx_vars.r4182_code == nil and #glasgow_coma_score_links == 0 and nci == 0 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
@@ -1123,7 +1122,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Encephalopathy Dx Documented Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif
         subtitle == "Hepatic Encephalopathy Documented, but No Evidence of Liver Failure Found" and
         (
@@ -1148,7 +1146,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to Liver Disease/Failure DX Code Existing On Account."
         Result.validated = true
         Result.passed = true
-
     elseif
         existing_alert and
         documented_dx_vars.k7682_code and
@@ -1165,7 +1162,6 @@ if not existing_alert or not existing_alert.validated then
         documented_dx_header:add_link(documented_dx_vars.k7682_code)
         Result.subtitle = "Hepatic Encephalopathy Documented, but No Evidence of Liver Failure Found"
         Result.passed = true
-
     elseif #account_alert_codes > 1 and not (documented_dx_vars.g928_code and documented_dx_vars.g9341_code) or #account_alert_codes > 2 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
@@ -1181,7 +1177,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Encephalopathy Conflicting Dx " .. table.concat(account_alert_codes, ", ")
         Result.passed = true
-
     elseif #account_alert_codes == 1 or documented_dx_vars.severe_alzheimers_abs or documented_dx_vars.severe_dementia_abs then
         if existing_alert then
             for _, code in ipairs(account_alert_codes) do
@@ -1201,16 +1196,13 @@ if not existing_alert or not existing_alert.validated then
         else
             Result.passed = false
         end
-
     elseif existing_alert and documented_dx_vars.g9340_code then
         documented_dx_header:add_link(documented_dx_vars.g9340_code)
         Result.subtitle = "Unspecified Encephalopathy Dx"
         Result.passed = true
-
     elseif existing_alert and #glasgow_coma_score_links > 2 or (#glasgow_coma_score_links == 1 and nci > 0) and ci > 0 then
         Result.subtitle = "Possible Encephalopathy Dx"
         Result.passed = true
-
     elseif
         #glasgow_coma_score_links > 0 or
         (nci >= 1 and not (documented_dx_vars.dementia1 or documented_dx_vars.dementia2 or documented_dx_vars.dementia3 or documented_dx_vars.alzheimers_neg)) or
@@ -1240,7 +1232,8 @@ if not existing_alert or not existing_alert.validated then
             -- 4-5
             clinical_evidence_header:add_abstraction_link("AGITATION", "Agitation")
             -- 7-12
-            local altered_abs = clinical_evidence_header:add_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
+            local altered_abs = clinical_evidence_header:add_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                "Altered Level Of Consciousness")
             if documented_dx_vars.r4182_code then
                 if altered_abs then
                     altered_abs.hidden = true
@@ -1298,8 +1291,10 @@ if not existing_alert or not existing_alert.validated then
             eeg_header:add_document_link("EEG", "EEG")
 
             -- Labs
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_alkaline_phos, "Alkaline Phos", calc_alkaline_phos1)
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_bilirubin_total, "Bilirubin Total", calc_bilirubin_total1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_alkaline_phos, "Alkaline Phos",
+                calc_alkaline_phos1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_bilirubin_total, "Bilirubin Total",
+                calc_bilirubin_total1)
             laboratory_studies_header:add_link(lab_vars.cblood_dv)
 
             -- Meds
@@ -1314,7 +1309,8 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_abstraction_link("LACTULOSE", "Lactulose")
 
             -- Vitals
-            vital_signs_intake_header:add_code_one_of_link({ "F10.220", "F10.221", "F10.229" }, "Acute Alcohol Intoxication")
+            vital_signs_intake_header:add_code_one_of_link({ "F10.220", "F10.221", "F10.229" },
+                "Acute Alcohol Intoxication")
             -- 2-5
             vital_signs_intake_header:add_link(vital_vars.temp2_discrete_value_names)
 
@@ -1401,9 +1397,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

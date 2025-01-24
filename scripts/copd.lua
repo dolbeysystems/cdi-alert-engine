@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -36,7 +36,8 @@ local dv_breath_sounds = { "" }
 local dv_oxygen_therapy = { "DELIVERY" }
 local dv_respiratory_pattern = { "" }
 local dv_fi_o2 = { "FI02" }
-local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)", "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
+local dv_heart_rate = { "Heart Rate cc (bpm)", "3.5 Heart Rate (Apical) (bpm)", "3.5 Heart Rate (Other) (bpm)",
+    "3.5 Heart Rate (Radial) (bpm)", "SCC Monitor Pulse (bpm)" }
 local calc_heart_rate1 = function(dv_, num) return num > 90 end
 local dv_oxygen_flow_rate = { "Oxygen Flow Rate (L/min)" }
 local calc_oxygen_flow_rate1 = function(dv_, num) return num > 2 end
@@ -62,7 +63,7 @@ local dv_sputum_culture = { "" }
 --- Links returned use the seq field to communicate other meaning:
 --- 2 - Ratio was calcluated by site
 --- 8 - Ratio was calculated by us and needs a warning added before it
---- 
+---
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_fi_o2_links()
@@ -72,10 +73,23 @@ local function get_pa_o2_fi_o2_links()
 
     --- Lookup table for converting spO2 to paO2
     local sp_o2_to_pa_o2_lookup = {
-        [80] = 44, [81] = 45, [82] = 46, [83] = 47, [84] = 49,
-        [85] = 50, [86] = 51, [87] = 52, [88] = 54, [89] = 56,
-        [90] = 58, [91] = 60, [92] = 64, [93] = 68, [94] = 73,
-        [95] = 80, [96] = 90
+        [80] = 44,
+        [81] = 45,
+        [82] = 46,
+        [83] = 47,
+        [84] = 49,
+        [85] = 50,
+        [86] = 51,
+        [87] = 52,
+        [88] = 54,
+        [89] = 56,
+        [90] = 58,
+        [91] = 60,
+        [92] = 64,
+        [93] = 68,
+        [94] = 73,
+        [95] = 80,
+        [96] = 90
     }
     --- Lookup table for converting oxygen flow rate to FiO2
     local flow_rate_to_fi_o2_lookup = {
@@ -142,13 +156,14 @@ local function get_pa_o2_fi_o2_links()
                     local link = cdi_alert_link()
                     link.discrete_value_id = fi_o2_dv.unique_id
                     link.link_text =
-                        os.date(fi_o2_dv.result_date) ..
+                        os.date("%c", fi_o2_dv.result_date) ..
                         " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                         ") and PaO2 (" .. pa_o2 ..
                         ") yielding a ratio of (" .. ratio .. ")"
                     link.sequence = 8
                     if resp_rate_dv then
-                        link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                        link.link_text = link.link_text ..
+                            " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                     end
 
                     table.insert(pa_o2_fi_o2_ratio_links, link)
@@ -183,13 +198,14 @@ local function get_pa_o2_fi_o2_links()
                         local link = cdi_alert_link()
                         link.discrete_value_id = fi_o2_dv.unique_id
                         link.link_text =
-                            os.date(fi_o2_dv.result_date) ..
+                            os.date("%c", fi_o2_dv.result_date) ..
                             " - Calculated PaO2/FiO2 from FiO2 (" .. fi_o2 ..
                             ") and SpO2(" .. sp_o2 ..
                             ") yielding a ratio of (" .. ratio .. ")"
                         link.sequence = 8
                         if resp_rate_dv then
-                            link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                            link.link_text = link.link_text ..
+                                " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                         end
                         table.insert(pa_o2_fi_o2_ratio_links, link)
                     end
@@ -212,7 +228,8 @@ local function get_pa_o2_fi_o2_links()
                         date = oxygen_pair.first.result_date,
                         predicate = function(dv)
                             return
-                                dates.dates_are_less_than_x_minutes_apart(oxygen_pair.first.result_date, dv.result_date, 5) and
+                                dates.dates_are_less_than_x_minutes_apart(oxygen_pair.first.result_date, dv.result_date,
+                                    5) and
                                 tonumber(dv.result) ~= nil
                         end
                     }
@@ -224,18 +241,19 @@ local function get_pa_o2_fi_o2_links()
                                 discreteValueNames = dv_respiratory_rate,
                                 date = oxygen_pair.first.result_date,
                             }
-                            -- Build link 
+                            -- Build link
                             local link = cdi_alert_link()
                             link.discrete_value_id = oxygen_pair.first.unique_id
                             link.link_text =
-                                os.date(oxygen_pair.first.result_date) ..
+                                os.date("%c", oxygen_pair.first.result_date) ..
                                 " - Calculated PaO2/FiO2 from Oxygen Flow Rate(" .. oxygen_flow_rate_value ..
                                 " - " .. oxygen_therapy_value ..
                                 ") and PaO2 (" .. pa_o2 ..
                                 ") yielding a ratio of (" .. ratio .. ")"
                             link.sequence = 8
                             if resp_rate_dv then
-                                link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                                link.link_text = link.link_text ..
+                                    " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                             end
                             table.insert(pa_o2_fi_o2_ratio_links, link)
                         end
@@ -259,7 +277,8 @@ local function get_pa_o2_fi_o2_links()
                         date = oxygen_pair.first.result_date,
                         predicate = function(dv)
                             return
-                                dates.dates_are_less_than_x_minutes_apart(oxygen_pair.first.result_date, dv.result_date, 5) and
+                                dates.dates_are_less_than_x_minutes_apart(oxygen_pair.first.result_date, dv.result_date,
+                                    5) and
                                 tonumber(dv.result) ~= nil
                         end
                     }
@@ -277,14 +296,15 @@ local function get_pa_o2_fi_o2_links()
                                 local link = cdi_alert_link()
                                 link.discrete_value_id = oxygen_pair.first.unique_id
                                 link.link_text =
-                                    os.date(oxygen_pair.first.result_date) ..
+                                    os.date("%c", oxygen_pair.first.result_date) ..
                                     " - Calculated PaO2/FiO2 from Oxygen Flow Rate(" .. oxygen_flow_rate_value ..
                                     " - " .. oxygen_therapy_value ..
                                     ") and SpO2 (" .. sp_o2 ..
                                     ") yielding a ratio of (" .. ratio .. ")"
                                 link.sequence = 8
                                 if resp_rate_dv then
-                                    link.link_text = link.link_text .. " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
+                                    link.link_text = link.link_text ..
+                                        " - Respiratory Rate: " .. discrete.get_dv_value_number(resp_rate_dv)
                                 end
                                 table.insert(pa_o2_fi_o2_ratio_links, link)
                             end
@@ -299,11 +319,11 @@ end
 --------------------------------------------------------------------------------
 --- Get fallback links for PaO2 and SpO2
 --- These are gathered if the PaO2/FiO2 collection fails
---- 
+---
 --- @return CdiAlertLink[]
 --------------------------------------------------------------------------------
 local function get_pa_o2_sp_o2_links()
-    --- @param date_time string?
+    --- @param date_time integer?
     --- @param link_text string
     --- @param result string?
     --- @param id string?
@@ -314,9 +334,9 @@ local function get_pa_o2_sp_o2_links()
         local link = cdi_alert_link()
 
         if date_time then
-            link_text = link_text:gsub("[RESULTDATETIME]", date_time)
+            link_text = link_text:gsub("[RESULTDATETIME]", os.date("%c", date_time))
         else
-            link_text = link_text:gsub("(Result Date: [RESULTDATETIME])", "")
+            link_text = link_text:gsub("[RESULTDATETIME]", "")
         end
         if result then
             link_text = link_text:gsub("[VALUE]", result)
@@ -350,39 +370,39 @@ local function get_pa_o2_sp_o2_links()
     sp_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_sp_o2,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) < 91
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) < 91
         end
     }
 
     pa_o2_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_pa_o2,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) <= 60
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) <= 60
         end
     }
 
     o2_therapy_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_oxygen_therapy,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and dv.result ~= nil
+            return dv.result_date >= date_limit and dv.result ~= nil
         end
     }
 
     respiratory_rate_discrete_values = discrete.get_ordered_discrete_values {
         discreteValueNames = dv_respiratory_rate,
         predicate = function(dv)
-            return dates.date_string_to_int(dv.result_date) >= date_limit and discrete.get_dv_value_number(dv) ~= nil
+            return dv.result_date >= date_limit and discrete.get_dv_value_number(dv) ~= nil
         end
     }
 
     if #pa_o2_discrete_values > 0 then
         for idx, item in pa_o2_discrete_values do
-            matching_date = dates.date_string_to_int(item.result_date)
+            matching_date = item.result_date
             pa_dv_idx = idx
             if #o2_therapy_discrete_values > 0 then
                 for idx2, item2 in o2_therapy_discrete_values do
-                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
-                        matching_date = dates.date_string_to_int(item.result_date)
+                    if item.result_date == item2.result_date then
+                        matching_date = item.result_date
                         ot_dv_idx = idx2
                         oxygen_value = item2.result
                         break
@@ -393,7 +413,7 @@ local function get_pa_o2_sp_o2_links()
             end
             if #respiratory_rate_discrete_values > 0 then
                 for idx3, item3 in respiratory_rate_discrete_values do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         rr_dv_idx = idx3
                         resp_rate_str = item3.result
                         break
@@ -453,13 +473,13 @@ local function get_pa_o2_sp_o2_links()
         return matched_list
     elseif #sp_o2_discrete_values > 0 then
         for idx, item in sp_o2_discrete_values do
-            matching_date = dates.date_string_to_int(item.result_date)
+            matching_date = item.result_date
             sp_dv_idx = idx
 
             if #o2_therapy_discrete_values > 0 then
                 for idx2, item2 in o2_therapy_discrete_values do
-                    if dates.date_string_to_int(item.result_date) == dates.date_string_to_int(item2.result_date) then
-                        matching_date = dates.date_string_to_int(item.result_date)
+                    if item.result_date == item2.result_date then
+                        matching_date = item.result_date
                         ot_dv_idx = idx2
                         oxygen_value = item2.result
                         break
@@ -470,7 +490,7 @@ local function get_pa_o2_sp_o2_links()
             end
             if #respiratory_rate_discrete_values > 0 then
                 for idx3, item3 in respiratory_rate_discrete_values do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         rr_dv_idx = idx3
                         resp_rate_str = item3.result
                         break
@@ -525,7 +545,6 @@ local function get_pa_o2_sp_o2_links()
                     )
                 )
             end
-
         end
         return matched_list
     else
@@ -927,7 +946,8 @@ if not existing_alert or not existing_alert.validated then
         clinical_evidence_header:add_code_link("U07.1", "Covid-19")
         clinical_evidence_header:add_code_link("R53.83", "Fatigue")
         clinical_evidence_header:add_abstraction_link("LOW_FORCED_EXPIRATORY_VOLUME_1", "Low Forced Expiratory Volume 1")
-        clinical_evidence_header:add_abstraction_link("BACTERIAL_PNEUMONIA_ORGANISM", "Possible Bacterial Pneumonia Organism")
+        clinical_evidence_header:add_abstraction_link("BACTERIAL_PNEUMONIA_ORGANISM",
+            "Possible Bacterial Pneumonia Organism")
         clinical_evidence_header:add_abstraction_link("FUNGAL_PNEUMONIA_ORGANISM", "Possible Fungal Pneumonia Organism")
         clinical_evidence_header:add_abstraction_link("VIRAL_PNEUMONIA_ORGANISM", "Possible Viral Pneumonia Organism")
         clinical_evidence_header:add_discrete_value_one_of_link(
@@ -1044,9 +1064,8 @@ if not existing_alert or not existing_alert.validated then
         end
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

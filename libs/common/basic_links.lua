@@ -1,7 +1,6 @@
 ---@diagnostic disable-next-line:name-style-check
 return function(Account)
     local module = {}
-    local dates = require("libs.common.dates")
     local cdi_alert_link = require "cdi.link"
 
     ---------------------------------------------------------------------------------------------
@@ -218,7 +217,7 @@ return function(Account)
         local max_per_value = args.max_per_value or 9999
         local include_standard_suffix = args.include_standard_suffix
         local sort = args.sort or function(a, b)
-            return dates.date_string_to_int(a.document_date) > dates.date_string_to_int(b.document_date)
+            return a.document_date > b.document_date
         end
 
         if include_standard_suffix == nil or include_standard_suffix then
@@ -303,7 +302,7 @@ return function(Account)
         local use_cdi_alert_category_field = args.useCdiAlertCategoryField or false
         local one_per_date = args.onePerDate or false
         local sort = args.sort or function(a, b)
-            return dates.date_string_to_int(a.start_date) > dates.date_string_to_int(b.start_date)
+            return a.start_date > b.start_date
         end
 
         if include_standard_suffix == nil or include_standard_suffix then
@@ -319,8 +318,7 @@ return function(Account)
         --- @type Medication[]
         local medications = {}
 
-        for i = 1, #medication_categories do
-            local medication_category = medication_categories[i]
+        for _, medication_category in ipairs(medication_categories) do
             local medications_for_category = {}
 
             if use_cdi_alert_category_field then
@@ -412,7 +410,7 @@ return function(Account)
         local max_per_value = args.max_per_value or 9999
         local include_standard_suffix = args.include_standard_suffix
         local sort = args.sort or function(a, b)
-            return dates.date_string_to_int(a.result_date) > dates.date_string_to_int(b.result_date)
+            return a.result_date > b.result_date
         end
 
         if include_standard_suffix == nil or include_standard_suffix then

@@ -15,7 +15,6 @@
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
-local dates = require("libs.common.dates")
 local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 local lists = require("libs.common.lists")
@@ -195,7 +194,7 @@ local function dv_value_multi_min()
             local sbp_dv = nil
             local id = nil
 
-            local matching_date = dates.date_string_to_int(item.result_date)
+            local matching_date = item.result_date
             if
                 lists.includes(dv_sbp, item.name) and
                 item.unique_id and
@@ -217,7 +216,7 @@ local function dv_value_multi_min()
 
                 for _, item1 in map_dvs do
                     if
-                        dates.date_string_to_int(item1.result_date) == matching_date and
+                        item1.result_date == matching_date and
                         lists.includes(dv_map, item1.name)
                     then
                         map_dv = item1.result
@@ -244,7 +243,7 @@ local function dv_value_multi_min()
 
                 for item in sbp_dvs do
                     if
-                        dates.date_string_to_int(item.result_date) == matching_date and
+                        item.result_date == matching_date and
                         lists.includes(dv_sbp, item.name)
                     then
                         sbp_dv = item.result
@@ -256,7 +255,7 @@ local function dv_value_multi_min()
 
             if h > 0 then
                 for _, item2 in hr_dvs do
-                    if dates.date_string_to_int(item2.result_date) == matching_date then
+                    if item2.result_date == matching_date then
                         hr_dv = item2.result
                         break
                     end
@@ -264,7 +263,7 @@ local function dv_value_multi_min()
             end
             if d > 0 then
                 for _, item3 in dbp_dvs do
-                    if dates.date_string_to_int(item3.result_date) == matching_date then
+                    if item3.result_date == matching_date then
                         dbp_dv = item3.result
                         break
                     end
@@ -591,7 +590,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif r6521_code and (ods == 0 or ssi == 0) then
         if ods == 0 then
             organ_dysfunction_sign_header:add_text_link("Possible Missing Signs of Organ Dysfunction Please Review")
@@ -604,7 +602,6 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Severe Sepsis with Septic Shock Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif subtitle == "Severe Sepsis without Septic Shock Possibly Lacking Supporting Evidence" and ods > 0 then
         if message2_found then
             organ_dysfunction_sign_header:add_text_link("Possible Missing Signs of Organ Dysfunction Please Review")
@@ -613,38 +610,32 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to clinical evidence now existing on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif r6520_code and ods == 0 then
         organ_dysfunction_sign_header:add_text_link("Possible Missing Signs of Organ Dysfunction Please Review")
         organ_dysfunction_sign_header:add_link(r6520_code)
         Result.subtitle = "Severe Sepsis without Septic Shock Possibly Lacking Supporting Evidence"
         Result.passed = true
-
     elseif subtitle == "Possible Severe Sepsis without Septic Shock present" and (r6520_code or r6521_code) then
         documented_dx_header:add_link(r6520_code)
         documented_dx_header:add_link(r6521_code)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to specified code now existing on the Account"
         Result.passed = true
-
     elseif sepsis_code and r6520_code and not r6521_code and ods >= 2 and ssi == 0 then
         documented_dx_header:add_link(sepsis_code)
         Result.subtitle = "Possible Severe Sepsis without Septic Shock present"
         Result.passed = true
-
     elseif subtitle == "Possible Severe Sepsis with Septic Shock present" and r6521_code then
         documented_dx_header:add_link(r6521_code)
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to specified code now existing on the Account"
         Result.passed = true
-
     elseif (sepsis_code or r6520_code) and r6521_code and ods >= 2 and (ssi >= 1 or r579_code) then
         documented_dx_header:add_link(sepsis_code)
         documented_dx_header:add_link(r579_code)
         documented_dx_header:add_link(r6520_code)
         Result.subtitle = "Possible Severe Sepsis with Septic Shock present"
         Result.passed = true
-
     end
 
 
