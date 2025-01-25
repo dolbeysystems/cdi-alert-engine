@@ -2,12 +2,21 @@ use anyhow::{bail, Context};
 use cdi_alert_engine::cac_data::{self, Account, CdiAlert};
 use cdi_alert_engine::cdi_alerts;
 use mlua::LuaSerdeExt;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::{fs, process::exit};
 use tracing::warn;
 
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
+
+    let (passed, failed, error) =
+        if let Ok("truecolor" | "24bit") = env::var("COLORTERM").as_ref().map(String::as_str) {
+            use colored::Colorize;
+            ("passed".green(), "failed".red(), "error".red())
+        } else {
+            ("passed".into(), "failed".into(), "error".into())
+        };
 
     let lua = cdi_alert_engine::make_runtime()?;
     let collections = fae_ghost::lib(&lua)?;
@@ -49,7 +58,7 @@ fn main() -> anyhow::Result<()> {
                     match expected_result.call::<(bool, Option<mlua::String>)>(result) {
                         Ok((true, _)) => {
                             eprintln!(
-                                "{}:{} ... passed",
+                                "{}:{} ... {passed}",
                                 script_path.display(),
                                 account_script_path.display()
                             );
@@ -57,7 +66,7 @@ fn main() -> anyhow::Result<()> {
                         }
                         Ok((false, reason)) => {
                             eprintln!(
-                                "{}:{} ... failed",
+                                "{}:{} ... {failed}",
                                 script_path.display(),
                                 account_script_path.display()
                             );
@@ -68,7 +77,7 @@ fn main() -> anyhow::Result<()> {
                         }
                         Err(e) => {
                             eprintln!(
-                                "{}:{} ... error",
+                                "{}:{} ... {error}",
                                 script_path.display(),
                                 account_script_path.display()
                             );
@@ -79,7 +88,7 @@ fn main() -> anyhow::Result<()> {
                 }
                 Err(e) => {
                     eprintln!(
-                        "{}:{} ... error",
+                        "{}:{} ... {error}",
                         script_path.display(),
                         account_script_path.display()
                     );

@@ -12,6 +12,7 @@ alua = { version = "0.2.0", features = ["userdata"] }
 anyhow = "1.0.93"
 bson = { version = "2.9.0", features = ["serde_with-3"] }
 clap = { version = "4.5.4", features = ["derive"] }
+colored = "3.0.0"
 derive_environment = "1.1.0"
 futures = "0.3.28"
 mlua = { version = "0.10.1", features = ["async", "error-send", "luajit", "macros", "serialize", "userdata-wrappers", "vendored"] }
