@@ -120,11 +120,11 @@ if not existing_alert or not existing_alert.validated then
     local potassium_replacement_med_link =
         medications.make_medication_link(potassium_replacement_medication_name, "Potassium Replacement", 5)
     local potassium_chloride_abs_link =
-        codes.make_abstraction_value_link("POTASSIUM_CHLORIDE", "Potassium Chloride Absorption", 6)
+        codes.make_abstraction_link("POTASSIUM_CHLORIDE", "Potassium Chloride Absorption", 6)
     local potassium_phosphate_abs_link =
-        codes.make_abstraction_value_link("POTASSIUM_PHOSPHATE", "Potassium Phosphate Absorption", 7)
+        codes.make_abstraction_link("POTASSIUM_PHOSPHATE", "Potassium Phosphate Absorption", 7)
     local potassium_bicarbonate_abs_link =
-        codes.make_abstraction_value_link("POTASSIUM_BICARBONATE", "Potassium Bicarbonate Absorption", 8)
+        codes.make_abstraction_link("POTASSIUM_BICARBONATE", "Potassium Bicarbonate Absorption", 8)
 
 
 
@@ -237,7 +237,7 @@ if not existing_alert or not existing_alert.validated then
         documented_dx_header:add_link(e876_code_link)
         laboratory_studies_header:add_text_link(review_low_potassium_link_text)
 
-        Result.subtitle = hyperkalemia_lacking_evidence_subtitle
+        Result.subtitle = hypokalemia_lacking_evidence_subtitle
         Result.passed = true
     end
 
@@ -266,7 +266,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("WEAKNESS", "Muscle Weakness")
             clinical_evidence_header:add_abstraction_link("VOMITING", "Vomiting")
             clinical_evidence_header:add_link(dextrose_medication_link)
-            clinical_evidence_header:add_links(hemodialysis_codes_links)
+            clinical_evidence_header:add_links(unpack(hemodialysis_codes_links))
             clinical_evidence_header:add_link(insulin_medication_link)
             clinical_evidence_header:add_link(kayexalate_med_link)
             clinical_evidence_header:add_link(potassium_replacement_med_link)

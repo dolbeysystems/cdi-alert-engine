@@ -62,7 +62,6 @@ return function(Account)
         return links.get_code_links(arguments)
     end
 
-
     --------------------------------------------------------------------------------
     --- Make a code link
     ---
@@ -87,7 +86,7 @@ return function(Account)
     --- @param text string The text for the link
     --- @param sequence number? The sequence number of the link
     ---
-    --- @return CdiAlertLink[]? - a list of links to the codes or nil if not found
+    --- @return CdiAlertLink[] - a list of links to the codes or nil if not found
     --------------------------------------------------------------------------------
     function module.make_code_links(codes, text, sequence)
         return links.get_code_links {

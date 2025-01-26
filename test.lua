@@ -66,8 +66,21 @@ return {
             "UTI Dx Possible Link To Intermittent Catheterization"),
     },
     ["scripts/functional_quadriplegia.lua"] = {
-        ["test/identity.lua"] = not_passed,
-        ["test/functional_quadriplegia/autoresolve.lua"] = autoresolve,
         -- This script is missing a function so these tests are incomplete
+        -- ["test/identity.lua"] = not_passed,
+        -- ["test/functional_quadriplegia/autoresolve.lua"] = autoresolve,
+    },
+    ["scripts/abnormal_serum_potassium.lua"] = {
+        ["test/identity.lua"] = not_passed,
+        ["test/abnormal_serum_potassium/hyperkalemia_autoresolve.lua"] = autoresolve,
+        ["test/abnormal_serum_potassium/hypokalemia_autoresolve.lua"] = autoresolve,
+        ["test/abnormal_serum_potassium/hyperkalemia_lacking_evidence_autoresolve.lua"] = autoresolve,
+        ["test/abnormal_serum_potassium/hypokalemia_lacking_evidence_autoresolve.lua"] = autoresolve,
+        ["test/abnormal_serum_potassium/hyperkalemia.lua"] = subtitle("Possible Hyperkalemia Dx"),
+        ["test/abnormal_serum_potassium/hypokalemia.lua"] = subtitle("Possible Hypokalemia Dx"),
+        ["test/abnormal_serum_potassium/hyperkalemia_lacking_evidence.lua"] = subtitle(
+            "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence"),
+        ["test/abnormal_serum_potassium/hypokalemia_lacking_evidence.lua"] = subtitle(
+            "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"),
     }
 }
