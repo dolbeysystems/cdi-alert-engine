@@ -266,7 +266,7 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_abstraction_link("WEAKNESS", "Muscle Weakness")
             clinical_evidence_header:add_abstraction_link("VOMITING", "Vomiting")
             clinical_evidence_header:add_link(dextrose_medication_link)
-            clinical_evidence_header:add_links(unpack(hemodialysis_codes_links))
+            clinical_evidence_header:add_links(hemodialysis_codes_links)
             clinical_evidence_header:add_link(insulin_medication_link)
             clinical_evidence_header:add_link(kayexalate_med_link)
             clinical_evidence_header:add_link(potassium_replacement_med_link)

@@ -242,7 +242,7 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_medication_link(lithium_medication_name, "Lithium")
             treatment_and_monitoring_header:add_abstraction_link("LITHIUM", "Lithium")
 
-            treatment_and_monitoring_header:add_links(unpack(methadone_medication_links))
+            treatment_and_monitoring_header:add_links(methadone_medication_links)
 
             treatment_and_monitoring_header:add_link(methadone_abstraction_link)
 

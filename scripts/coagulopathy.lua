@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -98,7 +98,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["D65"] = "Disseminated Intravascular Coagulation",
@@ -161,8 +161,10 @@ if not existing_alert or not existing_alert.validated then
 
     -- Labs Subheadings
     local inr13_dv = discrete.make_discrete_value_links(dv_inr, "INR", calc_inr3, 10)
-    local ptt_dv = discrete.make_discrete_value_links(dv_partial_thromboplastin_time, "Partial Thromboplastin Time", calc_partial_thromboplastin_time1, 10)
-    local platelet_count150_dv = discrete.make_discrete_value_links(dv_platelet_count, "Platelet Count", calc_platelet_count1, 10)
+    local ptt_dv = discrete.make_discrete_value_links(dv_partial_thromboplastin_time, "Partial Thromboplastin Time",
+        calc_partial_thromboplastin_time1, 10)
+    local platelet_count150_dv = discrete.make_discrete_value_links(dv_platelet_count, "Platelet Count",
+        calc_platelet_count1, 10)
     local pt_dv = discrete.make_discrete_value_links(dv_prothrombin_time, "Prothrombin Time", calc_prothrombin_time1, 10)
 
     -- Meds
@@ -191,25 +193,20 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    if #account_alert_codes > 0 then
-        if existing_alert then
-            for _, code in ipairs(account_alert_codes) do
-                local desc = alert_code_dictionary[code]
-                local temp_code = codes.make_code_link(code, desc)
-                if temp_code then
-                    documented_dx_header:add_link(temp_code)
-                    break
-                end
+    if existing_alert and #account_alert_codes > 0 then
+        for _, code in ipairs(account_alert_codes) do
+            local desc = alert_code_dictionary[code]
+            local temp_code = codes.make_code_link(code, desc)
+            if temp_code then
+                documented_dx_header:add_link(temp_code)
+                break
             end
-            Result.outcome = "AUTORESOLVED"
-            Result.reason = "Autoresolved due to one Specified Code on the account"
-            Result.validated = true
-            Result.passed = true
         end
-    elseif not hemorrhage_abs and not gi_bleed_codes and med_check and multi_dv_values > 1 then
-        Result.subtitle = "Possible Coagulopathy Dx"
+        Result.outcome = "AUTORESOLVED"
+        Result.reason = "Autoresolved due to one Specified Code on the account"
+        Result.validated = true
         Result.passed = true
-    elseif (hemorrhage_abs or gi_bleed_codes) and med_check and multi_dv_values > 1 then
+    elseif med_check and multi_dv_values > 1 then
         Result.subtitle = "Possible Coagulopathy Dx"
         Result.passed = true
     end
@@ -230,28 +227,35 @@ if not existing_alert or not existing_alert.validated then
             clinical_evidence_header:add_code_link("K72.11", "Chronic Hepatic Failure with Coma")
             clinical_evidence_header:add_code_link("K72.90", "Hepatic Failure Unspecified without Coma")
             clinical_evidence_header:add_code_link("K72.91", "Hepatic Failure Unspecified with Coma")
-            clinical_evidence_header:add_link(gi_bleed_codes)
+            clinical_evidence_header:add_links(gi_bleed_codes)
             clinical_evidence_header:add_link(hemorrhage_abs)
             clinical_evidence_header:add_code_link("D61.818", "Pancytopenia")
             clinical_evidence_header:add_code_link("M32.9", "Systemic Lupus Erythematous")
             clinical_evidence_header:add_code_link("E56.1", "Vitamin K Deficiency")
 
             -- Blood
-            blood_product_transfusion_header:add_discrete_value_one_of_link(cryoprecipitate_discrete_value, "Cryoprecipitate", calc_any1)
+            blood_product_transfusion_header:add_discrete_value_one_of_link(cryoprecipitate_discrete_value,
+                "Cryoprecipitate", calc_any1)
             blood_product_transfusion_header:add_code_link("30233M1", "Cryoprecipitate Transfusion")
             blood_product_transfusion_header:add_code_link("30233T1", "Fibrinogen Transfusion")
             blood_product_transfusion_header:add_code_one_of_link({ "30233L1", "30243L1" }, "Fresh Plasma Transfusion")
-            blood_product_transfusion_header:add_discrete_value_one_of_link(dv_plasma_transfusion, "Plasma Transfusion", calc_any1)
-            blood_product_transfusion_header:add_discrete_value_one_of_link(dv_platelet_transfusion, "Platelet Transfusion", calc_any1)
+            blood_product_transfusion_header:add_discrete_value_one_of_link(dv_plasma_transfusion, "Plasma Transfusion",
+                calc_any1)
+            blood_product_transfusion_header:add_discrete_value_one_of_link(dv_platelet_transfusion,
+                "Platelet Transfusion", calc_any1)
 
             -- Labs
-            laboratory_studies_header:add_discrete_value_one_of_link(activated_clotting_time_dv_name, "Activated Clotting Time", activated_clotting_time_predicate)
+            laboratory_studies_header:add_discrete_value_one_of_link(activated_clotting_time_dv_name,
+                "Activated Clotting Time", activated_clotting_time_predicate)
             laboratory_studies_header:add_link(ddimer4_dv)
             laboratory_studies_header:add_link(ddimer0484_dv)
             laboratory_studies_header:add_link(fibrinogen_dv)
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_homocysteine_levels, "Homocysteine Levels", calc_homocysteine_levels1)
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_protein_c_resistance, "Protein C Resistance", calc_protein_c_resistance1)
-            laboratory_studies_header:add_discrete_value_one_of_link(dv_thrombin_time, "Thrombin Time", calc_thrombin_time1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_homocysteine_levels, "Homocysteine Levels",
+                calc_homocysteine_levels1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_protein_c_resistance, "Protein C Resistance",
+                calc_protein_c_resistance1)
+            laboratory_studies_header:add_discrete_value_one_of_link(dv_thrombin_time, "Thrombin Time",
+                calc_thrombin_time1)
 
             -- Lab Subheadings
             laboratory_studies_header:add_links(inr13_dv)
@@ -274,16 +278,16 @@ if not existing_alert or not existing_alert.validated then
             medications_header:add_link(z7901_code)
             medications_header:add_link(z7902_code)
             medications_header:add_link(z7982_code)
-            medications_header:add_abstraction_link("PLASMA_DERIVED_FACTOR_CONCENTRATE", "Plasma Derived Factor Concentrate")
+            medications_header:add_abstraction_link("PLASMA_DERIVED_FACTOR_CONCENTRATE",
+                "Plasma Derived Factor Concentrate")
             medications_header:add_abstraction_link("RECOMBINANT_FACTOR_CONCENTRATE", "Recombinant Factor Concentrate")
         end
 
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

@@ -82,5 +82,10 @@ return {
             "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence"),
         ["test/abnormal_serum_potassium/hypokalemia_lacking_evidence.lua"] = subtitle(
             "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"),
-    }
+    },
+    ["scripts/coagulopathy.lua"] = {
+        ["test/identity.lua"] = not_passed,
+        ["test/coagulopathy/autoresolve.lua"] = autoresolve,
+        ["test/coagulopathy/possible.lua"] = subtitle("Possible Coagulopathy Dx"),
+    },
 }

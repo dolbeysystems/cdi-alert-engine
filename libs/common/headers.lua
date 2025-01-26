@@ -58,10 +58,12 @@ return function(Account)
             end,
 
             --- @param self header_builder
-            --- @param ... CdiAlertLink?
+            --- @param ... CdiAlertLink[]
             --- @return boolean
             add_links = function(self, ...)
                 local lnks = { ... }
+                -- Detect sequences instead of varargs
+                if type(lnks[1]) == "table" then lnks = lnks[1] end
                 -- Do not use ipairs; nil values will end iteration!
                 for _, link in pairs(lnks or {}) do
                     link.sequence = self.sequence_counter
