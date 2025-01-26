@@ -100,27 +100,40 @@ if not existing_alert or not existing_alert.validated then
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
-    local uti_code =
+    local uti_codes =
         codes.make_code_links({ "T83.510A", "T83.511A", "T83.512A", "T83.518" }, "UTI with Device Link Codes")
     local n390 = codes.make_code_link("N39.0", "Urinary Tract Infection")
     local r8271 = codes.make_code_link("R82.71", "Bacteriuria")
     local r8279 = codes.make_code_link("R82.79", "Positive Urine Culture")
     local r8281 = codes.make_code_link("R82.81", "Pyuria")
 
-    local urine_culture = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "Urine Culture", discrete.make_match_predicate { "positive", "negative" })
-    local urine_bacteria = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "UA Bacteria", numeric_result_predicate)
+    local urine_culture = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "Urine Culture",
+        discrete.make_match_predicate { "positive", "negative" })
+    local urine_bacteria = discrete.make_discrete_value_link({ "BACTERIA (/HPF)" }, "UA Bacteria",
+        numeric_result_predicate)
 
-    local chronic_cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_CYSTOSTOMY_CATHETER", "Cystostomy Catheter")
-    local cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CYSTOSTOMY_CATHETER", "Cystostomy Catheter")
-    local chronic_indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
-    local indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value("INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
-    local chronic_nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_NEPHROSTOMY_CATHETER", "Nephrostomy Catheter")
-    local nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("NEPHROSTOMY_CATHETER", "Nephrostomy Catheter")
-    local self_catheterization_abstraction_link = codes.make_abstraction_link_with_value("SELF_CATHETERIZATION", "Self Catheterization")
-    local straight_catheterization_abstraction_link = codes.make_abstraction_link_with_value("STRAIGHT_CATHETERIZATION", "Straight Catheterization")
-    local chronic_urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
-    local urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value("OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
-    local chronic_ureteral_stent_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_URETERAL_STENT", "Ureteral Stent")
+    local chronic_cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value(
+        "CHRONIC_CYSTOSTOMY_CATHETER", "Cystostomy Catheter")
+    local cystostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("CYSTOSTOMY_CATHETER",
+        "Cystostomy Catheter")
+    local chronic_indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value(
+        "CHRONIC_INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
+    local indwelling_urethral_catheter_abstraction_link = codes.make_abstraction_link_with_value(
+        "INDWELLING_URETHRAL_CATHETER", "Indwelling Urethral Catheter")
+    local chronic_nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value(
+        "CHRONIC_NEPHROSTOMY_CATHETER", "Nephrostomy Catheter")
+    local nephrostomy_catheter_abstraction_link = codes.make_abstraction_link_with_value("NEPHROSTOMY_CATHETER",
+        "Nephrostomy Catheter")
+    local self_catheterization_abstraction_link = codes.make_abstraction_link_with_value("SELF_CATHETERIZATION",
+        "Self Catheterization")
+    local straight_catheterization_abstraction_link = codes.make_abstraction_link_with_value("STRAIGHT_CATHETERIZATION",
+        "Straight Catheterization")
+    local chronic_urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value(
+        "CHRONIC_OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
+    local urinary_drainage_device_abstraction_link = codes.make_abstraction_link_with_value(
+        "OTHER_URINARY_DRAINAGE_DEVICE", "Urinary Drainage Device")
+    local chronic_ureteral_stent_abstraction_link = codes.make_abstraction_link_with_value("CHRONIC_URETERAL_STENT",
+        "Ureteral Stent")
     local ureteral_stent_abstraction_link = codes.make_abstraction_link_with_value("URETERAL_STENT", "Ureteral Stent")
 
 
@@ -138,7 +151,7 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code on the Account"
         Result.validated = true
         Result.passed = true
-    elseif uti_code == nil and n390 ~= nil then
+    elseif #uti_codes == 0 and n390 ~= nil then
         if documented_dx_header:add_links(chronic_cystostomy_catheter_abstraction_link, cystostomy_catheter_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Cystostomy Catheter"
@@ -151,17 +164,14 @@ if not existing_alert or not existing_alert.validated then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Nephrostomy Catheter"
             Result.passed = true
-            -- #5
         elseif documented_dx_header:add_links(chronic_urinary_drainage_device_abstraction_link, urinary_drainage_device_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Other Urinary Drainage Device"
             Result.passed = true
-            -- #6
         elseif documented_dx_header:add_links(chronic_ureteral_stent_abstraction_link, ureteral_stent_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Ureteral Stent"
             Result.passed = true
-            -- #7
         elseif documented_dx_header:add_links(self_catheterization_abstraction_link, straight_catheterization_abstraction_link) then
             documented_dx_header:add_link(n390)
             Result.subtitle = "UTI Dx Possible Link To Intermittent Catheterization"
@@ -193,7 +203,7 @@ if not existing_alert or not existing_alert.validated then
             Result.subtitle = "Possible UTI with Possible Link to Intermittent Catheterization"
             Result.passed = true
         end
-    elseif #account_alert_codes == 0 and n390 == nil and (urine_culture or urine_bacteria) then --TODO
+    elseif #account_alert_codes == 0 and n390 == nil and (urine_culture or urine_bacteria) then
         Result.subtitle = "Possible UTI"
         Result.passed = true
     end
@@ -229,7 +239,8 @@ if not existing_alert or not existing_alert.validated then
         laboratory_studies_header:add_code_link("0T2BX0Z", "Suprapubic/Foley Catheter Exchange")
 
         local r4182 = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
-        local altered_level_of_consciousness = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
+        local altered_level_of_consciousness = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS",
+            "Altered Level Of Consciousness")
         if r4182 ~= nil then
             vital_signs_header:add_link(r4182)
             if altered_level_of_consciousness ~= nil then
@@ -237,8 +248,10 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         vital_signs_header:add_link(altered_level_of_consciousness)
-        vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score", discrete.make_gt_predicate(15))
-        vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature", discrete.make_gt_predicate(38.3))
+        vital_signs_header:add_discrete_value_link("3.5 Neuro Glasgow Score", "Glasgow Coma Score",
+            discrete.make_gt_predicate(15))
+        vital_signs_header:add_discrete_value_link("Temperature Degrees C 3.5 (degrees C)", "Temperature",
+            discrete.make_gt_predicate(38.3))
 
         urinary_devices_header:add_link(urine_bacteria)
         urinary_devices_header:add_discrete_value_link("BLOOD", "UA Blood", numeric_result_predicate)

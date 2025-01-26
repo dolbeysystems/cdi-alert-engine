@@ -42,8 +42,8 @@ local alcohol_withdrawal_subtitle = "Possible Alcohol Withdrawal"
 --------------------------------------------------------------------------------
 --- Existing Alert
 --------------------------------------------------------------------------------
-local existing_alert = alerts.get_existing_cdi_alert { scriptName = ScriptName, account = Account }
-local subtitle = existing_alert and existing_alert.subtitle or nil
+local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name, account = Account }
+local subtitle = existing_alert ~= nil and existing_alert.subtitle
 
 
 
@@ -204,7 +204,8 @@ if not existing_alert or not existing_alert.validated then
                 "Alcohol Dependence"
             )
             local r4182_code_link = codes.make_code_link("R41.82", "Altered Level of Consciousness", 2)
-            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level of Consciousness", 3)
+            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                "Altered Level of Consciousness", 3)
             if r4182_code_link then
                 altered_abs.hidden = true
             end
@@ -241,7 +242,7 @@ if not existing_alert or not existing_alert.validated then
             treatment_and_monitoring_header:add_medication_link(lithium_medication_name, "Lithium")
             treatment_and_monitoring_header:add_abstraction_link("LITHIUM", "Lithium")
 
-            treatment_and_monitoring_header:add_links(methadone_medication_links)
+            treatment_and_monitoring_header:add_links(unpack(methadone_medication_links))
 
             treatment_and_monitoring_header:add_link(methadone_abstraction_link)
 

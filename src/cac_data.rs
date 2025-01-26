@@ -387,7 +387,7 @@ pub struct DiscreteValue {
     #[serde(rename = "Result")]
     pub result: Option<String>,
     #[serde(rename = "ResultDate")]
-    #[alua(as_lua = "string?")]
+    #[alua(as_lua = "integer?")]
     pub result_date: Option<SystemTime>,
 }
 impl DiscreteValue {

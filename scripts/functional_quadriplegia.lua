@@ -11,12 +11,12 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
 local codes = require("libs.common.codes")(Account)
-local discrete = require("libs.common.discrete")(Account)
+local discrete = require("libs.common.discrete_values")(Account)
 local headers = require("libs.common.headers")(Account)
 
 
@@ -76,10 +76,14 @@ if not existing_alert or not existing_alert.validated then
     local assistance_adls_abs = codes.make_abstraction_link("ASSISTANCE_WITH_ADLS", "Assistance with ADLS")
     local z741_code = codes.make_code_link("Z74.1", "Assistance with Personal Care")
     local z7401_code = codes.make_code_link("Z74.01", "Bed Bound")
-    local braden_risk_assessment_score_abs = codes.make_abstraction_link("BRADEN_RISK_ASSESSMENT_SCORE_FUNCTIONAL_QUADRIPLEGIA", "Braden Risk Assessment Score")
-    local braden_risk_assessment_score_dv = discrete.make_discrete_value_link(braden_risk_assessment_score_dv_names, "Braden Scale Activity Score", braden_risk_assessment_score_predicate)
-    local braden_risk_mobility_dv = discrete.make_discrete_value_link(braden_mobility_score_dv_names, "Braden Scale Mobility Score", braden_mobility_score_predicated)
-    local complete_assistance_adls_abs = codes.make_abstraction_link("COMPLETE_ASSISTANCE_WITH_ADLS", "Complete Assistance with ADLs")
+    local braden_risk_assessment_score_abs = codes.make_abstraction_link(
+        "BRADEN_RISK_ASSESSMENT_SCORE_FUNCTIONAL_QUADRIPLEGIA", "Braden Risk Assessment Score")
+    local braden_risk_assessment_score_dv = discrete.make_discrete_value_link(braden_risk_assessment_score_dv_names,
+        "Braden Scale Activity Score", braden_risk_assessment_score_predicate)
+    local braden_risk_mobility_dv = discrete.make_discrete_value_link(braden_mobility_score_dv_names,
+        "Braden Scale Mobility Score", braden_mobility_score_predicated)
+    local complete_assistance_adls_abs = codes.make_abstraction_link("COMPLETE_ASSISTANCE_WITH_ADLS",
+        "Complete Assistance with ADLs")
     local debilitated_abs = codes.make_abstraction_link("DEBILITATED", "Debilitated")
     local extremities_abs = codes.make_abstraction_link("MOVES_ALL_EXTREMITIES", "Extremities")
     local flaccid_limbs_abs = codes.make_abstraction_link("FLACCID_LIMBS", "Flaccid Limbs")
@@ -87,7 +91,8 @@ if not existing_alert or not existing_alert.validated then
     local muscle_contracture_abs = codes.make_abstraction_link("MUSCLE_CONTRACTURE", "Muscle Contracture")
     local sacral_decubitus_codes = codes.make_code_one_of_link({ "L89.153", "L89.154" }, "Sacral Decubitus Ulcer")
     local severe_weakness_abs = codes.make_abstraction_link("SEVERE_WEAKNESS", "Severe Weakness")
-    local spastic_hemiplegia = codes.mkae_code_one_of_link({ "G81.10", "G81.11", "G81.12", "G81.13", "G81.14" }, "Spastic Hemiplegia")
+    local spastic_hemiplegia = codes.make_code_one_of_link({ "G81.10", "G81.11", "G81.12", "G81.13", "G81.14" },
+        "Spastic Hemiplegia")
     local z930_code = codes.make_code_link("Z93.0", "Trach Dependent")
     local transfer_with_a_lift_abs = codes.make_abstraction_link("TRANSFER_WITH_A_LIFT", "Transfer With A Lift")
     local z9911_code = codes.make_code_link("Z99.11", "Ventilator Dependent")
@@ -99,13 +104,15 @@ if not existing_alert or not existing_alert.validated then
     local g804_code = codes.make_code_link("G80.4", "Ataxic Cerebral Palsy")
     local g803_code = codes.make_code_link("G80.3", "Athetoid Cerebral Palsy")
     local g71031_code = codes.make_code_link("G71.031", "Autosomal Dominant Limb Girdle Muscular Dystrophy")
-    local g71032_code = codes.make_code_link("G71.032", "Autosomal recessive limb girdle muscular dystrophy due to calpain-3 dysfunction")
+    local g71032_code = codes.make_code_link("G71.032",
+        "Autosomal recessive limb girdle muscular dystrophy due to calpain-3 dysfunction")
     local g809_code = codes.make_code_link("G80.9", "Cerebral Palsy, Unspecified")
     local g7101_code = codes.make_code_link("G71.01", "Duchenne or Becker Muscular Dystrophy")
     local g7102_code = codes.make_code_link("G71.02", "Facioscapulohumeral Muscular Dystrophy")
     local guillain_barre_syndrome_abs = codes.make_abstraction_link("GUILLAIN_BARRE_SYNDROME", "Guillain-Barre Syndrome")
     local g10_code = codes.make_code_link("G10", "Huntingtons Disease")
-    local g71035_code = codes.make_code_link("G71.035", "Limb Girdle Muscular Dystrophy due to Anoctamin-5 Dysfunction Muscular Dystrophy")
+    local g71035_code = codes.make_code_link("G71.035",
+        "Limb Girdle Muscular Dystrophy due to Anoctamin-5 Dysfunction Muscular Dystrophy")
     local g71033_code = codes.make_code_link("G71.033", "Limb Girdle Muscular Dystrophy due to Dysferlin Dysfunction")
     local g71034_code = codes.make_code_link("G71.034", "Limb Girdle Muscular Dystrophy due to Sarcoglycan Dysfunction")
     local g71039_code = codes.make_code_link("G71.039", "Limb Girdle Muscular Dystrophy, Unspecified")
@@ -114,9 +121,11 @@ if not existing_alert or not existing_alert.validated then
     local myasthenia_gravis_codes = codes.get_multi_code_link { codes = { "G70.00", "G70.01" }, text = "Myasthenia Gravis" }
     local g808_code = codes.make_code_link("G80.8", "Other Cerebral Palsy")
     local g20_code = codes.make_code_link("G20", "Parkinson's")
-    local g20a1_code = codes.make_code_link("G20.A1", "Parkinson's Disease without Dyskinesia, without Mention of Fluctuations")
+    local g20a1_code = codes.make_code_link("G20.A1",
+        "Parkinson's Disease without Dyskinesia, without Mention of Fluctuations")
     local g20a2_code = codes.make_code_link("G20.A2", "Parkinson's Disease without Dyskinesia, with Fluctuations")
-    local g20b1_code = codes.make_code_link("G20.B1", "Parkinson's Disease with Dyskinesia, without Mention of Fluctuations")
+    local g20b1_code = codes.make_code_link("G20.B1",
+        "Parkinson's Disease with Dyskinesia, without Mention of Fluctuations")
     local g20b2_code = codes.make_code_link("G20.B2", "Parkinson's Disease with Dyskinesia, with Fluctuations")
     local g20c_code = codes.make_code_link("G20.C", "Parkinsonism, Unspecified")
     local g801_code = codes.make_code_link("G80.1", "Spastic Diplegic Cerebral Palsy")
@@ -126,9 +135,11 @@ if not existing_alert or not existing_alert.validated then
     local f03_c11_code = codes.make_code_link("F03.C11", "Unspecified Dementia, Severe, with Agitation")
     local f03_c4_code = codes.make_code_link("F03.C4", "Unspecified Dementia, Severe, with Anxiety")
     local f03_c1_code = codes.make_code_link("F03.C1", "Unspecified Dementia, Severe, with Behavioral Disturbance")
-    local f03_c0_code = codes.make_code_link("F03.C0", "Unspecified Dementia, Severe, without Behavioral Disturbance, Psychotic Disturbance, Mood Disturbance, and Anxiety")
+    local f03_c0_code = codes.make_code_link("F03.C0",
+        "Unspecified Dementia, Severe, without Behavioral Disturbance, Psychotic Disturbance, Mood Disturbance, and Anxiety")
     local f03_c3_code = codes.make_code_link("F03.C3", "Unspecified Dementia, Severe, with Mood Disturbance")
-    local f03_c18_code = codes.make_code_link("F03.C18", "Unspecified Dementia, Severe, with Other Behavioral Disturbance")
+    local f03_c18_code = codes.make_code_link("F03.C18",
+        "Unspecified Dementia, Severe, with Other Behavioral Disturbance")
     local f03_c2_code = codes.make_code_link("F03.C2", "Unspecified Dementia, Severe, with Psychotic Disturbance")
 
     -- Abstracting Clinical Indicators
@@ -216,17 +227,15 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif not spinal_codes and r532_code and not extremities_abs and (z7401_code or (ci >= 2 and codes_present >= 1)) then
         Result.subtitle = "Possible Functional Quadriplegia Dx"
         Result.passed = true
-
     elseif r532_code and spinal_codes then
         documented_dx_header:add_link(r532_code)
         documented_dx_header:add_link(spinal_codes)
-        Result.subtitle = "Possible Conflicting Functional Quadriplegia Dx with Spinal Cord Injury Dx, Seek Clarification"
+        Result.subtitle =
+        "Possible Conflicting Functional Quadriplegia Dx with Spinal Cord Injury Dx, Seek Clarification"
         Result.passed = true
-
     elseif subtitle == "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence" and (z7401_code or (ci > 0 and codes_present > 0)) then
         if z7401_code then
             z7401_code.link_text = "Autoresolved Evidence - " .. z7401_code.link_text
@@ -236,7 +245,6 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
         Result.validated = true
         Result.passed = true
-
     elseif spinal_codes and r532_code and not z7401_code and ci == 0 and codes_present == 0 then
         if extremities_abs then
             clinical_evidence_header:add_link(extremities_abs)
@@ -276,9 +284,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

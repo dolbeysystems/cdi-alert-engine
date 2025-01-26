@@ -356,8 +356,7 @@ return function(Account)
         end
 
         table.sort(medications, sort)
-        for i = 1, #medications do
-            local medication   = medications[i]
+        for _, medication in ipairs(medications) do
             local link         = cdi_alert_link()
             link.medication_id = medication.external_id
             link.link_text     = module.replace_link_place_holders(link_template, nil, nil, nil, medication)
@@ -429,7 +428,7 @@ return function(Account)
                 local dv = discrete_values_for_name[j]
                 local result_as_number =
                     dv.result and
-                    tonumber(string.gsub(dv.result, "[<>]", "")) or
+                    tonumber(string.gsub(dv.result, "[<>]", ""), 10) or
                     nil
 
                 if predicate == nil or predicate(dv, result_as_number) then

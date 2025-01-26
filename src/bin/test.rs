@@ -36,7 +36,8 @@ fn main() -> anyhow::Result<()> {
     let lua = cdi_alert_engine::make_runtime()?;
     let collections = fae_ghost::lib(&lua)?;
     let tests = lua
-        .load(fs::read_to_string(cli.config)?)
+        .load(fs::read_to_string(&cli.config)?)
+        .set_name(format!("@{}", cli.config.display()))
         .eval::<mlua::Table>()?;
 
     let mut passes = 0;
@@ -61,10 +62,11 @@ fn main() -> anyhow::Result<()> {
             .set_name(format!("@{script_path}"))
             .into_function()
             .with_context(|| format!("failed to load {script_path} into lua"))?;
-        let accounts = accounts
+        let mut accounts = accounts
             .pairs()
             .collect::<mlua::Result<Box<[(String, mlua::Function)]>>>()
             .with_context(|| format!("failed to collect accounts for {script_path}"))?;
+        accounts.sort_unstable_by(|a, b| a.0.cmp(&b.0));
         for (account_script_path, expected_result) in accounts {
             if !cli.tests.is_empty()
                 && !cli
@@ -171,7 +173,5 @@ fn test(
             ..Default::default()
         },
     )?;
-    script
-        .call::<()>(())
-        .with_context(|| format!("{script_path} returned an error"))
+    Ok(script.call::<()>(())?)
 }

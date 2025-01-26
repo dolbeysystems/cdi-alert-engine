@@ -62,7 +62,8 @@ return function(Account)
             --- @return boolean
             add_links = function(self, ...)
                 local lnks = { ... }
-                for _, link in ipairs(lnks or {}) do
+                -- Do not use ipairs; nil values will end iteration!
+                for _, link in pairs(lnks or {}) do
                     link.sequence = self.sequence_counter
                     self.sequence_counter = self.sequence_counter + 1
                     self:add_link(link)

@@ -59,7 +59,7 @@ end
 ---@param func function?
 ---@return boolean
 function module.some(list, func)
-    for _, v in ipairs(list) do
+    for _, v in pairs(list) do
         if func == nil and v ~= nil or func ~= nil and func(v) then
             return true
         end
