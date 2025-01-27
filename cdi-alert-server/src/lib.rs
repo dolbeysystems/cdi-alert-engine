@@ -1,10 +1,10 @@
-use crate::cac_data::*;
-use crate::config;
+pub mod config;
+
 use anyhow::{Context, Result};
-use mongodb::bson::doc;
-use std::time::Duration;
-use std::time::SystemTime;
-use std::{collections::HashMap, sync::Arc};
+use cdi_alert_engine::{Account, CdiAlert, DiscreteValue, EvaluationQueueEntry};
+use mongodb::bson;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 use tracing::*;
 
 pub async fn next_pending_account(
@@ -21,8 +21,8 @@ pub async fn next_pending_account(
         cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
 
     let pending_account = evaluation_queue_collection
-        .find_one_and_delete(doc! {})
-        .sort(doc! { "TimeQueued": 1 })
+        .find_one_and_delete(bson::doc! {})
+        .sort(bson::doc! { "TimeQueued": 1 })
         .await?;
 
     if let Some(pending_account) = pending_account {
@@ -34,27 +34,6 @@ pub async fn next_pending_account(
     } else {
         debug!("No pending accounts found");
         Ok(None)
-    }
-}
-
-fn cache_by_date<'a, T: Clone + 'a>(
-    get_date: impl Fn(&T) -> SystemTime,
-    mut root_values: impl Iterator<Item = (&'a str, &'a T)> + Clone,
-    hashed_values: &mut HashMap<Arc<str>, Vec<T>>,
-) {
-    while let Some((key, discrete_value)) = root_values.next() {
-        if hashed_values.contains_key(key) {
-            continue;
-        }
-        // capture the current state of the root values iterator
-        // (past entries will never be useful)
-        let mut keyed_values = Some(discrete_value)
-            .into_iter()
-            .chain(root_values.clone().filter(|x| x.0 == key).map(|x| x.1))
-            .cloned()
-            .collect::<Vec<_>>();
-        keyed_values.sort_by_key(|a| std::cmp::Reverse(get_date(a)));
-        hashed_values.insert(key.into(), keyed_values);
     }
 }
 
@@ -70,7 +49,7 @@ pub async fn get_account_by_id(
         .with_context(|| format!("while connecting to {connection_string}"))?;
     let cac_database = cac_database_client.database("FusionCAC2");
     let account_collection = cac_database.collection::<Account>("accounts");
-    let mut account_cursor = account_collection.find(doc! { "_id" : id }).await?;
+    let mut account_cursor = account_collection.find(bson::doc! { "_id" : id }).await?;
 
     let account = if !(account_cursor.advance().await?) {
         None
@@ -86,7 +65,7 @@ pub async fn get_account_by_id(
     debug!("Checking account #{:?} for external discrete values", id);
     let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
     let mut discrete_values_cursor = discrete_values_collection
-        .find(doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
+        .find(bson::doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
         .await?;
 
     let mut external_discrete_values = Vec::new();
@@ -102,67 +81,9 @@ pub async fn get_account_by_id(
     }
 
     debug!("Building HashMaps for account #{:?}", id);
-    build_account_caches(&mut account, dv_days_back, med_days_back);
+    account.build_caches(dv_days_back, med_days_back);
 
     Ok(Some(account))
-}
-
-pub fn build_account_caches(account: &mut Account, dv_days_back: u32, med_days_back: u32) {
-    let oldest_allowed =
-        SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60);
-    let root_discrete_values = account
-        .discrete_values
-        .iter()
-        .filter(|x| x.result_date.is_some_and(|x| x >= oldest_allowed))
-        .filter_map(|x| x.name.as_deref().zip(Some(x)));
-    cache_by_date(
-        |x| x.result_date.unwrap(),
-        root_discrete_values,
-        &mut account.hashed_discrete_values,
-    );
-    let oldest_allowed =
-        SystemTime::now() - Duration::from_secs(med_days_back as u64 * 24 * 60 * 60);
-    let root_medications = account
-        .medications
-        .iter()
-        .filter(|x| x.start_date.is_some_and(|x| x >= oldest_allowed))
-        .filter_map(|x| x.category.as_deref().zip(Some(x)));
-    cache_by_date(
-        |x| x.start_date.unwrap(),
-        root_medications,
-        &mut account.hashed_medications,
-    );
-
-    for document in account.documents.iter() {
-        let document_type = document.document_type.clone().unwrap_or("".to_string());
-        account
-            .hashed_documents
-            .entry(document_type.into())
-            .or_default()
-            .push(document.clone());
-
-        for code_reference in document.code_references.iter() {
-            let code_reference = code_reference.clone();
-            account
-                .hashed_code_references
-                .entry(code_reference.code.clone())
-                .or_default()
-                .push(CodeReferenceWithDocument {
-                    document: document.clone(),
-                    code_reference: code_reference.clone(),
-                });
-        }
-        for code_reference in document.abstraction_references.iter() {
-            account
-                .hashed_code_references
-                .entry(code_reference.code.clone())
-                .or_default()
-                .push(CodeReferenceWithDocument {
-                    document: document.clone(),
-                    code_reference: code_reference.clone(),
-                });
-        }
-    }
 }
 
 pub async fn save<'config>(
@@ -192,7 +113,7 @@ pub async fn save<'config>(
     // get existing alert result record (these are stored as properties on the record keyed off of
     // script name without extension, not as an array, so there's some annoying unpacking here.)
     let existing_result = evaluation_results_collection
-        .find_one(doc! { "_id": account.id.clone() })
+        .find_one(bson::doc! { "_id": account.id.clone() })
         .await?;
 
     let alerts_changed = if let Some(existing_result) = existing_result {
@@ -229,7 +150,7 @@ pub async fn save<'config>(
         // script name without lua extension.  E.g.:
         // { _id: "001234", "anemia": { passed: true, links: [] }, "hypertension": { passed: false, links: [] } }
 
-        let mut doc = doc! {
+        let mut doc = bson::doc! {
             "_id" : account.id.clone(),
         };
 
@@ -239,7 +160,7 @@ pub async fn save<'config>(
         }
 
         evaluation_results_collection
-            .replace_one(doc! { "_id": account.id.clone() }, doc)
+            .replace_one(bson::doc! { "_id": account.id.clone() }, doc)
             .upsert(true)
             .await?;
 

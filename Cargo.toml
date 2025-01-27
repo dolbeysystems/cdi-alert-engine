@@ -4,29 +4,36 @@ description = "Fusion CDI Alert Engine"
 authors = ["Evie Bennett <ebennett@dolbey.com>", "Mike Lambert <mlambert@dolbey.com>"]
 version = "0.1.2"
 edition = "2021"
-default-run = "cdi-alert-engine"
 license-file = "license.rtf"
 
 [dependencies]
 alua = { version = "0.2.0", features = ["userdata"] }
-anyhow = "1.0.93"
 bson = { version = "2.9.0", features = ["serde_with-3"] }
-clap = { version = "4.5.4", features = ["derive"] }
-colored = "3.0.0"
-derive_environment = "1.1.0"
-futures = "0.3.28"
-mlua = { version = "0.10.1", features = ["async", "error-send", "luajit", "macros", "serialize", "userdata-wrappers", "vendored"] }
-mongodb = "3.1.0"
-reqwest = { version = "0.12.4", features = ["rustls-tls"], default-features = false }
+mlua = { version = "0.10.1", features = ["error-send", "luajit", "macros", "userdata-wrappers"] }
 serde = { version = "1.0.197", features = ["derive", "rc"] }
 serde_with = "3.7.0"
-thiserror = "2.0.3"
-tokio = { version = "1.37.0", features = ["full"] }
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing = { version = "0.1.40" }
+
+anyhow = { version = "1.0.93", optional = true }
+clap = { version = "4.5.4", features = ["derive"] , optional = true }
+colored = { version = "3.0.0", optional = true }
+tracing-subscriber = { version = "0.3.18", optional = true }
 
 [dependencies.fae-ghost]
 git = "ssh://git@github.com/dolbeysystems/fae-ghost"
 rev = "9b62c73"
 default-features = false
 features = ["luajit"]
+optional = true
+
+[features]
+default = ["test"]
+test = ["dep:anyhow", "dep:clap", "dep:colored", "dep:tracing-subscriber", "dep:fae-ghost"]
+
+[workspace]
+members = ["cdi-alert-server"]
+
+[workspace.dependencies.cdi-alert-engine]
+path = "."
+# Remove dependencies of test harness.
+default-features = false

@@ -4,9 +4,13 @@
 //! self-contained modules.
 
 use alua::{ClassAnnotation, UserData};
-use mongodb::bson::doc;
+use bson::doc;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
@@ -270,6 +274,84 @@ impl mlua::UserData for Account {
                     .any(|x| x.procedures.iter().any(|y| y.code == code)))
             },
         );
+    }
+}
+
+impl Account {
+    pub fn build_caches(&mut self, dv_days_back: u32, med_days_back: u32) {
+        fn cache_by_date<'a, T: Clone + 'a>(
+            get_date: impl Fn(&T) -> SystemTime,
+            mut root_values: impl Iterator<Item = (&'a str, &'a T)> + Clone,
+            hashed_values: &mut HashMap<Arc<str>, Vec<T>>,
+        ) {
+            while let Some((key, discrete_value)) = root_values.next() {
+                if hashed_values.contains_key(key) {
+                    continue;
+                }
+                // capture the current state of the root values iterator
+                // (past entries will never be useful)
+                let mut keyed_values = Some(discrete_value)
+                    .into_iter()
+                    .chain(root_values.clone().filter(|x| x.0 == key).map(|x| x.1))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                keyed_values.sort_by_key(|a| std::cmp::Reverse(get_date(a)));
+                hashed_values.insert(key.into(), keyed_values);
+            }
+        }
+
+        let oldest_allowed =
+            SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60);
+        let root_discrete_values = self
+            .discrete_values
+            .iter()
+            .filter(|x| x.result_date.is_some_and(|x| x >= oldest_allowed))
+            .filter_map(|x| x.name.as_deref().zip(Some(x)));
+        cache_by_date(
+            |x| x.result_date.unwrap(),
+            root_discrete_values,
+            &mut self.hashed_discrete_values,
+        );
+        let oldest_allowed =
+            SystemTime::now() - Duration::from_secs(med_days_back as u64 * 24 * 60 * 60);
+        let root_medications = self
+            .medications
+            .iter()
+            .filter(|x| x.start_date.is_some_and(|x| x >= oldest_allowed))
+            .filter_map(|x| x.category.as_deref().zip(Some(x)));
+        cache_by_date(
+            |x| x.start_date.unwrap(),
+            root_medications,
+            &mut self.hashed_medications,
+        );
+
+        for document in self.documents.iter() {
+            let document_type = document.document_type.clone().unwrap_or("".to_string());
+            self.hashed_documents
+                .entry(document_type.into())
+                .or_default()
+                .push(document.clone());
+
+            for code_reference in document.code_references.iter() {
+                let code_reference = code_reference.clone();
+                self.hashed_code_references
+                    .entry(code_reference.code.clone())
+                    .or_default()
+                    .push(CodeReferenceWithDocument {
+                        document: document.clone(),
+                        code_reference: code_reference.clone(),
+                    });
+            }
+            for code_reference in document.abstraction_references.iter() {
+                self.hashed_code_references
+                    .entry(code_reference.code.clone())
+                    .or_default()
+                    .push(CodeReferenceWithDocument {
+                        document: document.clone(),
+                        code_reference: code_reference.clone(),
+                    });
+            }
+        }
     }
 }
 

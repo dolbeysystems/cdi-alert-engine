@@ -8,7 +8,7 @@ pipeline {
         }
       }
       steps {
-        powershell 'cargo build'
+        powershell 'cargo build -p cdi-alert-server'
         powershell 'rm target/wix/*.msi'
         powershell 'cargo wix'
       }

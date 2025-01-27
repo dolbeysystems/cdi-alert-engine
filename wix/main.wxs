@@ -41,12 +41,12 @@
                         <File Id='LicenseFile' Source='license.rtf' />
                     </Component>
                     <Component Id="binary">
-                        <File Source="$(var.CargoTargetBinDir)\cdi-alert-engine.exe" />
+                        <File Source="$(var.CargoTargetBinDir)\cdi-alert-server.exe" />
                     </Component>
                     <Component Id="shawl">
                     
                         <File Source="wix/shawl.exe" />
-                        <ServiceInstall Id="ServiceInstall" Name="Fusion CDI Alert Engine" Arguments="run --name &quot;Fusion CDI Alert Engine&quot; --cwd=&quot;[APPLICATIONFOLDER]&quot; -- cdi-alert-engine.exe" ErrorControl="ignore" Start="auto" Type="ownProcess" />
+                        <ServiceInstall Id="ServiceInstall" Name="Fusion CDI Alert Engine" Arguments="run --name &quot;Fusion CDI Alert Engine&quot; --cwd=&quot;[APPLICATIONFOLDER]&quot; -- cdi-alert-server.exe" ErrorControl="ignore" Start="auto" Type="ownProcess" />
                         <ServiceControl Id="ServiceControl" Name="Fusion CDI Alert Engine" Stop="both" Remove="uninstall" Wait="yes" />
                     </Component>
                     <Component Id="config">

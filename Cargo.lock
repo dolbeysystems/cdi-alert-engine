@@ -282,8 +282,22 @@ dependencies = [
  "bson",
  "clap",
  "colored",
- "derive_environment",
  "fae-ghost",
+ "mlua",
+ "serde",
+ "serde_with",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "cdi-alert-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cdi-alert-engine",
+ "clap",
+ "derive_environment",
  "futures",
  "mlua",
  "mongodb",

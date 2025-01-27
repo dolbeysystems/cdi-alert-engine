@@ -2,7 +2,7 @@
 
 ## Command Line Interface
 
-Unit testing may be run using `cargo run --bin test`.
+Unit testing may be run using `cargo run`.
 
 By default, `test.lua` will be used as the [test file](#test-file).
 This may be overridden using `--config`.
@@ -10,11 +10,11 @@ This may be overridden using `--config`.
 The unit test binary accepts a list of arguments which will be used to filter the tests that are run.
 
 For example:
-- `cargo run --bin test -- script/example.lua` only tests `script/example.lua`
-- `cargo run --bin test -- script/example.lua script/other.lua` only tests `script/example.lua` and `script/other.lua`.
-- `cargo run --bin test -- script/example.lua:test/identity.lua` only tests account `test/identity.lua` of script `script/example.lua`.
-- `cargo run --bin test -- '!script/example.lua:test/identity.lua'` runs everything except for account `test/identity.lua` of script `script/example.lua`.
-- `cargo run --bin test -- script/example.lua '!script/example.lua:test/identity.lua'` only tests `script/example.lua`, except for account `test/identity.lua` of script `script/example.lua`.
+- `cargo run -- script/example.lua` only tests `script/example.lua`
+- `cargo run -- script/example.lua script/other.lua` only tests `script/example.lua` and `script/other.lua`.
+- `cargo run -- script/example.lua:test/identity.lua` only tests account `test/identity.lua` of script `script/example.lua`.
+- `cargo run -- '!script/example.lua:test/identity.lua'` runs everything except for account `test/identity.lua` of script `script/example.lua`.
+- `cargo run -- script/example.lua '!script/example.lua:test/identity.lua'` only tests `script/example.lua`, except for account `test/identity.lua` of script `script/example.lua`.
 
 `--quiet` may be used to only output failures and the summary.
 
