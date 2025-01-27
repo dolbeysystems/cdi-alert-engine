@@ -46,7 +46,19 @@ local low_systolic_blood_pressure_predicate = discrete.make_lt_predicate(90)
 local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.script_name }
 local subtitle = existing_alert ~= nil and existing_alert.subtitle
 
-if not (existing_alert and existing_alert.validated) then
+--------------------------------------------------------------------------------
+--- Initial Qualification Link Collection
+--------------------------------------------------------------------------------
+local i4891_code_link = codes.make_code_link("I48.91", "Unspecified Atrial Fibrillation Dx Present")
+local i480_code_link = codes.make_code_link("I48.0", "Paroxysmal Atrial Fibrillation")
+local i4819_code_link = codes.make_code_link("I48.19", "Other Persistent Atrial Fibrillation")
+local i4820_code_link = codes.make_code_link("I48.20", "Chronic Atrial Fibrillation")
+local i4821_code_link = codes.make_code_link("I48.21", "Permanent Atrial Fibrillation")
+
+if
+    not (existing_alert and existing_alert.validated) or
+    (i480_code_link and lists.some { i4819_code_link, i4820_code_link, i4821_code_link })
+then
     --------------------------------------------------------------------------------
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
@@ -87,17 +99,6 @@ if not (existing_alert and existing_alert.validated) then
 
 
     --------------------------------------------------------------------------------
-    --- Initial Qualification Link Collection
-    --------------------------------------------------------------------------------
-    local i4891_code_link = codes.make_code_link("I48.91", "Unspecified Atrial Fibrillation Dx Present")
-    local i480_code_link = codes.make_code_link("I48.0", "Paroxysmal Atrial Fibrillation")
-    local i4819_code_link = codes.make_code_link("I48.19", "Other Persistent Atrial Fibrillation")
-    local i4820_code_link = codes.make_code_link("I48.20", "Chronic Atrial Fibrillation")
-    local i4821_code_link = codes.make_code_link("I48.21", "Permanent Atrial Fibrillation")
-
-
-
-    --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
     -- Alert Conflicting Atrial Fibrillation Dx
@@ -109,7 +110,6 @@ if not (existing_alert and existing_alert.validated) then
         Result.subtitle = "Conflicting Atrial Fibrillation Dx"
         Result.passed = true
 
-        -- TODO: This branch can never be reached because if an existing validated alert exists the script doesn't even run.
         if existing_alert and existing_alert.validated then
             Result.validated = false
             Result.outcome = ""
@@ -186,7 +186,6 @@ if not (existing_alert and existing_alert.validated) then
             treatment_and_monitoring_header:add_abstraction_link("DIGOXIN", "Digoxin")
             treatment_and_monitoring_header:add_code_link("Z79.01", "Long Term Use of Z79.01")
             treatment_and_monitoring_header:add_code_link("Z79.02", "Long Term Use of Antithrombotics/Z79.02")
-
 
             -- Vital Links
             vital_signs_intake_header:add_discrete_value_one_of_link(dv_heart_rate, "Heart Rate",
