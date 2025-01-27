@@ -79,8 +79,10 @@ fn main() -> anyhow::Result<()> {
         };
     let allowance = TestAllowance::new(cli.tests.iter().map(String::as_str));
 
-    let lua = cdi_alert_engine::make_runtime()?;
+    let lua = mlua::Lua::new();
+    cdi_alert_engine::lua_lib(&lua)?;
     let collections = fae_ghost::lib(&lua)?;
+
     let tests = lua
         .load(fs::read_to_string(&cli.config)?)
         .set_name(format!("@{}", cli.config.display()))

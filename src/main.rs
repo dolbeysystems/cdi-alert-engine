@@ -138,7 +138,15 @@ async fn main() {
                         let lua = if let Some(runtime) = runtime.take() {
                             runtime
                         } else {
-                            cdi_alert_engine::make_runtime().expect("runtime init should not fail")
+                            let lua = mlua::Lua::new();
+                            // Initialize a scripts "library" to contain function caches.
+                            lua.load_from_function::<mlua::Value>(
+                                "cdi.scripts",
+                                lua.create_function(|lua, ()| lua.create_table()).unwrap(),
+                            )
+                            .unwrap();
+                            cdi_alert_engine::lua_lib(&lua).unwrap();
+                            lua
                         };
 
                         let function = match lua

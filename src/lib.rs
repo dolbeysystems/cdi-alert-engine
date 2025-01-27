@@ -2,8 +2,7 @@ pub mod cac_data;
 pub mod cdi_alerts;
 pub mod config;
 
-pub fn make_runtime() -> mlua::Result<mlua::Lua> {
-    let lua = mlua::Lua::new();
+pub fn lua_lib(lua: &mlua::Lua) -> mlua::Result<()> {
     let log = lua.create_table()?;
 
     macro_rules! register_logging {
@@ -13,10 +12,8 @@ pub fn make_runtime() -> mlua::Result<mlua::Lua> {
                 lua.create_function(|_, s: mlua::String| {
                     tracing::$type!("{}", s.to_str()?.as_ref());
                     Ok(())
-                })
-                .unwrap(),
-            )
-            .unwrap();
+                })?,
+            )?;
         };
     }
 
@@ -44,11 +41,5 @@ pub fn make_runtime() -> mlua::Result<mlua::Lua> {
         })?,
     )?;
 
-    // Initialize a scripts "library" to contain function caches.
-    lua.load_from_function::<mlua::Value>(
-        "cdi.scripts",
-        lua.create_function(|lua, ()| lua.create_table())?,
-    )?;
-
-    Ok(lua)
+    Ok(())
 }
