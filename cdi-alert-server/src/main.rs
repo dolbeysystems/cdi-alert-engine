@@ -29,7 +29,7 @@ pub struct Cli {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, FromEnv)]
 pub struct Config {
     #[env(ignore)]
-    pub scripts: HashMap<Box<Path>, ScriptInfo>,
+    pub scripts: HashMap<String, ScriptInfo>,
     pub polling_seconds: u64,
     #[serde(default)]
     pub create_test_accounts: u32,
@@ -113,15 +113,9 @@ async fn main() {
 
             for (path, _info) in config.scripts.iter() {
                 let path = path.clone();
-                // Script path without directory & extension
-                let script_name = path.file_name().map(|x| x.to_string_lossy());
-                let script_name = script_name
-                    .as_ref()
-                    .map(|x| x.to_string())
-                    .unwrap_or("unnamed script".into());
-
+                let script_name = cdi_alert_engine::script_name(&path).to_string();
                 let result = cdi_alert_engine::CdiAlert {
-                    script_name: script_name.to_string(),
+                    script_name: script_name.clone(),
                     ..Default::default()
                 };
 
@@ -151,7 +145,7 @@ async fn main() {
 
                         let function = match lua
                             .load(mlua::chunk! { return require "cdi.scripts" [...] })
-                            .call::<Option<mlua::Function>>(path.as_ref())
+                            .call::<Option<mlua::Function>>(&*path)
                         {
                             Ok(Some(function)) => function,
                             Ok(None) => match fs::read_to_string(&path) {
@@ -159,12 +153,10 @@ async fn main() {
                                     .load(chunk)
                                     .set_name(&script_name)
                                     .into_function()
-                                    .map_err(|msg| {
-                                        error!("failed to load {} into lua: {msg}", path.display())
-                                    })
+                                    .map_err(|msg| error!("failed to load {path} into lua: {msg}"))
                                     .ok()?,
                                 Err(msg) => {
-                                    error!("failed to open {}: {msg}", path.display());
+                                    error!("failed to open {path}: {msg}");
                                     return None;
                                 }
                             },

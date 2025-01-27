@@ -91,7 +91,7 @@ pub async fn save<'config>(
         .map(|existing_alert| {
             cdi_alerts.clone().any(|alert| {
                 existing_alert
-                    .get(alert.script_name.replace(".lua", ""))
+                    .get(cdi_alert_engine::script_name(&alert.script_name))
                     .map(|bson| {
                         bson::from_bson::<CdiAlert>(bson.clone())
                             .map(|existing| existing != *alert)
@@ -113,7 +113,7 @@ pub async fn save<'config>(
 
         for alert in cdi_alerts.clone() {
             let alert_doc = bson::to_bson(&alert)?;
-            doc.insert(alert.script_name.replace(".lua", "").clone(), alert_doc);
+            doc.insert(cdi_alert_engine::script_name(&alert.script_name), alert_doc);
         }
 
         evaluation_results_collection

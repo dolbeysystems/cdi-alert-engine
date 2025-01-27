@@ -1,11 +1,9 @@
 use alua::{ClassAnnotation, UserData};
 use bson::doc;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 macro_rules! getter {
     ($fields:ident, $field:ident) => {
@@ -521,7 +519,10 @@ pub struct CodeReference {
     Clone, Default, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation, mlua::FromLua,
 )]
 pub struct CdiAlert {
-    /// The name of the script that generated the alert    
+    /// The name of the script that generated the alert.
+    ///
+    /// This is the name of the script file without its extension.
+    /// See [[script_name]]
     #[serde(rename = "ScriptName")]
     pub script_name: String,
     /// Whether the alert passed or failed    
@@ -737,6 +738,10 @@ pub struct ProcedureCode {
     pub description: String,
     #[serde(rename = "isPrincipal")]
     pub is_principal: bool,
+}
+
+pub fn script_name(script: &str) -> &str {
+    script.rsplit_once('/').map(|x| x.1).unwrap_or(script)
 }
 
 pub fn lua_lib(lua: &mlua::Lua) -> mlua::Result<()> {

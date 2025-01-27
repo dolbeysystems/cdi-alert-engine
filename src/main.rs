@@ -202,17 +202,10 @@ fn test(
 
     let globals = lua.globals();
     globals.set("Account", account)?;
-    let script_name = Path::new(script_path)
-        .file_name()
-        .map(|x| x.to_string_lossy());
-    let script_name = script_name
-        .as_ref()
-        .map(|x| x.to_string())
-        .unwrap_or("unnamed script".into());
     globals.set(
         "Result",
         CdiAlert {
-            script_name,
+            script_name: cdi_alert_engine::script_name(script_path).into(),
             ..Default::default()
         },
     )?;
