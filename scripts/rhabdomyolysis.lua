@@ -11,7 +11,7 @@
 
 
 --------------------------------------------------------------------------------
---- Requires 
+--- Requires
 --------------------------------------------------------------------------------
 local alerts = require("libs.common.alerts")(Account)
 local links = require("libs.common.basic_links")(Account)
@@ -41,8 +41,8 @@ local dv_heart_rate = {
 }
 local calc_heart_rate1 = discrete.make_gt_predicate(90)
 local dv_kinase = { "CPK (U/L)" }
-local calc_kinase1 = discrete.make_gt_predicate(1500)
-local calc_kinase2 = discrete.make_gt_predicate(308)
+local calc_greater_kinase = discrete.make_gt_predicate(1500)
+local calc_lesser_kinase = discrete.make_gt_predicate(308)
 local dv_map = { "Mean 3.5 (No Calculation) (mm Hg)", "Mean 3.5 DI (mm Hg)" }
 local calc_map1 = discrete.make_lt_predicate(70)
 local dv_sbp = { "SBP 3.5 (No Calculation) (mm Hg)" }
@@ -53,7 +53,8 @@ local dv_serum_creatinine = { "CREATININE (mg/dL)", "CREATININE SERUM (mg/dL)" }
 local calc_serum_creatinine1 = discrete.make_gt_predicate(1.3)
 local dv_serum_potassium = { "POTASSIUM (mmol/L)" }
 local calc_serum_potassium1 = discrete.make_gt_predicate(5.1)
-local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)", "TEMPERATURE (C)" }
+local dv_temperature = { "Temperature Degrees C 3.5 (degrees C)", "Temperature  Degrees C 3.5 (degrees C)",
+    "TEMPERATURE (C)" }
 local calc_temperature1 = discrete.make_gt_predicate(38.3)
 local calc_temperature2 = discrete.make_lt_predicate(36.0)
 
@@ -98,7 +99,7 @@ if not existing_alert or not existing_alert.validated then
 
 
     --------------------------------------------------------------------------------
-    --- Alert Variables 
+    --- Alert Variables
     --------------------------------------------------------------------------------
     local alert_code_dictionary = {
         ["M62.82"] = "Rhabdomyolysis",
@@ -120,23 +121,27 @@ if not existing_alert or not existing_alert.validated then
     )
 
     -- Labs
-    local kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_kinase1)
-    local kinase2_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_kinase2)
+    local greater_kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_greater_kinase)
+    local lesser_kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_lesser_kinase)
 
 
 
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-    if subtitle == "Rhabdomyolysis Dx Lacking Supporting Evidence" and kinase2_dv then
-        links.update_link_text(kinase2_dv, "Autoresolved due to Evidence Existing on the Account")
-        laboratory_studies_header:add_link(kinase2_dv)
 
+    -- TODO: The following two conditions seem to cause a loop. Lack of evidence depends on autoresolve depends on lack of evidence
+
+    if subtitle == "Rhabdomyolysis Dx Lacking Supporting Evidence" and lesser_kinase_dv then
+        lesser_kinase_dv.link_text = lesser_kinase_dv.link_text ..
+            " - Autoresolved due to Evidence Existing on the Account"
+        laboratory_studies_header:add_link(lesser_kinase_dv)
+
+        Result.passed = true
         Result.validated = true
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to Evidence Existing on the Account"
-
-    elseif trigger_alert and #account_alert_codes > 0 and kinase2_dv then
+    elseif trigger_alert and #account_alert_codes > 0 and lesser_kinase_dv then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
             local temp_code = codes.make_code_link(code, desc)
@@ -144,21 +149,20 @@ if not existing_alert or not existing_alert.validated then
         end
         Result.subtitle = "Rhabdomyolysis Dx Lacking Supporting Evidence"
         Result.passed = true
-
     elseif #account_alert_codes > 1 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
             local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
+        -- TODO: This isn't checking if the existing alert is AUTORESOLVED/validated (see atrial_fibrillation.lua for an example).
         if existing_alert then
             Result.validated = false
             Result.outcome = ""
             Result.reason = "Previously Autoresolved"
         end
         Result.passed = true
-        Result.subtitle = "Conflicting Rhabdomyolysis Dx Codes" .. table.concat(account_alert_codes, ", ")
-
+        Result.subtitle = "Conflicting Rhabdomyolysis Dx Codes - " .. table.concat(account_alert_codes, ", ")
     elseif subtitle == "Possible Rhabdomyolysis Dx" and #account_alert_codes > 0 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
@@ -172,8 +176,7 @@ if not existing_alert or not existing_alert.validated then
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to Specified Dx on the Account"
         Result.passed = true
-
-    elseif trigger_alert and #account_alert_codes == 0 and kinase_dv then
+    elseif trigger_alert and #account_alert_codes == 0 and greater_kinase_dv then -- TODO: impossible condition, see above
         Result.subtitle = "Possible Rhabdomyolysis Dx"
         Result.passed = true
     end
@@ -261,7 +264,7 @@ if not existing_alert or not existing_alert.validated then
             laboratory_studies_header:add_discrete_value_one_of_link(dv_aldolase, "Aldolase", calc_aldolase1)
             laboratory_studies_header:add_discrete_value_one_of_link(dv_ckmb, "CK-MB", calc_ckmb1)
             laboratory_studies_header:add_discrete_value_one_of_link(dv_ckmb_index, "CK-MB Index", calc_ckmb_index1)
-            laboratory_studies_header:add_link(kinase_dv)
+            laboratory_studies_header:add_link(greater_kinase_dv)
 
             if not negation_kidney_failure then
                 laboratory_studies_header:add_discrete_value_one_of_link(
@@ -289,7 +292,8 @@ if not existing_alert or not existing_alert.validated then
 
             -- Vitals
             local r4182_code = codes.make_code_link("R41.82", "Altered Level Of Consciousness")
-            local altered_abs = codes.make_abstract_value_link("ALTERED_LEVEL_OF_CONSCIOUSNESS", "Altered Level Of Consciousness")
+            local altered_abs = codes.make_abstraction_link("ALTERED_LEVEL_OF_CONSCIOUSNESS",
+                "Altered Level Of Consciousness")
             if r4182_code then
                 vital_signs_intake_header:add_link(r4182_code)
                 if altered_abs then
@@ -315,9 +319,8 @@ if not existing_alert or not existing_alert.validated then
 
 
         ----------------------------------------
-        --- Result Finalization 
+        --- Result Finalization
         ----------------------------------------
         compile_links()
     end
 end
-

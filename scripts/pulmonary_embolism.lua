@@ -105,12 +105,15 @@ if not existing_alert or not existing_alert.validated then
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
     -- Alert Trigger
-    local i2694_code = codes.make_code_link("I26.94", "Assigned Multiple Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
+    local i2694_code = codes.make_code_link("I26.94",
+        "Assigned Multiple Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
     local i2699_code = codes.make_code_link("I26.99", "Assigned Pulmonary Embolism without Acute Cor Pulmonale")
     local i2692_code = codes.make_code_link("I26.92", "Assigned Saddle Embolus without Acute Cor Pulmonale")
     local i2690_code = codes.make_code_link("I26.90", "Assigned Septic Pulmonary Embolism without Acute Cor Pulmonale")
-    local i2693_code = codes.make_code_link("I26.93", "Assigned Single Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
-    local right_ventricle_hypertropy_abs = codes.make_abstraction_link("RIGHT_VENTRICULAR_HYPERTROPHY", "Right Ventricular Hypertrophy")
+    local i2693_code = codes.make_code_link("I26.93",
+        "Assigned Single Subsegmental Pulmonary Embolism without Acute Cor Pulmonale")
+    local right_ventricle_hypertropy_abs = codes.make_abstraction_link("RIGHT_VENTRICULAR_HYPERTROPHY",
+        "Right Ventricular Hypertrophy")
     local pul_embo_abs = codes.make_abstraction_link("PULMONARY_EMBOLISM", "Pulmonary Embolism")
     local i50810_code = codes.make_code_link("I50.810", "Right Heart Failure")
     local heart_strain_abs = codes.make_abstraction_link("RIGHT_HEART_STRAIN", "Right Heart Strain")
@@ -195,23 +198,23 @@ if not existing_alert or not existing_alert.validated then
             end
         end
         if i2699_code then
-            links.update_link_text(i2699_code, "Autoresolved Code")
+            i2699_code.link_text = i2699_code.link_text .. "Autoresolved Code"
             documented_dx_header:add_link(i2699_code)
         end
         if i2690_code then
-            links.update_link_text(i2690_code, "Autoresolved Code")
+            i2690_code.link_text = i2690_code.link_text .. "Autoresolved Code"
             documented_dx_header:add_link(i2690_code)
         end
         if i2692_code then
-            links.update_link_text(i2692_code, "Autoresolved Code")
+            i2692_code.link_text = i2692_code.link_text .. "Autoresolved Code"
             documented_dx_header:add_link(i2692_code)
         end
         if i2693_code then
-            links.update_link_text(i2693_code, "Autoresolved Code")
+            i2693_code.link_text = i2693_code.link_text .. "Autoresolved Code"
             documented_dx_header:add_link(i2693_code)
         end
         if i2694_code then
-            links.update_link_text(i2694_code, "Autoresolved Code")
+            i2694_code.link_text = i2694_code.link_text .. "Autoresolved Code"
             documented_dx_header:add_link(i2694_code)
         end
         Result.outcome = "AUTORESOLVED"

@@ -6,7 +6,7 @@ end
 local function autoresolve(result)
     return result.passed and result.outcome == "AUTORESOLVED",
         "Expected result { passed = true, outcome = \"AUTORESOLVED\" }, got result { passed = " ..
-        tostring(result.passed) .. ", outcome = " .. tostring(result.outcome) .. " }"
+        tostring(result.passed) .. ", outcome = \"" .. tostring(result.outcome) .. "\" }"
 end
 
 --- Check for the presence of a subtitle on a passing result.
@@ -34,6 +34,7 @@ return {
         ["test/atrial_fibrillation/previous_autoresolve.lua"] = function(result)
             return result.passed and result.subtitle == "Conflicting Atrial Fibrillation Dx" and
                 result.validated == false and result.reason == "Previously Autoresolved",
+                -- TODO: Remove me
                 "This test cannot pass because its conditions cause the script not to run"
         end,
     },
@@ -87,5 +88,22 @@ return {
         ["test/identity.lua"] = not_passed,
         ["test/coagulopathy/autoresolve.lua"] = autoresolve,
         ["test/coagulopathy/possible.lua"] = subtitle("Possible Coagulopathy Dx"),
+    },
+    ["scripts/rhabdomyolysis.lua"] = {
+        ["test/identity.lua"] = not_passed,
+        ["test/rhabdomyolysis/autoresolve_lacking_evidence.lua"] = autoresolve,
+        ["test/rhabdomyolysis/lacking_evidence.lua"] = subtitle("Rhabdomyolysis Dx Lacking Supporting Evidence"),
+        ["test/rhabdomyolysis/conflicting.lua"] = function(result)
+            return result.passed and result.subtitle:find("^Conflicting Rhabdomyolysis Dx Codes")
+        end,
+        ["test/rhabdomyolysis/conflicting_previously_autoresolved.lua"] = function(result)
+            return
+                result.passed and result.subtitle:find("^Conflicting Rhabdomyolysis Dx Codes")
+                and not result.validated and result.reason == "Previously Autoresolved",
+                -- TODO: Remove me
+                "This test cannot pass because the script is not checking for a valid autoresolve alert"
+        end,
+        ["test/rhabdomyolysis/possible.lua"] = subtitle("Possible Rhabdomyolysis Dx"),
+        ["test/rhabdomyolysis/autoresolve_possible.lua"] = autoresolve,
     },
 }
