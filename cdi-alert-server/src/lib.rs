@@ -2,6 +2,7 @@ pub mod config;
 
 use anyhow::{Context, Result};
 use cdi_alert_engine::{Account, CdiAlert, DiscreteValue, EvaluationQueueEntry};
+use futures::StreamExt;
 use mongodb::bson;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -12,27 +13,23 @@ pub async fn next_pending_account(
     dv_days_back: u32,
     med_days_back: u32,
 ) -> Result<Option<Account>> {
-    debug!("Getting next pending account");
-    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
+    if let Some(pending_account) = mongodb::Client::with_uri_str(connection_string)
         .await
-        .with_context(|| format!("while connecting to {connection_string}"))?;
-    let cac_database = cac_database_client.database("FusionCAC2");
-    let evaluation_queue_collection =
-        cac_database.collection::<EvaluationQueueEntry>("EvaluationQueue");
-
-    let pending_account = evaluation_queue_collection
+        .with_context(|| format!("while connecting to {connection_string}"))?
+        .database("FusionCAC2")
+        .collection::<EvaluationQueueEntry>("EvaluationQueue")
         .find_one_and_delete(bson::doc! {})
         .sort(bson::doc! { "TimeQueued": 1 })
-        .await?;
-
-    if let Some(pending_account) = pending_account {
-        let id = pending_account.id.clone();
-        let account =
-            get_account_by_id(connection_string, &id, dv_days_back, med_days_back).await?;
-        debug!("Found pending account: {:?}", &id);
-        Ok(account)
+        .await?
+    {
+        Ok(get_account_by_id(
+            connection_string,
+            &pending_account.id,
+            dv_days_back,
+            med_days_back,
+        )
+        .await?)
     } else {
-        debug!("No pending accounts found");
         Ok(None)
     }
 }
@@ -43,44 +40,31 @@ pub async fn get_account_by_id(
     dv_days_back: u32,
     med_days_back: u32,
 ) -> Result<Option<Account>> {
-    debug!("Loading account #{:?} from database", id);
-    let cac_database_client = mongodb::Client::with_uri_str(connection_string)
+    let cac_database = mongodb::Client::with_uri_str(connection_string)
         .await
-        .with_context(|| format!("while connecting to {connection_string}"))?;
-    let cac_database = cac_database_client.database("FusionCAC2");
-    let account_collection = cac_database.collection::<Account>("accounts");
-    let mut account_cursor = account_collection.find(bson::doc! { "_id" : id }).await?;
+        .with_context(|| format!("while connecting to {connection_string}"))?
+        .database("FusionCAC2");
 
-    let account = if !(account_cursor.advance().await?) {
-        None
-    } else {
-        let account = account_cursor.deserialize_current()?;
-        Some(account)
-    };
-
-    let Some(mut account) = account else {
+    let Some(mut account) = cac_database
+        .collection::<Account>("accounts")
+        .find(bson::doc! { "_id" : id })
+        .await?
+        .next()
+        .await
+        .transpose()?
+    else {
         return Ok(None);
     };
 
-    debug!("Checking account #{:?} for external discrete values", id);
-    let discrete_values_collection = cac_database.collection::<DiscreteValue>("discreteValues");
-    let mut discrete_values_cursor = discrete_values_collection
-        .find(bson::doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
-        .await?;
+    account.discrete_values.append(
+        &mut (cac_database.collection::<DiscreteValue>("discreteValues")
+            .find(bson::doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
+            .await?
+            .filter_map(async |x| x.ok().map(Arc::new))
+            .collect::<Vec<Arc<DiscreteValue>>>()
+            .await),
+    );
 
-    let mut external_discrete_values = Vec::new();
-    while discrete_values_cursor.advance().await? {
-        let discrete_value = discrete_values_cursor.deserialize_current()?;
-        external_discrete_values.push(Arc::new(discrete_value));
-    }
-
-    if !external_discrete_values.is_empty() {
-        account
-            .discrete_values
-            .append(&mut external_discrete_values);
-    }
-
-    debug!("Building HashMaps for account #{:?}", id);
     account.build_caches(dv_days_back, med_days_back);
 
     Ok(Some(account))
@@ -92,58 +76,31 @@ pub async fn save<'config>(
     cdi_alerts: impl Iterator<Item = &CdiAlert> + Clone,
     script_engine_workflow_rest_url: &'config str,
 ) -> Result<()> {
-    let cac_database_client = mongodb::Client::with_uri_str(&mongo.url)
+    let cac_database = mongodb::Client::with_uri_str(&mongo.url)
         .await
-        .with_context(|| format!("while connecting to {}", mongo.url))?;
-    let cac_database = cac_database_client.database(&mongo.database);
+        .with_context(|| format!("while connecting to {}", mongo.url))?
+        .database(&mongo.database);
     let evaluation_results_collection =
         cac_database.collection::<bson::Document>("EvaluationResults");
 
-    // Create a bson array from our result iterator.
-    // You *could* do this automatically with `bson::to_bson<Vec>`,
-    // but this is wasteful because it allocates a vector just to convert it into another vector
-    // (`bson::Array` is a typedef for `Vec<Bson>`)
-    let mut cdi_alerts_bson = bson::Array::new();
-    for i in cdi_alerts.clone() {
-        if i.passed {
-            cdi_alerts_bson.push(bson::to_bson(&i)?);
-        }
-    }
-
     // get existing alert result record (these are stored as properties on the record keyed off of
     // script name without extension, not as an array, so there's some annoying unpacking here.)
-    let existing_result = evaluation_results_collection
+    let alerts_changed = evaluation_results_collection
         .find_one(bson::doc! { "_id": account.id.clone() })
-        .await?;
-
-    let alerts_changed = if let Some(existing_result) = existing_result {
-        let mut any_different = false;
-        for alert in cdi_alerts.clone() {
-            let existing_alert_bson =
-                existing_result.get(alert.script_name.replace(".lua", "").clone());
-            if let Some(existing_alert_bson) = existing_alert_bson {
-                if let Ok(existing_alert) = bson::from_bson::<CdiAlert>(existing_alert_bson.clone())
-                {
-                    if existing_alert != *alert {
-                        // Present but different
-                        any_different = true;
-                        break;
-                    }
-                } else {
-                    // Problem deserializing
-                    any_different = true;
-                    break;
-                }
-            } else {
-                // Not present
-                any_different = true;
-                break;
-            }
-        }
-        any_different
-    } else {
-        true
-    };
+        .await?
+        .map(|existing_alert| {
+            cdi_alerts.clone().any(|alert| {
+                existing_alert
+                    .get(alert.script_name.replace(".lua", ""))
+                    .map(|bson| {
+                        bson::from_bson::<CdiAlert>(bson.clone())
+                            .map(|existing| existing != *alert)
+                            .unwrap_or(true)
+                    })
+                    .unwrap_or(true)
+            })
+        })
+        .unwrap_or(false);
 
     if alerts_changed && !script_engine_workflow_rest_url.is_empty() {
         // Save to Evaluation Results with _id and results remapped as properties by

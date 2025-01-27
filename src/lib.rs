@@ -454,7 +454,7 @@ impl mlua::UserData for Medication {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, ClassAnnotation)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, ClassAnnotation)]
 pub struct DiscreteValue {
     #[serde(rename = "UniqueId")]
     #[alua(as_lua = "string")]
