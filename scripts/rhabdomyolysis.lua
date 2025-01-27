@@ -67,11 +67,29 @@ local existing_alert = alerts.get_existing_cdi_alert { scriptName = Result.scrip
 local subtitle = existing_alert and existing_alert.subtitle or nil
 local trigger_alert =
     existing_alert and
-    (existing_alert.outcome == "AUTORESOLVED" or existing_alert.reason == "Previously Autoresolved")
+    (existing_alert.outcome ~= "AUTORESOLVED" or existing_alert.reason ~= "Previously Autoresolved")
+
+--------------------------------------------------------------------------------
+--- Alert Variables
+--------------------------------------------------------------------------------
+local alert_code_dictionary = {
+    ["M62.82"] = "Rhabdomyolysis",
+    ["T79.6XXA"] = "Traumatic ischemia of muscle, initial encounter (Truamatic Rhabdomyolysis)",
+    ["T79.6XXD"] = "Traumatic ischemia of muscle, subsequent encounter (Truamatic Rhabdomyolysis)",
+    ["T79.6XXS"] = "Traumatic ischemia of muscle, sequela (Truamatic Rhabdomyolysis)"
+}
+local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
 
-
-if not existing_alert or not existing_alert.validated then
+if
+    not (existing_alert and existing_alert.validated) or
+    (
+        existing_alert and
+        existing_alert.outcome == "AUTORESOLVED" and
+        existing_alert.validated and
+        #account_alert_codes > 1
+    )
+then
     --------------------------------------------------------------------------------
     --- Header Variables and Helper Functions
     --------------------------------------------------------------------------------
@@ -98,16 +116,6 @@ if not existing_alert or not existing_alert.validated then
     end
 
 
-    --------------------------------------------------------------------------------
-    --- Alert Variables
-    --------------------------------------------------------------------------------
-    local alert_code_dictionary = {
-        ["M62.82"] = "Rhabdomyolysis",
-        ["T79.6XXA"] = "Traumatic ischemia of muscle, initial encounter (Truamatic Rhabdomyolysis)",
-        ["T79.6XXD"] = "Traumatic ischemia of muscle, subsequent encounter (Truamatic Rhabdomyolysis)",
-        ["T79.6XXS"] = "Traumatic ischemia of muscle, sequela (Truamatic Rhabdomyolysis)"
-    }
-    local account_alert_codes = codes.get_account_codes_in_dictionary(Account, alert_code_dictionary)
 
 
 
@@ -141,7 +149,7 @@ if not existing_alert or not existing_alert.validated then
         Result.validated = true
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to Evidence Existing on the Account"
-    elseif trigger_alert and #account_alert_codes > 0 and lesser_kinase_dv then
+    elseif trigger_alert and #account_alert_codes == 1 and not lesser_kinase_dv then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
             local temp_code = codes.make_code_link(code, desc)
@@ -156,7 +164,7 @@ if not existing_alert or not existing_alert.validated then
             documented_dx_header:add_link(temp_code)
         end
         -- TODO: This isn't checking if the existing alert is AUTORESOLVED/validated (see atrial_fibrillation.lua for an example).
-        if existing_alert then
+        if existing_alert and existing_alert.validated then
             Result.validated = false
             Result.outcome = ""
             Result.reason = "Previously Autoresolved"
