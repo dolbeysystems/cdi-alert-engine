@@ -5,8 +5,8 @@ end
 
 local function autoresolve(result)
     return result.passed and result.outcome == "AUTORESOLVED",
-        "Expected result { passed = true, outcome = \"AUTORESOLVED\" }, got result { passed = " ..
-        tostring(result.passed) .. ", outcome = \"" .. tostring(result.outcome) .. "\" }"
+        not result.passed and "Expected result to pass, but it didn't" or
+        "Expected outcome \"AUTORESOLVED\", got \"" .. tostring(result.outcome) .. "\""
 end
 
 --- Check for the presence of a subtitle on a passing result.
@@ -14,6 +14,7 @@ end
 local function subtitle(subtitle)
     return function(result)
         return result.passed and result.subtitle == subtitle,
+            not result.passed and "Expected result to pass, but it didn't" or
             "Expected subtitle \"" .. subtitle .. "\", got \"" .. tostring(result.subtitle) .. "\""
     end
 end
