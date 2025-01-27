@@ -21,6 +21,51 @@ pub struct Cli {
     pub tests: Vec<String>,
 }
 
+struct TestAllowance<'a> {
+    allowed: Vec<(&'a str, Option<&'a str>)>,
+    disallowed: Vec<(&'a str, Option<&'a str>)>,
+}
+
+impl<'a> TestAllowance<'a> {
+    fn new(allowances: impl Iterator<Item = &'a str>) -> Self {
+        let mut allowed = Vec::new();
+        let mut disallowed = Vec::new();
+        for i in allowances {
+            let (i, list) = if let Some('!') = i.chars().next() {
+                (&i[1..], &mut disallowed)
+            } else {
+                (i, &mut allowed)
+            };
+            list.push(
+                i.split_once(':')
+                    .map(|(a, b)| (a, Some(b)))
+                    .unwrap_or((i, None)),
+            );
+        }
+        Self {
+            allowed,
+            disallowed,
+        }
+    }
+
+    fn valid(&'a self, script: &str, test: Option<&str>) -> bool {
+        if self
+            .disallowed
+            .iter()
+            .any(|(a, b)| script == *a && b.zip(test).is_none_or(|(b, test)| test == b))
+        {
+            return false;
+        }
+        if !self.allowed.is_empty() {
+            return self
+                .allowed
+                .iter()
+                .any(|(a, b)| script == *a && b.zip(test).is_none_or(|(b, test)| b == test));
+        }
+        true
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     tracing_subscriber::fmt::init();
@@ -32,6 +77,7 @@ fn main() -> anyhow::Result<()> {
         } else {
             ("passed".into(), "failed".into(), "error".into())
         };
+    let allowance = TestAllowance::new(cli.tests.iter().map(String::as_str));
 
     let lua = cdi_alert_engine::make_runtime()?;
     let collections = fae_ghost::lib(&lua)?;
@@ -42,6 +88,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut passes = 0;
     let mut failures = 0;
+    let mut ignored = 0;
 
     let mut scripts = tests
         .pairs()
@@ -49,11 +96,6 @@ fn main() -> anyhow::Result<()> {
         .with_context(|| "failed to collect test configurations")?;
     scripts.sort_unstable_by(|a, b| a.0.cmp(&b.0));
     for (script_path, accounts) in scripts {
-        let includes_script_path =
-            |x: &String| x.split_once(':').unwrap_or((x, "")).0 == script_path;
-        if !cli.tests.is_empty() && !cli.tests.iter().any(includes_script_path) {
-            continue;
-        }
         let script = lua
             .load(
                 fs::read_to_string(&script_path)
@@ -68,16 +110,8 @@ fn main() -> anyhow::Result<()> {
             .with_context(|| format!("failed to collect accounts for {script_path}"))?;
         accounts.sort_unstable_by(|a, b| a.0.cmp(&b.0));
         for (account_script_path, expected_result) in accounts {
-            if !cli.tests.is_empty()
-                && !cli
-                    .tests
-                    .iter()
-                    .filter(|x| includes_script_path(x))
-                    .any(|x| {
-                        x.split_once(':')
-                            .is_none_or(|(_, x)| x == account_script_path)
-                    })
-            {
+            if !allowance.valid(&script_path, Some(&account_script_path)) {
+                ignored += 1;
                 continue;
             }
             match test(
@@ -127,6 +161,12 @@ fn main() -> anyhow::Result<()> {
         "{failures} test{} failed",
         if failures == 1 { "" } else { "s" }
     );
+    if ignored > 0 {
+        eprintln!(
+            "{ignored} test{} ignored",
+            if ignored == 1 { "" } else { "s" }
+        );
+    }
     exit(if failures > 0 { 1 } else { 0 });
 }
 
