@@ -4,7 +4,6 @@ use anyhow::{Context, Result};
 use cdi_alert_engine::{Account, CdiAlert, DiscreteValue, EvaluationQueueEntry};
 use futures::StreamExt;
 use mongodb::bson;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tracing::*;
 
@@ -60,8 +59,8 @@ pub async fn get_account_by_id(
         &mut (cac_database.collection::<DiscreteValue>("discreteValues")
             .find(bson::doc! { "AccountNumber" : id, "ResultDate" : { "$gte" : bson::DateTime::from_system_time(SystemTime::now() - Duration::from_secs(dv_days_back as u64 * 24 * 60 * 60)) } })
             .await?
-            .filter_map(async |x| x.ok().map(Arc::new))
-            .collect::<Vec<Arc<DiscreteValue>>>()
+            .filter_map(async |x| x.ok())
+            .collect::<Vec<DiscreteValue>>()
             .await),
     );
 
