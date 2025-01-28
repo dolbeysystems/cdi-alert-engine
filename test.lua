@@ -34,9 +34,7 @@ return {
         ["test/atrial_fibrillation/conflicting.lua"] = subtitle("Conflicting Atrial Fibrillation Dx"),
         ["test/atrial_fibrillation/previous_autoresolve.lua"] = function(result)
             return result.passed and result.subtitle == "Conflicting Atrial Fibrillation Dx" and
-                result.validated == false and result.reason == "Previously Autoresolved",
-                -- TODO: Remove me
-                "This test cannot pass because its conditions cause the script not to run"
+                result.validated == false and result.reason == "Previously Autoresolved"
         end,
     },
     ["scripts/substance_abuse.lua"] = {
@@ -100,9 +98,7 @@ return {
         ["test/rhabdomyolysis/conflicting_previously_autoresolved.lua"] = function(result)
             return
                 result.passed and result.subtitle:find("^Conflicting Rhabdomyolysis Dx Codes")
-                and not result.validated and result.reason == "Previously Autoresolved",
-                -- TODO: Remove me
-                "This test cannot pass because the script is not checking for a valid autoresolve alert"
+                and not result.validated and result.reason == "Previously Autoresolved"
         end,
         ["test/rhabdomyolysis/possible.lua"] = subtitle("Possible Rhabdomyolysis Dx"),
         ["test/rhabdomyolysis/autoresolve_possible.lua"] = autoresolve,

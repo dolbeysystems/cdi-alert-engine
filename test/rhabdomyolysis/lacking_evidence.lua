@@ -10,14 +10,6 @@ extern "Accounts" {
         Passed = true,
         Validated = false,
     } },
-    DiscreteValues = {
-        {
-            UniqueId = "1234567890",
-            Name = "CPK (U/L)",
-            Result = "400",
-            ResultDate = time.now(),
-        }
-    },
     Documents = { {
         DocumentId = "1234567890",
         CodeReferences = { { Code = "M62.82" } },

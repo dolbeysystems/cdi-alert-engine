@@ -115,10 +115,6 @@ then
         Result.links = result_links
     end
 
-
-
-
-
     --------------------------------------------------------------------------------
     --- Initial Qualification Link Collection
     --------------------------------------------------------------------------------
@@ -132,13 +128,9 @@ then
     local greater_kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_greater_kinase)
     local lesser_kinase_dv = discrete.make_discrete_value_link(dv_kinase, "Creatine Kinase", calc_lesser_kinase)
 
-
-
     --------------------------------------------------------------------------------
     --- Alert Qualification
     --------------------------------------------------------------------------------
-
-    -- TODO: The following two conditions seem to cause a loop. Lack of evidence depends on autoresolve depends on lack of evidence
 
     if subtitle == "Rhabdomyolysis Dx Lacking Supporting Evidence" and lesser_kinase_dv then
         lesser_kinase_dv.link_text = lesser_kinase_dv.link_text ..
@@ -163,7 +155,6 @@ then
             local temp_code = codes.make_code_link(code, desc)
             documented_dx_header:add_link(temp_code)
         end
-        -- TODO: This isn't checking if the existing alert is AUTORESOLVED/validated (see atrial_fibrillation.lua for an example).
         if existing_alert and existing_alert.validated then
             Result.validated = false
             Result.outcome = ""
@@ -171,7 +162,7 @@ then
         end
         Result.passed = true
         Result.subtitle = "Conflicting Rhabdomyolysis Dx Codes - " .. table.concat(account_alert_codes, ", ")
-    elseif subtitle == "Possible Rhabdomyolysis Dx" and #account_alert_codes > 0 then
+    elseif subtitle == "Possible Rhabdomyolysis Dx" and #account_alert_codes == 1 then
         for _, code in ipairs(account_alert_codes) do
             local desc = alert_code_dictionary[code]
             local temp_code = codes.make_code_link(code, desc)
@@ -184,7 +175,7 @@ then
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to Specified Dx on the Account"
         Result.passed = true
-    elseif trigger_alert and #account_alert_codes == 0 and greater_kinase_dv then -- TODO: impossible condition, see above
+    elseif trigger_alert and #account_alert_codes == 0 and greater_kinase_dv then
         Result.subtitle = "Possible Rhabdomyolysis Dx"
         Result.passed = true
     end
