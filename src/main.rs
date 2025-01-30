@@ -83,7 +83,11 @@ fn main() -> anyhow::Result<()> {
     let collections = fae_ghost::lib(&lua)?;
 
     let tests = lua
-        .load(fs::read_to_string(&cli.config)?)
+        .load(
+            fs::read_to_string(&cli.config).with_context(|| {
+                format!("failed to read config file \"{}\"", cli.config.display())
+            })?,
+        )
         .set_name(format!("@{}", cli.config.display()))
         .eval::<mlua::Table>()?;
 

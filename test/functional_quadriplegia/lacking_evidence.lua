@@ -3,15 +3,10 @@ local extern = ghost.extern
 
 extern "Accounts" {
     _id = "1234567890",
-    CdiAlerts = { {
-        ScriptName = "coagulopathy.lua",
-        Passed = true,
-        Validated = false,
-    } },
     Documents = { {
         DocumentId = "1234567890",
         CodeReferences = {
-            { Code = "D65" },
+            { Code = "R53.2" },
         }
     } }
 }

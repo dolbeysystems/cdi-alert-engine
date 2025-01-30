@@ -1,6 +1,5 @@
 local ghost = require "ghost"
 local extern = ghost.extern
-local time = ghost.time
 
 extern "Accounts" {
     _id = "123457890",

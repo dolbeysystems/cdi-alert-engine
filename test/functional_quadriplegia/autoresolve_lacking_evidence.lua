@@ -4,14 +4,16 @@ local extern = ghost.extern
 extern "Accounts" {
     _id = "1234567890",
     CdiAlerts = { {
-        ScriptName = "coagulopathy.lua",
+        ScriptName = "functional_quadriplegia.lua",
+        SubTitle = "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence",
         Passed = true,
         Validated = false,
     } },
     Documents = { {
         DocumentId = "1234567890",
         CodeReferences = {
-            { Code = "D65" },
+            { Code = "Z74.01" },
         }
+
     } }
 }

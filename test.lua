@@ -19,88 +19,103 @@ local function subtitle(subtitle)
     end
 end
 
+--- Stores the last argument passed to `script`.
+local current_script
+
+local function script(name)
+    current_script = name
+    return "scripts/" .. name .. ".lua"
+end
+
+local function test(name)
+    return "test/" .. current_script .. "/" .. name .. ".lua"
+end
+
 return {
-    ["scripts/nicotine_dependence_with_withdrawal.lua"] = {
+    [script "nicotine_dependence_with_withdrawal"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/nicotine_dependence_with_withdrawal/autoresolve.lua"] = autoresolve,
-        ["test/nicotine_dependence_with_withdrawal/present.lua"] = function(result)
+        [test "autoresolve"] = autoresolve,
+        [test "present"] = function(result)
             return result.passed and result.outcome == nil
         end,
     },
-    ["scripts/atrial_fibrillation.lua"] = {
+    [script "atrial_fibrillation"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/atrial_fibrillation/autoresolve.lua"] = autoresolve,
-        ["test/atrial_fibrillation/unspecified.lua"] = subtitle("Unspecified Atrial Fibrillation Dx"),
-        ["test/atrial_fibrillation/conflicting.lua"] = subtitle("Conflicting Atrial Fibrillation Dx"),
-        ["test/atrial_fibrillation/previous_autoresolve.lua"] = function(result)
+        [test "autoresolve"] = autoresolve,
+        [test "unspecified"] = subtitle "Unspecified Atrial Fibrillation Dx",
+        [test "conflicting"] = subtitle "Conflicting Atrial Fibrillation Dx",
+        [test "previous_autoresolve"] = function(result)
             return result.passed and result.subtitle == "Conflicting Atrial Fibrillation Dx" and
                 result.validated == false and result.reason == "Previously Autoresolved"
         end,
     },
-    ["scripts/substance_abuse.lua"] = {
+    [script "substance_abuse"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/substance_abuse/alcohol_autoresolve.lua"] = autoresolve,
-        ["test/substance_abuse/opioid_autoresolve.lua"] = autoresolve,
-        ["test/substance_abuse/ciwa_dv.lua"] = subtitle("Possible Alcohol Withdrawal"),
-        ["test/substance_abuse/methadone.lua"] = subtitle("Possible Opioid Dependence"),
+        [test "alcohol_autoresolve"] = autoresolve,
+        [test "opioid_autoresolve"] = autoresolve,
+        [test "ciwa_dv"] = subtitle "Possible Alcohol Withdrawal",
+        [test "methadone"] = subtitle "Possible Opioid Dependence",
     },
-    ["scripts/bleeding.lua"] = {
+    [script "bleeding"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/bleeding/autoresolve.lua"] = autoresolve,
-        ["test/bleeding/anticoagulant.lua"] = subtitle("Bleeding with possible link to Anticoagulant"),
+        [test "autoresolve"] = autoresolve,
+        [test "anticoagulant"] = subtitle "Bleeding with possible link to Anticoagulant",
     },
-    ["scripts/urinary_tract_infection.lua"] = {
+    [script "urinary_tract_infection"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/urinary_tract_infection/autoresolve.lua"] = autoresolve,
-        ["test/urinary_tract_infection/uti_possible_cystostomy_catheter.lua"] = subtitle(
-            "UTI Dx Possible Link To Cystostomy Catheter"),
-        ["test/urinary_tract_infection/uti_possible_indwelling_catheter.lua"] = subtitle(
-            "UTI Dx Possible Link To Indwelling Urethral Catheter"),
-        ["test/urinary_tract_infection/uti_possible_nephrostomy_catheter.lua"] = subtitle(
-            "UTI Dx Possible Link To Nephrostomy Catheter"),
-        ["test/urinary_tract_infection/uti_possible_other_urinary_drainage.lua"] = subtitle(
-            "UTI Dx Possible Link To Other Urinary Drainage Device"),
-        ["test/urinary_tract_infection/uti_possible_ureteral_stent.lua"] = subtitle(
-            "UTI Dx Possible Link To Ureteral Stent"),
-        ["test/urinary_tract_infection/uti_possible_intermittent_catheterization.lua"] = subtitle(
-            "UTI Dx Possible Link To Intermittent Catheterization"),
+        [test "autoresolve"] = autoresolve,
+        [test "uti_possible_cystostomy_catheter"] = subtitle "UTI Dx Possible Link To Cystostomy Catheter",
+        [test "uti_possible_indwelling_catheter"] = subtitle "UTI Dx Possible Link To Indwelling Urethral Catheter",
+        [test "uti_possible_nephrostomy_catheter"] = subtitle "UTI Dx Possible Link To Nephrostomy Catheter",
+        [test "uti_possible_other_urinary_drainage"] = subtitle "UTI Dx Possible Link To Other Urinary Drainage Device",
+        [test "uti_possible_ureteral_stent"] = subtitle "UTI Dx Possible Link To Ureteral Stent",
+        [test "uti_possible_intermittent_catheterization"] = subtitle "UTI Dx Possible Link To Intermittent Catheterization",
     },
-    ["scripts/functional_quadriplegia.lua"] = {
-        -- This script is missing a function so these tests are incomplete
-        -- ["test/identity.lua"] = not_passed,
-        -- ["test/functional_quadriplegia/autoresolve.lua"] = autoresolve,
-    },
-    ["scripts/abnormal_serum_potassium.lua"] = {
+    [script "functional_quadriplegia"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/abnormal_serum_potassium/hyperkalemia_autoresolve.lua"] = autoresolve,
-        ["test/abnormal_serum_potassium/hypokalemia_autoresolve.lua"] = autoresolve,
-        ["test/abnormal_serum_potassium/hyperkalemia_lacking_evidence_autoresolve.lua"] = autoresolve,
-        ["test/abnormal_serum_potassium/hypokalemia_lacking_evidence_autoresolve.lua"] = autoresolve,
-        ["test/abnormal_serum_potassium/hyperkalemia.lua"] = subtitle("Possible Hyperkalemia Dx"),
-        ["test/abnormal_serum_potassium/hypokalemia.lua"] = subtitle("Possible Hypokalemia Dx"),
-        ["test/abnormal_serum_potassium/hyperkalemia_lacking_evidence.lua"] = subtitle(
-            "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence"),
-        ["test/abnormal_serum_potassium/hypokalemia_lacking_evidence.lua"] = subtitle(
-            "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence"),
+        [test "autoresolve"] = autoresolve,
+        [test "autoresolve_lacking_evidence"] = autoresolve,
+        [test "lacking_evidence"] = subtitle "Functional Quadriplegia Dx Possibly Lacking Supporting Evidence",
+        [test "possible"] = subtitle "Possible Functional Quadriplegia Dx",
+        [test "possible_conflicting"] = subtitle "Possible Conflicting Functional Quadriplegia Dx with Spinal Cord Injury Dx, Seek Clarification",
     },
-    ["scripts/coagulopathy.lua"] = {
+    [script "abnormal_serum_potassium"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/coagulopathy/autoresolve.lua"] = autoresolve,
-        ["test/coagulopathy/possible.lua"] = subtitle("Possible Coagulopathy Dx"),
+        [test "hyperkalemia_autoresolve"] = autoresolve,
+        [test "hypokalemia_autoresolve"] = autoresolve,
+        [test "hyperkalemia_lacking_evidence_autoresolve"] = autoresolve,
+        [test "hypokalemia_lacking_evidence_autoresolve"] = autoresolve,
+        [test "hyperkalemia"] = subtitle "Possible Hyperkalemia Dx",
+        [test "hypokalemia"] = subtitle "Possible Hypokalemia Dx",
+        [test "hyperkalemia_lacking_evidence"] = subtitle "Hyperkalemia Dx Documented Possibly Lacking Supporting Evidence",
+        [test "hypokalemia_lacking_evidence"] = subtitle "Hypokalemia Dx Documented Possibly Lacking Supporting Evidence",
     },
-    ["scripts/rhabdomyolysis.lua"] = {
+    [script "coagulopathy"] = {
         ["test/identity.lua"] = not_passed,
-        ["test/rhabdomyolysis/autoresolve_lacking_evidence.lua"] = autoresolve,
-        ["test/rhabdomyolysis/lacking_evidence.lua"] = subtitle("Rhabdomyolysis Dx Lacking Supporting Evidence"),
-        ["test/rhabdomyolysis/conflicting.lua"] = function(result)
+        [test "autoresolve"] = autoresolve,
+        [test "possible"] = subtitle "Possible Coagulopathy Dx",
+    },
+    [script "rhabdomyolysis"] = {
+        ["test/identity.lua"] = not_passed,
+        [test "autoresolve_lacking_evidence"] = autoresolve,
+        [test "lacking_evidence"] = subtitle "Rhabdomyolysis Dx Lacking Supporting Evidence",
+        [test "conflicting"] = function(result)
             return result.passed and result.subtitle:find("^Conflicting Rhabdomyolysis Dx Codes")
         end,
-        ["test/rhabdomyolysis/conflicting_previously_autoresolved.lua"] = function(result)
+        [test "conflicting_previously_autoresolved"] = function(result)
             return
                 result.passed and result.subtitle:find("^Conflicting Rhabdomyolysis Dx Codes")
                 and not result.validated and result.reason == "Previously Autoresolved"
         end,
-        ["test/rhabdomyolysis/possible.lua"] = subtitle("Possible Rhabdomyolysis Dx"),
-        ["test/rhabdomyolysis/autoresolve_possible.lua"] = autoresolve,
+        [test "possible"] = subtitle "Possible Rhabdomyolysis Dx",
+        [test "autoresolve_possible"] = autoresolve,
     },
+    [script "immunocompromised"] = {
+        ["test/identity.lua"] = not_passed,
+        [test "autoresolve"] = autoresolve,
+        [test "chronic_medication"] = subtitle "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication",
+        [test "chronic"] = subtitle "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition",
+        [test "medication"] = subtitle "Infection Present with Possible Link to Immunocompromised State Due to Medication",
+        [test "possible"] = subtitle "Possible Immunocompromised State",
+    }
 }

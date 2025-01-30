@@ -184,12 +184,13 @@ if not existing_alert or not existing_alert.validated then
     --- Alert Qualification
     --------------------------------------------------------------------------------
     if existing_alert and lists.some { d80_code, d81_code, d82_code, d83_code, d84_code } then
-        for _, v in ipairs { d80_code, d81_code, d82_code, d83_code, d84_code } do
+        for i, v in ipairs { d80_code, d81_code, d82_code, d83_code, d84_code } do
             v.link_text = "Autoresolved Specified Code - " .. v.link_text
         end
         Result.outcome = "AUTORESOLVED"
         Result.reason = "Autoresolved due to one or more specified code(s) on the Account"
         Result.validated = true
+        Result.passed = true
     else
         local medication = lists.some {
             antimetabolites_medication, antimetabolites_abs, z5111_code, z5112_code,
@@ -212,7 +213,8 @@ if not existing_alert or not existing_alert.validated then
             local subtitle
 
             if medication and chronic then
-                subtitle = "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication"
+                subtitle =
+                "Infection Present with Possible Link to Immunocompromised State Due to Chronic Condition and Medication"
             elseif medication then
                 subtitle = "Infection Present with Possible Link to Immunocompromised State Due to Medication"
             elseif chronic then
@@ -341,4 +343,3 @@ if not existing_alert or not existing_alert.validated then
         compile_links()
     end
 end
-

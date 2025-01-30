@@ -118,7 +118,7 @@ if not existing_alert or not existing_alert.validated then
     local g71039_code = codes.make_code_link("G71.039", "Limb Girdle Muscular Dystrophy, Unspecified")
     local g35_code = codes.make_code_link("G35", "Multiple Sclerosis")
     local g7100_code = codes.make_code_link("G71.00", "Muscular Dystrophy Unspecified")
-    local myasthenia_gravis_codes = codes.get_multi_code_link { codes = { "G70.00", "G70.01" }, text = "Myasthenia Gravis" }
+    local myasthenia_gravis_codes = codes.make_code_links({ "G70.00", "G70.01" }, "Myasthenia Gravis")
     local g808_code = codes.make_code_link("G80.8", "Other Cerebral Palsy")
     local g20_code = codes.make_code_link("G20", "Parkinson's")
     local g20a1_code = codes.make_code_link("G20.A1",
@@ -200,7 +200,7 @@ if not existing_alert or not existing_alert.validated then
     illness_header:add_link(g10_code)
     illness_header:add_link(z8673_code)
     illness_header:add_link(guillain_barre_syndrome_abs)
-    illness_header:add_link(myasthenia_gravis_codes)
+    illness_header:add_links(myasthenia_gravis_codes)
 
     local codes_present = #illness_header.links
 
@@ -245,7 +245,7 @@ if not existing_alert or not existing_alert.validated then
         Result.reason = "Autoresolved due to one Specified Code/Abstraction on the Account"
         Result.validated = true
         Result.passed = true
-    elseif spinal_codes and r532_code and not z7401_code and ci == 0 and codes_present == 0 then
+    elseif not spinal_codes and r532_code and not z7401_code and ci == 0 and codes_present == 0 then
         if extremities_abs then
             clinical_evidence_header:add_link(extremities_abs)
         end
